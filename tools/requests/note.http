@@ -1,0 +1,11 @@
+### Upload audio file
+POST http://localhost:3000/notes
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="jfk.wav"
+Content-Type: audio/wav
+
+< jfk.wav
+--boundary--
+### 
