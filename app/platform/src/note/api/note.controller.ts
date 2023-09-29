@@ -9,10 +9,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { TranscriptionService } from '../service/transcription.service';
 
 @Controller('notes')
 export class NoteController {
   private readonly logger = new Logger(NoteController.name);
+
+  constructor(private transcriptionService: TranscriptionService) {}
 
   @Get()
   getNote() {
@@ -30,6 +33,7 @@ export class NoteController {
     file: Express.Multer.File,
   ) {
     const { buffer: _, stream: __, ...logData } = file;
-    this.logger.log(logData);
+    this.logger.log('File:', logData);
+    this.logger.log('Transcription:', this.transcriptionService.transcribe());
   }
 }
