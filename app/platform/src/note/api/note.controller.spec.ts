@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NoteController } from './note.controller';
+import { NoteController } from '@exnota/note/api/note.controller';
 
 describe('NoteController', () => {
   let controller: NoteController;

@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { NoteModule } from './note/note.module';
+import { NoteModule } from '@exnota/note/note.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(NoteModule);

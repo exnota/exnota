@@ -9,7 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { TranscriptionService } from '../service/transcription.service';
+import { TranscriptionService } from '@exnota/note/service/transcription.service';
 
 @Controller('notes')
 export class NoteController {

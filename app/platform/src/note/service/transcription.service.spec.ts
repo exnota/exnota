@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TranscriptionService } from './transcription.service';
+import { TranscriptionService } from '@exnota/note/service/transcription.service';
 
 describe('TranscriptionService', () => {
   let service: TranscriptionService;

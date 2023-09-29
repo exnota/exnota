@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { NoteController } from 'src/note/api/note.controller';
-import { TranscriptionService } from './service/transcription.service';
+import { NoteController } from '@exnota/note/api/note.controller';
+import { TranscriptionService } from '@exnota/note/service/transcription.service';
 
 @Module({
   controllers: [NoteController],
