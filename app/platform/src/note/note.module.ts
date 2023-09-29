@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { NewAudioMemoController } from 'src/new-audio-memo/new-audio-memo.controller';
+import { NoteController } from 'src/note/api/note.controller';
 
 @Module({
-  controllers: [NewAudioMemoController],
+  controllers: [NoteController],
 })
 export class NoteModule {}
