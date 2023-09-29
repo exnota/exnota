@@ -1,6 +1,8 @@
 import {
   Controller,
+  FileTypeValidator,
   Get,
+  ParseFilePipe,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -16,7 +18,14 @@ export class NoteController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  postNote(@UploadedFile() file: Express.Multer.File) {
+  postNote(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: 'audio/wav' })],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
     console.log(file);
   }
 }
