@@ -2,6 +2,7 @@ import {
   Controller,
   FileTypeValidator,
   Get,
+  Logger,
   ParseFilePipe,
   Post,
   UploadedFile,
@@ -11,6 +12,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('notes')
 export class NoteController {
+  private readonly logger = new Logger(NoteController.name);
+
   @Get()
   getNote() {
     return 'audio memo';
@@ -26,6 +29,7 @@ export class NoteController {
     )
     file: Express.Multer.File,
   ) {
-    console.log(file);
+    const { buffer: _, stream: __, ...logData } = file;
+    this.logger.log(logData);
   }
 }
