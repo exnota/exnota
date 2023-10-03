@@ -24,7 +24,7 @@ export class NoteController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  postNote(
+  async postNote(
     @UploadedFile(
       new ParseFilePipe({
         validators: [new FileTypeValidator({ fileType: 'audio/wav' })],
@@ -34,6 +34,7 @@ export class NoteController {
   ) {
     const { buffer: _, stream: __, ...logData } = file;
     this.logger.log('File:', logData);
-    this.logger.log('Transcription:', this.transcriptionService.transcribe());
+    const result = await this.transcriptionService.transcribe();
+    this.logger.log('Transcription:', result);
   }
 }
