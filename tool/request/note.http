@@ -1,3 +1,6 @@
+### Get notes - local
+GET http://localhost:3000/notes
+
 ### Upload audio file - local
 POST http://localhost:3000/notes
 Content-Type: multipart/form-data; boundary=boundary
