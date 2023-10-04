@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common'
 
 @Injectable()
 export class TranscriptionService {
   transcribe(): string {
-    return 'transcription4';
+    return 'transcription4'
   }
 }

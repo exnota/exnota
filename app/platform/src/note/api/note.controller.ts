@@ -7,19 +7,19 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { TranscriptionService } from '@exnota/note/service/transcription.service';
+} from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { TranscriptionService } from '@exnota/note/service/transcription.service'
 
 @Controller('notes')
 export class NoteController {
-  private readonly logger = new Logger(NoteController.name);
+  private readonly logger = new Logger(NoteController.name)
 
   constructor(private transcriptionService: TranscriptionService) {}
 
   @Get()
   getNote() {
-    return 'audio memo';
+    return 'audio memo'
   }
 
   @Post()
@@ -32,8 +32,8 @@ export class NoteController {
     )
     file: Express.Multer.File,
   ) {
-    const { buffer: _, stream: __, ...logData } = file;
-    this.logger.log('File:', logData);
-    this.logger.log('Transcription:', this.transcriptionService.transcribe());
+    const { buffer: _, stream: __, ...logData } = file
+    this.logger.log('File:', logData)
+    this.logger.log('Transcription:', this.transcriptionService.transcribe())
   }
 }

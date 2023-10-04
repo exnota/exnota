@@ -1,18 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { NoteController } from '@exnota/note/api/note.controller';
+import { Test, TestingModule } from '@nestjs/testing'
+import { NoteController } from '@exnota/note/api/note.controller'
 
 describe('NoteController', () => {
-  let controller: NoteController;
+  let controller: NoteController
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NoteController],
-    }).compile();
+    }).compile()
 
-    controller = module.get<NoteController>(NoteController);
-  });
+    controller = module.get<NoteController>(NoteController)
+  })
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
-});
+    expect(controller).toBeDefined()
+  })
+})

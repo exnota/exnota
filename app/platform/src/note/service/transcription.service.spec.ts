@@ -1,18 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { TranscriptionService } from '@exnota/note/service/transcription.service';
+import { Test, TestingModule } from '@nestjs/testing'
+import { TranscriptionService } from '@exnota/note/service/transcription.service'
 
 describe('TranscriptionService', () => {
-  let service: TranscriptionService;
+  let service: TranscriptionService
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [TranscriptionService],
-    }).compile();
+    }).compile()
 
-    service = module.get<TranscriptionService>(TranscriptionService);
-  });
+    service = module.get<TranscriptionService>(TranscriptionService)
+  })
 
   it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-});
+    expect(service).toBeDefined()
+  })
+})
