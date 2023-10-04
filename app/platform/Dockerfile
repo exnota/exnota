@@ -25,6 +25,7 @@ WORKDIR /home/node
 ARG model=base
 RUN mkdir -p /home/node/whisper/models
 RUN mkdir /home/node/whisper/audio
+RUN chown -R node /home/node/whisper 
 COPY --chown=node:node ./data/jfk.wav /home/node/whisper/audio
 COPY --from=build --chown=node:node "/whisper/models/ggml-${model}.bin" "/home/node/whisper/models/ggml-${model}.bin"
 COPY --from=build --chown=node:node /whisper/main /usr/local/bin/whisper
