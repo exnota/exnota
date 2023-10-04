@@ -1,7 +1,10 @@
-### Get notes - local
+### ----------------------------------------------------
+### local
+### ----------------------------------------------------
+### get
 GET http://localhost:3000/notes
 
-### Upload audio file - local
+### post
 POST http://localhost:3000/notes
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -12,8 +15,14 @@ Content-Type: audio/wav
 < jfk.wav
 --boundary--
 
-### Upload audio file - render
-POST https://exnota-test.onrender.com/notes
+### ----------------------------------------------------
+### prod
+### ----------------------------------------------------
+### get
+GET https://exnota-test2.onrender.com/notes
+
+### post
+POST https://exnota-test2.onrender.com/notes
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -22,4 +31,3 @@ Content-Type: audio/wav
 
 < jfk.wav
 --boundary--
-### 
