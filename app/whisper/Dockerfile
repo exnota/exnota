@@ -13,7 +13,7 @@ ARG model=base
 RUN bash ./models/download-ggml-model.sh "${model}"
 RUN make main stream
 
-FROM debian:11 AS whisper
+FROM node:18.18.0-bullseye AS whisper
 
 RUN apt-get update \
     && apt-get install -y libsdl2-dev alsa-utils \
