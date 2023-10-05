@@ -11,6 +11,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express'
 import { TranscriptionService } from '@exnota/note/service/transcription.service'
 import { diskStorage } from 'multer'
+import { PATH_UPLOAD_AUDIO } from '@exnota/settings'
 
 @Controller('notes')
 export class NoteController {
@@ -28,7 +29,7 @@ export class NoteController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: function (_req, _file, cb) {
-          cb(null, '/tmp/upload/audio')
+          cb(null, PATH_UPLOAD_AUDIO)
         },
         filename: function (_req, file, cb) {
           const uniqueSuffix =
