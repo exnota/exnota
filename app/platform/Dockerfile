@@ -35,6 +35,7 @@ ENV HOST=0.0.0.0
 ENV PORT=3000
 
 USER node
+RUN mkdir -p /tmp/upload/audio
 RUN mkdir /home/node/app
 WORKDIR /home/node/app
 

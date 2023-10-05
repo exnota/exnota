@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { TranscriptionService } from '@exnota/note/service/transcription.service'
+import { diskStorage } from 'multer'
 
 @Controller('notes')
 export class NoteController {
@@ -23,7 +24,20 @@ export class NoteController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: function (_req, _file, cb) {
+          cb(null, '/tmp/upload/audio')
+        },
+        filename: function (_req, file, cb) {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9)
+          cb(null, file.fieldname + '-' + uniqueSuffix)
+        },
+      }),
+    }),
+  )
   postNote(
     @UploadedFile(
       new ParseFilePipe({
@@ -34,6 +48,9 @@ export class NoteController {
   ) {
     const { buffer: _, stream: __, ...logData } = file
     this.logger.log('File:', logData)
-    this.logger.log('Transcription:', this.transcriptionService.transcribe())
+    this.logger.log(
+      'Transcription:',
+      this.transcriptionService.transcribe(file),
+    )
   }
 }
