@@ -34,9 +34,9 @@ COPY --from=build --chown=node:node /whisper/stream /usr/local/bin/stream
 ENV HOST=0.0.0.0
 ENV PORT=3000
 
-USER node
 RUN mkdir -p /tmp/upload/audio
 RUN chown -R node /tmp/upload/audio
+USER node
 RUN mkdir /home/node/app
 WORKDIR /home/node/app
 
