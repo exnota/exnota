@@ -47,5 +47,7 @@ COPY --chown=node:node . .
 RUN npm run build 
 
 EXPOSE 3000
+USER root
+RUN mkdir /tmp/testing
 
 CMD [ "node", "dist/main.js" ]
