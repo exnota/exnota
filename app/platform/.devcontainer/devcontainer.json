@@ -6,6 +6,15 @@
 	"build": {
 		// Path is relative to the devcontainer.json file.
 		"dockerfile": "../Dockerfile"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"humao.rest-client"
+			]
+		}
 	}
 	// "features": {}
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
