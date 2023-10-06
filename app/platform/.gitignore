@@ -1,0 +1,9 @@
+# Project-level .gitignore is helpful in VS Code when opening a project folder
+# directly, as it excludes these files from search and the file explorer.
+
+# Copy from root .gitignore
+node_modules
+.DS_Store
+
+# Specific for this project
+dist
