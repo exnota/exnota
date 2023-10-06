@@ -55,9 +55,8 @@ export class NoteController {
   ) {
     const { buffer: _, stream: __, ...logData } = file
     this.logger.log('File:', logData)
-    this.logger.log(
-      'Transcription:',
-      this.transcriptionService.transcribe(file.path),
-    )
+    const transcription = this.transcriptionService.transcribe(file.path)
+    this.logger.log('Transcription:', transcription)
+    return transcription
   }
 }
