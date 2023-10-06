@@ -15,6 +15,17 @@ Content-Type: audio/wav
 < jfk.wav
 --boundary--
 
+### post micromachines 44k
+POST http://localhost:3000/notes
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="micro-machines-44k.wav"
+Content-Type: audio/wav
+
+< micro-machines-44k.wav
+--boundary--
+
 ### ----------------------------------------------------
 ### prod
 ### ----------------------------------------------------
@@ -41,4 +52,15 @@ Content-Disposition: form-data; name="file"; filename="micro-machines.wav"
 Content-Type: audio/wav
 
 < micro-machines.wav
+--boundary--
+
+### post micromachines 44k
+POST https://exnota-test2.onrender.com/notes
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="micro-machines-44k.wav"
+Content-Type: audio/wav
+
+< micro-machines-44k.wav
 --boundary--
