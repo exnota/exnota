@@ -12,7 +12,8 @@
 			"extensions": [
 				"dbaeumer.vscode-eslint",
 				"esbenp.prettier-vscode",
-				"humao.rest-client"
+				"humao.rest-client",
+				"firsttris.vscode-jest-runner"
 			]
 		}
 	}
