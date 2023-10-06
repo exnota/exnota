@@ -12,6 +12,8 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { TranscriptionService } from '@exnota/note/service/transcription.service'
 import { diskStorage } from 'multer'
 import { PATH_UPLOAD_AUDIO } from '@exnota/settings'
+import { format as dateFormat } from 'date-fns'
+import { extname } from 'path'
 
 @Controller('notes')
 export class NoteController {
@@ -32,9 +34,13 @@ export class NoteController {
           cb(null, PATH_UPLOAD_AUDIO)
         },
         filename: function (_req, file, cb) {
+          const ext = extname(file.originalname).replace(/\./, '')
           const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9)
-          cb(null, file.fieldname + '-' + uniqueSuffix)
+            dateFormat(Date.now(), 'yyyyMMdd-HHmmss') +
+            '-' +
+            Math.round(Math.random() * 1e9) +
+            (!!ext ? `.${ext}` : '')
+          cb(null, uniqueSuffix)
         },
       }),
     }),
