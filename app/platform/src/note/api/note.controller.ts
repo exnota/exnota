@@ -57,7 +57,7 @@ export class NoteController {
     this.logger.log('File:', logData)
     this.logger.log(
       'Transcription:',
-      this.transcriptionService.transcribe(file),
+      this.transcriptionService.transcribe(file.path),
     )
   }
 }
