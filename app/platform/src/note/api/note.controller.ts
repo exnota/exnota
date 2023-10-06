@@ -2,6 +2,8 @@ import {
   Controller,
   FileTypeValidator,
   Get,
+  HttpException,
+  HttpStatus,
   Logger,
   ParseFilePipe,
   Post,
@@ -55,8 +57,14 @@ export class NoteController {
   ) {
     const { buffer: _, stream: __, ...logData } = file
     this.logger.log('File:', logData)
-    const transcription = this.transcriptionService.transcribe(file.path)
-    this.logger.log('Transcription:', transcription)
-    return transcription
+    const result = this.transcriptionService.transcribe(file.path)
+    this.logger.log('Transcription:', result)
+
+    if (result.ok) {
+      return result.value
+    }
+    throw new HttpException(result.message, HttpStatus.INTERNAL_SERVER_ERROR, {
+      cause: result.error,
+    })
   }
 }
