@@ -21,6 +21,9 @@ export const isTranscriptionOutput = (
     if (!('text' in t)) {
       return false
     }
+    if (typeof t.text !== 'string') {
+      return false
+    }
   }
 
   return true
