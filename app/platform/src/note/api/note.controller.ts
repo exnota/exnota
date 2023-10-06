@@ -56,9 +56,9 @@ export class NoteController {
     file: Express.Multer.File,
   ) {
     const { buffer: _, stream: __, ...logData } = file
-    this.logger.log('File:', logData)
+    this.logger.log('File uploaded:', logData)
+
     const result = this.transcriptionService.transcribe(file.path)
-    this.logger.log('Transcription:', result)
 
     if (result.ok) {
       return result.value
