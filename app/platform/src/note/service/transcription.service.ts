@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { exec } from 'shelljs'
 import { readFileSync } from 'fs'
-import { isTranscriptionOutput } from './output'
+import { isTranscriptionOutput } from './transcription-output'
 
 @Injectable()
 export class TranscriptionService {

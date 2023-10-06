@@ -1,4 +1,4 @@
-import { isTranscriptionOutput } from './output'
+import { isTranscriptionOutput } from './transcription-output'
 
 describe('TranscriptionOutput', () => {
   describe('When argument has no transcriptions', () => {
