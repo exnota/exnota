@@ -1,4 +1,4 @@
-# mobile
+# Exnota
 
 A new Flutter project.
 
