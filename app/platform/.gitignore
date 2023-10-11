@@ -4,6 +4,9 @@
 # Copy from root .gitignore
 node_modules
 .DS_Store
+.env
+.env.*
+!.env.template
 
 # Specific for this project
 dist
