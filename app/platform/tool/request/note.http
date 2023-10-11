@@ -30,10 +30,10 @@ Content-Type: audio/wav
 ### prod
 ### ----------------------------------------------------
 ### get
-GET https://exnota-test2.onrender.com/notes
+GET https://exnota-platform.onrender.com/notes
 
 ### post jfk
-POST https://exnota-test2.onrender.com/notes
+POST https://exnota-platform.onrender.com/notes
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -44,7 +44,7 @@ Content-Type: audio/wav
 --boundary--
 
 ### post micromachines
-POST https://exnota-test2.onrender.com/notes
+POST https://exnota-platform.onrender.com/notes
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -55,7 +55,7 @@ Content-Type: audio/wav
 --boundary--
 
 ### post micromachines 44k
-POST https://exnota-test2.onrender.com/notes
+POST https://exnota-platform.onrender.com/notes
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
