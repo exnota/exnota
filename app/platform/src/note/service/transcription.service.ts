@@ -3,10 +3,13 @@ import { exec } from 'shelljs'
 import { readFileSync } from 'fs'
 import { isTranscriptionOutput } from './transcription-output'
 import { Result, resultError, resultOk } from '@exnota/lib/result'
+import { ExportService } from '@exnota/integration/service/export.service'
 
 @Injectable()
 export class TranscriptionService {
-  transcribe(path: string): Result<string> {
+  constructor(private exportService: ExportService) {}
+
+  async transcribe(path: string): Promise<Result<string>> {
     exec(
       `whisper --model /home/node/whisper/models/ggml-base.bin -f ${path} --output-json`,
     )
@@ -26,6 +29,9 @@ export class TranscriptionService {
           return `${prev} ${cur.text}`
         }
       }, '')
+      await this.exportService.export({
+        title: transcription,
+      })
       return resultOk(transcription)
     } catch (e) {
       return resultError('Error generating transcription', e)

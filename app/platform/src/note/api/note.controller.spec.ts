@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { NoteController } from '@exnota/note/api/note.controller'
 import { TranscriptionService } from '@exnota/note/service/transcription.service'
+import { IntegrationModule } from '@exnota/integration/integration.module'
 
 describe('NoteController', () => {
   let controller: NoteController
@@ -9,6 +10,7 @@ describe('NoteController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NoteController],
       providers: [TranscriptionService],
+      imports: [IntegrationModule],
     }).compile()
 
     controller = module.get<NoteController>(NoteController)

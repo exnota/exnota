@@ -47,7 +47,7 @@ export class NoteController {
       }),
     }),
   )
-  postNote(
+  async postNote(
     @UploadedFile(
       new ParseFilePipe({
         validators: [new FileTypeValidator({ fileType: 'audio/wav' })],
@@ -58,7 +58,7 @@ export class NoteController {
     const { buffer: _, stream: __, ...logData } = file
     this.logger.log('File uploaded:', logData)
 
-    const result = this.transcriptionService.transcribe(file.path)
+    const result = await this.transcriptionService.transcribe(file.path)
 
     if (result.ok) {
       return result.value
