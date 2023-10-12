@@ -37,22 +37,42 @@ export class NotionTokenService {
         body: JSON.stringify({
           grant_type: 'authorization_code',
           code,
-          // redirect_uri: redirectUri,
+          redirect_uri: 'https://exnota.com',
         }),
       })
     } catch (e) {
       return resultError('Error communicating with Notion', e)
     }
 
-    if (response.status !== 200) {
-      return resultError('Error received from Notion')
-    }
-
     let json: unknown
     try {
-      json = response.json()
+      json = await response.json()
     } catch (e) {
+      this.logger.error('Error parsing access token response', {
+        status: response.status,
+        statusText: response.statusText,
+      })
       return resultError('Error parsing access token response', e)
+    }
+
+    if (response.status !== 200) {
+      if (typeof json === 'object' && json !== null) {
+        const error = 'error' in json ? json.error : ''
+        const description =
+          'error_description' in json ? json.error_description : ''
+        const requestId = 'request_id' in json ? json.request_id : ''
+
+        this.logger.error(`Received error from Notion:`, {
+          ...json,
+          requestId,
+          status: response.status,
+          statusText: response.statusText,
+        })
+        return resultError(
+          `Received ${response.status} error '${error}' from Notion with description '${description}'`,
+        )
+      }
+      return resultError('Received error from Notion')
     }
 
     this.logger.log(`Response from Notion:`, json)
