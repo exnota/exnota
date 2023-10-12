@@ -13,7 +13,8 @@
 				"dbaeumer.vscode-eslint",
 				"esbenp.prettier-vscode",
 				"humao.rest-client",
-				"firsttris.vscode-jest-runner"
+				"firsttris.vscode-jest-runner",
+				"Gruntfuggly.todo-tree"
 			]
 		}
 	}
