@@ -22,7 +22,7 @@ export default function Home() {
         </Stack>
         <Space h="xl" />
         <Text c="gray">
-          By <Anchor href="https://matt.fyi">matt.fyi</Anchor>•
+          By <Anchor href="https://matt.fyi">matt.fyi</Anchor>&nbsp;•&nbsp;
           <Anchor href="https://twitter.com/mattjustfyi">@mattjustfyi</Anchor>
         </Text>
       </Stack>
