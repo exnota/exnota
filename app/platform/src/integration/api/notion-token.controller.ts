@@ -1,4 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common'
+import { NotionTokenService } from '@exnota/integration/service/notion-token.service'
+import {
+  Body,
+  Controller,
+  HttpException,
+  HttpStatus,
+  Post,
+} from '@nestjs/common'
 import { IsNotEmpty, IsString } from 'class-validator'
 
 class NotionTokenRequest {
@@ -9,8 +16,20 @@ class NotionTokenRequest {
 
 @Controller('notion-token')
 export class NotionTokenController {
+  constructor(private notionTokenService: NotionTokenService) {}
+
   @Post()
-  notionToken(@Body() request: NotionTokenRequest) {
-    return `You sent code: ${request.code}`
+  async notionToken(@Body() request: NotionTokenRequest) {
+    const result = await this.notionTokenService.notionToken(request.code)
+    if (!result.ok) {
+      throw new HttpException(
+        result.message,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        {
+          cause: result.error,
+        },
+      )
+    }
+    return result.value
   }
 }
