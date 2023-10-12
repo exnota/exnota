@@ -1,6 +1,9 @@
 ### ----------------------------------------------------
 ### local
 ### ----------------------------------------------------
+### ----------
+### note
+### ----------
 ### get
 GET http://localhost:3000/notes
 
@@ -25,6 +28,17 @@ Content-Type: audio/wav
 
 < micro-machines-44k.wav
 --boundary--
+
+### ----------
+### integration
+### ----------
+### notion token
+POST http://localhost:3000/notion-token HTTP/1.1
+content-type: application/json
+
+{
+    "code": "a code"
+}
 
 ### ----------------------------------------------------
 ### prod
