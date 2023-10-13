@@ -1,3 +1,4 @@
+import 'package:Exnota/src/integration/notion_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -7,13 +8,15 @@ class ConnectToNotionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const settings = NotionSettings(code: 'test code');
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.integration_connectToNotion),
       ),
-      body: const Padding(
-        padding: EdgeInsets.all(16),
-        child: null,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text('Code: ${settings.code}'),
       ),
     );
   }
