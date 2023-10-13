@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../account/settings_view.dart';
+import '../account/settings/settings_view.dart';
 import 'sample_item.dart';
 
 /// Displays a list of SampleItems.
