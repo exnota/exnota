@@ -3,8 +3,12 @@
   "@common_appTitle": {
     "description": "Name of the app"
   },
+  "integration_connectToNotion": "Connect to Notion",
+  "@integration_connectToNotion": {
+    "description": "Title of view that allows the user to grant the app access to Notion."
+  },
   "note_connectToNotion": "Connect to Notion",
   "@note_connectToNotion": {
-    "description": "Selecting this initiates the user to grant the app access to Notion."
+    "description": "Label for button where selecting it initiates the user to grant the app access to Notion."
   }
 }

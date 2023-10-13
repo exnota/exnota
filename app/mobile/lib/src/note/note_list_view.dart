@@ -1,3 +1,4 @@
+import 'package:Exnota/src/integration/view/connect_to_notion_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -41,7 +42,13 @@ class SampleItemListView extends StatelessWidget {
       // builds Widgets as they’re scrolled into view.
       body: Center(
         child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const ConnectToNotionView()),
+              );
+            },
             child: Text(AppLocalizations.of(context)!.note_connectToNotion)),
       ),
       // floatingActionButton: FloatingActionButton.extended(
