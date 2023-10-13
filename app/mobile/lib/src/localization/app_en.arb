@@ -1,6 +1,10 @@
 {
-  "appTitle": "Exnota",
-  "@appTitle": {
-    "description": "Save voice memos to notion"
+  "common_appTitle": "Exnota",
+  "@common_appTitle": {
+    "description": "Name of the app"
+  },
+  "note_connectToNotion": "Connect to Notion",
+  "@note_connectToNotion": {
+    "description": "Selecting this initiates the user to grant the app access to Notion."
   }
 }
