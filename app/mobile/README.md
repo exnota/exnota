@@ -43,6 +43,7 @@ TODO: Replace steps with dev containers.
 ## Running locally from VS Code
 
 1. Run `bootstrap.sh` to generated freezed models.
+   * Or to watch for changes `dart run build_runner watch`
 
 2. Select a device from the Status Bar, or command `Flutter: Select Device`
    * For iOS, you may need to manually open the Simulator app first.
