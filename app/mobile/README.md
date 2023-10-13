@@ -51,3 +51,24 @@ TODO: Replace steps with dev containers.
 3. Open `main.dart`.
 
 4. Select `Start Debugging` from the top right of the editor
+
+## Troubleshooting/debugging
+
+### Database
+
+iOS Simulator
+
+1. Install sqlitebrowser.org
+
+2. Find the simulator databases
+
+   ```bash
+   find /Users/matt/Library/Developer/CoreSimulator/Devices -name "db.sqlite" -exec ls -al {} +
+   ```
+
+3. Copy the path of the most recently modified database, if that's what you
+want, and open with
+
+   ```bash
+   open /Users/matt/Library/Developer/CoreSimulator/Devices/...etc.../db.sqlite
+   ```
