@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 
 part 'database.g.dart';
 
-@DriftDatabase(tables: [NotionSettings])
+@DriftDatabase(tables: [IntegrationNotionSettings])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 

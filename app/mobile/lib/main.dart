@@ -1,4 +1,5 @@
 import 'package:Exnota/database.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 
 import 'src/app.dart';
@@ -9,11 +10,6 @@ void main() async {
   // Needed for the database. Don't know why :)
   WidgetsFlutterBinding.ensureInitialized();
   final database = AppDatabase();
-
-  // TODO: Remove this test code
-  final settings = await database.select(database.notionSettings).get();
-  final code = settings.length == 1 ? settings.first.code : 'no code';
-  print('code= $code');
 
   // Set up the SettingsController, which will glue user settings to multiple
   // Flutter Widgets.
