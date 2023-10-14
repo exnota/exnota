@@ -63,12 +63,12 @@ iOS Simulator
 2. Find the simulator databases
 
    ```bash
-   find /Users/matt/Library/Developer/CoreSimulator/Devices -name "db.sqlite" -exec ls -al {} +
+   find /Users/matt/Library/Developer/CoreSimulator/Devices -name "exnota.sqlite" -exec ls -al {} +
    ```
 
 3. Copy the path of the most recently modified database, if that's what you
 want, and open with
 
    ```bash
-   open /Users/matt/Library/Developer/CoreSimulator/Devices/...etc.../db.sqlite
+   open /Users/matt/Library/Developer/CoreSimulator/Devices/...etc.../exnota.sqlite
    ```
