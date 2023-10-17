@@ -1,6 +1,6 @@
 import 'package:Exnota/database.dart';
-import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/app.dart';
 import 'src/account/settings/settings_controller.dart';
@@ -9,7 +9,6 @@ import 'src/account/settings/settings_service.dart';
 void main() async {
   // Needed for the database. Don't know why :)
   WidgetsFlutterBinding.ensureInitialized();
-  final database = AppDatabase();
 
   // Set up the SettingsController, which will glue user settings to multiple
   // Flutter Widgets.
@@ -22,5 +21,5 @@ void main() async {
   // Run the app and pass in the SettingsController. The app listens to the
   // SettingsController for changes, then passes it further down to the
   // SettingsView.
-  runApp(MyApp(settingsController: settingsController));
+  runApp(ProviderScope(child: MyApp(settingsController: settingsController)));
 }
