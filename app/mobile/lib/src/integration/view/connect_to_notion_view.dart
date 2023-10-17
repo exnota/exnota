@@ -5,11 +5,16 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Initiates Notion auth process.
-class ConnectToNotionView extends ConsumerWidget {
+class ConnectToNotionView extends ConsumerStatefulWidget {
   const ConnectToNotionView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConnectToNotionView> createState() => _ConnectToNotionView();
+}
+
+class _ConnectToNotionView extends ConsumerState<ConnectToNotionView> {
+  @override
+  Widget build(BuildContext context) {
     final notionSettings = ref.watch(notionSettingsServiceProvider);
 
     return Scaffold(
@@ -22,7 +27,11 @@ class ConnectToNotionView extends ConsumerWidget {
             AsyncError() => const Text('error'),
             AsyncLoading() => const CircularProgressIndicator(),
             AsyncData(:final value) => switch (value) {
-                NotionSettingsEmpty() => const Text('No code'),
+                NotionSettingsEmpty() => OutlinedButton(
+                    onPressed: () {
+                      // TODO: Start process
+                    },
+                    child: const Text('Start')),
                 NotionSettingsCode() => Text('Code: ${value.code}'),
                 NotionSettingsAccessToken() =>
                   Text('Access token: ${value.accessToken}')
