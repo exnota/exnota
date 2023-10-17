@@ -1,0 +1,6 @@
+{
+    "editor.codeActionsOnSave": {
+        "quickfix.insertSemicolon": true,
+        "source.fixAll": true
+    }
+}
