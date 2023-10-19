@@ -28,8 +28,6 @@ class NotionSettingsService extends _$NotionSettingsService {
 
   Future<void> fetchToken() async {
     final currentSettings = state.valueOrNull;
-
-    // TODO: Refactor to if/else to be clearer. Early return.
     switch (currentSettings) {
       case NotionSettingsCode():
         final code = currentSettings.code;

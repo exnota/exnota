@@ -18,9 +18,7 @@ class NotionSettingsView extends ConsumerStatefulWidget {
   ConsumerState<NotionSettingsView> createState() => _ConnectToNotionView();
 }
 
-// TODO: Remove if not necessary: with SingleTickerProviderStateMixin
-class _ConnectToNotionView extends ConsumerState<NotionSettingsView>
-    with SingleTickerProviderStateMixin {
+class _ConnectToNotionView extends ConsumerState<NotionSettingsView> {
   bool _requestingToken = false;
   Uri? _latestUri;
   // String? codeFromRedirect;
