@@ -37,7 +37,9 @@ export class NotionTokenService {
         body: JSON.stringify({
           grant_type: 'authorization_code',
           code,
-          redirect_uri: 'https://exnota.com',
+          // redirect_uri must match what the app sends for a code grant.
+          redirect_uri:
+            'https://exnota.com/api/integration/notion/mobile-code-redirect',
         }),
       })
     } catch (e) {
