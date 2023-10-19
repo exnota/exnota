@@ -11,21 +11,20 @@ import 'package:oauth2/oauth2.dart' as oauth2;
 
 // TODO: Refector into controller pattern? (is that a thing) to simplify this widget?
 /// Initiates Notion auth process.
-class ConnectToNotionView extends ConsumerStatefulWidget {
-  const ConnectToNotionView({super.key});
+class NotionSettingsView extends ConsumerStatefulWidget {
+  const NotionSettingsView({super.key});
 
   @override
-  ConsumerState<ConnectToNotionView> createState() => _ConnectToNotionView();
+  ConsumerState<NotionSettingsView> createState() => _ConnectToNotionView();
 }
 
-// TODO: Rename to Notion Settings
-
 // TODO: Remove if not necessary: with SingleTickerProviderStateMixin
-class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
+class _ConnectToNotionView extends ConsumerState<NotionSettingsView>
     with SingleTickerProviderStateMixin {
   bool _requestingToken = false;
   Uri? _latestUri;
   // String? codeFromRedirect;
+  // TODO: Error handling?
   Object? _errFromRedirect;
   late StreamSubscription _sub;
 

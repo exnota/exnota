@@ -1,4 +1,4 @@
-import 'package:exnota/src/integration/view/connect_to_notion_view.dart';
+import 'package:exnota/src/integration/view/notion_settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -46,7 +46,7 @@ class SampleItemListView extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const ConnectToNotionView()),
+                    builder: (context) => const NotionSettingsView()),
               );
             },
             child: Text(AppLocalizations.of(context)!.note_connectToNotion)),
