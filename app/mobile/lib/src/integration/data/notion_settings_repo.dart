@@ -65,12 +65,6 @@ class NotionSettingsRepo extends _$NotionSettingsRepo {
         break;
     }
     ref.invalidateSelf();
-    // TODO: Not sure if the below is needed, as in the linked issue it's only
-    // for when one provider uses data from another provider, and that root
-    // provider is updated. Try removing this.
-    // Re-read provider to avoid this error briefly being returned:
-    // https://github.com/rrousselGit/riverpod/issues/2041#issuecomment-1698884238
-    ref.read(databaseProvider);
   }
 
   IntegrationNotionSettingsCompanion _mapToCompanion(
