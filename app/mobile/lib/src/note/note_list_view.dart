@@ -1,4 +1,4 @@
-import 'package:Exnota/src/integration/view/connect_to_notion_view.dart';
+import 'package:exnota/src/integration/view/connect_to_notion_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 

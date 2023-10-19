@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:Exnota/src/integration/data/notion_settings_repo.dart';
-import 'package:Exnota/src/integration/notion_settings.dart';
+import 'package:exnota/src/integration/data/notion_settings_repo.dart';
+import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:http/http.dart' as http;
 

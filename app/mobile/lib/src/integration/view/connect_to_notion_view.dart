@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:Exnota/src/integration/notion_settings.dart';
-import 'package:Exnota/src/integration/service/notion_settings_service.dart';
+import 'package:exnota/src/integration/notion_settings.dart';
+import 'package:exnota/src/integration/service/notion_settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +19,6 @@ class ConnectToNotionView extends ConsumerStatefulWidget {
 }
 
 // TODO: Rename to Notion Settings
-// TODO: In its own commit, also rename 'Exnota' to 'exnota' in pubspec.yml
 
 // TODO: Remove if not necessary: with SingleTickerProviderStateMixin
 class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
