@@ -9,6 +9,7 @@ import 'package:uni_links/uni_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:oauth2/oauth2.dart' as oauth2;
 
+// TODO: Refector into controller pattern? (is that a thing) to simplify this widget?
 /// Initiates Notion auth process.
 class ConnectToNotionView extends ConsumerStatefulWidget {
   const ConnectToNotionView({super.key});
@@ -16,6 +17,9 @@ class ConnectToNotionView extends ConsumerStatefulWidget {
   @override
   ConsumerState<ConnectToNotionView> createState() => _ConnectToNotionView();
 }
+
+// TODO: Rename to Notion Settings
+// TODO: In its own commit, also rename 'Exnota' to 'exnota' in pubspec.yml
 
 // TODO: Remove if not necessary: with SingleTickerProviderStateMixin
 class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
@@ -32,6 +36,13 @@ class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
   }
 
   @override
+  void dispose() {
+    print('disposed');
+    _sub.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final notionSettings = ref.watch(notionSettingsServiceProvider);
 
@@ -44,18 +55,53 @@ class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
           child: Column(
             children: [
               switch (notionSettings) {
-                AsyncError() => const Text('error'),
+                AsyncError(:final error) => Text('error=$error'),
                 AsyncLoading() => const CircularProgressIndicator(),
-                AsyncData(:final value) => switch (value) {
-                    NotionSettingsEmpty() => OutlinedButton(
-                        onPressed: () async {
-                          await _launch();
-                        },
-                        child: const Text('Start')),
-                    NotionSettingsCode() => Text('Code: ${value.code}'),
-                    NotionSettingsAccessToken() =>
-                      Text('Access token: ${value.accessToken}')
-                  },
+                AsyncData(:final value) => Column(
+                    children: [
+                      switch (value) {
+                        NotionSettingsEmpty() => Row(
+                            children: [
+                              OutlinedButton(
+                                  onPressed: () async {
+                                    await _launch();
+                                  },
+                                  child: const Text('Step 1: Get code'))
+                            ],
+                          ),
+                        NotionSettingsCode() => Row(
+                            children: [
+                              OutlinedButton(
+                                  onPressed: () async {
+                                    await _requestAccessToken();
+                                  },
+                                  child: const Text(
+                                      'Step 2: Use code to get token')),
+                              OutlinedButton(
+                                  onPressed: () async {
+                                    await _launch();
+                                  },
+                                  child: const Text('Restart at Step 1')),
+                            ],
+                          ),
+                        NotionSettingsAccessToken() => Row(
+                            children: [
+                              OutlinedButton(
+                                  onPressed: () async {
+                                    await _launch();
+                                  },
+                                  child: const Text('Restart at Step 1')),
+                            ],
+                          ),
+                      },
+                      switch (value) {
+                        NotionSettingsEmpty() => const Text('Empty'),
+                        NotionSettingsCode() => Text('Code: ${value.code}'),
+                        NotionSettingsAccessToken() =>
+                          Text('Access token: ${value.accessToken}')
+                      }
+                    ],
+                  ),
                 AsyncValue() => throw Exception('Unhandled value')
               },
               if (_latestUri != null) Text('uri=${_latestUri?.path}'),
@@ -67,21 +113,19 @@ class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
     );
   }
 
-  /// Handle incoming links - the ones that the app will recieve from the OS
-  /// while already started.
   void _handleIncomingLinks() {
-    // It will handle app links while the app is already started - be it in
-    // the foreground or in the background.
     _sub = uriLinkStream.listen((Uri? uri) {
       if (!mounted) return;
-      print('got uri: $uri');
+      print('xyz about _saveCode');
+      _saveCode(uri);
+      print('xyz about to set state on listen');
       setState(() {
         _latestUri = uri;
         _errFromRedirect = null;
       });
     }, onError: (Object err) {
       if (!mounted) return;
-      print('got err: $err');
+      print('xyz error handling link');
       setState(() {
         _latestUri = null;
         if (err is FormatException) {
@@ -90,30 +134,32 @@ class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
           _errFromRedirect = null;
         }
       });
-    });
+    }, onDone: () {});
+  }
+
+  void _saveCode(Uri? uri) {
+    final code = uri?.queryParameters["code"];
+    if (code != null) {
+      print('xyz about to .saveCode');
+      ref.read(notionSettingsServiceProvider.notifier).saveCode(code);
+    }
+    // TODO: If code is null, show an error
   }
 
   Future<void> _launch() async {
-    // If we don't have OAuth2 credentials yet, we need to get the resource owner
-    // to authorize us. We're assuming here that we're a command-line application.
     final authorizeBaseUri =
         Uri.parse('https://api.notion.com/v1/oauth/authorize');
+    // TODO: Is this even needed? Should we replace existing implementation with this?
+    // Or just leave a note that it's not used? See commented-out code below.
     final tokenUri = Uri.parse('https://exnota.com');
-    final redirectUri = Uri.parse('https://exnota.com');
+    final redirectUri = Uri.parse(
+        'https://exnota.com/api/integration/notion/mobile-code-redirect');
     var grant = oauth2.AuthorizationCodeGrant(
         '398d2a32-5c3f-476a-8951-ee9a426981c4', authorizeBaseUri, tokenUri);
 
-    // A URL on the authorization server (authorizationEndpoint with some additional
-    // query parameters). Scopes and state can optionally be passed into this method.
     var authorizeUri = grant.getAuthorizationUrl(redirectUri);
 
-    // Redirect the resource owner to the authorization URL. Once the resource
-    // owner has authorized, they'll be redirected to `redirectUrl` with an
-    // authorization code. The `redirect` should cause the browser to redirect to
-    // another URL which should also have a listener.
-    //
-    // `redirect` and `listen` are not shown implemented here. See below for the
-    // details.
+    print('xyz about to_redirect');
     await _redirect(authorizeUri);
     // var responseUrl = listen(redirectUri);
 
@@ -125,10 +171,14 @@ class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
 
   Future<void> _redirect(Uri authorizeUri) async {
     if (await canLaunchUrl(authorizeUri)) {
-      print('can launch ${authorizeUri.path}');
+      print('xyz about launchUrl');
       await launchUrl(authorizeUri);
     } else {
-      print('cannot launch ${authorizeUri.path}');
+      // TODO: Show error?
     }
+  }
+
+  Future<void> _requestAccessToken() async {
+    await ref.read(notionSettingsServiceProvider.notifier).fetchToken();
   }
 }

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+// TODO: Refactor to have different settings per workspace
 class IntegrationNotionSettings extends Table {
   @override
   String get tableName => 'integration_notion_settings';

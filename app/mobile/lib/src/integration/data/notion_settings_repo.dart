@@ -1,5 +1,6 @@
 import 'package:Exnota/database.dart';
 import 'package:Exnota/src/integration/notion_settings.dart';
+import 'package:drift/drift.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'notion_settings_repo.g.dart';
@@ -23,5 +24,76 @@ class NotionSettingsRepo extends _$NotionSettingsRepo {
       return NotionSettings.code(code: code);
     }
     return const NotionSettings.empty();
+  }
+
+  Future<void> updateSettings(NotionSettings newSettings) async {
+    final db = ref.watch(databaseProvider);
+    print('xyz updateSettings: getting from DB');
+    final existingAll = await db.select(db.integrationNotionSettings).get();
+
+    // If settings don't exist in DB -> Insert if not empty
+    if (existingAll.isEmpty) {
+      print('xyz updateSettings: is empty');
+      switch (newSettings) {
+        case NotionSettingsCode():
+        case NotionSettingsAccessToken():
+          final mapped = _mapToCompanion(newSettings, null);
+          await db.into(db.integrationNotionSettings).insert(mapped);
+          ref.invalidateSelf();
+          break;
+        case NotionSettingsEmpty():
+          break;
+      }
+      return;
+    }
+
+    // If new settings are empty, delete. Otherwise update.
+    final existingSettings = existingAll[0];
+    switch (newSettings) {
+      case NotionSettingsEmpty():
+        print('xyz updateSettings: trying to delete');
+        await db.delete(db.integrationNotionSettings).delete(existingSettings);
+        break;
+      case NotionSettingsCode():
+      case NotionSettingsAccessToken():
+        print('xyz updateSettings: gonna map');
+        final replacement = _mapToCompanion(newSettings, existingSettings.id);
+        print(
+            'xyz updateSettings: gonna update: token: ${replacement.accessToken}, code: ${replacement.code}, id: ${replacement.id}');
+        await db.update(db.integrationNotionSettings).replace(replacement);
+        print('xyz updateSettings: just called update');
+        break;
+    }
+    ref.invalidateSelf();
+    // TODO: Not sure if the below is needed, as in the linked issue it's only
+    // for when one provider uses data from another provider, and that root
+    // provider is updated. Try removing this.
+    // Re-read provider to avoid this error briefly being returned:
+    // https://github.com/rrousselGit/riverpod/issues/2041#issuecomment-1698884238
+    ref.read(databaseProvider);
+  }
+
+  IntegrationNotionSettingsCompanion _mapToCompanion(
+      NotionSettings settings, int? id) {
+    IntegrationNotionSettingsCompanion mapped;
+    switch (settings) {
+      case NotionSettingsEmpty():
+        throw Exception('Can\'t map empty Notion settings');
+      case NotionSettingsCode():
+        mapped = IntegrationNotionSettingsCompanion(
+            code: Value(settings.code),
+            // Using Value.absent() here doesn't override existing value
+            accessToken: const Value(null),
+            id: id != null ? Value(id) : const Value.absent());
+        break;
+      case NotionSettingsAccessToken():
+        mapped = IntegrationNotionSettingsCompanion(
+            accessToken: Value(settings.accessToken),
+            // Using Value.absent() here doesn't override existing value
+            code: const Value(null),
+            id: id != null ? Value(id) : const Value.absent());
+        break;
+    }
+    return mapped;
   }
 }

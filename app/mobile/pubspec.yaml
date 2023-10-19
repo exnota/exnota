@@ -17,6 +17,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_riverpod: ^2.4.3
+  http: ^1.1.0
   intl: any
   oauth2: ^2.0.2
   path_provider: ^2.0.0
