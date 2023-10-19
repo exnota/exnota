@@ -15,10 +15,10 @@ class NotionSettingsView extends ConsumerStatefulWidget {
   const NotionSettingsView({super.key});
 
   @override
-  ConsumerState<NotionSettingsView> createState() => _ConnectToNotionView();
+  ConsumerState<NotionSettingsView> createState() => _NotionSettingsView();
 }
 
-class _ConnectToNotionView extends ConsumerState<NotionSettingsView> {
+class _NotionSettingsView extends ConsumerState<NotionSettingsView> {
   bool _requestingToken = false;
   Uri? _latestUri;
   // String? codeFromRedirect;
