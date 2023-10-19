@@ -24,6 +24,7 @@ class ConnectToNotionView extends ConsumerStatefulWidget {
 // TODO: Remove if not necessary: with SingleTickerProviderStateMixin
 class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
     with SingleTickerProviderStateMixin {
+  bool _requestingToken = false;
   Uri? _latestUri;
   // String? codeFromRedirect;
   Object? _errFromRedirect;
@@ -72,11 +73,14 @@ class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
                         NotionSettingsCode() => Row(
                             children: [
                               OutlinedButton(
-                                  onPressed: () async {
-                                    await _requestAccessToken();
-                                  },
-                                  child: const Text(
-                                      'Step 2: Use code to get token')),
+                                  onPressed: _requestingToken
+                                      ? null
+                                      : () async {
+                                          await _requestAccessToken();
+                                        },
+                                  child: Text(!_requestingToken
+                                      ? 'Step 2: Use code to get token'
+                                      : 'Requesting...')),
                               OutlinedButton(
                                   onPressed: () async {
                                     await _launch();
@@ -97,17 +101,28 @@ class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
                       switch (value) {
                         NotionSettingsEmpty() => const Text('Empty'),
                         NotionSettingsCode() => Text('Code: ${value.code}'),
-                        NotionSettingsAccessToken() =>
-                          Text('Access token: ${value.accessToken}')
+                        NotionSettingsAccessToken() => Column(
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.check,
+                                    color: Colors.green,
+                                    size: 24.0,
+                                    semanticLabel: 'Successfully connected',
+                                  ),
+                                  Text('Successfully connected')
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text('Access token: ${value.accessToken}'),
+                            ],
+                          )
                       }
                     ],
                   ),
                 AsyncValue() => throw Exception('Unhandled value')
-              },
-              if (_latestUri != null) Text('uri=${_latestUri?.path}'),
-              if (_errFromRedirect != null) Text('err=$_errFromRedirect'),
-              if (_latestUri == null && _errFromRedirect == null)
-                const Text('both are null')
+              }
             ],
           )),
     );
@@ -179,6 +194,12 @@ class _ConnectToNotionView extends ConsumerState<ConnectToNotionView>
   }
 
   Future<void> _requestAccessToken() async {
+    setState(() {
+      _requestingToken = true;
+    });
     await ref.read(notionSettingsServiceProvider.notifier).fetchToken();
+    setState(() {
+      _requestingToken = false;
+    });
   }
 }
