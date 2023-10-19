@@ -72,3 +72,33 @@ want, and open with
    ```bash
    open /Users/matt/Library/Developer/CoreSimulator/Devices/...etc.../exnota.sqlite
    ```
+
+Android Simulator
+
+1. Install adb
+
+   ```bash
+   brew install android-platform-tools
+   ```
+
+2. Configure adb to use root, to avoid permission error trying to access
+database:
+
+   ```bash
+   adb root
+   ```
+
+3. Download database file to current directory
+
+   ```bash
+   adb pull /data/data/com.exnota.app/app_flutter/exnota.sqlite
+   ```
+
+   * If that path isn't correct, you can find the correct one:
+
+      ```bash
+      adb devices # find the relevant device
+      adb -s emulator-5554 shell # connect to device
+      ```
+
+      You should now be connected to shell and can search for the location.
