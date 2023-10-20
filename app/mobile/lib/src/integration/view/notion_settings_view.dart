@@ -254,6 +254,12 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView>
       setState(() {
         _launchingBrowser = LaunchingBrowserStatus.launched;
       });
+
+      // Defaults to web view. If `mode: LaunchMode.externalApplication` is used
+      // instead it would avoid requiring Notion login for users already logged
+      // in in their default browser. However after finishing auth, it will ask
+      // "Open this page in "Exnota"" before going back to the app. Might be
+      // able to avoid this if we used universal links instead of deep links.
       await launchUrl(authorizeUri);
     } else {
       setState(() {
