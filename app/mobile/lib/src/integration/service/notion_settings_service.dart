@@ -26,7 +26,7 @@ class NotionSettingsService extends _$NotionSettingsService {
     ref.read(notionSettingsRepoProvider.notifier);
   }
 
-  Future<void> fetchToken() async {
+  Future<bool> fetchToken() async {
     final currentSettings = state.valueOrNull;
     switch (currentSettings) {
       case NotionSettingsCode():
@@ -38,9 +38,8 @@ class NotionSettingsService extends _$NotionSettingsService {
         );
         // 201 expected, but also accept 200 in case they change things.
         if (![200, 201].contains(response.statusCode)) {
-          // TODO: Throw error?
           print('not a 201 or 200');
-          return;
+          return false;
         }
         final body = jsonDecode(response.body);
         final accessToken = body["access_token"];
@@ -53,10 +52,9 @@ class NotionSettingsService extends _$NotionSettingsService {
         // Re-read provider to avoid this error briefly being returned:
         // https://github.com/rrousselGit/riverpod/issues/2041#issuecomment-1698884238
         ref.read(notionSettingsRepoProvider.notifier);
-        break;
+        return true;
       default:
-        // TODO: Throw error?
-        break;
+        return false;
     }
   }
 }

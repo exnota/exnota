@@ -20,6 +20,7 @@ class NotionSettingsView extends ConsumerStatefulWidget {
 
 class _NotionSettingsView extends ConsumerState<NotionSettingsView> {
   bool _requestingToken = false;
+  bool _requestingTokenError = false;
   Uri? _latestUri;
   // String? codeFromRedirect;
   // TODO: Error handling?
@@ -96,7 +97,26 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView> {
                       },
                       switch (value) {
                         NotionSettingsEmpty() => const Text('Empty'),
-                        NotionSettingsCode() => Text('Code: ${value.code}'),
+                        NotionSettingsCode() => Column(
+                            children: [
+                              Text('Code: ${value.code}'),
+                              if (_requestingTokenError) ...[
+                                const SizedBox(height: 6),
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.error,
+                                      color: Colors.red,
+                                      size: 24.0,
+                                      semanticLabel: 'Error getting token',
+                                    ),
+                                    Text(
+                                        'Error getting token. Try step 2 again or restart at step 2')
+                                  ],
+                                )
+                              ],
+                            ],
+                          ),
                         NotionSettingsAccessToken() => Column(
                             children: [
                               const Row(
@@ -158,6 +178,9 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView> {
   }
 
   Future<void> _launch() async {
+    setState(() {
+      _requestingTokenError = false;
+    });
     final authorizeBaseUri =
         Uri.parse('https://api.notion.com/v1/oauth/authorize');
     // TODO: Is this even needed? Should we replace existing implementation with this?
@@ -192,10 +215,13 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView> {
   Future<void> _requestAccessToken() async {
     setState(() {
       _requestingToken = true;
+      _requestingTokenError = false;
     });
-    await ref.read(notionSettingsServiceProvider.notifier).fetchToken();
+    final success =
+        await ref.read(notionSettingsServiceProvider.notifier).fetchToken();
     setState(() {
       _requestingToken = false;
+      _requestingTokenError = !success;
     });
   }
 }
