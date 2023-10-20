@@ -271,6 +271,10 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView>
         _receivedCode = true;
         _couldNotRequestCode = false;
       });
+
+      // Close manually, otherwise browser stays open in iOS
+      closeInAppWebView();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Got a code from Notion'),

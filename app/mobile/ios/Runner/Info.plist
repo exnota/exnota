@@ -45,9 +45,20 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Allow checking if a URL can be opened. -->
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>
+	</array>
+	<!-- Allow capturing of deep links for getting code during Notion auth. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+	<dict>
+		<key>CFBundleURLSchemes</key>
+		<array>
+		<string>exnota</string>
+		</array>
+	</dict>
 	</array>
 </dict>
 </plist>
