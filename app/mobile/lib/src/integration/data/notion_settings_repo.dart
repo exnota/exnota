@@ -28,12 +28,10 @@ class NotionSettingsRepo extends _$NotionSettingsRepo {
 
   Future<void> updateSettings(NotionSettings newSettings) async {
     final db = ref.watch(databaseProvider);
-    print('xyz updateSettings: getting from DB');
     final existingAll = await db.select(db.integrationNotionSettings).get();
 
     // If settings don't exist in DB -> Insert if not empty
     if (existingAll.isEmpty) {
-      print('xyz updateSettings: is empty');
       switch (newSettings) {
         case NotionSettingsCode():
         case NotionSettingsAccessToken():
@@ -51,17 +49,12 @@ class NotionSettingsRepo extends _$NotionSettingsRepo {
     final existingSettings = existingAll[0];
     switch (newSettings) {
       case NotionSettingsEmpty():
-        print('xyz updateSettings: trying to delete');
         await db.delete(db.integrationNotionSettings).delete(existingSettings);
         break;
       case NotionSettingsCode():
       case NotionSettingsAccessToken():
-        print('xyz updateSettings: gonna map');
         final replacement = _mapToCompanion(newSettings, existingSettings.id);
-        print(
-            'xyz updateSettings: gonna update: token: ${replacement.accessToken}, code: ${replacement.code}, id: ${replacement.id}');
         await db.update(db.integrationNotionSettings).replace(replacement);
-        print('xyz updateSettings: just called update');
         break;
     }
     ref.invalidateSelf();

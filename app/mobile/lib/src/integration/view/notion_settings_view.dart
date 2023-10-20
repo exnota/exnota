@@ -18,26 +18,48 @@ class NotionSettingsView extends ConsumerStatefulWidget {
   ConsumerState<NotionSettingsView> createState() => _NotionSettingsView();
 }
 
-class _NotionSettingsView extends ConsumerState<NotionSettingsView> {
+enum LaunchingBrowserStatus { notLaunched, launched, returned }
+
+class _NotionSettingsView extends ConsumerState<NotionSettingsView>
+    with WidgetsBindingObserver {
+  final double _verticalColumnSpace = 20;
+
+  LaunchingBrowserStatus _launchingBrowser = LaunchingBrowserStatus.notLaunched;
+  bool _receivedCode = false;
+  bool _couldNotRequestCode = false;
+  late StreamSubscription _sub;
+
   bool _requestingToken = false;
   bool _requestingTokenError = false;
-  Uri? _latestUri;
-  // String? codeFromRedirect;
-  // TODO: Error handling?
-  Object? _errFromRedirect;
-  late StreamSubscription _sub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _handleIncomingLinks();
   }
 
   @override
   void dispose() {
-    print('disposed');
     _sub.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // Catch the user's return in case it isn't caught via redirect
+        if (_launchingBrowser == LaunchingBrowserStatus.launched) {
+          setState(() {
+            _launchingBrowser = LaunchingBrowserStatus.returned;
+          });
+        }
+        break;
+      default:
+        break;
+    }
   }
 
   @override
@@ -51,92 +73,147 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView> {
       body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               switch (notionSettings) {
-                AsyncError(:final error) => Text('error=$error'),
-                AsyncLoading() => const CircularProgressIndicator(),
-                AsyncData(:final value) => Column(
-                    children: [
-                      switch (value) {
-                        NotionSettingsEmpty() => Row(
+                AsyncError(:final error) =>
+                  Center(child: Text('error: $error')),
+                AsyncLoading() =>
+                  const Center(child: CircularProgressIndicator()),
+                AsyncData(:final value) => Center(
+                      child: switch (value) {
+                    NotionSettingsEmpty() => Column(children: [
+                        const Text(
+                            "A browser will open. Select one page to give Notion access to.",
+                            textAlign: TextAlign.center),
+                        SizedBox(
+                          height: _verticalColumnSpace,
+                        ),
+                        FilledButton(
+                          onPressed: () async {
+                            await _requestCode();
+                          },
+                          child: const Text('Step 1: Get code'),
+                        ),
+                        SizedBox(
+                          height: _verticalColumnSpace,
+                        ),
+                        if (_showCodeError())
+                          const Row(
                             children: [
-                              OutlinedButton(
-                                  onPressed: () async {
-                                    await _launch();
-                                  },
-                                  child: const Text('Step 1: Get code'))
-                            ],
-                          ),
-                        NotionSettingsCode() => Row(
-                            children: [
-                              OutlinedButton(
-                                  onPressed: _requestingToken
-                                      ? null
-                                      : () async {
-                                          await _requestAccessToken();
-                                        },
-                                  child: Text(!_requestingToken
-                                      ? 'Step 2: Use code to get token'
-                                      : 'Requesting...')),
-                              OutlinedButton(
-                                  onPressed: () async {
-                                    await _launch();
-                                  },
-                                  child: const Text('Restart at Step 1')),
-                            ],
-                          ),
-                        NotionSettingsAccessToken() => Row(
-                            children: [
-                              OutlinedButton(
-                                  onPressed: () async {
-                                    await _launch();
-                                  },
-                                  child: const Text('Restart at Step 1')),
-                            ],
-                          ),
-                      },
-                      switch (value) {
-                        NotionSettingsEmpty() => const Text('Empty'),
-                        NotionSettingsCode() => Column(
-                            children: [
-                              Text('Code: ${value.code}'),
-                              if (_requestingTokenError) ...[
-                                const SizedBox(height: 6),
-                                const Row(
-                                  children: [
-                                    Icon(
-                                      Icons.error,
-                                      color: Colors.red,
-                                      size: 24.0,
-                                      semanticLabel: 'Error getting token',
-                                    ),
-                                    Text(
-                                        'Error getting token. Try step 2 again or restart at step 2')
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        NotionSettingsAccessToken() => Column(
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(
-                                    Icons.check,
-                                    color: Colors.green,
-                                    size: 24.0,
-                                    semanticLabel: 'Successfully connected',
-                                  ),
-                                  Text('Successfully connected')
-                                ],
+                              Icon(
+                                Icons.error,
+                                color: Colors.red,
+                                size: 24.0,
+                                semanticLabel: 'Error getting token',
                               ),
-                              const SizedBox(height: 6),
-                              Text('Access token: ${value.accessToken}'),
+                              Text("Couldn't get a code. Please try again.")
                             ],
                           )
-                      }
-                    ],
-                  ),
+                      ]),
+                    NotionSettingsCode() => Column(
+                        children: [
+                          FilledButton(
+                            onPressed: _requestingToken
+                                ? null
+                                : () async {
+                                    await _requestToken();
+                                  },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_requestingToken)
+                                  const CircularProgressIndicator(),
+                                Text(!_requestingToken
+                                    ? 'Step 2: Use code to get token'
+                                    : 'Requesting...')
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            height: _verticalColumnSpace,
+                          ),
+                          OutlinedButton(
+                              onPressed: () async {
+                                await _requestCode();
+                              },
+                              child: const Text('Restart at Step 1')),
+                          SizedBox(
+                            height: _verticalColumnSpace,
+                          ),
+                          if (_showCodeError())
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.error,
+                                  color: Colors.red,
+                                  size: 24.0,
+                                  semanticLabel: 'Error getting token',
+                                ),
+                                SizedBox(width: 10),
+                                Text("Couldn't get a code. Please try again.")
+                              ],
+                            ),
+                          if (_showTokenError())
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.error,
+                                  color: Colors.red,
+                                  size: 24.0,
+                                  semanticLabel: 'Error getting token',
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                    child: Text(
+                                        "Couldn't get a token. Please try again or restart at step 1 to get a new token.")),
+                              ],
+                            )
+                        ],
+                      ),
+                    NotionSettingsAccessToken() => Column(children: [
+                        const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.check,
+                                color: Colors.green,
+                                size: 48.0,
+                                semanticLabel: 'Connected to Notion',
+                              ),
+                              SizedBox(width: 10),
+                              Text("Connected",
+                                  style: TextStyle(
+                                    fontSize: 24.0,
+                                  ))
+                            ]),
+                        SizedBox(
+                          height: _verticalColumnSpace,
+                        ),
+                        TextButton(
+                            onPressed: () async {
+                              await _requestCode();
+                            },
+                            child: const Text('Reconnect or update pages')),
+                        SizedBox(
+                          height: _verticalColumnSpace,
+                        ),
+                        if (_showCodeError())
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.error,
+                                color: Colors.red,
+                                size: 24.0,
+                                semanticLabel: 'Error getting code',
+                              ),
+                              SizedBox(width: 10),
+                              Text("Couldn't get a code. Please try again.")
+                            ],
+                          ),
+                      ]),
+                  }),
                 AsyncValue() => throw Exception('Unhandled value')
               }
             ],
@@ -144,47 +221,27 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView> {
     );
   }
 
-  void _handleIncomingLinks() {
-    _sub = uriLinkStream.listen((Uri? uri) {
-      if (!mounted) return;
-      print('xyz about _saveCode');
-      _saveCode(uri);
-      print('xyz about to set state on listen');
-      setState(() {
-        _latestUri = uri;
-        _errFromRedirect = null;
-      });
-    }, onError: (Object err) {
-      if (!mounted) return;
-      print('xyz error handling link');
-      setState(() {
-        _latestUri = null;
-        if (err is FormatException) {
-          _errFromRedirect = err;
-        } else {
-          _errFromRedirect = null;
-        }
-      });
-    }, onDone: () {});
+  bool _showCodeError() {
+    return _couldNotRequestCode ||
+        (_launchingBrowser == LaunchingBrowserStatus.returned &&
+            !_receivedCode);
   }
 
-  void _saveCode(Uri? uri) {
-    final code = uri?.queryParameters["code"];
-    if (code != null) {
-      print('xyz about to .saveCode');
-      ref.read(notionSettingsServiceProvider.notifier).saveCode(code);
-    }
-    // TODO: If code is null, show an error
+  bool _showTokenError() {
+    return _requestingTokenError;
   }
 
-  Future<void> _launch() async {
+  Future<void> _requestCode() async {
     setState(() {
+      _receivedCode = false;
+      _couldNotRequestCode = false;
       _requestingTokenError = false;
     });
     final authorizeBaseUri =
         Uri.parse('https://api.notion.com/v1/oauth/authorize');
-    // TODO: Is this even needed? Should we replace existing implementation with this?
-    // Or just leave a note that it's not used? See commented-out code below.
+    // TODO: Is this tokenUri even needed? Should we replace the manual request
+    // for a token in the relevant service with the implementation from the
+    // oauth package? Or just leave a note that it's not used?
     final tokenUri = Uri.parse('https://exnota.com');
     final redirectUri = Uri.parse(
         'https://exnota.com/api/integration/notion/mobile-code-redirect');
@@ -193,26 +250,66 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView> {
 
     var authorizeUri = grant.getAuthorizationUrl(redirectUri);
 
-    print('xyz about to_redirect');
-    await _redirect(authorizeUri);
-    // var responseUrl = listen(redirectUri);
-
-    // Once the user is redirected to `redirectUrl`, pass the query parameters to
-    // the AuthorizationCodeGrant. It will validate them and extract the
-    // authorization code to create a new Client.
-    // return await grant.handleAuthorizationResponse(responseUrl.queryParameters);
-  }
-
-  Future<void> _redirect(Uri authorizeUri) async {
     if (await canLaunchUrl(authorizeUri)) {
-      print('xyz about launchUrl');
+      setState(() {
+        _launchingBrowser = LaunchingBrowserStatus.launched;
+      });
       await launchUrl(authorizeUri);
     } else {
-      // TODO: Show error?
+      setState(() {
+        _couldNotRequestCode = true;
+      });
     }
   }
 
-  Future<void> _requestAccessToken() async {
+  void _handleIncomingLinks() {
+    _sub = uriLinkStream.listen((Uri? uri) {
+      if (!mounted) return;
+      _saveCode(uri);
+      setState(() {
+        _launchingBrowser = LaunchingBrowserStatus.returned;
+        _receivedCode = true;
+        _couldNotRequestCode = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Got a code from Notion'),
+          duration: const Duration(milliseconds: 3000),
+          action: SnackBarAction(
+            label: 'Dismiss',
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
+      );
+    }, onError: (Object err) {
+      if (!mounted) return;
+      if (err is FormatException) {
+        // TODO: Log
+      } else {
+        // TODO: Log
+      }
+      setState(() {
+        _launchingBrowser = LaunchingBrowserStatus.returned;
+        _receivedCode = false;
+        _couldNotRequestCode = true;
+      });
+    }, onDone: () {});
+  }
+
+  void _saveCode(Uri? uri) {
+    final code = uri?.queryParameters["code"];
+    if (code != null) {
+      ref.read(notionSettingsServiceProvider.notifier).saveCode(code);
+    } else {
+      setState(() {
+        _couldNotRequestCode = true;
+      });
+    }
+  }
+
+  Future<void> _requestToken() async {
     setState(() {
       _requestingToken = true;
       _requestingTokenError = false;

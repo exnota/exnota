@@ -16,7 +16,6 @@ class NotionSettingsService extends _$NotionSettingsService {
 
   Future<void> saveCode(String code) async {
     final settings = NotionSettings.code(code: code);
-    print('xyz about to .updateSettings');
     await ref
         .read(notionSettingsRepoProvider.notifier)
         .updateSettings(settings);
@@ -38,7 +37,6 @@ class NotionSettingsService extends _$NotionSettingsService {
         );
         // 201 expected, but also accept 200 in case they change things.
         if (![200, 201].contains(response.statusCode)) {
-          print('not a 201 or 200');
           return false;
         }
         final body = jsonDecode(response.body);
