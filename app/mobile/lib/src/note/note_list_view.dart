@@ -59,11 +59,14 @@ class SampleItemListView extends ConsumerWidget {
                     Text(AppLocalizations.of(context)!.note_connectToNotion)),
           )
       },
-      // floatingActionButton: FloatingActionButton.extended(
-      //   onPressed: () {},
-      //   label: const Text('Record'),
-      //   icon: const Icon(Icons.mic),
-      // ),
+      floatingActionButton: switch (notionConnected) {
+        false => null,
+        true => FloatingActionButton.extended(
+            onPressed: () {},
+            label: const Text('Record'),
+            icon: const Icon(Icons.mic),
+          )
+      },
     );
   }
 }
