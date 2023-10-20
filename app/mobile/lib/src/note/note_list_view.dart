@@ -1,12 +1,14 @@
+import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/view/notion_settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../account/settings/settings_view.dart';
 import 'sample_item.dart';
 
 /// Displays a list of SampleItems.
-class SampleItemListView extends StatelessWidget {
+class SampleItemListView extends ConsumerWidget {
   const SampleItemListView({
     super.key,
     this.items = const [SampleItem(1), SampleItem(2), SampleItem(3)],
@@ -17,7 +19,9 @@ class SampleItemListView extends StatelessWidget {
   final List<SampleItem> items;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notionConnected = ref.watch(notionConnectedServiceProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exnota'),
@@ -40,17 +44,21 @@ class SampleItemListView extends StatelessWidget {
       // In contrast to the default ListView constructor, which requires
       // building all Widgets up front, the ListView.builder constructor lazily
       // builds Widgets as they’re scrolled into view.
-      body: Center(
-        child: ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const NotionSettingsView()),
-              );
-            },
-            child: Text(AppLocalizations.of(context)!.note_connectToNotion)),
-      ),
+      body: switch (notionConnected) {
+        true => const Text("COnnected"),
+        false => Center(
+            child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const NotionSettingsView()),
+                  );
+                },
+                child:
+                    Text(AppLocalizations.of(context)!.note_connectToNotion)),
+          )
+      },
       // floatingActionButton: FloatingActionButton.extended(
       //   onPressed: () {},
       //   label: const Text('Record'),
