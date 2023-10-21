@@ -4,19 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../account/settings/settings_view.dart';
-import 'sample_item.dart';
+import 'package:exnota/src/account/settings/settings_view.dart';
 
-/// Displays a list of SampleItems.
-class SampleItemListView extends ConsumerWidget {
-  const SampleItemListView({
+class NoteListView extends ConsumerWidget {
+  const NoteListView({
     super.key,
-    this.items = const [SampleItem(1), SampleItem(2), SampleItem(3)],
   });
 
   static const routeName = '/';
-
-  final List<SampleItem> items;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
