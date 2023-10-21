@@ -60,5 +60,8 @@
 		</array>
 	</dict>
 	</array>
+	<!-- Allow recording -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record voice memos to transcribe and save to Notion.</string>
 </dict>
 </plist>

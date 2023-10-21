@@ -3,13 +3,17 @@ import 'package:exnota/src/integration/view/notion_settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record/record.dart';
 
 import '../account/settings/settings_view.dart';
+// TODO: Remove
 import 'sample_item.dart';
 
 /// Displays a list of SampleItems.
 class SampleItemListView extends ConsumerWidget {
-  const SampleItemListView({
+  final _record = AudioRecorder();
+
+  SampleItemListView({
     super.key,
     this.items = const [SampleItem(1), SampleItem(2), SampleItem(3)],
   });
@@ -61,12 +65,44 @@ class SampleItemListView extends ConsumerWidget {
       },
       floatingActionButton: switch (notionConnected) {
         false => null,
-        true => FloatingActionButton.extended(
-            onPressed: () {},
-            label: const Text('Record'),
-            icon: const Icon(Icons.mic),
-          )
+        true => RecordButton(record: _record),
       },
     );
+  }
+}
+
+class RecordButton extends StatelessWidget {
+  final AudioRecorder record;
+
+  const RecordButton({required this.record, super.key});
+
+// RecordButton({super.key, required this.record })
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+        future: record.isRecording(),
+        builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+          if (!snapshot.hasData) {
+            return const Text("wait");
+          }
+          final isRecording = snapshot.requireData;
+          if (isRecording) {
+            return FloatingActionButton.extended(
+              onPressed: () async {
+                await record.stop();
+              },
+              label: const Text('Stop'),
+              icon: const Icon(Icons.stop),
+            );
+          }
+          return FloatingActionButton.extended(
+            onPressed: () async {
+              await record.start(const RecordConfig(), path: 'recording.m4a');
+            },
+            label: const Text('Record'),
+            icon: const Icon(Icons.mic),
+          );
+        });
   }
 }
