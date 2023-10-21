@@ -37,12 +37,12 @@ export class NoteController {
         },
         filename: function (_req, file, cb) {
           const ext = extname(file.originalname).replace(/\./, '')
-          const uniqueSuffix =
+          const uniqueFilename =
             dateFormat(Date.now(), 'yyyyMMdd-HHmmss') +
             '-' +
             Math.round(Math.random() * 1e9) +
             (!!ext ? `.${ext}` : '')
-          cb(null, uniqueSuffix)
+          cb(null, uniqueFilename)
         },
       }),
     }),
