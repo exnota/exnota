@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'note/sample_item_details_view.dart';
-import 'note/note_list_view.dart';
-import 'account/settings/settings_controller.dart';
-import 'account/settings/settings_view.dart';
+import 'package:exnota/src/note/view/sample_item_details_view.dart';
+import 'package:exnota/src/note/view/note_list_view.dart';
+import 'package:exnota/src/account/settings/settings_controller.dart';
+import 'package:exnota/src/account/settings/settings_view.dart';
 
 /// The Widget that configures your application.
 class MyApp extends StatelessWidget {
