@@ -1,10 +1,13 @@
+import 'dart:io';
+
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/view/notion_settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:exnota/src/account/settings/settings_view.dart';
+import 'package:path_provider/path_provider.dart';
 
 class NoteListView extends ConsumerWidget {
   const NoteListView({
@@ -62,17 +65,63 @@ class NoteListView extends ConsumerWidget {
   }
 }
 
-class RecordButton extends StatelessWidget {
-  final _isRecording = false;
-
+class RecordButton extends StatefulWidget {
   const RecordButton({super.key});
 
   @override
+  State<RecordButton> createState() => _RecordButtonState();
+}
+
+class _RecordButtonState extends State<RecordButton> {
+  late final RecorderController controller;
+
+  String? path;
+  String? musicFile;
+  bool isRecording = false;
+  bool isRecordingCompleted = false;
+  bool isLoading = true;
+  late Directory appDirectory;
+
+  // bool isRecording = false;
+  // final RecorderController controller = RecorderController();
+
+  @override
+  void initState() {
+    super.initState();
+    _getDir();
+    _initialiseControllers();
+    print("inited state");
+  }
+
+  void _getDir() async {
+    appDirectory = await getApplicationDocumentsDirectory();
+    path = "${appDirectory.path}/recording.m4a";
+    isLoading = false;
+    setState(() {});
+  }
+
+  void _initialiseControllers() {
+    controller = RecorderController()
+      ..androidEncoder = AndroidEncoder.aac
+      ..androidOutputFormat = AndroidOutputFormat.mpeg4
+      ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
+      ..sampleRate = 44100;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (_isRecording) {
+    if (isRecording) {
       return FloatingActionButton.extended(
         onPressed: () async {
-          // TODO: Stop
+          print('about to stop');
+          controller.reset();
+
+          final path = await controller.stop(false);
+          print('stopped');
+          print('path=$path');
+          setState(() {
+            isRecording = false;
+          });
         },
         label: const Text('Stop'),
         icon: const Icon(Icons.stop),
@@ -80,7 +129,12 @@ class RecordButton extends StatelessWidget {
     }
     return FloatingActionButton.extended(
       onPressed: () async {
-        // TODO: Record
+        print('about to record');
+        await controller.record(path: path!);
+        setState(() {
+          isRecording = true;
+        });
+        print('recording...');
       },
       label: const Text('Record'),
       icon: const Icon(Icons.mic),
