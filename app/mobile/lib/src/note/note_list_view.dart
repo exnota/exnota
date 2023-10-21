@@ -56,12 +56,34 @@ class NoteListView extends ConsumerWidget {
       },
       floatingActionButton: switch (notionConnected) {
         false => null,
-        true => FloatingActionButton.extended(
-            onPressed: () {},
-            label: const Text('Record'),
-            icon: const Icon(Icons.mic),
-          )
+        true => const RecordButton()
       },
+    );
+  }
+}
+
+class RecordButton extends StatelessWidget {
+  final _isRecording = false;
+
+  const RecordButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isRecording) {
+      return FloatingActionButton.extended(
+        onPressed: () async {
+          // TODO: Stop
+        },
+        label: const Text('Stop'),
+        icon: const Icon(Icons.stop),
+      );
+    }
+    return FloatingActionButton.extended(
+      onPressed: () async {
+        // TODO: Record
+      },
+      label: const Text('Record'),
+      icon: const Icon(Icons.mic),
     );
   }
 }
