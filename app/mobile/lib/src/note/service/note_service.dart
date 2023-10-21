@@ -1,6 +1,4 @@
-import 'dart:convert';
-
-import 'package:exnota/src/note/note.dart';
+import 'package:exnota/src/note/audio_note.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -26,6 +24,11 @@ class NoteService extends _$NoteService {
     if ([201, 200].contains(response.statusCode)) {
       print('Uploaded!');
       print("transcription=${response.body}");
+      final previousState = await future;
+      state = AsyncData([
+        ...previousState,
+        AudioNote(path: path, transcription: response.body)
+      ]);
       return true;
     }
     print("Upload fail");
