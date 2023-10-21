@@ -7,7 +7,18 @@
 ### get
 GET http://localhost:3000/notes
 
-### post
+### post - m4a
+POST http://localhost:3000/notes
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="short-test.m4a"
+Content-Type: audio/wav
+
+< short-test.m4a
+--boundary--
+
+### post - wav
 POST http://localhost:3000/notes
 Content-Type: multipart/form-data; boundary=boundary
 
