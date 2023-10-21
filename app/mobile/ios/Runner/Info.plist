@@ -60,5 +60,7 @@
 		</array>
 	</dict>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record a note to transcribe and send to Notion.</string>
 </dict>
 </plist>
