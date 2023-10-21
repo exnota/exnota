@@ -13,7 +13,7 @@ Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
 Content-Disposition: form-data; name="file"; filename="short-test.m4a"
-Content-Type: audio/wav
+Content-Type: audio/x-m4a
 
 < short-test.m4a
 --boundary--

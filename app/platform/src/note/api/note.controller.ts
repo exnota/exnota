@@ -50,7 +50,7 @@ export class NoteController {
   async postNote(
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new FileTypeValidator({ fileType: 'audio/wav' })],
+        validators: [new FileTypeValidator({ fileType: /audio\/(x-m4a|wav)/ })],
       }),
     )
     file: Express.Multer.File,
