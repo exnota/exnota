@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/view/notion_settings_view.dart';
+import 'package:exnota/src/note/service/note_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,14 +66,14 @@ class NoteListView extends ConsumerWidget {
   }
 }
 
-class RecordButton extends StatefulWidget {
+class RecordButton extends ConsumerStatefulWidget {
   const RecordButton({super.key});
 
   @override
-  State<RecordButton> createState() => _RecordButtonState();
+  ConsumerState<RecordButton> createState() => _RecordButtonState();
 }
 
-class _RecordButtonState extends State<RecordButton> {
+class _RecordButtonState extends ConsumerState<RecordButton> {
   late final RecorderController controller;
 
   String? path;
@@ -80,6 +81,7 @@ class _RecordButtonState extends State<RecordButton> {
   bool isRecording = false;
   bool isRecordingCompleted = false;
   bool isLoading = true;
+  bool isUploading = false;
   late Directory appDirectory;
 
   // bool isRecording = false;
@@ -121,10 +123,37 @@ class _RecordButtonState extends State<RecordButton> {
           print('path=$path');
           setState(() {
             isRecording = false;
+            isUploading = true;
           });
+
+          if (path == null) {
+            setState(() {
+              isUploading = false;
+            });
+            throw Exception("No path for audio file");
+          }
+
+          final success =
+              await ref.read(noteServiceProvider.notifier).create(path);
+          setState(() {
+            isUploading = false;
+          });
+          if (!success) {
+            print("Did not upload");
+          }
         },
         label: const Text('Stop'),
         icon: const Icon(Icons.stop),
+      );
+    }
+    if (isUploading) {
+      return const FloatingActionButton.extended(
+        onPressed: null,
+        label: Row(children: [
+          CircularProgressIndicator(),
+          Text('Uploading'),
+        ]),
+        // icon: const Icon(Icons.),
       );
     }
     return FloatingActionButton.extended(
