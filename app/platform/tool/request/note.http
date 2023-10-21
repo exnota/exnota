@@ -7,7 +7,7 @@
 ### get
 GET http://localhost:3000/notes
 
-### post - m4a
+### post m4a short
 POST http://localhost:3000/notes
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -18,7 +18,7 @@ Content-Type: audio/x-m4a
 < short-test.m4a
 --boundary--
 
-### post - wav
+### post wav jfk
 POST http://localhost:3000/notes
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -29,7 +29,7 @@ Content-Type: audio/wav
 < jfk.wav
 --boundary--
 
-### post micromachines 44k
+### post wav micromachines 44k
 POST http://localhost:3000/notes
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -57,7 +57,18 @@ content-type: application/json
 ### get
 GET https://exnota.com/api/notes
 
-### post jfk
+### post m4a short
+POST https://exnota.com/api/notes
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="short-test.m4a"
+Content-Type: audio/x-m4a
+
+< short-test.m4a
+--boundary--
+
+### post wav jfk
 POST https://exnota.com/api/notes
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -68,7 +79,7 @@ Content-Type: audio/wav
 < jfk.wav
 --boundary--
 
-### post micromachines
+### post wav micromachines
 POST https://exnota.com/api/notes
 Content-Type: multipart/form-data; boundary=boundary
 
