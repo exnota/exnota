@@ -19,6 +19,9 @@ RUN apt-get update \
     && apt-get install -y libsdl2-dev alsa-utils \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+# ffmpg isn't available via apt-get
+RUN apt update \
+    && apt install -y ffmpeg
 
 WORKDIR /home/node
 
@@ -47,3 +50,4 @@ RUN npm run build
 EXPOSE 3000
 
 CMD [ "node", "dist/main.js" ]
+USER root
