@@ -22,12 +22,13 @@ class NoteService extends _$NoteService {
     var response = await http.Response.fromStream(streamedResponse);
     // 201 is expected
     if ([201, 200].contains(response.statusCode)) {
+      final transcription = response.body.trim();
       print('Uploaded!');
-      print("transcription=${response.body}");
+      print("transcription=$transcription");
       final previousState = await future;
       state = AsyncData([
         ...previousState,
-        AudioNote(path: path, transcription: response.body)
+        AudioNote(path: path, transcription: transcription)
       ]);
       return true;
     }
