@@ -106,15 +106,8 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
   late final RecorderController controller;
 
   String? path;
-  String? musicFile;
-  bool isRecording = false;
-  bool isRecordingCompleted = false;
-  bool isLoading = true;
   bool isUploading = false;
   late Directory appDirectory;
-
-  // bool isRecording = false;
-  // final RecorderController controller = RecorderController();
 
   @override
   void initState() {
@@ -126,7 +119,6 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
   void _getDir() async {
     appDirectory = await getApplicationDocumentsDirectory();
     path = "${appDirectory.path}/recording.m4a";
-    isLoading = false;
     setState(() {});
   }
 
@@ -140,29 +132,25 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
 
   @override
   Widget build(BuildContext context) {
-    if (isRecording) {
+    if (controller.isRecording) {
       return FloatingActionButton.extended(
         onPressed: () async {
           controller.reset();
 
           final path = await controller.stop(false);
-          setState(() {
-            isRecording = false;
-            isUploading = true;
-          });
-
           if (path == null) {
-            setState(() {
-              isUploading = false;
-            });
             throw Exception("No path for audio file");
           }
 
+          setState(() {
+            isUploading = true;
+          });
           final success =
               await ref.read(noteServiceProvider.notifier).create(path);
           setState(() {
             isUploading = false;
           });
+
           if (!success) {
             throw Exception("Did not upload");
           }
@@ -186,9 +174,6 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
       onPressed: () async {
         print('about to record');
         await controller.record(path: path!);
-        setState(() {
-          isRecording = true;
-        });
         print('recording...');
       },
       label: const Text('Record'),
