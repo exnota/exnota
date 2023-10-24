@@ -106,6 +106,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
   late final RecorderController controller;
 
   String? path;
+  bool isRecording = false;
   bool isUploading = false;
   late Directory appDirectory;
 
@@ -132,12 +133,18 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
 
   @override
   Widget build(BuildContext context) {
-    if (controller.isRecording) {
+    // Can't use controller.isRecording here was it won't trigger a re-render.
+    // This could possibly be done with a listener on:
+    // controller.onRecorderStateChanged.
+    if (isRecording) {
       return FloatingActionButton.extended(
         onPressed: () async {
           controller.reset();
 
           final path = await controller.stop(false);
+          setState(() {
+            isRecording = false;
+          });
           if (path == null) {
             throw Exception("No path for audio file");
           }
@@ -175,6 +182,9 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
         print('about to record');
         await controller.record(path: path!);
         print('recording...');
+        setState(() {
+          isRecording = true;
+        });
       },
       label: const Text('Record'),
       icon: const Icon(Icons.mic),
