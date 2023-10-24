@@ -177,7 +177,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
         backgroundColor: Colors.grey,
         label: Row(children: [
           CircularProgressIndicator(),
-          Text('Uploading'),
+          Text('Uploading (may take a min)'),
         ]),
         // icon: const Icon(Icons.),
       );
