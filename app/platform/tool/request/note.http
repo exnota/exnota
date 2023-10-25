@@ -5,12 +5,22 @@
 ### note
 ### ----------
 ### get
-GET http://localhost:3000/notes
+GET http://localhost:3000/note/notes
 
 ### post m4a short
-POST http://localhost:3000/notes
+POST http://localhost:3000/note/notes
 Content-Type: multipart/form-data; boundary=boundary
 
+--boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+audio
+--boundary
+Content-Disposition: form-data; name="accessToken"
+Content-Type: application/json
+
+access token
 --boundary
 Content-Disposition: form-data; name="file"; filename="short-test.m4a"
 Content-Type: audio/x-m4a
@@ -19,9 +29,19 @@ Content-Type: audio/x-m4a
 --boundary--
 
 ### post wav jfk
-POST http://localhost:3000/notes
+POST http://localhost:3000/note/notes
 Content-Type: multipart/form-data; boundary=boundary
 
+--boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+audio
+--boundary
+Content-Disposition: form-data; name="accessToken"
+Content-Type: application/json
+
+access token
 --boundary
 Content-Disposition: form-data; name="file"; filename="jfk.wav"
 Content-Type: audio/wav
@@ -30,9 +50,19 @@ Content-Type: audio/wav
 --boundary--
 
 ### post wav micromachines 44k
-POST http://localhost:3000/notes
+POST http://localhost:3000/note/notes
 Content-Type: multipart/form-data; boundary=boundary
 
+--boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+audio
+--boundary
+Content-Disposition: form-data; name="accessToken"
+Content-Type: application/json
+
+access token
 --boundary
 Content-Disposition: form-data; name="file"; filename="micro-machines-44k.wav"
 Content-Type: audio/wav
@@ -62,6 +92,16 @@ POST https://exnota.com/api/notes
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+audio
+--boundary
+Content-Disposition: form-data; name="accessToken"
+Content-Type: application/json
+
+access token
+--boundary
 Content-Disposition: form-data; name="file"; filename="short-test.m4a"
 Content-Type: audio/x-m4a
 
@@ -72,6 +112,16 @@ Content-Type: audio/x-m4a
 POST https://exnota.com/api/notes
 Content-Type: multipart/form-data; boundary=boundary
 
+--boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+audio
+--boundary
+Content-Disposition: form-data; name="accessToken"
+Content-Type: application/json
+
+access token
 --boundary
 Content-Disposition: form-data; name="file"; filename="jfk.wav"
 Content-Type: audio/wav
@@ -84,6 +134,16 @@ POST https://exnota.com/api/notes
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+audio
+--boundary
+Content-Disposition: form-data; name="accessToken"
+Content-Type: application/json
+
+access token
+--boundary
 Content-Disposition: form-data; name="file"; filename="micro-machines.wav"
 Content-Type: audio/wav
 
@@ -94,6 +154,16 @@ Content-Type: audio/wav
 POST https://exnota.com/api/notes
 Content-Type: multipart/form-data; boundary=boundary
 
+--boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+audio
+--boundary
+Content-Disposition: form-data; name="accessToken"
+Content-Type: application/json
+
+access token
 --boundary
 Content-Disposition: form-data; name="file"; filename="micro-machines-44k.wav"
 Content-Type: audio/wav

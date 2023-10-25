@@ -1,5 +1,6 @@
 import {
   Controller,
+  Body,
   FileTypeValidator,
   Get,
   HttpException,
@@ -16,8 +17,31 @@ import { diskStorage } from 'multer'
 import { PATH_UPLOAD_AUDIO } from '@exnota/settings'
 import { format as dateFormat } from 'date-fns'
 import { extname } from 'path'
+import { Equals, IsIn, IsNotEmpty, IsString, validate } from 'class-validator'
 
-@Controller('notes')
+class Note {
+  @IsIn(['audio', 'text'])
+  type: 'audio' | 'text'
+
+  @IsString()
+  @IsNotEmpty()
+  accessToken: string
+}
+
+class AudioNote implements Note {
+  @Equals('audio')
+  type: 'audio'
+
+  @IsString()
+  @IsNotEmpty()
+  accessToken: string
+}
+
+// Using a polymorphic API approach for notes - i.e. not having /note-audio,
+// /note-text, etc -- because most consumption will be polymorphic. E.g. the app
+// will display a list of notes and its queue for offline processing will not
+// care about the type (mostly).
+@Controller('note/notes')
 export class NoteController {
   private readonly logger = new Logger(NoteController.name)
 
@@ -54,17 +78,46 @@ export class NoteController {
       }),
     )
     file: Express.Multer.File,
+    @Body() note: Note,
+    // @Req() req: Request,
   ) {
+    this.logger.log('hi')
+    // Audio file
     const { buffer: _, stream: __, ...logData } = file
     this.logger.log('File uploaded:', logData)
 
-    const result = await this.transcriptionService.transcribe(file.path)
-
-    if (result.ok) {
-      return result.value
+    // Check type
+    if (note.type !== 'audio') {
+      throw new HttpException(
+        'Only audio notes supported',
+        HttpStatus.NOT_IMPLEMENTED,
+      )
     }
-    throw new HttpException(result.message, HttpStatus.INTERNAL_SERVER_ERROR, {
-      cause: result.error,
-    })
+    const audioNote = new AudioNote()
+    audioNote.accessToken = note.accessToken
+    audioNote.type = note.type
+
+    const errors = await validate(audioNote)
+    if (errors.length) {
+      throw new HttpException(
+        errors.map((e) => e.toString()).join('; '),
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    const transcriptionResult = await this.transcriptionService.transcribe(
+      file.path,
+    )
+
+    if (transcriptionResult.ok) {
+      return transcriptionResult.value
+    }
+    throw new HttpException(
+      transcriptionResult.message,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      {
+        cause: transcriptionResult.error,
+      },
+    )
   }
 }
