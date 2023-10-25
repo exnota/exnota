@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/view/notion_settings_view.dart';
 import 'package:exnota/src/note/service/note_service.dart';
@@ -71,10 +72,26 @@ class _NoteListViewState extends ConsumerState<NoteListView> {
 
               return ListTile(
                   title: Text(note.transcription),
-                  leading: const CircleAvatar(
-                      // Display the Flutter Logo image asset.
-                      // foregroundImage: AssetImage('assets/images/flutter_logo.png'),
-                      ),
+                  leading: const Icon(Icons.audio_file),
+                  // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
+                  trailing: Visibility(
+                      visible: note.url is String,
+                      replacement: const Icon(Icons.question_mark),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () {
+                          // note.url guaranteed to be non-null due to `visible`
+                          // property condition.
+                          launchUrl(Uri.parse(note.url!));
+                        },
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.link),
+                        ),
+                      )),
                   onTap: () {
                     // Navigate to the details page. If the user leaves and returns to
                     // the app after it has been killed while running in the
