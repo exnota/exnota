@@ -7,5 +7,6 @@ sealed class AudioNote with _$AudioNote {
   const factory AudioNote({
     required String path,
     required String transcription,
+    String? url,
   }) = _AudioNote;
 }
