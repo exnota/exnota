@@ -69,20 +69,21 @@ class _NoteListViewState extends ConsumerState<NoteListView> {
             itemCount: notes.length,
             itemBuilder: (BuildContext context, int index) {
               final note = notes[index];
+              final url = note.url;
 
               return ListTile(
                   title: Text(note.transcription),
                   leading: const Icon(Icons.audio_file),
                   // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
                   trailing: Visibility(
-                      visible: note.url is String,
+                      visible: url is String,
                       replacement: const Icon(Icons.question_mark),
                       child: GestureDetector(
                         behavior: HitTestBehavior.translucent,
                         onTap: () {
-                          // note.url guaranteed to be non-null due to `visible`
-                          // property condition.
-                          launchUrl(Uri.parse(note.url!));
+                          if (url is String) {
+                            launchUrl(Uri.parse(url));
+                          }
                         },
                         child: Container(
                           width: 48,
