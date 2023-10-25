@@ -3,13 +3,10 @@ import { exec } from 'shelljs'
 import { readFileSync } from 'fs'
 import { isTranscriptionOutput } from './transcription-output'
 import { Result, resultError, resultOk } from '@exnota/lib/result'
-import { ExportService } from '@exnota/integration/service/export.service'
 import { parse as parsePath } from 'path'
 
 @Injectable()
 export class TranscriptionService {
-  constructor(private exportService: ExportService) {}
-
   async transcribe(path: string): Promise<Result<string>> {
     const parsedPath = parsePath(path)
     const convertedPath =
@@ -35,9 +32,6 @@ export class TranscriptionService {
           return `${prev} ${cur.text}`
         }
       }, '')
-      await this.exportService.export({
-        title: transcription,
-      })
       return resultOk(transcription)
     } catch (e) {
       return resultError('Error generating transcription', e)
