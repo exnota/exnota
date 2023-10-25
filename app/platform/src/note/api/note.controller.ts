@@ -122,10 +122,14 @@ export class NoteController {
       )
     }
 
-    const exportResult = await this.exportService.export({
-      title: transcriptionResult.value,
-      accessToken: audioNote.accessToken,
-    })
+    const exportResult = await this.exportService.export(
+      {
+        title: transcriptionResult.value,
+      },
+      {
+        token: audioNote.accessToken,
+      },
+    )
 
     if (!exportResult.ok) {
       throw new HttpException(
