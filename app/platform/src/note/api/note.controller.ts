@@ -18,6 +18,7 @@ import { PATH_UPLOAD_AUDIO } from '@exnota/settings'
 import { format as dateFormat } from 'date-fns'
 import { extname } from 'path'
 import { Equals, IsIn, IsNotEmpty, IsString, validate } from 'class-validator'
+import { ExportService } from '@exnota/integration/service/export.service'
 
 class Note {
   @IsIn(['audio', 'text'])
@@ -45,7 +46,10 @@ class AudioNote implements Note {
 export class NoteController {
   private readonly logger = new Logger(NoteController.name)
 
-  constructor(private transcriptionService: TranscriptionService) {}
+  constructor(
+    private transcriptionService: TranscriptionService,
+    private exportService: ExportService,
+  ) {}
 
   @Get()
   getNote() {
@@ -108,16 +112,29 @@ export class NoteController {
     const transcriptionResult = await this.transcriptionService.transcribe(
       file.path,
     )
-
-    if (transcriptionResult.ok) {
-      return transcriptionResult.value
+    if (!transcriptionResult.ok) {
+      throw new HttpException(
+        transcriptionResult.message,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        {
+          cause: transcriptionResult.error,
+        },
+      )
     }
-    throw new HttpException(
-      transcriptionResult.message,
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      {
-        cause: transcriptionResult.error,
-      },
-    )
+
+    const exportResult = await this.exportService.export({
+      title: transcriptionResult.value,
+    })
+
+    if (!exportResult.ok) {
+      throw new HttpException(
+        exportResult.message,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        {
+          cause: exportResult.error,
+        },
+      )
+    }
+    return transcriptionResult.value
   }
 }
