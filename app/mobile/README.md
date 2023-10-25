@@ -54,6 +54,16 @@ TODO: Replace steps with dev containers.
 
 ## Troubleshooting/debugging
 
+### Simulators
+
+Android quirks
+
+* To enable microphone:
+   1. Open the simulator
+   2. Click the 'More' button (three horizontal dot icon)
+   3. Microphone > Enable 'Virtual microphone uses host audio input'
+* Instead of `localhost` use `10.0.2.2`
+
 ### Database
 
 iOS Simulator
