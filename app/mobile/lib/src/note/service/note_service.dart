@@ -1,3 +1,5 @@
+import 'package:exnota/src/integration/data/notion_settings_repo.dart';
+import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/note/audio_note.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:http/http.dart' as http;
@@ -13,9 +15,23 @@ class NoteService extends _$NoteService {
   }
 
   Future<bool> create(String path) async {
-    var uri = Uri.https('exnota.com', 'api/notes');
+    var uri = Uri.https('exnota.com', 'api/note/notes');
+    final notionSettings = ref.read(notionSettingsRepoProvider).valueOrNull;
+    switch (notionSettings) {
+      case null:
+      case NotionSettingsEmpty():
+      case NotionSettingsCode():
+        print('No access token');
+        return false;
+      case NotionSettingsAccessToken():
+        // Do nothing. Don't use `default` so if a new subtype is added we're
+        // forced to update this block.
+        break;
+    }
+
     var request = http.MultipartRequest('POST', uri)
-      // ..fields['user'] = 'someemail@google.com'
+      ..fields['type'] = 'audio'
+      ..fields['accessToken'] = notionSettings.accessToken
       ..files.add(await http.MultipartFile.fromPath('file', path,
           contentType: MediaType('audio', 'x-m4a')));
     var streamedResponse = await request.send();
