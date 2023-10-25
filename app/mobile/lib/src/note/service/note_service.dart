@@ -16,8 +16,7 @@ class NoteService extends _$NoteService {
   }
 
   Future<bool> create(String path) async {
-    var uri = Uri.http('localhost:3000', 'note/notes');
-    // var uri = Uri.https('exnota.com', 'api/note/notes');
+    var uri = Uri.https('exnota.com', 'api/note/notes');
     final notionSettings = ref.read(notionSettingsRepoProvider).valueOrNull;
     switch (notionSettings) {
       case null:
