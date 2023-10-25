@@ -4,6 +4,7 @@ import 'package:exnota/src/note/audio_note.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'dart:convert';
 
 part 'note_service.g.dart';
 
@@ -15,7 +16,8 @@ class NoteService extends _$NoteService {
   }
 
   Future<bool> create(String path) async {
-    var uri = Uri.https('exnota.com', 'api/note/notes');
+    var uri = Uri.http('localhost:3000', 'note/notes');
+    // var uri = Uri.https('exnota.com', 'api/note/notes');
     final notionSettings = ref.read(notionSettingsRepoProvider).valueOrNull;
     switch (notionSettings) {
       case null:
@@ -38,13 +40,24 @@ class NoteService extends _$NoteService {
     var response = await http.Response.fromStream(streamedResponse);
     // 201 is expected
     if ([201, 200].contains(response.statusCode)) {
-      final transcription = response.body.trim();
+      final json = jsonDecode(response.body);
       print('Uploaded!');
+
+      final transcription = json["transcription"];
+      if (transcription is! String) {
+        throw Exception("Invalid transcription from server");
+      }
+      String? url;
+      if (json["url"] is String) {
+        url = json["url"];
+      }
       print("transcription=$transcription");
+      print("url=$url");
+
       final previousState = await future;
       state = AsyncData([
         ...previousState,
-        AudioNote(path: path, transcription: transcription)
+        AudioNote(path: path, transcription: transcription, url: url)
       ]);
       return true;
     }

@@ -32,7 +32,7 @@ export class TranscriptionService {
           return `${prev} ${cur.text}`
         }
       }, '')
-      return resultOk(transcription)
+      return resultOk(transcription.trim())
     } catch (e) {
       return resultError('Error generating transcription', e)
     }

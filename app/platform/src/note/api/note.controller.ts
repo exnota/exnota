@@ -83,7 +83,6 @@ export class NoteController {
     )
     file: Express.Multer.File,
     @Body() note: Note,
-    // @Req() req: Request,
   ) {
     this.logger.log('hi')
     // Audio file
@@ -140,6 +139,9 @@ export class NoteController {
         },
       )
     }
-    return transcriptionResult.value
+    return {
+      transcription: transcriptionResult.value,
+      url: exportResult.value.url,
+    }
   }
 }
