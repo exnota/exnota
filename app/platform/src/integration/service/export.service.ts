@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common'
 
 type NoteExport = {
   title: string
+  accessToken: string
 }
 
 @Injectable()
