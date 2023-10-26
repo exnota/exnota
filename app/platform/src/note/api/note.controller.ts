@@ -3,7 +3,6 @@ import {
   Body,
   FileTypeValidator,
   Get,
-  HttpException,
   HttpStatus,
   Logger,
   ParseFilePipe,
@@ -103,19 +102,9 @@ export class NoteController {
 
     // Check type
     if (note.type !== 'audio') {
-      // return an exception from httpException
-      return httpException(
-        HttpStatus.NOT_IMPLEMENTED,
-        {
-          message: 'Only audio notes supported',
-        },
-        NoteError.UNEXPECTED,
-      )
-
-      throw new HttpException(
-        'Only audio notes supported',
-        HttpStatus.NOT_IMPLEMENTED,
-      )
+      throw httpException(HttpStatus.NOT_IMPLEMENTED, {
+        message: 'Only audio notes supported',
+      })
     }
     const audioNote = new AudioNote()
     audioNote.accessToken = note.accessToken
@@ -123,10 +112,9 @@ export class NoteController {
 
     const errors = await validate(audioNote)
     if (errors.length) {
-      throw new HttpException(
-        errors.map((e) => e.toString()).join('; '),
-        HttpStatus.BAD_REQUEST,
-      )
+      throw httpException(HttpStatus.BAD_REQUEST, {
+        message: errors.map((e) => e.toString()).join('; '),
+      })
     }
 
     const transcriptionResult = await this.transcriptionService.transcribe(
