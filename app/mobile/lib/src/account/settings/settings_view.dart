@@ -1,5 +1,6 @@
 import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:exnota/src/integration/view/notion_settings_view.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -61,28 +62,29 @@ class SettingsView extends ConsumerWidget {
                   )
                 ],
               ),
-              DropdownButton<Environment>(
-                // Read the selected themeMode from the controller
-                value: environment,
-                // Call the updateThemeMode method any time the user selects a theme.
-                onChanged: (Environment? environment) {
-                  if (environment != null) {
-                    ref
-                        .read(environmentServiceProvider.notifier)
-                        .setEnvironment(environment);
-                  }
-                },
-                items: const [
-                  DropdownMenuItem(
-                    value: Environment.prod,
-                    child: Text('Prod'),
-                  ),
-                  DropdownMenuItem(
-                    value: Environment.local,
-                    child: Text('Local'),
-                  ),
-                ],
-              ),
+              if (kDebugMode)
+                DropdownButton<Environment>(
+                  // Read the selected themeMode from the controller
+                  value: environment,
+                  // Call the updateThemeMode method any time the user selects a theme.
+                  onChanged: (Environment? environment) {
+                    if (environment != null) {
+                      ref
+                          .read(environmentServiceProvider.notifier)
+                          .setEnvironment(environment);
+                    }
+                  },
+                  items: const [
+                    DropdownMenuItem(
+                      value: Environment.prod,
+                      child: Text('Prod'),
+                    ),
+                    DropdownMenuItem(
+                      value: Environment.local,
+                      child: Text('Local'),
+                    ),
+                  ],
+                ),
             ],
           )),
     );
