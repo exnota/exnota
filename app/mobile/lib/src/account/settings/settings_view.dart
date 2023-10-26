@@ -1,5 +1,7 @@
+import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:exnota/src/integration/view/notion_settings_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'settings_controller.dart';
 
@@ -7,7 +9,7 @@ import 'settings_controller.dart';
 ///
 /// When a user changes a setting, the SettingsController is updated and
 /// Widgets that listen to the SettingsController are rebuilt.
-class SettingsView extends StatelessWidget {
+class SettingsView extends ConsumerWidget {
   const SettingsView({super.key, required this.controller});
 
   static const routeName = '/settings';
@@ -15,7 +17,9 @@ class SettingsView extends StatelessWidget {
   final SettingsController controller;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final environment = ref.watch(environmentServiceProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -55,6 +59,28 @@ class SettingsView extends StatelessWidget {
                     value: ThemeMode.dark,
                     child: Text('Dark Theme'),
                   )
+                ],
+              ),
+              DropdownButton<Environment>(
+                // Read the selected themeMode from the controller
+                value: environment,
+                // Call the updateThemeMode method any time the user selects a theme.
+                onChanged: (Environment? environment) {
+                  if (environment != null) {
+                    ref
+                        .read(environmentServiceProvider.notifier)
+                        .setEnvironment(environment);
+                  }
+                },
+                items: const [
+                  DropdownMenuItem(
+                    value: Environment.prod,
+                    child: Text('Prod'),
+                  ),
+                  DropdownMenuItem(
+                    value: Environment.local,
+                    child: Text('Local'),
+                  ),
                 ],
               ),
             ],
