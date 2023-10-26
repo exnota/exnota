@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:exnota/src/account/settings/environment_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/view/notion_settings_view.dart';
@@ -25,10 +27,20 @@ class _NoteListViewState extends ConsumerState<NoteListView> {
   Widget build(BuildContext context) {
     final notionConnected = ref.watch(notionConnectedServiceProvider);
     final notes = ref.watch(noteServiceProvider).valueOrNull ?? [];
+    final environment = ref.watch(environmentServiceProvider);
+    String title;
+    switch (environment) {
+      case Environment.prod:
+        title = kDebugMode ? "Exnota (🌐 prod)" : "Exnota";
+        break;
+      case Environment.local:
+        title = kDebugMode ? "Exnota (🧑‍💻 local)" : "Exnota";
+        break;
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Exnota'),
+        title: Text(title),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
