@@ -149,6 +149,21 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
       ..sampleRate = 44100;
   }
 
+  _showSnackMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(milliseconds: 3000),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Can't use controller.isRecording here was it won't trigger a re-render.
@@ -170,14 +185,28 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
           setState(() {
             isUploading = true;
           });
-          final success =
-              await ref.read(noteServiceProvider.notifier).create(path);
+          final err = await ref.read(noteServiceProvider.notifier).create(path);
           setState(() {
             isUploading = false;
           });
 
-          if (!success) {
-            throw Exception("Did not upload");
+          String? errorMessage;
+          switch (err) {
+            case NoteCreateError.authError:
+              errorMessage = "Access to Notion lost. Please reconnect.";
+              break;
+            case NoteCreateError.noPageError:
+              errorMessage =
+                  "No page or database to export to. Please reconnect and select a page.";
+              break;
+            case NoteCreateError.other:
+              errorMessage = "Couldn't export for an unknown reason.";
+              break;
+            case null:
+              break;
+          }
+          if (errorMessage != null) {
+            _showSnackMessage(errorMessage);
           }
         },
         label: const Text('Stop'),

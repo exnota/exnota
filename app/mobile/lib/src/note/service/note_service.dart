@@ -8,6 +8,8 @@ import 'dart:convert';
 
 part 'note_service.g.dart';
 
+enum NoteCreateError { authError, noPageError, other }
+
 @riverpod
 class NoteService extends _$NoteService {
   @override
@@ -15,7 +17,7 @@ class NoteService extends _$NoteService {
     return [];
   }
 
-  Future<bool> create(String path) async {
+  Future<NoteCreateError?> create(String path) async {
     var uri = Uri.https('exnota.com', 'api/note/notes');
     final notionSettings = ref.read(notionSettingsRepoProvider).valueOrNull;
     switch (notionSettings) {
@@ -23,7 +25,7 @@ class NoteService extends _$NoteService {
       case NotionSettingsEmpty():
       case NotionSettingsCode():
         print('No access token');
-        return false;
+        return NoteCreateError.authError;
       case NotionSettingsAccessToken():
         // Do nothing. Don't use `default` so if a new subtype is added we're
         // forced to update this block.
@@ -58,11 +60,21 @@ class NoteService extends _$NoteService {
         ...previousState,
         AudioNote(path: path, transcription: transcription, url: url)
       ]);
-      return true;
+      return null;
+    }
+    final json = jsonDecode(response.body);
+    final code = json["code"];
+    if (code is String && code == "AUTH_ERROR") {
+      print("AUTH_ERROR");
+      return NoteCreateError.authError;
+    } else if (code is String && code == "NO_PAGE_ERROR") {
+      print("NO_PAGE_ERROR");
+      return NoteCreateError.noPageError;
     }
     print("Upload fail");
     print("Status=${response.statusCode}");
     print("reasonPhrase=${response.reasonPhrase}");
-    return false;
+    print("code=${json["code"]}");
+    return NoteCreateError.other;
   }
 }
