@@ -199,6 +199,9 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
               errorMessage =
                   "No page or database to export to. Please reconnect and select a page.";
               break;
+            case NoteCreateError.network:
+              errorMessage = "There seems to be a network issue. Please retry.";
+              break;
             case NoteCreateError.other:
               errorMessage = "Couldn't export for an unknown reason.";
               break;

@@ -8,7 +8,7 @@ import 'dart:convert';
 
 part 'note_service.g.dart';
 
-enum NoteCreateError { authError, noPageError, other }
+enum NoteCreateError { authError, noPageError, network, other }
 
 @riverpod
 class NoteService extends _$NoteService {
@@ -37,7 +37,16 @@ class NoteService extends _$NoteService {
       ..fields['accessToken'] = notionSettings.accessToken
       ..files.add(await http.MultipartFile.fromPath('file', path,
           contentType: MediaType('audio', 'x-m4a')));
-    var streamedResponse = await request.send();
+
+    http.StreamedResponse streamedResponse;
+    try {
+      print("About to send request");
+      streamedResponse = await request.send();
+    } catch (e) {
+      print("Couldn't send request=$e");
+      return NoteCreateError.network;
+    }
+    print('Received response');
     var response = await http.Response.fromStream(streamedResponse);
     // 201 is expected
     if ([201, 200].contains(response.statusCode)) {
