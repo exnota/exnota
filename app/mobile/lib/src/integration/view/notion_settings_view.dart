@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/integration/service/notion_settings_service.dart';
 import 'package:flutter/material.dart';
@@ -242,9 +243,9 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView>
     // TODO: Is this tokenUri even needed? Should we replace the manual request
     // for a token in the relevant service with the implementation from the
     // oauth package? Or just leave a note that it's not used?
-    final tokenUri = Uri.parse('https://exnota.com');
-    final redirectUri = Uri.parse(
-        'https://exnota.com/api/integration/notion/mobile-code-redirect');
+    final tokenUri = ref.read(uriServiceProvider());
+    final redirectUri = ref.read(
+        uriServiceProvider(path: 'integration/notion/mobile-code-redirect'));
     var grant = oauth2.AuthorizationCodeGrant(
         '398d2a32-5c3f-476a-8951-ee9a426981c4', authorizeBaseUri, tokenUri);
 

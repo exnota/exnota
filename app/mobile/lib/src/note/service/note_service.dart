@@ -1,3 +1,5 @@
+import 'package:exnota/src/account/settings/environment_service.dart';
+import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/integration/data/notion_settings_repo.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/note/audio_note.dart';
@@ -18,7 +20,11 @@ class NoteService extends _$NoteService {
   }
 
   Future<NoteCreateError?> create(String path) async {
-    var uri = Uri.https('exnota.com', 'api/note/notes');
+    // Lint error below looks like a false positive, as uriServiceProvider
+    // is not a manual provider. Copied the "family" provider implementation
+    // as per: https://codewithandrea.com/articles/flutter-riverpod-generator/
+    // ignore: avoid_manual_providers_as_generated_provider_dependency
+    var uri = ref.read(uriServiceProvider(path: 'note/notes'));
     final notionSettings = ref.read(notionSettingsRepoProvider).valueOrNull;
     switch (notionSettings) {
       case null:

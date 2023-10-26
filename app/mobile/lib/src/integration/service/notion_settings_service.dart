@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/integration/data/notion_settings_repo.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -30,8 +31,13 @@ class NotionSettingsService extends _$NotionSettingsService {
     switch (currentSettings) {
       case NotionSettingsCode():
         final code = currentSettings.code;
+        // Lint error below looks like a false positive, as uriServiceProvider
+        // is not a manual provider. Copied the "family" provider implementation
+        // as per: https://codewithandrea.com/articles/flutter-riverpod-generator/
+        // ignore: avoid_manual_providers_as_generated_provider_dependency
+        final uri = ref.read(uriServiceProvider(path: 'notion-token'));
         final response = await http.post(
-          Uri.https('exnota.com', 'api/notion-token'),
+          uri,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({"code": code}),
         );
