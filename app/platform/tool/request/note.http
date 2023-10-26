@@ -1,14 +1,35 @@
-### ----------------------------------------------------
-### local
-### ----------------------------------------------------
-### ----------
-### note
-### ----------
-### get
-GET http://localhost:3000/note/notes
+# Setup:
+# 1. Install REST Client extension for VS Code.
+# 2. Cmd > Preferences: Open User Settings (JSON)
+# 3. Add:
+#   "rest-client.environmentVariables": {
+#     "$shared": {
+#         "notionAccessToken": "<token>"
+#     },
+#     "local": {
+#         "baseUrl": "http://localhost:3000"
+#     },
+#     "production": {
+#         "baseUrl": "https://exnota.com/api"
+#     }
+#   }
+# 4. Get a Notion access token and update the notionAccessToken variable.
+#
+# Usage:
+# 1. Change environment:
+#      * Cmd (⇧⌘P) > Rest Client: Switch Environment
+#      * This will fix red lines.
+# 2. Quick navigation
+#      * Search (⌘P) > '@'
 
-### post m4a short
-POST http://localhost:3000/note/notes
+### ----------------------------------------------------
+### note endpoints
+### ----------------------------------------------------
+### get notes
+GET {{baseUrl}}/note/notes
+
+### post notes - m4a short
+POST {{baseUrl}}/note/notes
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -20,7 +41,7 @@ audio
 Content-Disposition: form-data; name="accessToken"
 Content-Type: application/json
 
-access token
+{{notionAccessToken}}
 --boundary
 Content-Disposition: form-data; name="file"; filename="short-test.m4a"
 Content-Type: audio/x-m4a
@@ -28,8 +49,8 @@ Content-Type: audio/x-m4a
 < short-test.m4a
 --boundary--
 
-### post wav jfk
-POST http://localhost:3000/note/notes
+### post notes - wav jfk
+POST {{baseUrl}}/note/notes
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -41,7 +62,7 @@ audio
 Content-Disposition: form-data; name="accessToken"
 Content-Type: application/json
 
-access token
+{{notionAccessToken}}
 --boundary
 Content-Disposition: form-data; name="file"; filename="jfk.wav"
 Content-Type: audio/wav
@@ -49,8 +70,8 @@ Content-Type: audio/wav
 < jfk.wav
 --boundary--
 
-### post wav micromachines 44k
-POST http://localhost:3000/note/notes
+### post notes - wav 44k micromachines
+POST {{baseUrl}}/note/notes
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -70,11 +91,11 @@ Content-Type: audio/wav
 < micro-machines-44k.wav
 --boundary--
 
-### ----------
-### integration
-### ----------
-### notion token
-POST http://localhost:3000/notion-token HTTP/1.1
+### ----------------------------------------------------
+### integration endpoints
+### ----------------------------------------------------
+### generate notion token
+POST {{baseUrl}}/notion-token HTTP/1.1
 content-type: application/json
 
 {
@@ -82,91 +103,36 @@ content-type: application/json
 }
 
 ### ----------------------------------------------------
-### prod
+### notion api
 ### ----------------------------------------------------
-### get
-GET https://exnota.com/api/notes
-
-### post m4a short
-POST https://exnota.com/api/notes
-Content-Type: multipart/form-data; boundary=boundary
-
---boundary
-Content-Disposition: form-data; name="type"
-Content-Type: application/json
-
-audio
---boundary
-Content-Disposition: form-data; name="accessToken"
-Content-Type: application/json
-
-access token
---boundary
-Content-Disposition: form-data; name="file"; filename="short-test.m4a"
-Content-Type: audio/x-m4a
-
-< short-test.m4a
---boundary--
-
-### post wav jfk
-POST https://exnota.com/api/notes
-Content-Type: multipart/form-data; boundary=boundary
-
---boundary
-Content-Disposition: form-data; name="type"
-Content-Type: application/json
-
-audio
---boundary
-Content-Disposition: form-data; name="accessToken"
-Content-Type: application/json
-
-access token
---boundary
-Content-Disposition: form-data; name="file"; filename="jfk.wav"
-Content-Type: audio/wav
-
-< jfk.wav
---boundary--
-
-### post wav micromachines
-POST https://exnota.com/api/notes
-Content-Type: multipart/form-data; boundary=boundary
-
---boundary
-Content-Disposition: form-data; name="type"
-Content-Type: application/json
-
-audio
---boundary
-Content-Disposition: form-data; name="accessToken"
-Content-Type: application/json
-
-access token
---boundary
-Content-Disposition: form-data; name="file"; filename="micro-machines.wav"
-Content-Type: audio/wav
-
-< micro-machines.wav
---boundary--
-
-### post micromachines 44k
-POST https://exnota.com/api/notes
-Content-Type: multipart/form-data; boundary=boundary
-
---boundary
-Content-Disposition: form-data; name="type"
-Content-Type: application/json
-
-audio
---boundary
-Content-Disposition: form-data; name="accessToken"
-Content-Type: application/json
-
-access token
---boundary
-Content-Disposition: form-data; name="file"; filename="micro-machines-44k.wav"
-Content-Type: audio/wav
-
-< micro-machines-44k.wav
---boundary--
+### 
+curl -X PATCH 'https://api.notion.com/v1/blocks/2daf121ec2e742299da72e1df4eb67b9/children' \
+  -H 'Authorization: Bearer '"{{notionAccessToken}}"'' \
+  -H "Content-Type: application/json" \
+  -H "Notion-Version: 2022-06-28" \
+  --data '{
+	"children": [
+		{
+			"object": "block",
+			"type": "heading_2",
+			"heading_2": {
+				"rich_text": [{ "type": "text", "text": { "content": "Lacinato kale" } }]
+			}
+		},
+		{
+			"object": "block",
+			"type": "paragraph",
+			"paragraph": {
+				"rich_text": [
+					{
+						"type": "text",
+						"text": {
+							"content": "Lacinato kale is a variety of kale with a long tradition in Italian cuisine, especially that of Tuscany. It is also known as Tuscan kale, Italian kale, dinosaur kale, kale, flat back kale, palm tree kale, or black Tuscan palm.",
+							"link": { "url": "https://en.wikipedia.org/wiki/Lacinato_kale" }
+						}
+					}
+				]
+			}
+		}
+	]
+}'
