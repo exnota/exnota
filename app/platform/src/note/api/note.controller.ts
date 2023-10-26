@@ -12,13 +12,26 @@ import {
   UseInterceptors,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { TranscriptionService } from '@exnota/note/service/transcription.service'
+import {
+  TranscribeError,
+  TranscriptionService,
+} from '@exnota/note/service/transcription.service'
 import { diskStorage } from 'multer'
 import { PATH_UPLOAD_AUDIO } from '@exnota/settings'
 import { format as dateFormat } from 'date-fns'
 import { extname } from 'path'
 import { Equals, IsIn, IsNotEmpty, IsString, validate } from 'class-validator'
-import { ExportService } from '@exnota/integration/service/export.service'
+import {
+  ExportError,
+  ExportService,
+} from '@exnota/integration/service/export.service'
+import { httpException } from '@exnota/lib/error'
+
+enum NoteError {
+  AUTH_ERROR = 'AUTH_ERROR',
+  NO_PAGE_ERROR = 'NO_PAGE_ERROR',
+  UNEXPECTED = 'UNEXPECTED',
+}
 
 class Note {
   @IsIn(['audio', 'text'])
@@ -84,13 +97,21 @@ export class NoteController {
     file: Express.Multer.File,
     @Body() note: Note,
   ) {
-    this.logger.log('hi')
     // Audio file
     const { buffer: _, stream: __, ...logData } = file
     this.logger.log('File uploaded:', logData)
 
     // Check type
     if (note.type !== 'audio') {
+      // return an exception from httpException
+      return httpException(
+        HttpStatus.NOT_IMPLEMENTED,
+        {
+          message: 'Only audio notes supported',
+        },
+        NoteError.UNEXPECTED,
+      )
+
       throw new HttpException(
         'Only audio notes supported',
         HttpStatus.NOT_IMPLEMENTED,
@@ -112,13 +133,14 @@ export class NoteController {
       file.path,
     )
     if (!transcriptionResult.ok) {
-      throw new HttpException(
-        transcriptionResult.message,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        {
-          cause: transcriptionResult.error,
-        },
-      )
+      switch (transcriptionResult.type) {
+        case TranscribeError.NO_TRANSCRIPTION_GENERATED:
+          throw httpException(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            transcriptionResult,
+            NoteError.UNEXPECTED,
+          )
+      }
     }
 
     const exportResult = await this.exportService.export(
@@ -131,13 +153,27 @@ export class NoteController {
     )
 
     if (!exportResult.ok) {
-      throw new HttpException(
-        exportResult.message,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        {
-          cause: exportResult.error,
-        },
-      )
+      switch (exportResult.type) {
+        case ExportError.AUTH_ERROR:
+          throw httpException(
+            HttpStatus.UNAUTHORIZED,
+            exportResult,
+            NoteError.AUTH_ERROR,
+          )
+        case ExportError.NO_PAGES_SHARED:
+        case ExportError.NO_VALID_PAGE:
+          throw httpException(
+            HttpStatus.UNAUTHORIZED,
+            exportResult,
+            NoteError.NO_PAGE_ERROR,
+          )
+        case ExportError.UNKNOWN_NOTION_ERROR:
+          throw httpException(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            exportResult,
+            NoteError.UNEXPECTED,
+          )
+      }
     }
     return {
       transcription: transcriptionResult.value,

@@ -5,9 +5,13 @@ import { isTranscriptionOutput } from './transcription-output'
 import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { parse as parsePath } from 'path'
 
+export enum TranscribeError {
+  NO_TRANSCRIPTION_GENERATED,
+}
+
 @Injectable()
 export class TranscriptionService {
-  async transcribe(path: string): Promise<Result<string>> {
+  async transcribe(path: string): Promise<Result<string, TranscribeError>> {
     const parsedPath = parsePath(path)
     const convertedPath =
       parsedPath.dir + '/' + parsedPath.name + '-converted.wav'
@@ -20,10 +24,16 @@ export class TranscriptionService {
       const contents = readFileSync(`${convertedPath}.json`, 'utf8')
       const json = JSON.parse(contents)
       if (!isTranscriptionOutput(json)) {
-        return resultError('Could not read transcription result')
+        return resultError(
+          TranscribeError.NO_TRANSCRIPTION_GENERATED,
+          'Could not read transcription result',
+        )
       }
       if (json.transcription.length === 0) {
-        return resultError('No transcription generated')
+        return resultError(
+          TranscribeError.NO_TRANSCRIPTION_GENERATED,
+          'No transcription generated',
+        )
       }
       const transcription = json.transcription.reduce((prev, cur) => {
         if (prev === '') {
@@ -34,7 +44,11 @@ export class TranscriptionService {
       }, '')
       return resultOk(transcription.trim())
     } catch (e) {
-      return resultError('Error generating transcription', e)
+      return resultError(
+        TranscribeError.NO_TRANSCRIPTION_GENERATED,
+        'Error generating transcription',
+        e,
+      )
     }
   }
 }

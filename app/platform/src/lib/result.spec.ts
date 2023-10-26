@@ -12,9 +12,13 @@ interface OkType {
   cat: string
 }
 
+enum ErrorType {
+  ERROR = 'ERROR',
+}
+
 describe('Result', () => {
   describe('Given an ok Result', () => {
-    let result: Result<OkType>
+    let result: Result<OkType, ErrorType>
     let value: OkType
     beforeEach(() => {
       value = { cat: 'dog' }
@@ -31,28 +35,30 @@ describe('Result', () => {
   describe('Given an error Result', () => {
     describe('When resultError is called', () => {
       describe('And only a message is provided', () => {
-        let result: Result<string>
+        let result: Result<string, ErrorType>
         beforeEach(() => {
-          result = resultError('an error message')
+          result = resultError(ErrorType.ERROR, 'an error message')
         })
         test('Then it returns the expected values', () => {
           expect(result.ok).toBe(false)
           assertResultError(result)
           expect(result.message).toBe('an error message')
           expect(result.error).toEqual(new Error('Result error'))
+          expect(result.type).toBe(ErrorType.ERROR)
         })
       })
       describe('And an Error is provided', () => {
-        let result: Result<string>
+        let result: Result<string, ErrorType>
         let error: Error
         beforeEach(() => {
           error = new Error('an error')
-          result = resultError('an error message', error)
+          result = resultError(ErrorType.ERROR, 'an error message', error)
         })
         test('Then it returns the expected values', () => {
           expect(result.ok).toBe(false)
           assertResultError(result)
           expect(result.error).toBe(error)
+          expect(result.type).toBe(ErrorType.ERROR)
         })
       })
     })
@@ -67,7 +73,7 @@ describe('isResultOk', () => {
   })
   describe('Given an error result', () => {
     test('Then it returns false', () => {
-      const err = resultError<string>('error')
+      const err = resultError<string, ErrorType>(ErrorType.ERROR, 'error')
       expect(isResultOk(err)).toBe(false)
     })
   })
@@ -75,7 +81,7 @@ describe('isResultOk', () => {
 describe('isResultError', () => {
   describe('Given an error result', () => {
     test('Then it returns true', () => {
-      const err = resultError<string>('error')
+      const err = resultError<string, ErrorType>(ErrorType.ERROR, 'error')
       expect(isResultError(err)).toBe(true)
     })
   })

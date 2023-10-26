@@ -1,11 +1,9 @@
-import { NotionTokenService } from '@exnota/integration/service/notion-token.service'
 import {
-  Body,
-  Controller,
-  HttpException,
-  HttpStatus,
-  Post,
-} from '@nestjs/common'
+  NotionTokenServiceError,
+  NotionTokenService,
+} from '@exnota/integration/service/notion-token.service'
+import { httpException } from '@exnota/lib/error'
+import { Body, Controller, HttpStatus, Post } from '@nestjs/common'
 import { IsNotEmpty, IsString } from 'class-validator'
 
 class NotionTokenRequest {
@@ -22,13 +20,11 @@ export class NotionTokenController {
   async notionToken(@Body() request: NotionTokenRequest) {
     const result = await this.notionTokenService.notionToken(request.code)
     if (!result.ok) {
-      throw new HttpException(
-        result.message,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        {
-          cause: result.error,
-        },
-      )
+      switch (result.type) {
+        case NotionTokenServiceError.NOTION_AUTH_ERROR:
+        case NotionTokenServiceError.EXNOTA_CREDENTILS_MISSING:
+          throw httpException(HttpStatus.INTERNAL_SERVER_ERROR, result)
+      }
     }
     return result.value
   }

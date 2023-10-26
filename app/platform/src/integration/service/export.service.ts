@@ -1,6 +1,6 @@
 import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
-import { Client } from '@notionhq/client'
+import { APIErrorCode, Client } from '@notionhq/client'
 import { SearchResponse } from '@notionhq/client/build/src/api-endpoints'
 
 type NoteExport = {
@@ -21,6 +21,14 @@ type Destination = {
   type: 'page' | 'database'
 }
 
+// TODO: Can i extend some kinda 'notion api' standard errors?
+export enum ExportError {
+  NO_PAGES_SHARED,
+  NO_VALID_PAGE,
+  AUTH_ERROR,
+  UNKNOWN_NOTION_ERROR,
+}
+
 @Injectable()
 export class ExportService {
   private readonly logger = new Logger(ExportService.name)
@@ -28,7 +36,7 @@ export class ExportService {
   async export(
     note: NoteExport,
     token: AccessToken,
-  ): Promise<Result<ExportResult>> {
+  ): Promise<Result<ExportResult, ExportError>> {
     this.logger.log(`Received note to export:`, note)
     const notion = new Client({
       auth: token.token,
@@ -50,24 +58,41 @@ export class ExportService {
     return resultOk(exportResult.value)
   }
 
-  private async getDestinationId(notion: Client): Promise<Result<Destination>> {
+  private async getDestinationId(
+    notion: Client,
+  ): Promise<Result<Destination, ExportError>> {
     const results: SearchResponse['results'] = []
     let cursor: string | undefined
     for (let i = 0; i < 20; i++) {
       this.logger.log(`Getting page ${i + 0} results`)
-      const paginatedResults = await notion.search({
-        page_size: 100,
-        start_cursor: cursor,
-      })
-      results.push(...paginatedResults.results)
-      if (!paginatedResults.has_more) {
-        break
+      try {
+        const paginatedResults = await notion.search({
+          page_size: 100,
+          start_cursor: cursor,
+        })
+        results.push(...paginatedResults.results)
+        if (!paginatedResults.has_more) {
+          break
+        }
+        cursor = paginatedResults.next_cursor ?? undefined
+      } catch (e) {
+        this.logger.error('notion fail', e)
+        if (e.code === APIErrorCode.Unauthorized) {
+          return resultError(ExportError.AUTH_ERROR, 'Notion auth error')
+        } else {
+          return resultError(
+            ExportError.UNKNOWN_NOTION_ERROR,
+            'Unknown Notion error while searching',
+          )
+        }
       }
-      cursor = paginatedResults.next_cursor ?? undefined
     }
     this.logger.log(`Results:`, results)
     if (results.length === 0) {
-      return resultError('No pages or databases shared')
+      return resultError(
+        ExportError.NO_PAGES_SHARED,
+        'No pages or databases shared',
+      )
     }
 
     // Create a set of IDs from results
@@ -126,14 +151,14 @@ export class ExportService {
     if (destination) {
       return resultOk(destination)
     }
-    return resultError('No page found to export to')
+    return resultError(ExportError.NO_VALID_PAGE, 'No page found to export to')
   }
 
   private async exportInternal(
     notion: Client,
     destination: Destination,
     note: NoteExport,
-  ): Promise<Result<ExportResult>> {
+  ): Promise<Result<ExportResult, ExportError>> {
     const apiResult = await notion.pages.create({
       parent:
         destination.type === 'database'

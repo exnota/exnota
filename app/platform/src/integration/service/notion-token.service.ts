@@ -2,13 +2,20 @@ import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
+export enum NotionTokenServiceError {
+  NOTION_AUTH_ERROR = 'NOTION_AUTH_ERROR',
+  EXNOTA_CREDENTILS_MISSING = 'EXNOTA_CREDENTILS_MISSING',
+}
+
 @Injectable()
 export class NotionTokenService {
   private readonly logger = new Logger(NotionTokenService.name)
 
   constructor(private configService: ConfigService) {}
 
-  async notionToken(code: string): Promise<Result<unknown>> {
+  async notionToken(
+    code: string,
+  ): Promise<Result<unknown, NotionTokenServiceError>> {
     const clientId = this.configService.get('NOTION_OAUTH_CLIENT_ID')
     const clientSecret = this.configService.get('NOTION_OAUTH_CLIENT_SECRET')
     if (
@@ -19,7 +26,10 @@ export class NotionTokenService {
       clientId.startsWith('DUMMY_') ||
       clientSecret.startsWith('DUMMY_')
     ) {
-      return resultError('Credentials not configured')
+      return resultError(
+        NotionTokenServiceError.EXNOTA_CREDENTILS_MISSING,
+        'Credentials not configured',
+      )
     }
     const encoded = Buffer.from(`${clientId}:${clientSecret}`).toString(
       'base64',
@@ -43,7 +53,11 @@ export class NotionTokenService {
         }),
       })
     } catch (e) {
-      return resultError('Error communicating with Notion', e)
+      return resultError(
+        NotionTokenServiceError.NOTION_AUTH_ERROR,
+        'Error communicating with Notion',
+        e,
+      )
     }
 
     let json: unknown
@@ -54,7 +68,11 @@ export class NotionTokenService {
         status: response.status,
         statusText: response.statusText,
       })
-      return resultError('Error parsing access token response', e)
+      return resultError(
+        NotionTokenServiceError.NOTION_AUTH_ERROR,
+        'Error parsing access token response',
+        e,
+      )
     }
 
     if (response.status !== 200) {
@@ -71,10 +89,14 @@ export class NotionTokenService {
           statusText: response.statusText,
         })
         return resultError(
+          NotionTokenServiceError.NOTION_AUTH_ERROR,
           `Received ${response.status} error '${error}' from Notion with description '${description}'`,
         )
       }
-      return resultError('Received error from Notion')
+      return resultError(
+        NotionTokenServiceError.NOTION_AUTH_ERROR,
+        'Received error from Notion',
+      )
     }
 
     this.logger.log(`Response from Notion:`, json)
