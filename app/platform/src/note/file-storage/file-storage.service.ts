@@ -1,19 +1,29 @@
 import { parse as parsePath } from 'path'
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { resultError } from '@exnota/lib/result'
+import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { readFileSync } from 'node:fs'
 
-enum FileStorageServiceError {
+export enum FileStorageServiceError {
   CREDENTIALS_MISSING,
+  UPLOAD_ERROR,
 }
+
+type FileStorageServiceResult = {
+  url: string
+}
+
+const BUCKET = 'exnota-userupload-v0'
+const REGION = 'eu-central-1'
 
 @Injectable()
 export class FileStorageService {
   private readonly logger = new Logger(FileStorageService.name)
   constructor(private configService: ConfigService) {}
-  async upload(path: string) {
+  async upload(
+    path: string,
+  ): Promise<Result<FileStorageServiceResult, FileStorageServiceError>> {
     const accessKeyId = this.configService.get('S3_ACCESS_KEY_ID')
     const secretAccessKey = this.configService.get('SW_SECRET_ACCESS_KEY')
     if (
@@ -35,24 +45,34 @@ export class FileStorageService {
         accessKeyId,
         secretAccessKey,
       },
-      region: 'eu-central-1',
+      region: REGION,
     })
 
     const parsedPath = parsePath(path)
+    const filename = parsedPath.base
     const contents = readFileSync(path)
     const command = new PutObjectCommand({
-      Bucket: 'exnota-userupload-v0',
-      Key: parsedPath.base,
+      Bucket: BUCKET,
+      Key: filename,
       Body: contents,
     })
 
     try {
       // Alteratively, this could be done asynchronously and in parallel using
       // this package: https://www.npmjs.com/package/@aws-sdk/lib-storage
+      this.logger.log('Upload beginning...')
       const response = await client.send(command)
-      console.log(response)
+      this.logger.log('Upload success:', response)
+      return resultOk({
+        url: `https://${BUCKET}.s3.${REGION}.amazonaws.com/${filename}`,
+      })
     } catch (err) {
-      console.error(err)
+      this.logger.error('Upload error:', err)
+      return resultError(
+        FileStorageServiceError.UPLOAD_ERROR,
+        'Error uploading file',
+        err,
+      )
     }
   }
 }

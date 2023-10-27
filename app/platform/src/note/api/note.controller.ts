@@ -25,12 +25,17 @@ import {
   ExportService,
 } from '@exnota/integration/service/export.service'
 import { httpException } from '@exnota/lib/error'
-import { FileStorageService } from '@exnota/note/file-storage/file-storage.service'
+import {
+  FileStorageService,
+  FileStorageServiceError,
+} from '@exnota/note/file-storage/file-storage.service'
 
 enum NoteError {
   AUTH_ERROR = 'AUTH_ERROR',
   NO_PAGE_ERROR = 'NO_PAGE_ERROR',
   UNEXPECTED = 'UNEXPECTED',
+  UPLOAD_ERROR = 'UPLOAD_ERROR',
+  CREDENTIALS_MISSING = 'CREDENTIALS_MISSING',
 }
 
 class Note {
@@ -166,7 +171,24 @@ export class NoteController {
       }
     }
 
-    await this.fileStorageService.upload(file.path)
+    const uploadResult = await this.fileStorageService.upload(file.path)
+    if (!uploadResult.ok) {
+      switch (uploadResult.type) {
+        case FileStorageServiceError.CREDENTIALS_MISSING:
+          throw httpException(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            uploadResult,
+            NoteError.CREDENTIALS_MISSING,
+          )
+        case FileStorageServiceError.UPLOAD_ERROR:
+          throw httpException(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            uploadResult,
+            NoteError.UPLOAD_ERROR,
+          )
+      }
+    }
+    this.logger.log('Upload result:', uploadResult.value.url)
 
     return {
       transcription: transcriptionResult.value,
