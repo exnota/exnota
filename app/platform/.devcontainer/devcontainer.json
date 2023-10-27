@@ -14,7 +14,9 @@
 				"esbenp.prettier-vscode",
 				"humao.rest-client",
 				"firsttris.vscode-jest-runner",
-				"Gruntfuggly.todo-tree"
+				"Gruntfuggly.todo-tree",
+				"GitHub.copilot",
+				"GitHub.copilot-chat"
 			]
 		}
 	}
