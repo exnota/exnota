@@ -28,7 +28,7 @@ import { httpException } from '@exnota/lib/error'
 import {
   FileStorageService,
   FileStorageServiceError,
-} from '@exnota/note/file-storage/file-storage.service'
+} from '@exnota/note/service/file-storage.service'
 
 enum NoteError {
   AUTH_ERROR = 'AUTH_ERROR',
