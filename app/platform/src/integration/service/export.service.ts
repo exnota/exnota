@@ -159,6 +159,7 @@ export class ExportService {
     destination: Destination,
     note: NoteExport,
   ): Promise<Result<ExportResult, ExportError>> {
+    // TODO: Put in try/catch
     const apiResult = await notion.pages.create({
       parent:
         destination.type === 'database'

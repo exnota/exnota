@@ -25,6 +25,7 @@ import {
   ExportService,
 } from '@exnota/integration/service/export.service'
 import { httpException } from '@exnota/lib/error'
+import { FileStorageService } from '@exnota/note/file-storage/file-storage.service'
 
 enum NoteError {
   AUTH_ERROR = 'AUTH_ERROR',
@@ -61,6 +62,7 @@ export class NoteController {
   constructor(
     private transcriptionService: TranscriptionService,
     private exportService: ExportService,
+    private fileStorageService: FileStorageService,
   ) {}
 
   @Get()
@@ -163,6 +165,9 @@ export class NoteController {
           )
       }
     }
+
+    await this.fileStorageService.upload(file.path)
+
     return {
       transcription: transcriptionResult.value,
       url: exportResult.value.url,
