@@ -1,8 +1,7 @@
 import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
-import { APIErrorCode, Client } from '@notionhq/client'
+import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client'
 import { SearchResponse } from '@notionhq/client/build/src/api-endpoints'
-
 type NoteExport = {
   title: string
 }
@@ -23,10 +22,18 @@ type Destination = {
 
 // TODO: Can i extend some kinda 'notion api' standard errors?
 export enum ExportError {
-  NO_PAGES_SHARED,
-  NO_VALID_PAGE,
-  AUTH_ERROR,
-  UNKNOWN_NOTION_ERROR,
+  NO_PAGES_SHARED = 'NO_PAGES_SHARED',
+  NO_VALID_PAGE = 'NO_VALID_PAGE',
+  AUTH_ERROR = 'AUTH_ERROR',
+  UNKNOWN_NOTION_ERROR = 'UNKNOWN_NOTION_ERROR',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+}
+
+export enum AddAudioError {
+  AUTH_ERROR = 'AUTH_ERROR',
+  ADDING_AUDIO_ERROR = 'ADDING_AUDIO_ERROR',
+  UNKNOWN_NOTION_ERROR = 'UNKNOWN_NOTION_ERROR',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
 }
 
 @Injectable()
@@ -58,6 +65,52 @@ export class ExportService {
     return resultOk(exportResult.value)
   }
 
+  async addAudio(
+    pageId: string,
+    url: string,
+    token: AccessToken,
+  ): Promise<Result<void, AddAudioError>> {
+    const notion = new Client({
+      auth: token.token,
+    })
+    try {
+      this.logger.log('Adding audio to page...')
+      const result = await notion.blocks.children.append({
+        block_id: pageId,
+        children: [
+          {
+            type: 'audio',
+            audio: {
+              external: {
+                url,
+              },
+            },
+          },
+        ],
+      })
+      this.logger.log('Audio added to page', result)
+      return resultOk(void 0)
+    } catch (e) {
+      this.logger.log('Error adding audio to page', e)
+      if (isNotionClientError(e)) {
+        switch (e.code) {
+          case APIErrorCode.Unauthorized:
+            return resultError(AddAudioError.AUTH_ERROR, 'Notion auth error', e)
+          default:
+            return resultError(
+              AddAudioError.UNKNOWN_NOTION_ERROR,
+              'Unknown Notion error while adding audio',
+              e,
+            )
+        }
+      }
+      return resultError(
+        AddAudioError.UNKNOWN_ERROR,
+        'Unknown error adding audio to page',
+      )
+    }
+  }
+
   private async getDestinationId(
     notion: Client,
   ): Promise<Result<Destination, ExportError>> {
@@ -76,15 +129,22 @@ export class ExportService {
         }
         cursor = paginatedResults.next_cursor ?? undefined
       } catch (e) {
-        this.logger.error('notion fail', e)
-        if (e.code === APIErrorCode.Unauthorized) {
-          return resultError(ExportError.AUTH_ERROR, 'Notion auth error')
-        } else {
-          return resultError(
-            ExportError.UNKNOWN_NOTION_ERROR,
-            'Unknown Notion error while searching',
-          )
+        this.logger.error('Failed to get page', e)
+        if (isNotionClientError(e)) {
+          switch (e.code) {
+            case APIErrorCode.Unauthorized:
+              return resultError(ExportError.AUTH_ERROR, 'Notion auth error')
+            default:
+              return resultError(
+                ExportError.UNKNOWN_NOTION_ERROR,
+                'Unknown Notion error while searching for page',
+              )
+          }
         }
+        return resultError(
+          ExportError.UNKNOWN_ERROR,
+          'Unknown error while searching for page',
+        )
       }
     }
     this.logger.log(`Results:`, results)

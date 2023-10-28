@@ -6,7 +6,7 @@ import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { parse as parsePath } from 'path'
 
 export enum TranscribeError {
-  NO_TRANSCRIPTION_GENERATED,
+  NO_TRANSCRIPTION_GENERATED = 'NO_TRANSCRIPTION_GENERATED',
 }
 
 @Injectable()

@@ -190,6 +190,16 @@ export class NoteController {
     }
     this.logger.log('Upload result:', uploadResult.value.url)
 
+    // Ignore result, because there's no action to take if the audio wasn't
+    // added to the Notion page.
+    await this.exportService.addAudio(
+      exportResult.value.id,
+      uploadResult.value.url,
+      {
+        token: audioNote.accessToken,
+      },
+    )
+
     return {
       transcription: transcriptionResult.value,
       url: exportResult.value.url,

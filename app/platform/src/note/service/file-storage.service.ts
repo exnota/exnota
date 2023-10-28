@@ -6,8 +6,8 @@ import { ConfigService } from '@nestjs/config'
 import { readFileSync } from 'node:fs'
 
 export enum FileStorageServiceError {
-  CREDENTIALS_MISSING,
-  UPLOAD_ERROR,
+  CREDENTIALS_MISSING = 'CREDENTIALS_MISSING',
+  UPLOAD_ERROR = 'UPLOAD_ERROR',
 }
 
 type FileStorageServiceResult = {
