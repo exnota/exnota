@@ -163,6 +163,7 @@ export class NoteController {
             NoteError.NO_PAGE_ERROR,
           )
         case ExportError.UNKNOWN_NOTION_ERROR:
+        case ExportError.UNKNOWN_ERROR:
           throw httpException(
             HttpStatus.INTERNAL_SERVER_ERROR,
             exportResult,
