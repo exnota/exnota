@@ -112,3 +112,18 @@ database:
       ```
 
       You should now be connected to shell and can search for the location.
+
+## Releasing
+
+### Android
+
+1. Download keystore from secure location.
+
+2. Place in /app/mobile/android (should be named `upload-keystore.jks`)
+   * .gitignore should prevent this from being committed.
+
+3. Duplicate `android/key.properties.template`, renaming to `key.properties`
+   * .gitignore should prevent this from being committed.
+
+4. Update both `storePassword` and `keyPassword` in the file to the keystore
+password. Both are the same password.
