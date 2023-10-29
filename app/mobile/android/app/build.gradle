@@ -70,6 +70,12 @@ android {
             // `flutter run --release` works:
             //   signingConfig signingConfigs.release
             signingConfig signingConfigs.release
+
+            // To enable native crash support: https://developer.android.com/build/shrink-code#native-crash-support
+            // They may still need to be uploaded manually.
+            ndk {
+                debugSymbolLevel 'FULL'
+            }
         }
     }
 }
