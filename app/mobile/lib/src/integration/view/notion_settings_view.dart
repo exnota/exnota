@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/integration/service/notion_settings_service.dart';
+import 'package:exnota/src/integration/view/alternate_notion_settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,7 +70,12 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.integration_connectToNotion),
+        title: TitleThatCanOpenAlternateNotionSettings(
+            onAlternateSettingsOpened: () {
+          setState(() {
+            _couldNotRequestCode = false;
+          });
+        }),
       ),
       body: Padding(
           padding: const EdgeInsets.all(16),
@@ -244,8 +250,9 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView>
     // for a token in the relevant service with the implementation from the
     // oauth package? Or just leave a note that it's not used?
     final tokenUri = ref.read(uriServiceProvider());
-    final redirectUri = ref.read(
-        uriServiceProvider(path: 'integration/notion/mobile-code-redirect'));
+    // Don't use UriServiceProvider because Notion can't redirect to localhost
+    final redirectUri = Uri.parse(
+        'https://exnota.com/api/integration/notion/mobile-code-redirect');
     var grant = oauth2.AuthorizationCodeGrant(
         '398d2a32-5c3f-476a-8951-ee9a426981c4', authorizeBaseUri, tokenUri);
 
@@ -331,5 +338,44 @@ class _NotionSettingsView extends ConsumerState<NotionSettingsView>
       _requestingToken = false;
       _requestingTokenError = !success;
     });
+  }
+}
+
+class TitleThatCanOpenAlternateNotionSettings extends ConsumerStatefulWidget {
+  final Function() onAlternateSettingsOpened;
+  const TitleThatCanOpenAlternateNotionSettings(
+      {super.key, required this.onAlternateSettingsOpened});
+
+  @override
+  ConsumerState<TitleThatCanOpenAlternateNotionSettings> createState() =>
+      _TitleThatCanOpenAlternateNotionSettingsState();
+}
+
+class _TitleThatCanOpenAlternateNotionSettingsState
+    extends ConsumerState<TitleThatCanOpenAlternateNotionSettings> {
+  Timer? timer;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      child: Text(AppLocalizations.of(context)!.integration_connectToNotion),
+      onLongPressDown: (details) {
+        timer ??= Timer(const Duration(seconds: 5), () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const AlternateNotionSettingsView()),
+          );
+        });
+      },
+      onLongPressUp: () {
+        timer?.cancel();
+        timer = null;
+      },
+      onLongPressCancel: () {
+        timer?.cancel();
+        timer = null;
+      },
+    );
   }
 }

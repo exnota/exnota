@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:exnota/src/account/settings/environment_service.dart';
+import 'package:exnota/src/integration/view/alternate_notion_settings_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
@@ -161,11 +163,12 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
       ..sampleRate = 44100;
   }
 
-  _showSnackMessage(String message) {
+  _showSnackError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: const Duration(milliseconds: 3000),
+        // Don't auto-dimiss
+        duration: const Duration(days: 1),
         action: SnackBarAction(
           label: 'Dismiss',
           onPressed: () {
@@ -221,7 +224,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
               break;
           }
           if (errorMessage != null) {
-            _showSnackMessage(errorMessage);
+            _showSnackError(errorMessage);
           }
         },
         label: const Text('Stop'),

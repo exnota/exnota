@@ -61,4 +61,15 @@ class NotionSettingsService extends _$NotionSettingsService {
         return false;
     }
   }
+
+  Future<void> setTokenForPlayConsoleTesting(String secret) async {
+    final settings = NotionSettings.accessToken(accessToken: secret);
+    await ref
+        .read(notionSettingsRepoProvider.notifier)
+        .updateSettings(settings);
+    ref.invalidateSelf();
+    // Re-read provider to avoid this error briefly being returned:
+    // https://github.com/rrousselGit/riverpod/issues/2041#issuecomment-1698884238
+    ref.read(notionSettingsRepoProvider.notifier);
+  }
 }
