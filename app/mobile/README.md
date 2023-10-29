@@ -113,13 +113,34 @@ database:
 
       You should now be connected to shell and can search for the location.
 
+### Build/Dependencies
+
+#### Kotlin version error when building an APK
+
+```bash
+Module was compiled with an incompatible version of Kotlin. The binary version of its metadata is 1.8.0, expected version is 1.6.0
+```
+
+[Explanation](https://stackoverflow.com/a/74425347). Following [these steps](https://stackoverflow.com/a/72984766)
+resolved the issue without guesswork, though it requires waiting for a lot to
+download:
+
+1. Open Android Studio
+2. Right click the `android`` folder
+3. Select: Flutter > Open in Android Studio
+4. Wait a while for it to load
+5. It'll ask in a notification if you want to run a process to upgrade Gradle.
+6. Click Yes
+7. Use the version of Gradle it suggests
+8. After done, run `flutter clean`
+
 ## Releasing
 
 ### Android
 
-1. Download keystore from secure location.
+1. Download keystore `upload-keystore.jks` from secure location.
 
-2. Place in /app/mobile/android (should be named `upload-keystore.jks`)
+2. Place in `/app/mobile/android/app`. Don't change the filename.
    * .gitignore should prevent this from being committed.
 
 3. Duplicate `android/key.properties.template`, renaming to `key.properties`
@@ -127,3 +148,7 @@ database:
 
 4. Update both `storePassword` and `keyPassword` in the file to the keystore
 password. Both are the same password.
+
+5. Bump version in `pubspec.yaml`.
+
+6. Run `flutter build appbundle`
