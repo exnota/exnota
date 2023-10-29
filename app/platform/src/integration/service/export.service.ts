@@ -57,7 +57,7 @@ export class ExportService {
     if (!notionResult.ok) {
       switch (notionResult.type) {
         case NotionAuthServiceError.EXNOTA_CREDENTIALS_MISSING:
-          return mapErrorType(ExportError.AUTH_ERROR, notionResult)
+          return mapErrorType(ExportError.INTERNAL_ERROR, notionResult)
       }
     }
     const notion = notionResult.value
@@ -88,7 +88,7 @@ export class ExportService {
     if (!notionResult.ok) {
       switch (notionResult.type) {
         case NotionAuthServiceError.EXNOTA_CREDENTIALS_MISSING:
-          return mapErrorType(AddAudioError.AUTH_ERROR, notionResult)
+          return mapErrorType(AddAudioError.INTERNAL_ERROR, notionResult)
       }
     }
     const notion = notionResult.value
