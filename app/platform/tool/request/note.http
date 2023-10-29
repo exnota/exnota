@@ -83,7 +83,7 @@ audio
 Content-Disposition: form-data; name="accessToken"
 Content-Type: application/json
 
-access token
+{{notionAccessToken}}
 --boundary
 Content-Disposition: form-data; name="file"; filename="micro-machines-44k.wav"
 Content-Type: audio/wav
@@ -105,7 +105,7 @@ content-type: application/json
 ### ----------------------------------------------------
 ### notion api
 ### ----------------------------------------------------
-### 
+### blocks - append file block
 curl -X PATCH 'https://api.notion.com/v1/blocks/2daf121ec2e742299da72e1df4eb67b9/children' \
   -H 'Authorization: Bearer '"{{notionAccessToken}}"'' \
   -H "Content-Type: application/json" \
@@ -114,24 +114,13 @@ curl -X PATCH 'https://api.notion.com/v1/blocks/2daf121ec2e742299da72e1df4eb67b9
 	"children": [
 		{
 			"object": "block",
-			"type": "heading_2",
-			"heading_2": {
-				"rich_text": [{ "type": "text", "text": { "content": "Lacinato kale" } }]
-			}
-		},
-		{
-			"object": "block",
-			"type": "paragraph",
-			"paragraph": {
-				"rich_text": [
-					{
-						"type": "text",
-						"text": {
-							"content": "Lacinato kale is a variety of kale with a long tradition in Italian cuisine, especially that of Tuscany. It is also known as Tuscan kale, Italian kale, dinosaur kale, kale, flat back kale, palm tree kale, or black Tuscan palm.",
-							"link": { "url": "https://en.wikipedia.org/wiki/Lacinato_kale" }
-						}
-					}
-				]
+			"type": "file",
+			"file": {
+				"caption": [],
+				"type": "external",
+				"external": {
+					"url": "https://upload.wikimedia.org/wikipedia/commons/d/d5/JFK_inaugural_address.ogg"
+				}
 			}
 		}
 	]
