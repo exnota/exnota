@@ -164,6 +164,7 @@ export class NoteController {
           )
         case ExportError.UNKNOWN_NOTION_ERROR:
         case ExportError.UNKNOWN_ERROR:
+        case ExportError.INTERNAL_ERROR:
           throw httpException(
             HttpStatus.INTERNAL_SERVER_ERROR,
             exportResult,

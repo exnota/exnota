@@ -1,4 +1,8 @@
-import { Result, resultError, resultOk } from '@exnota/lib/result'
+import {
+  NotionAuthService,
+  NotionAuthServiceError,
+} from '@exnota/integration/service/notion-auth.service'
+import { Result, mapErrorType, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
 import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client'
 import { SearchResponse } from '@notionhq/client/build/src/api-endpoints'
@@ -27,6 +31,7 @@ export enum ExportError {
   AUTH_ERROR = 'AUTH_ERROR',
   UNKNOWN_NOTION_ERROR = 'UNKNOWN_NOTION_ERROR',
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
 }
 
 export enum AddAudioError {
@@ -34,20 +39,29 @@ export enum AddAudioError {
   ADDING_AUDIO_ERROR = 'ADDING_AUDIO_ERROR',
   UNKNOWN_NOTION_ERROR = 'UNKNOWN_NOTION_ERROR',
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
 }
 
 @Injectable()
 export class ExportService {
   private readonly logger = new Logger(ExportService.name)
 
+  constructor(private notionAuthService: NotionAuthService) {}
+
   async export(
     note: NoteExport,
     token: AccessToken,
   ): Promise<Result<ExportResult, ExportError>> {
     this.logger.log(`Received note to export:`, note)
-    const notion = new Client({
-      auth: token.token,
-    })
+    const notionResult = this.notionAuthService.getClient(token)
+    if (!notionResult.ok) {
+      switch (notionResult.type) {
+        case NotionAuthServiceError.EXNOTA_CREDENTIALS_MISSING:
+          return mapErrorType(ExportError.AUTH_ERROR, notionResult)
+      }
+    }
+    const notion = notionResult.value
+
     const destinationResult = await this.getDestinationId(notion)
     if (!destinationResult.ok) {
       return destinationResult
@@ -70,9 +84,15 @@ export class ExportService {
     url: string,
     token: AccessToken,
   ): Promise<Result<void, AddAudioError>> {
-    const notion = new Client({
-      auth: token.token,
-    })
+    const notionResult = this.notionAuthService.getClient(token)
+    if (!notionResult.ok) {
+      switch (notionResult.type) {
+        case NotionAuthServiceError.EXNOTA_CREDENTIALS_MISSING:
+          return mapErrorType(AddAudioError.AUTH_ERROR, notionResult)
+      }
+    }
+    const notion = notionResult.value
+
     try {
       this.logger.log('Adding audio to page...')
       const result = await notion.blocks.children.append({

@@ -32,6 +32,18 @@ function resultError<T, U>(
   }
 }
 
+function mapErrorType<T, U>(
+  type: U,
+  errorResult: ResultError<T>,
+): ResultError<U> {
+  return {
+    ok: false,
+    type,
+    message: errorResult.message,
+    error: errorResult.error,
+  }
+}
+
 function isResultOk<T, U>(result: Result<T, U>): result is ResultOk<T> {
   return result.ok
 }
@@ -71,4 +83,5 @@ export {
   isResultError,
   assertResultError,
   assertResultOk,
+  mapErrorType,
 }

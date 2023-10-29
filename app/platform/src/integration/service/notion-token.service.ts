@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config'
 
 export enum NotionTokenServiceError {
   NOTION_AUTH_ERROR = 'NOTION_AUTH_ERROR',
-  EXNOTA_CREDENTILS_MISSING = 'EXNOTA_CREDENTILS_MISSING',
+  EXNOTA_CREDENTIALS_MISSING = 'EXNOTA_CREDENTIALS_MISSING',
 }
 
 @Injectable()
@@ -27,7 +27,7 @@ export class NotionTokenService {
       clientSecret.startsWith('DUMMY_')
     ) {
       return resultError(
-        NotionTokenServiceError.EXNOTA_CREDENTILS_MISSING,
+        NotionTokenServiceError.EXNOTA_CREDENTIALS_MISSING,
         'Credentials not configured',
       )
     }

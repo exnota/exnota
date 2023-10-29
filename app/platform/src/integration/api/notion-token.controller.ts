@@ -22,7 +22,7 @@ export class NotionTokenController {
     if (!result.ok) {
       switch (result.type) {
         case NotionTokenServiceError.NOTION_AUTH_ERROR:
-        case NotionTokenServiceError.EXNOTA_CREDENTILS_MISSING:
+        case NotionTokenServiceError.EXNOTA_CREDENTIALS_MISSING:
           throw httpException(HttpStatus.INTERNAL_SERVER_ERROR, result)
       }
     }
