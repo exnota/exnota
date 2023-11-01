@@ -13,6 +13,9 @@ export class NotionTokenService {
 
   constructor(private configService: ConfigService) {}
 
+  // Token for a given user doesn't seem to change, even if the pages they have
+  // given access to change. Though a new code is generated each time. Not sure
+  // then if we need to send the new code to this endpoint.
   async notionToken(
     code: string,
   ): Promise<Result<unknown, NotionTokenServiceError>> {

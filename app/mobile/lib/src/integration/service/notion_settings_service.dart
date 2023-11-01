@@ -31,6 +31,10 @@ class NotionSettingsService extends _$NotionSettingsService {
     switch (currentSettings) {
       case NotionSettingsCode():
         final code = currentSettings.code;
+        // Token for a given user doesn't seem to change, even if the pages they have
+        // given access to change. Though a new code is generated each time. Not sure
+        // then if we need to send the new code to this endpoint.
+        //
         // Lint error below looks like a false positive, as uriServiceProvider
         // is not a manual provider. Copied the "family" provider implementation
         // as per: https://codewithandrea.com/articles/flutter-riverpod-generator/

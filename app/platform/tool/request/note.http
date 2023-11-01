@@ -92,9 +92,16 @@ Content-Type: audio/wav
 --boundary--
 
 ### ----------------------------------------------------
-### integration endpoints
+### notion api
 ### ----------------------------------------------------
-### generate notion token
+### Get code
+# 1. Get client ID
+# 2. Replace in this URL: https://api.notion.com/v1/oauth/authorize?client_id={{notionOauthClientId}}&response_type=code&owner=user&redirect_uri=https%3A%2F%2Fexnota.com%2Fapi%2Fintegration%2Fnotion%2Fmobile-code-redirect
+# 3. Open in browser and start capturing network requests
+# 4. Go through flow, and get code from attempted redirect
+#    (won't work due to exnota:// scheme).
+
+### Get access token
 POST {{baseUrl}}/notion-token HTTP/1.1
 content-type: application/json
 
@@ -102,9 +109,6 @@ content-type: application/json
     "code": "a code"
 }
 
-### ----------------------------------------------------
-### notion api
-### ----------------------------------------------------
 ### blocks - append file block
 curl -X PATCH 'https://api.notion.com/v1/blocks/2daf121ec2e742299da72e1df4eb67b9/children' \
   -H 'Authorization: Bearer '"{{notionAccessToken}}"'' \
