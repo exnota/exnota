@@ -1,4 +1,3 @@
-import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/integration/data/notion_settings_repo.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
