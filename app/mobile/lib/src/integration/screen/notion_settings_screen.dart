@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/integration/service/notion_settings_service.dart';
-import 'package:exnota/src/integration/view/alternate_notion_settings_view.dart';
+import 'package:exnota/src/integration/screen/alternate_notion_settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,16 +13,16 @@ import 'package:oauth2/oauth2.dart' as oauth2;
 
 // TODO: Refector into controller pattern? (is that a thing) to simplify this widget?
 /// Initiates Notion auth process.
-class NotionSettingsView extends ConsumerStatefulWidget {
-  const NotionSettingsView({super.key});
+class NotionSettingsScreen extends ConsumerStatefulWidget {
+  const NotionSettingsScreen({super.key});
 
   @override
-  ConsumerState<NotionSettingsView> createState() => _NotionSettingsView();
+  ConsumerState<NotionSettingsScreen> createState() => _NotionSettingsScreen();
 }
 
 enum LaunchingBrowserStatus { notLaunched, launched, returned }
 
-class _NotionSettingsView extends ConsumerState<NotionSettingsView>
+class _NotionSettingsScreen extends ConsumerState<NotionSettingsScreen>
     with WidgetsBindingObserver {
   final double _verticalColumnSpace = 20;
 
@@ -364,7 +364,7 @@ class _TitleThatCanOpenAlternateNotionSettingsState
           Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => const AlternateNotionSettingsView()),
+                builder: (context) => const AlternateNotionSettingsScreen()),
           );
         });
       },

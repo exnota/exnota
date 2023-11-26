@@ -6,18 +6,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // secret in place of a Notion access token, and if it matches what the backend
 // expects, it will use an internal integration secret for a test account to
 // auth with Notion.
-class AlternateNotionSettingsView extends ConsumerStatefulWidget {
-  const AlternateNotionSettingsView({super.key});
+class AlternateNotionSettingsScreen extends ConsumerStatefulWidget {
+  const AlternateNotionSettingsScreen({super.key});
 
   @override
-  ConsumerState<AlternateNotionSettingsView> createState() =>
-      _AlternateNotionSettingsViewState();
+  ConsumerState<AlternateNotionSettingsScreen> createState() =>
+      _AlternateNotionSettingsScreenState();
 }
 
 enum LaunchingBrowserStatus { notLaunched, launched, returned }
 
-class _AlternateNotionSettingsViewState
-    extends ConsumerState<AlternateNotionSettingsView> {
+class _AlternateNotionSettingsScreenState
+    extends ConsumerState<AlternateNotionSettingsScreen> {
   final controller = TextEditingController();
 
   @override

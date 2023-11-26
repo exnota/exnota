@@ -1,5 +1,5 @@
 import 'package:exnota/src/account/settings/environment_service.dart';
-import 'package:exnota/src/integration/view/notion_settings_view.dart';
+import 'package:exnota/src/integration/screen/notion_settings_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,8 +10,8 @@ import 'settings_controller.dart';
 ///
 /// When a user changes a setting, the SettingsController is updated and
 /// Widgets that listen to the SettingsController are rebuilt.
-class SettingsView extends ConsumerWidget {
-  const SettingsView({super.key, required this.controller});
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key, required this.controller});
 
   static const routeName = '/settings';
 
@@ -38,7 +38,7 @@ class SettingsView extends ConsumerWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const NotionSettingsView()),
+                          builder: (context) => const NotionSettingsScreen()),
                     );
                   },
                   child: const Text("Configure Notion")),

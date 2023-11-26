@@ -4,25 +4,25 @@ import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
-import 'package:exnota/src/integration/view/notion_settings_view.dart';
+import 'package:exnota/src/integration/screen/notion_settings_screen.dart';
 import 'package:exnota/src/note/service/note_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_waveforms/audio_waveforms.dart';
-import 'package:exnota/src/account/settings/settings_view.dart';
+import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:path_provider/path_provider.dart';
 
-class NoteListView extends ConsumerStatefulWidget {
+class NoteListScreen extends ConsumerStatefulWidget {
   static const routeName = '/';
 
-  const NoteListView({super.key});
+  const NoteListScreen({super.key});
 
   @override
-  ConsumerState<NoteListView> createState() => _NoteListViewState();
+  ConsumerState<NoteListScreen> createState() => _NoteListScreenState();
 }
 
-class _NoteListViewState extends ConsumerState<NoteListView> {
+class _NoteListScreenState extends ConsumerState<NoteListScreen> {
   @override
   Widget build(BuildContext context) {
     final notionConnected = ref.watch(notionConnectedServiceProvider);
@@ -48,7 +48,7 @@ class _NoteListViewState extends ConsumerState<NoteListView> {
               // Navigate to the settings page. If the user leaves and returns
               // to the app after it has been killed while running in the
               // background, the navigation stack is restored.
-              Navigator.restorablePushNamed(context, SettingsView.routeName);
+              Navigator.restorablePushNamed(context, SettingsScreen.routeName);
             },
           ),
         ],
@@ -60,7 +60,7 @@ class _NoteListViewState extends ConsumerState<NoteListView> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const NotionSettingsView()),
+                        builder: (context) => const NotionSettingsScreen()),
                   );
                 },
                 child:
@@ -111,7 +111,7 @@ class _NoteListViewState extends ConsumerState<NoteListView> {
                     // background, the navigation stack is restored.
                     // Navigator.restorablePushNamed(
                     //   context,
-                    //   SampleItemDetailsView.routeName,
+                    //   SampleItemDetailsScreen.routeName,
                     // );
                   });
             },

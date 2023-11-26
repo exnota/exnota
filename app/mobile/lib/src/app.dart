@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'package:exnota/src/note/view/sample_item_details_view.dart';
-import 'package:exnota/src/note/view/note_list_view.dart';
+import 'package:exnota/src/note/screen/sample_item_details_screen.dart';
+import 'package:exnota/src/note/screen/note_list_screen.dart';
 import 'package:exnota/src/account/settings/settings_controller.dart';
-import 'package:exnota/src/account/settings/settings_view.dart';
+import 'package:exnota/src/account/settings/settings_screen.dart';
 
 /// The Widget that configures your application.
 class MyApp extends StatelessWidget {
@@ -67,13 +67,13 @@ class MyApp extends StatelessWidget {
               settings: routeSettings,
               builder: (BuildContext context) {
                 switch (routeSettings.name) {
-                  case SettingsView.routeName:
-                    return SettingsView(controller: settingsController);
-                  case SampleItemDetailsView.routeName:
-                    return const SampleItemDetailsView();
-                  case NoteListView.routeName:
+                  case SettingsScreen.routeName:
+                    return SettingsScreen(controller: settingsController);
+                  case SampleItemDetailsScreen.routeName:
+                    return const SampleItemDetailsScreen();
+                  case NoteListScreen.routeName:
                   default:
-                    return const NoteListView();
+                    return const NoteListScreen();
                 }
               },
             );
