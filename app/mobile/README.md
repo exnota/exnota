@@ -126,7 +126,7 @@ resolved the issue without guesswork, though it requires waiting for a lot to
 download:
 
 1. Open Android Studio
-2. Right click the `android`` folder
+2. Right click the `android` folder
 3. Select: Flutter > Open in Android Studio
 4. Wait a while for it to load
 5. It'll ask in a notification if you want to run a process to upgrade Gradle.
