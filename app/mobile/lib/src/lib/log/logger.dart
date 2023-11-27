@@ -27,7 +27,10 @@ class Logger {
     logger.w({"message": message, "data": data});
   }
 
-  void error(String message, [dynamic data]) {
-    logger.e({"message": message, "data": data});
+  // Don't attach PII or any personal information as we may in future
+  // send this data to a third-party crash reporting service.
+  void error(String message, {dynamic nonPrivateData}) {
+    // TODO: Send report to some crash report service
+    logger.e({"message": message, "nonPrivateData": nonPrivateData});
   }
 }
