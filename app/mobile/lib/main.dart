@@ -1,4 +1,5 @@
 import 'package:exnota/database.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/data/sync/sync_command_repo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,13 +9,15 @@ import 'src/account/settings/settings_controller.dart';
 import 'src/account/settings/settings_service.dart';
 
 void main() async {
+  final mainLogger = Logger();
+
   // Needed for the database. Don't know why :)
   WidgetsFlutterBinding.ensureInitialized();
 
   final db = initDatabase();
   final commandRepo = SyncCommandRepo(db);
   commandRepo.fetchAllStream().listen((event) {
-    print("event: $event");
+    mainLogger.debug("Found commands", event);
   });
 
   // Set up the SettingsController, which will glue user settings to multiple
