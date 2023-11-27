@@ -1,21 +1,17 @@
+enum SyncCommandStatus { waiting, running, complete }
+
 abstract class SyncCommand<T> {
   final String entityId;
+  final SyncCommandStatus status;
 
-  SyncCommand(this.entityId);
+  SyncCommand(
+      {required this.entityId, this.status = SyncCommandStatus.waiting});
 
   Future<T> request();
 
-  // TODO: Rename below methods to reference 'data' and remove
-  // any that aren't used.
-  Map<String, dynamic> internalToJson();
+  Map<String, dynamic> internalDataToJson();
 
-  Map<String, dynamic> toJson() {
-    return internalToJson();
-  }
-
-  T internalFromJson(Map<String, dynamic> json);
-
-  T fromJson(Map<String, dynamic> json) {
-    return internalFromJson(json);
+  Map<String, dynamic> dataToJson() {
+    return internalDataToJson();
   }
 }

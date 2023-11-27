@@ -1,4 +1,5 @@
 import 'package:exnota/database.dart';
+import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/data/sync/sync_command_repo.dart';
 import 'package:flutter/material.dart';
@@ -16,8 +17,18 @@ void main() async {
 
   final db = initDatabase();
   final commandRepo = SyncCommandRepo(db);
-  commandRepo.fetchAllStream().listen((event) {
-    mainLogger.debug("Found commands", event);
+  commandRepo
+      .fetchAllStream(status: SyncCommandStatus.waiting)
+      .listen((commands) async {
+    mainLogger.debug("Found commands", commands);
+    if (commands.isEmpty) {
+      return;
+    }
+    final command = commands[0];
+    final result = await command.request();
+    mainLogger.debug("Command result", result);
+    await commandRepo.setStatus(command.entityId, SyncCommandStatus.complete);
+    mainLogger.debug("Command status updated");
   });
 
   // Set up the SettingsController, which will glue user settings to multiple
