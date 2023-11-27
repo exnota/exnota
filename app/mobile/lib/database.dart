@@ -12,6 +12,11 @@ part 'database.g.dart';
 
 @Riverpod(keepAlive: true)
 AppDatabase database(DatabaseRef ref) {
+  // This will be added using an override in main.dart as per https://github.com/bizz84/flutter-tips-and-tricks/blob/main/tips/0056-async-init-provider-overrides/index.md
+  throw UnimplementedError();
+}
+
+AppDatabase initDatabase() {
   return AppDatabase();
 }
 
