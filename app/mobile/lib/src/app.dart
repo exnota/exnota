@@ -1,3 +1,4 @@
+import 'package:exnota/src/lib/data/sync/sync_command_runner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -6,9 +7,10 @@ import 'package:exnota/src/note/screen/sample_item_details_screen.dart';
 import 'package:exnota/src/note/screen/note_list_screen.dart';
 import 'package:exnota/src/account/settings/settings_controller.dart';
 import 'package:exnota/src/account/settings/settings_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The Widget that configures your application.
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({
     super.key,
     required this.settingsController,
@@ -17,13 +19,28 @@ class MyApp extends StatelessWidget {
   final SettingsController settingsController;
 
   @override
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  bool syncCommandRunnerStarted = false;
+
+  @override
   Widget build(BuildContext context) {
+    if (!syncCommandRunnerStarted) {
+      // TODO: Do we need a way to dispose/stop this?
+      ref.read(syncCommandRunnerProvider.notifier).run();
+      setState(() {
+        syncCommandRunnerStarted = true;
+      });
+    }
+
     // Glue the SettingsController to the MaterialApp.
     //
     // The ListenableBuilder Widget listens to the SettingsController for changes.
     // Whenever the user updates their settings, the MaterialApp is rebuilt.
     return ListenableBuilder(
-      listenable: settingsController,
+      listenable: widget.settingsController,
       builder: (BuildContext context, Widget? child) {
         return MaterialApp(
           // Providing a restorationScopeId allows the Navigator built by the
@@ -58,7 +75,7 @@ class MyApp extends StatelessWidget {
           // SettingsController to display the correct theme.
           theme: ThemeData(useMaterial3: true),
           darkTheme: ThemeData.dark(useMaterial3: true),
-          themeMode: settingsController.themeMode,
+          themeMode: widget.settingsController.themeMode,
 
           // Define a function to handle named routes in order to support
           // Flutter web url navigation and deep linking.
@@ -68,7 +85,8 @@ class MyApp extends StatelessWidget {
               builder: (BuildContext context) {
                 switch (routeSettings.name) {
                   case SettingsScreen.routeName:
-                    return SettingsScreen(controller: settingsController);
+                    return SettingsScreen(
+                        controller: widget.settingsController);
                   case SampleItemDetailsScreen.routeName:
                     return const SampleItemDetailsScreen();
                   case NoteListScreen.routeName:
