@@ -15,19 +15,19 @@ class Logger {
 
   Logger() : logger = WrappedLogger();
 
-  void info(String message, dynamic data) {
+  void info(String message, [dynamic data]) {
     logger.i({"message": message, "data": data});
   }
 
-  void debug(String message, dynamic obj) {
-    logger.d({"message": message, "data": obj});
+  void debug(String message, [dynamic data]) {
+    logger.d({"message": message, "data": data});
   }
 
-  void warn(String message, dynamic obj) {
-    logger.w({"message": message, "data": obj});
+  void warn(String message, [dynamic data]) {
+    logger.w({"message": message, "data": data});
   }
 
-  void error(String message, dynamic obj) {
-    logger.e({"message": message, "data": obj});
+  void error(String message, [dynamic data]) {
+    logger.e({"message": message, "data": data});
   }
 }
