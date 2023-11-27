@@ -20,15 +20,18 @@ class SyncCommandRunner extends _$SyncCommandRunner {
     commandRepo
         .fetchAllStream(status: SyncCommandStatus.waiting)
         .listen((commands) async {
-      logger.debug("Found commands", commands);
       if (commands.isEmpty) {
+        logger.debug("No commands found");
         return;
       }
-      final command = commands[0];
-      final result = await command.request();
-      logger.debug("Command result", result);
-      await commandRepo.setStatus(command.entityId, SyncCommandStatus.complete);
-      logger.debug("Command status updated");
+
+      for (final command in commands) {
+        await commandRepo.setStatus(command.id, SyncCommandStatus.running);
+        final result = await command.request();
+        logger.debug("Command result", result);
+        await commandRepo.setStatus(command.id, SyncCommandStatus.complete);
+        logger.debug("Command status updated");
+      }
     });
   }
 }

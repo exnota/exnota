@@ -1,11 +1,14 @@
 enum SyncCommandStatus { waiting, running, complete }
 
 abstract class SyncCommand<T> {
+  final int id;
   final String entityId;
   final SyncCommandStatus status;
 
   SyncCommand(
-      {required this.entityId, this.status = SyncCommandStatus.waiting});
+      {required this.id,
+      required this.entityId,
+      this.status = SyncCommandStatus.waiting});
 
   Future<T> request();
 

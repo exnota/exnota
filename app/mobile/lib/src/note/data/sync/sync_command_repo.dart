@@ -32,28 +32,21 @@ class SyncCommandRepo {
     return db.select(db.syncCommandTable).map<SyncCommand>(_toDomain).watch();
   }
 
-  Future<void> create(SyncCommand cmd) async {
-    SyncCommandRepoType type;
-    switch (cmd.runtimeType) {
-      case CreateAudioNoteSyncCommand:
-        type = SyncCommandRepoType.createAudioNote;
-        break;
-      default:
-        throw Exception('Unknown command type');
-    }
-    final data = cmd.dataToJson();
+  Future<void> createAudioNote(
+      {required String entityId, required String str}) async {
+    SyncCommandRepoType type = SyncCommandRepoType.createAudioNote;
     SyncCommandTableCompanion toInsert = SyncCommandTableCompanion.insert(
         type: type,
-        entityId: cmd.entityId,
-        data: jsonEncode(data),
-        status: _statusToDb(cmd.status));
+        entityId: entityId,
+        data: jsonEncode({"str": str}),
+        status: SyncCommandRepoStatus.waiting);
     await db.into(db.syncCommandTable).insert(toInsert);
   }
 
   // update status of command
-  Future<void> setStatus(String id, SyncCommandStatus status) async {
+  Future<void> setStatus(int id, SyncCommandStatus status) async {
     db.update(db.syncCommandTable)
-      ..where((tbl) => tbl.entityId.equals(id))
+      ..where((tbl) => tbl.id.equals(id))
       ..write(SyncCommandTableCompanion(status: Value(_statusToDb(status))));
   }
 
@@ -62,6 +55,7 @@ class SyncCommandRepo {
     switch (fromDb.type) {
       case SyncCommandRepoType.createAudioNote:
         return CreateAudioNoteSyncCommand.fromJson(
+            id: fromDb.id,
             entityId: fromDb.entityId,
             json: data as Map<String, dynamic>,
             status: _statusFromDb(fromDb.status));
