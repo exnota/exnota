@@ -1,7 +1,12 @@
+import 'dart:math';
+
+import 'package:exnota/database.dart';
 import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/integration/data/notion_settings_repo.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/note/audio_note.dart';
+import 'package:exnota/src/note/data/sync/create_audio_note_sync_command.dart';
+import 'package:exnota/src/note/data/sync/sync_command_repo.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -19,6 +24,14 @@ class NoteService extends _$NoteService {
   }
 
   Future<NoteCreateError?> create(String path) async {
+    // Add command
+    final db = ref.read(databaseProvider);
+    final syncCommandRepo = SyncCommandRepo(db);
+    final randomNum = Random().nextInt(100);
+    final cmd = CreateAudioNoteSyncCommand(
+        entityId: "entityId+$randomNum", str: "Test string");
+    await syncCommandRepo.create(cmd);
+
     // Lint error below looks like a false positive, as uriServiceProvider
     // is not a manual provider. Copied the "family" provider implementation
     // as per: https://codewithandrea.com/articles/flutter-riverpod-generator/

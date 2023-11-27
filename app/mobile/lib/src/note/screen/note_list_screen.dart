@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:exnota/database.dart';
 import 'package:exnota/src/account/settings/environment_service.dart';
+import 'package:exnota/src/note/data/sync/sync_command_repo.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
@@ -39,6 +40,11 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
         title = kDebugMode ? "Exnota (🧑‍💻 local)" : "Exnota";
         break;
     }
+    // TODO: Remove
+    final db = ref.read(databaseProvider);
+    SyncCommandRepo(db).fetchAllStream().listen((event) {
+      print("length=${event.length}");
+    });
 
     return Scaffold(
       appBar: AppBar(
