@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/note/audio_note.dart';
+import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/lib/data/sync/sync_command_repo.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

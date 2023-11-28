@@ -5,7 +5,7 @@ import 'package:exnota/src/integration/data/notion_settings_repo.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/audio_note.dart';
+import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/note/service/note_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
