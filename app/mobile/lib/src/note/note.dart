@@ -15,7 +15,7 @@ sealed class LocalData {
 
 sealed class Note {
   abstract final String id;
-  abstract final String title;
+  abstract final String? title;
   abstract final List<Capture> captures;
   abstract final LocalData localData;
 }
@@ -34,7 +34,7 @@ class VoiceNote extends Note {
   final String id;
 
   @override
-  final String title;
+  final String? title;
 
   @override
   final List<AudioFileCapture> captures;
@@ -44,7 +44,7 @@ class VoiceNote extends Note {
 
   VoiceNote({
     required this.id,
-    required this.title,
+    this.title,
     required List<AudioFileCapture> captures,
     required this.localData,
   }) : captures = List.unmodifiable(captures);

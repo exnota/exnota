@@ -30,11 +30,13 @@ dependencies:
   http_parser: ^4.0.2
   drift_db_viewer: ^2.0.0
   logger: ^2.0.2+1
+  json_annotation: ^4.8.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  json_serializable: ^6.7.1
   build_runner: ^2.4.6
   freezed: ^2.4.5
   drift_dev: ^2.12.1
