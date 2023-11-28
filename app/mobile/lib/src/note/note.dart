@@ -3,24 +3,51 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'note.freezed.dart';
 
-sealed class Note {
-  final String id;
-  final String title;
-  final List<Capture> captures;
+enum LocalStatus { capturing, captured, synced }
 
-  Note({
-    required this.id,
-    required this.title,
-    required this.captures,
+sealed class LocalData {
+  final LocalStatus status;
+
+  const LocalData({
+    required this.status,
   });
 }
 
+sealed class Note {
+  abstract final String id;
+  abstract final String title;
+  abstract final List<Capture> captures;
+  abstract final LocalData localData;
+}
+
+class AudioNoteLocalData extends LocalData {
+  final String path;
+
+  const AudioNoteLocalData({
+    required this.path,
+    required LocalStatus status,
+  }) : super(status: status);
+}
+
 class VoiceNote extends Note {
+  @override
+  final String id;
+
+  @override
+  final String title;
+
+  @override
+  final List<AudioFileCapture> captures;
+
+  @override
+  final LocalData localData;
+
   VoiceNote({
-    required String id,
-    required String title,
+    required this.id,
+    required this.title,
     required List<AudioFileCapture> captures,
-  }) : super(id: id, title: title, captures: List.unmodifiable(captures));
+    required this.localData,
+  }) : captures = List.unmodifiable(captures);
 }
 
 // TODO: Remove
