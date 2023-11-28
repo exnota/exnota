@@ -1,4 +1,4 @@
-import 'package:logger/logger.dart' as l show Logger;
+import 'package:logger/logger.dart' as l;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'logger.g.dart';
@@ -13,7 +13,7 @@ Logger logger(LoggerRef ref) {
 class Logger {
   final WrappedLogger logger;
 
-  Logger() : logger = WrappedLogger();
+  Logger() : logger = WrappedLogger(printer: l.SimplePrinter(printTime: true));
 
   void info(String message, [dynamic data]) {
     logger.i({"message": message, "data": data});
