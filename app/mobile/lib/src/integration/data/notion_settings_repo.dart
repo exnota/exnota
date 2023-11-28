@@ -1,4 +1,4 @@
-import 'package:exnota/database.dart';
+import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:drift/drift.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';

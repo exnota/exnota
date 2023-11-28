@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:drift_db_viewer/drift_db_viewer.dart';
-import 'package:exnota/database.dart';
+import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/account/settings/environment_service.dart';
-import 'package:exnota/src/note/data/sync/sync_command_repo.dart';
+import 'package:exnota/src/lib/data/sync/sync_command_repo.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
@@ -214,7 +214,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
           setState(() {
             isUploading = true;
           });
-          final err = await ref.read(noteServiceProvider.notifier).create(path);
+          await ref.read(noteServiceProvider.notifier).create(path);
           setState(() {
             isUploading = false;
           });

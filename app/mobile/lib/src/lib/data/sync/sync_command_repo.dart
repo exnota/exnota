@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:exnota/database.dart';
+import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
-import 'package:exnota/src/note/data/sync/create_audio_note_sync_command.dart';
-import 'package:exnota/src/note/data/sync/sync_command_table.dart';
+import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
+import 'package:exnota/src/lib/data/sync/sync_command_table.dart';
 
 class SyncCommandRepo {
   final AppDatabase db;
