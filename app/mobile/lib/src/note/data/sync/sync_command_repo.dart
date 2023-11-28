@@ -33,12 +33,13 @@ class SyncCommandRepo {
   }
 
   Future<void> createAudioNote(
-      {required String entityId, required String str}) async {
+      {required String entityId, required String filePath}) async {
     SyncCommandRepoType type = SyncCommandRepoType.createAudioNote;
     SyncCommandTableCompanion toInsert = SyncCommandTableCompanion.insert(
         type: type,
         entityId: entityId,
-        data: jsonEncode({"str": str}),
+        // TODO: This should go into the command class itself or it might be forgotten
+        data: jsonEncode({"filePath": filePath}),
         status: SyncCommandRepoStatus.waiting);
     await db.into(db.syncCommandTable).insert(toInsert);
   }

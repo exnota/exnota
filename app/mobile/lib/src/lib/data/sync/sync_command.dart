@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 enum SyncCommandStatus { waiting, running, complete }
 
 abstract class SyncCommand<T> {
@@ -10,7 +12,7 @@ abstract class SyncCommand<T> {
       required this.entityId,
       this.status = SyncCommandStatus.waiting});
 
-  Future<T> request();
+  Future<void> request(Ref ref);
 
   Map<String, dynamic> internalDataToJson();
 

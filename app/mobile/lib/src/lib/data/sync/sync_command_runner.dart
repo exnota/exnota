@@ -26,9 +26,10 @@ class SyncCommandRunner extends _$SyncCommandRunner {
       }
 
       for (final command in commands) {
+        logger.info("Executing command...", command);
         await commandRepo.setStatus(command.id, SyncCommandStatus.running);
-        final result = await command.request();
-        logger.debug("Command result", result);
+        await command.request(ref);
+        logger.debug("Finished executing", command);
         await commandRepo.setStatus(command.id, SyncCommandStatus.complete);
         logger.debug("Command status updated");
       }

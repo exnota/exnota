@@ -218,28 +218,29 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
           setState(() {
             isUploading = false;
           });
+          // TODO: Handle errors
 
-          String? errorMessage;
-          switch (err) {
-            case NoteCreateError.authError:
-              errorMessage = "Access to Notion lost. Please reconnect.";
-              break;
-            case NoteCreateError.noPageError:
-              errorMessage =
-                  "No page or database to export to. Please reconnect and select a page.";
-              break;
-            case NoteCreateError.network:
-              errorMessage = "There seems to be a network issue. Please retry.";
-              break;
-            case NoteCreateError.other:
-              errorMessage = "Couldn't export for an unknown reason.";
-              break;
-            case null:
-              break;
-          }
-          if (errorMessage != null) {
-            _showSnackError(errorMessage);
-          }
+          // String? errorMessage;
+          // switch (err) {
+          //   case NoteCreateError.authError:
+          //     errorMessage = "Access to Notion lost. Please reconnect.";
+          //     break;
+          //   case NoteCreateError.noPageError:
+          //     errorMessage =
+          //         "No page or database to export to. Please reconnect and select a page.";
+          //     break;
+          //   case NoteCreateError.network:
+          //     errorMessage = "There seems to be a network issue. Please retry.";
+          //     break;
+          //   case NoteCreateError.other:
+          //     errorMessage = "Couldn't export for an unknown reason.";
+          //     break;
+          //   case null:
+          //     break;
+          // }
+          // if (errorMessage != null) {
+          //   _showSnackError(errorMessage);
+          // }
         },
         label: const Text('Stop'),
         icon: const Icon(Icons.stop),
