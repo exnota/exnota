@@ -24,7 +24,7 @@ class NoteRepo {
         id: id,
         type: NoteTableType.voice,
         title: const Value.absent(),
-        captures: NoteTableCaptures(captures: [captureCompanion.id.value]),
+        captures: [captureCompanion.id.value],
         localData: LocalDataAll(
             status: LocalStatusRepo.capturing, filePath: filePath));
 
@@ -41,8 +41,7 @@ class NoteRepo {
   }
 
   Future<Note> getNoteById(String id) async {
-    final referencedCaptures =
-        db.noteTable.captures.jsonEach(db, r'$.captures');
+    final referencedCaptures = db.noteTable.captures.jsonEach(db);
 
     final noteWithCapturesQuery = db.select(db.noteTable).join(
       [

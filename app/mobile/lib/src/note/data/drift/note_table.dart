@@ -5,6 +5,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'note_table.g.dart';
 
+// TODO: Make this more explicit using a property jsonName as per LocalStatusRepo
 // Enum names are used in the database. So don't rename without handling the
 // migration.
 enum NoteTableType { voice, text }
@@ -16,36 +17,25 @@ class NoteTable extends Table {
   TextColumn get id => text()();
   TextColumn get type => textEnum<NoteTableType>()();
   TextColumn get title => text().nullable()();
-  TextColumn get captures => text().map(NoteTableCaptures.converter)();
+  TextColumn get captures => text().map(NoteTableCapturesConverter())();
   TextColumn get localData => text().map(LocalDataAllConverter())();
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
-/// Handles serialization of capture IDs to a JSON array and then to a string,
-/// and the reverse.
-///
-/// Source: https://drift.simonbinder.eu/docs/examples/relationships/#with-json-functions
-@JsonSerializable()
-class NoteTableCaptures {
-  final List<String> captures;
-
-  NoteTableCaptures({required this.captures});
-
-  factory NoteTableCaptures.fromJson(Map<String, Object?> json) =>
-      _$NoteTableCapturesFromJson(json);
-
-  Map<String, Object?> toJson() {
-    return _$NoteTableCapturesToJson(this);
+/// Stores the list of capture ids as a json array.
+class NoteTableCapturesConverter extends TypeConverter<List<String>, String> {
+  @override
+  List<String> fromSql(String fromDb) {
+    final List<dynamic> decoded = jsonDecode(fromDb);
+    return decoded.cast<String>();
   }
 
-  static JsonTypeConverter<NoteTableCaptures, String> converter =
-      TypeConverter.json(
-    fromJson: (json) =>
-        NoteTableCaptures.fromJson(json as Map<String, Object?>),
-    toJson: (captures) => captures.toJson(),
-  );
+  @override
+  String toSql(List<String> value) {
+    return jsonEncode(value);
+  }
 }
 
 enum LocalStatusRepo {
