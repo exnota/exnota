@@ -28,10 +28,10 @@ class NoteService extends _$NoteService {
     ]);
   }
 
-  Future<void> createAudioNote({required String filePath}) async {
+  Future<VoiceNote> createAudioNote({required String filePath}) async {
     final db = ref.read(databaseProvider);
     final noteRepo = NoteRepo(db);
-    await noteRepo.createVoiceNote(
+    return await noteRepo.createVoiceNote(
       filePath: filePath,
     );
   }

@@ -44,7 +44,7 @@ class NoteTableCaptures {
       TypeConverter.json(
     fromJson: (json) =>
         NoteTableCaptures.fromJson(json as Map<String, Object?>),
-    toJson: (entries) => entries.toJson(),
+    toJson: (captures) => captures.toJson(),
   );
 }
 
