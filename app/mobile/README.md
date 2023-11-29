@@ -64,6 +64,10 @@ Android quirks
    3. Microphone > Enable 'Virtual microphone uses host audio input'
 * Instead of `localhost` use `10.0.2.2`
 
+iOS quirks
+
+* Copy/paste doesn't seem to work with older iOS versions.
+
 ### Database
 
 iOS Simulator
