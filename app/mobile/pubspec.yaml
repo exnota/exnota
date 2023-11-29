@@ -31,6 +31,7 @@ dependencies:
   drift_db_viewer: ^2.0.0
   logger: ^2.0.2+1
   json_annotation: ^4.8.1
+  nanoid2: ^2.0.1
 
 dev_dependencies:
   flutter_test:

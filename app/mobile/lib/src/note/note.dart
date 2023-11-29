@@ -6,11 +6,7 @@ part 'note.freezed.dart';
 enum LocalStatus { capturing, captured, synced }
 
 sealed class LocalData {
-  final LocalStatus status;
-
-  const LocalData({
-    required this.status,
-  });
+  abstract final LocalStatus status;
 }
 
 sealed class Note {
@@ -20,13 +16,16 @@ sealed class Note {
   abstract final LocalData localData;
 }
 
-class AudioNoteLocalData extends LocalData {
-  final String path;
+class VoiceNoteLocalData implements LocalData {
+  @override
+  final LocalStatus status;
 
-  const AudioNoteLocalData({
-    required this.path,
-    required LocalStatus status,
-  }) : super(status: status);
+  final String filePath;
+
+  VoiceNoteLocalData({
+    required this.filePath,
+    required this.status,
+  });
 }
 
 class VoiceNote extends Note {

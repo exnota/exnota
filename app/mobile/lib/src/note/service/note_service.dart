@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/note/data/drift/note_repo.dart';
 import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/lib/data/sync/sync_command_repo.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -27,12 +28,21 @@ class NoteService extends _$NoteService {
     ]);
   }
 
-  Future<void> create(String filePath) async {
+  // TODO: Replace this and above method with something like:
+  // - createVoiceNote (local status = capturing)
+  // - setNoteCaptured (local status = captured AND creates command)
+  // - setNoteSynced (local status = synced)
+  Future<void> createCommand(String filePath) async {
     // Add command
     final db = ref.read(databaseProvider);
     final syncCommandRepo = SyncCommandRepo(db);
     int randomNum = Random().nextInt(100);
     await syncCommandRepo.createAudioNote(
         entityId: "entityId+$randomNum", filePath: filePath);
+
+    final noteRepo = NoteRepo(db);
+    await noteRepo.createVoiceNote(
+      filePath: filePath,
+    );
   }
 }

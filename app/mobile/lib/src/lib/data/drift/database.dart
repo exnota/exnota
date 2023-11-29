@@ -4,6 +4,7 @@ import 'package:exnota/src/integration/data/notion_settings_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:exnota/src/lib/data/sync/sync_command_table.dart';
+import 'package:exnota/src/note/data/drift/capture_table.dart';
 import 'package:exnota/src/note/data/drift/note_table.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -21,7 +22,12 @@ AppDatabase initDatabase() {
   return AppDatabase();
 }
 
-@DriftDatabase(tables: [IntegrationNotionSettings, NoteTable, SyncCommandTable])
+@DriftDatabase(tables: [
+  CaptureTable,
+  IntegrationNotionSettings,
+  NoteTable,
+  SyncCommandTable
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 

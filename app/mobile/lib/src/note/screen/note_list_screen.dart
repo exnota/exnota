@@ -214,7 +214,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
           setState(() {
             isUploading = true;
           });
-          await ref.read(noteServiceProvider.notifier).create(path);
+          await ref.read(noteServiceProvider.notifier).createCommand(path);
           setState(() {
             isUploading = false;
           });
