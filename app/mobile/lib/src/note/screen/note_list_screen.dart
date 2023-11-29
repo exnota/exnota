@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/account/settings/environment_service.dart';
-import 'package:exnota/src/lib/data/sync/sync_command_repo.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
@@ -40,11 +40,6 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
         title = kDebugMode ? "Exnota (🧑‍💻 local)" : "Exnota";
         break;
     }
-    // TODO: Remove
-    final db = ref.read(databaseProvider);
-    SyncCommandRepo(db).fetchAllStream().listen((event) {
-      print("length=${event.length}");
-    });
 
     return Scaffold(
       appBar: AppBar(
@@ -259,9 +254,17 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
     }
     return FloatingActionButton.extended(
       onPressed: () async {
-        print('about to record');
+        ref.read(loggerProvider).info("Recording voice note");
+
+        ref.read(loggerProvider).debug("Creating command");
+        await ref
+            .read(noteServiceProvider.notifier)
+            .createAudioNote(filePath: path!);
+
+        ref.read(loggerProvider).debug("About to record");
         await controller.record(path: path!);
-        print('recording...');
+        ref.read(loggerProvider).debug("Recording");
+
         setState(() {
           isRecording = true;
         });

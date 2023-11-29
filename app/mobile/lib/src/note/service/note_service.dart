@@ -28,6 +28,14 @@ class NoteService extends _$NoteService {
     ]);
   }
 
+  Future<void> createAudioNote({required String filePath}) async {
+    final db = ref.read(databaseProvider);
+    final noteRepo = NoteRepo(db);
+    await noteRepo.createVoiceNote(
+      filePath: filePath,
+    );
+  }
+
   // TODO: Replace this and above method with something like:
   // - createVoiceNote (local status = capturing)
   // - setNoteCaptured (local status = captured AND creates command)
@@ -39,10 +47,5 @@ class NoteService extends _$NoteService {
     int randomNum = Random().nextInt(100);
     await syncCommandRepo.createAudioNote(
         entityId: "entityId+$randomNum", filePath: filePath);
-
-    final noteRepo = NoteRepo(db);
-    await noteRepo.createVoiceNote(
-      filePath: filePath,
-    );
   }
 }
