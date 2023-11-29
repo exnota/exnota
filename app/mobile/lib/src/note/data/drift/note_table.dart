@@ -23,6 +23,31 @@ class NoteTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Handles serialization of capture IDs to a JSON array and then to a string,
+/// and the reverse.
+///
+/// Source: https://drift.simonbinder.eu/docs/examples/relationships/#with-json-functions
+@JsonSerializable()
+class NoteTableCaptures {
+  final List<String> captures;
+
+  NoteTableCaptures({required this.captures});
+
+  factory NoteTableCaptures.fromJson(Map<String, Object?> json) =>
+      _$NoteTableCapturesFromJson(json);
+
+  Map<String, Object?> toJson() {
+    return _$NoteTableCapturesToJson(this);
+  }
+
+  static JsonTypeConverter<NoteTableCaptures, String> converter =
+      TypeConverter.json(
+    fromJson: (json) =>
+        NoteTableCaptures.fromJson(json as Map<String, Object?>),
+    toJson: (entries) => entries.toJson(),
+  );
+}
+
 enum LocalStatusRepo {
   capturing(jsonName: "capturing"),
   captured(jsonName: "captured"),
@@ -61,59 +86,3 @@ class LocalDataAllConverter extends TypeConverter<LocalDataAll, String> {
     return jsonEncode(value.toJson());
   }
 }
-
-@JsonSerializable()
-class NoteTableCaptures {
-  final List<String> captures;
-
-  NoteTableCaptures({required this.captures});
-
-  factory NoteTableCaptures.fromJson(Map<String, Object?> json) =>
-      _$NoteTableCapturesFromJson(json);
-
-  Map<String, Object?> toJson() {
-    return _$NoteTableCapturesToJson(this);
-  }
-
-  static JsonTypeConverter<NoteTableCaptures, String> converter =
-      TypeConverter.json(
-    fromJson: (json) =>
-        NoteTableCaptures.fromJson(json as Map<String, Object?>),
-    toJson: (entries) => entries.toJson(),
-  );
-}
-
-// stores preferences as strings
-// class LocalDataConverter extends TypeConverter<LocalData, String> {
-//   const LocalDataConverter();
-
-//   @override
-//   VoiceNoteLocalData fromSql(String fromDb) {
-//     return VoiceNoteLocalDataRepoMapper.fromJson(
-//         json.decode(fromDb) as Map<String, dynamic>);
-//   }
-
-//   @override
-//   String toSql(LocalData value) {
-//     switch (value) {
-//       case VoiceNoteLocalData():
-//         return jsonEncode(VoiceNoteLocalDataRepoMapper.toJson(value));
-//     }
-//   }
-// }
-
-// class VoiceNoteLocalDataConverter
-//     extends TypeConverter<VoiceNoteLocalData, String> {
-//   const VoiceNoteLocalDataConverter();
-
-//   @override
-//   VoiceNoteLocalData fromSql(String fromDb) {
-//     return VoiceNoteLocalDataRepoMapper.fromJson(
-//         json.decode(fromDb) as Map<String, dynamic>);
-//   }
-
-//   @override
-//   String toSql(VoiceNoteLocalData value) {
-//     return jsonEncode(VoiceNoteLocalDataRepoMapper.toJson(value));
-//   }
-// }
