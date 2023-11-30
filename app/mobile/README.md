@@ -1,5 +1,32 @@
 # Exnota mobile flutter app
 
+## Development principles
+
+Old app version should not break on new data structures from the server!
+
+### Robustness: Liberally accept external data
+
+This allows more fixes and features without app updates.
+
+E.g.
+
+* Use flexible `fromJson` factories when working with domain objects from the backend.
+  * Then also liberally persist those domain objects.
+  * Then also liberally fetch those domain objects using `fromDb` factories.
+* Support persisted data from previous app versions.
+* Presentation layer presents whatever is persisted.
+
+### Robustness: Be conservative with app-initiated data mutations
+
+This minimises creating invalid or unexpected state.
+
+E.g.
+
+* Use strict, custom factories when making user-initiated changes to domain objects.
+  * E.g. creation: `factory DomainObject.create(...)`
+  * E.g. updates: `DomainObject copyWithNewStatus(Status status)`
+* Don't allow updating/exporting of unknown note/capture types.
+
 ## Installation
 
 TODO: Replace steps with dev containers.
