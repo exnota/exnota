@@ -50,7 +50,7 @@ class CreateAudioNoteSyncCommand extends SyncCommand<AudioNote> {
       logger.info("About to send request");
       streamedResponse = await request.send();
     } catch (e) {
-      logger.warn("Couldn't send request", e);
+      logger.warn("Couldn't send request", nonPrivateData: e);
       // TODO: remove this and replace with error on command
       return Future.value(null);
       // return NoteCreateError.network;

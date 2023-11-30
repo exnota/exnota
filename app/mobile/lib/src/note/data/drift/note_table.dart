@@ -5,10 +5,15 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'note_table.g.dart';
 
-// TODO: Make this more explicit using a property jsonName as per LocalStatusRepo
-// Enum names are used in the database. So don't rename without handling the
-// migration.
-enum NoteTableType { voice, text }
+enum NoteTableType {
+  voice(jsonName: "voice"),
+  text(jsonName: "text"),
+  unknown(jsonName: "image");
+
+  const NoteTableType({required this.jsonName});
+
+  final String jsonName;
+}
 
 class NoteTable extends Table {
   @override
@@ -53,15 +58,20 @@ enum LocalStatusRepo {
 @JsonSerializable()
 class LocalDataAll {
   final LocalStatusRepo status;
-  final String filePath;
+  final String? filePath;
 
-  LocalDataAll({required this.filePath, required this.status});
+  LocalDataAll({this.filePath, required this.status});
 
   factory LocalDataAll.fromJson(Map<String, Object?> json) =>
       _$LocalDataAllFromJson(json);
 
   Map<String, Object?> toJson() {
     return _$LocalDataAllToJson(this);
+  }
+
+  LocalDataAll copyWith({LocalStatusRepo? status, String? filePath}) {
+    return LocalDataAll(
+        status: status ?? this.status, filePath: filePath ?? this.filePath);
   }
 }
 

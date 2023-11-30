@@ -18,6 +18,13 @@ AppDatabase database(DatabaseRef ref) {
   throw UnimplementedError();
 }
 
+@riverpod
+Future<T> Function<T>(Future<T> Function(), {bool requireNew}) transaction(
+    TransactionRef ref) {
+  final db = ref.read(databaseProvider);
+  return db.transaction;
+}
+
 AppDatabase initDatabase() {
   return AppDatabase();
 }

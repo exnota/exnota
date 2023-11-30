@@ -4,6 +4,7 @@ import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
+import 'package:exnota/src/note/note.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
@@ -130,7 +131,28 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
       },
       floatingActionButton: switch (notionConnected) {
         false => null,
-        true => const RecordButton()
+        // TODO: Revert after testing done
+        true => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            FloatingActionButton(
+                heroTag: "btn1",
+                child: const Text("DB test"),
+                onPressed: () async {
+                  // Get note by id
+                  // final db = ref.read(databaseProvider);
+                  // final noteRepo = NoteRepo(db);
+                  // final result = await noteRepo.getNoteById("UdjWpKSEXVa2Fx");
+                  // ref.read(loggerProvider).debug("result", result);
+
+                  // Create audio note
+                  final appDirectory = await getApplicationDocumentsDirectory();
+                  final filePath = "${appDirectory.path}/recording2.m4a";
+                  final note = await ref
+                      .read(noteServiceProvider.notifier)
+                      .createCapturingAudioNote(filePath: filePath);
+                  ref.read(loggerProvider).debug("Created note", note);
+                }),
+            const RecordButton()
+          ]),
       },
     );
   }
@@ -147,6 +169,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
   late final RecorderController controller;
 
   String? path;
+  VoiceNote? note;
   bool isRecording = false;
   bool isUploading = false;
   late Directory appDirectory;
@@ -209,9 +232,12 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
           setState(() {
             isUploading = true;
           });
-          await ref.read(noteServiceProvider.notifier).createCommand(path);
+          await ref
+              .read(noteServiceProvider.notifier)
+              .setNoteCaptured(note: note!);
           setState(() {
             isUploading = false;
+            note = null;
           });
           // TODO: Handle errors
 
@@ -256,10 +282,14 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
       onPressed: () async {
         ref.read(loggerProvider).info("Recording voice note");
 
-        ref.read(loggerProvider).debug("Creating command");
-        await ref
+        ref.read(loggerProvider).debug("Creating note");
+        final note = await ref
             .read(noteServiceProvider.notifier)
-            .createAudioNote(filePath: path!);
+            .createCapturingAudioNote(filePath: path!);
+        setState(() {
+          this.note = note;
+        });
+        ref.read(loggerProvider).debug("Created note", note);
 
         ref.read(loggerProvider).debug("About to record");
         await controller.record(path: path!);

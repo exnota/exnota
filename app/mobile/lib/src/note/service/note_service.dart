@@ -28,13 +28,42 @@ class NoteService extends _$NoteService {
     ]);
   }
 
-  Future<VoiceNote> createAudioNote({required String filePath}) async {
+  Future<VoiceNote> createCapturingAudioNote({required String filePath}) async {
+    final note = VoiceNote.createCapturing(filePath: filePath);
     final db = ref.read(databaseProvider);
     final noteRepo = NoteRepo(db);
-    return await noteRepo.createVoiceNote(
-      filePath: filePath,
-    );
+    await noteRepo.createVoiceNote(note: note);
+    return note;
   }
+
+  Future<void> setNoteCaptured({required VoiceNote note}) async {
+    note = note.copyAsCaptured();
+
+    final transaction = ref.read(transactionProvider);
+    await transaction(() async {
+      final db = ref.read(databaseProvider);
+      final noteRepo = NoteRepo(db);
+      await noteRepo.updateVoiceNote(updatedNote: note);
+
+      // TODO: Test that if this fails, the note is not marked as captured.
+      final syncCommandRepo = SyncCommandRepo(db);
+      final filePath = note.localData.filePath;
+      if (filePath == null) {
+        throw Exception("Cannot create command without filePath");
+      }
+      await syncCommandRepo.createAudioNote(
+          entityId: note.id, filePath: filePath);
+    });
+  }
+
+  // Future<void> setNoteSynced({required VoiceNote note, required }) async {
+  //   note = note.copyAsSynced();
+  //   note = note.copyWithTitle(title: title)
+
+  //   final db = ref.read(databaseProvider);
+  //   final noteRepo = NoteRepo(db);
+  //   await noteRepo.updateVoiceNote(updatedNote: note);
+  // }
 
   // TODO: Replace this and above method with something like:
   // - createVoiceNote (local status = capturing)

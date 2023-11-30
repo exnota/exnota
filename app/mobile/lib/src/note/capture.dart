@@ -4,6 +4,9 @@ sealed class Capture {
   Capture({
     required this.id,
   });
+
+  String typeAsString();
+  Map<String, String?> toNonPrivateData();
 }
 
 class AudioFileCapture extends Capture {
@@ -15,4 +18,36 @@ class AudioFileCapture extends Capture {
     this.transcription,
     this.url,
   }) : super(id: id);
+
+  @override
+  String typeAsString() {
+    return runtimeType.toString();
+  }
+
+  @override
+  Map<String, String?> toNonPrivateData() {
+    return {
+      "id": id,
+      "type": typeAsString(),
+    };
+  }
+}
+
+class UnknownCapture extends Capture {
+  UnknownCapture({
+    required String id,
+  }) : super(id: id);
+
+  @override
+  String typeAsString() {
+    return runtimeType.toString();
+  }
+
+  @override
+  Map<String, String?> toNonPrivateData() {
+    return {
+      "id": id,
+      "type": typeAsString(),
+    };
+  }
 }
