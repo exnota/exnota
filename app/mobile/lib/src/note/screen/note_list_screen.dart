@@ -140,7 +140,19 @@ class NoteList extends ConsumerWidget {
                 // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
                 trailing: Visibility(
                     visible: url is String,
-                    replacement: const Icon(Icons.question_mark),
+                    replacement: switch (note.localData.status) {
+                      LocalStatus.synced => const Icon(Icons.question_mark),
+                      _ => const SizedBox(
+                          height: 48,
+                          width: 48,
+                          child: Center(
+                            child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator()),
+                          ),
+                        ),
+                    },
                     child: GestureDetector(
                       behavior: HitTestBehavior.translucent,
                       onTap: () {
