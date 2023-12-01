@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift_db_viewer/drift_db_viewer.dart';
@@ -19,6 +20,7 @@ import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:lottie/lottie.dart';
+import 'package:flutter_animated_icons/lottiefiles.dart';
 
 class NoteListScreen extends ConsumerStatefulWidget {
   static const routeName = '/';
@@ -136,67 +138,134 @@ class NoteList extends ConsumerWidget {
           itemCount: notes.length,
           itemBuilder: (BuildContext context, int index) {
             final note = notes[index];
-            final url = note.integratedData.url;
-
-            return ListTile(
-                title: Text(note.title ?? ""),
-                leading: const Icon(Icons.audio_file),
-                // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
-                trailing: Visibility(
-                    visible: url is String,
-                    replacement: switch (note.localData.status) {
-                      LocalStatus.captured => SizedBox(
-                          height: 48,
-                          width: 48,
-                          child: Center(
-                            child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: Lottie.asset(Icons8.upload_to_cloud)),
-                          ),
-                        ),
-                      LocalStatus.capturing => SizedBox(
-                          height: 48,
-                          width: 48,
-                          child: Center(
-                            child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: Lottie.asset(Icons8.sound)),
-                          ),
-                        ),
-                      LocalStatus.synced => const Icon(Icons.question_mark),
-                    },
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: () {
-                        if (url is String) {
-                          launchUrl(Uri.parse(url));
-                        }
-                      },
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.link),
-                      ),
-                    )),
-                onTap: () {
-                  // Navigate to the details page. If the user leaves and returns to
-                  // the app after it has been killed while running in the
-                  // background, the navigation stack is restored.
-                  // Navigator.restorablePushNamed(
-                  //   context,
-                  //   SampleItemDetailsScreen.routeName,
-                  // );
-                });
+            return NoteListTile(note: note);
           },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Text("Error: $err"),
     );
+  }
+}
+
+class NoteListTile extends StatefulWidget {
+  final Note note;
+
+  const NoteListTile({Key? key, required this.note}) : super(key: key);
+
+  @override
+  State<NoteListTile> createState() => _NoteListTileState();
+}
+
+class _NoteListTileState extends State<NoteListTile> {
+  ({String text, Widget icon})? capturedConfig;
+  Timer? capturedConfigTranscribingTimer;
+  Timer? capturedConfigExportingTimer;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = widget.note.integratedData.url;
+
+    if (capturedConfig == null &&
+        widget.note.localData.status == LocalStatus.captured) {
+      final transcribingTimer = Timer(const Duration(seconds: 5), () {
+        setState(() {
+          capturedConfig =
+              (text: "Transcribing", icon: Lottie.asset(Icons8.document));
+        });
+      });
+      final exportingTimer = Timer(const Duration(seconds: 10), () {
+        setState(() {
+          capturedConfig = (
+            text: "Exporting to Notion",
+            icon: Lottie.asset(Icons8.synchronize_cloud)
+          );
+        });
+      });
+      setState(() {
+        capturedConfig =
+            (text: "Uploading", icon: Lottie.asset(Icons8.upload_to_cloud));
+        capturedConfigTranscribingTimer = transcribingTimer;
+        capturedConfigExportingTimer = exportingTimer;
+      });
+    }
+    if (capturedConfig != null &&
+        widget.note.localData.status != LocalStatus.captured) {
+      capturedConfigTranscribingTimer?.cancel();
+      capturedConfigExportingTimer?.cancel();
+      setState(() {
+        capturedConfig = null;
+      });
+    }
+
+    // TODO:
+    // - if status is 'captured'
+    // - display 'uploading' for 5 seconds
+    // - display 'transcribing' for 5 seconds
+    // - then display exporting to notion
+
+    return ListTile(
+        key: Key(widget.note.id),
+        title: Visibility(
+          visible: capturedConfig != null,
+          replacement: Text(widget.note.title ?? ""),
+          child: Text(capturedConfig?.text ?? "",
+              style: const TextStyle(color: Colors.grey)),
+        ),
+        leading: Icon(
+          Icons.audio_file,
+          color: widget.note.localData.status == LocalStatus.synced
+              ? null
+              : Colors.grey,
+        ),
+        // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
+        trailing: Visibility(
+            visible: url is String,
+            replacement: switch (widget.note.localData.status) {
+              LocalStatus.captured => SizedBox(
+                  height: 48,
+                  width: 48,
+                  child: Center(
+                    child: SizedBox(
+                        width: 24, height: 24, child: capturedConfig?.icon),
+                  ),
+                ),
+              LocalStatus.capturing => SizedBox(
+                  height: 48,
+                  width: 48,
+                  child: Center(
+                    child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Lottie.asset(Icons8.sound)),
+                  ),
+                ),
+              LocalStatus.synced => const Icon(Icons.question_mark),
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () {
+                if (url is String) {
+                  launchUrl(Uri.parse(url));
+                }
+              },
+              child: Container(
+                width: 48,
+                height: 48,
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                alignment: Alignment.center,
+                child: const Icon(Icons.link),
+              ),
+            )),
+        onTap: () {
+          // Navigate to the details page. If the user leaves and returns to
+          // the app after it has been killed while running in the
+          // background, the navigation stack is restored.
+          // Navigator.restorablePushNamed(
+          //   context,
+          //   SampleItemDetailsScreen.routeName,
+          // );
+        });
   }
 }
 
