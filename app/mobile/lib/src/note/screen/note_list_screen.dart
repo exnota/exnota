@@ -7,6 +7,7 @@ import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/note/service/note_list_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_animated_icons/icons8.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/screen/notion_settings_screen.dart';
@@ -17,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:lottie/lottie.dart';
 
 class NoteListScreen extends ConsumerStatefulWidget {
   static const routeName = '/';
@@ -91,24 +93,26 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
         false => null,
         // TODO: Revert after testing done
         true => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-            FloatingActionButton(
-                heroTag: "btn1",
-                child: const Text("DB test"),
-                onPressed: () async {
-                  // Get note by id
-                  // final db = ref.read(databaseProvider);
-                  // final noteRepo = NoteRepo(db);
-                  // final result = await noteRepo.getNoteById("UdjWpKSEXVa2Fx");
-                  // ref.read(loggerProvider).debug("result", result);
+            if (kDebugMode)
+              FloatingActionButton(
+                  heroTag: "btn1",
+                  child: const Text("DB test"),
+                  onPressed: () async {
+                    // Get note by id
+                    // final db = ref.read(databaseProvider);
+                    // final noteRepo = NoteRepo(db);
+                    // final result = await noteRepo.getNoteById("UdjWpKSEXVa2Fx");
+                    // ref.read(loggerProvider).debug("result", result);
 
-                  // Create audio note
-                  final appDirectory = await getApplicationDocumentsDirectory();
-                  final filePath = "${appDirectory.path}/recording2.m4a";
-                  final note = await ref
-                      .read(noteMutationServiceProvider.notifier)
-                      .createCapturingAudioNote(filePath: filePath);
-                  ref.read(loggerProvider).debug("Created note", note);
-                }),
+                    // Create audio note
+                    final appDirectory =
+                        await getApplicationDocumentsDirectory();
+                    final filePath = "${appDirectory.path}/recording2.m4a";
+                    final note = await ref
+                        .read(noteMutationServiceProvider.notifier)
+                        .createCapturingAudioNote(filePath: filePath);
+                    ref.read(loggerProvider).debug("Created note", note);
+                  }),
             const RecordButton()
           ]),
       },
@@ -141,17 +145,27 @@ class NoteList extends ConsumerWidget {
                 trailing: Visibility(
                     visible: url is String,
                     replacement: switch (note.localData.status) {
-                      LocalStatus.synced => const Icon(Icons.question_mark),
-                      _ => const SizedBox(
+                      LocalStatus.captured => SizedBox(
                           height: 48,
                           width: 48,
                           child: Center(
                             child: SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator()),
+                                child: Lottie.asset(Icons8.upload_to_cloud)),
                           ),
                         ),
+                      LocalStatus.capturing => SizedBox(
+                          height: 48,
+                          width: 48,
+                          child: Center(
+                            child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Lottie.asset(Icons8.sound)),
+                          ),
+                        ),
+                      LocalStatus.synced => const Icon(Icons.question_mark),
                     },
                     child: GestureDetector(
                       behavior: HitTestBehavior.translucent,
