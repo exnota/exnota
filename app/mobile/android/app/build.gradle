@@ -30,6 +30,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace "com.exnota.app"
+    // Flutter's default version can be found here: https://github.com/search?q=repo%3Aflutter%2Fflutter%20%22static%20int%20compileSdkVersion%22&type=code
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 

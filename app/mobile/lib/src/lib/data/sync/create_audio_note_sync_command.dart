@@ -71,8 +71,6 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
       if (json["url"] is String) {
         url = json["url"];
       }
-      logger.debug("transcription=$transcription");
-      logger.debug("url=$url");
 
       await ref.read(noteMutationServiceProvider.notifier).setNoteSynced(
           id: entityId, title: transcription, integratedUrl: url ?? "");

@@ -9,6 +9,7 @@ import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/note/service/note_list_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_animated_icons/icons8.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/screen/notion_settings_screen.dart';
@@ -415,7 +416,42 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
     }
     return FloatingActionButton.extended(
       onPressed: () async {
-        ref.read(loggerProvider).info("Recording voice note");
+        // Verify permissions
+        // --
+        var micPermission = await Permission.microphone.status;
+
+        // Show dialogs for situations where we (probably) can't request
+        // permissions.
+        if (micPermission.isPermanentlyDenied) {
+          ref.read(loggerProvider).info(
+              "Microphone permission permanently denied. Showing dialog.");
+          await _showPermanentlyDeniedDialog();
+          return;
+        }
+        if (micPermission.isRestricted) {
+          ref
+              .read(loggerProvider)
+              .info("Microphone permission restricted. Showing dialog.");
+          await _showRestrictedDialog();
+          return;
+        }
+
+        // Prompt for permission
+        if (!micPermission.isGranted && !micPermission.isLimited) {
+          ref.read(loggerProvider).info(
+              "Microphone permission not granted or limited. Requesting permission.");
+          micPermission = await Permission.microphone.request();
+          if (micPermission != PermissionStatus.granted &&
+              micPermission != PermissionStatus.limited) {
+            ref.read(loggerProvider).info(
+                "Microphone permission not granted or limited after requesting.");
+            _showSnackError("Microphone permission denied");
+            return;
+          }
+        }
+        ref
+            .read(loggerProvider)
+            .info("Microphone permission should be granted or limited.");
 
         ref.read(loggerProvider).debug("Creating note");
         final note = await ref
@@ -437,5 +473,57 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
       label: const Text('Record'),
       icon: const Icon(Icons.mic),
     );
+  }
+
+  Future<void> _showPermanentlyDeniedDialog() async {
+    return await showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Microphone permission'),
+        content:
+            const Text('Please allow microphone access to record audio notes.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await openAppSettings();
+              _popNavigator();
+            },
+            child: const Text('Open settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showRestrictedDialog() async {
+    return await showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Microphone permission'),
+        content: const Text(
+            'Please allow microphone access to record audio notes. You can do this in the settings app.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await openAppSettings();
+              _popNavigator();
+            },
+            child: const Text('Open settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _popNavigator() {
+    Navigator.pop(context);
   }
 }
