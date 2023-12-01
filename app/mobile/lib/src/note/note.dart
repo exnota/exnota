@@ -16,6 +16,7 @@ sealed class Note {
   abstract final List<Capture> captures;
   abstract final LocalData localData;
   abstract final ({String? url}) integratedData;
+  abstract final DateTime createdAt;
 
   String typeAsString();
   Map<String, String?> toNonPrivateData();
@@ -71,6 +72,9 @@ class VoiceNote extends Note {
   @override
   final ({String? url}) integratedData;
 
+  @override
+  final DateTime createdAt;
+
   /// To create a new object, use an appropriate factory instead of this
   /// constructor.
   VoiceNote._(
@@ -78,7 +82,8 @@ class VoiceNote extends Note {
       this.title,
       required List<Capture> captures,
       required this.localData,
-      required this.integratedData})
+      required this.integratedData,
+      required this.createdAt})
       : captures = List.unmodifiable(captures);
 
   // Local status  mutations
@@ -108,7 +113,7 @@ class VoiceNote extends Note {
   factory VoiceNote.createCapturing({required String filePath}) {
     final id = generateId();
     final captureId = generateId();
-    final capture = AudioFileCapture(id: captureId);
+    final capture = AudioFileCapture(id: captureId, createdAt: DateTime.now());
     final localData = VoiceNoteLocalData(
       filePath: filePath,
       status: LocalStatus.capturing,
@@ -119,6 +124,7 @@ class VoiceNote extends Note {
       captures: [capture],
       localData: localData,
       integratedData: (url: null),
+      createdAt: capture.createdAt,
     );
   }
 
@@ -128,14 +134,15 @@ class VoiceNote extends Note {
       String? title,
       required List<Capture> captures,
       required VoiceNoteLocalData localData,
-      required ({String? url}) integratedData}) {
+      required ({String? url}) integratedData,
+      required DateTime createdAt}) {
     return VoiceNote._(
-      id: id,
-      title: title,
-      captures: captures,
-      localData: localData,
-      integratedData: integratedData,
-    );
+        id: id,
+        title: title,
+        captures: captures,
+        localData: localData,
+        integratedData: integratedData,
+        createdAt: createdAt);
   }
 
   // Mutation helpers
@@ -146,12 +153,12 @@ class VoiceNote extends Note {
     ({String? url})? integratedData,
   }) {
     return VoiceNote._(
-      id: id,
-      title: title ?? this.title,
-      captures: captures,
-      localData: localData ?? this.localData,
-      integratedData: integratedData ?? this.integratedData,
-    );
+        id: id,
+        title: title ?? this.title,
+        captures: captures,
+        localData: localData ?? this.localData,
+        integratedData: integratedData ?? this.integratedData,
+        createdAt: createdAt);
   }
 
   // Other abstract
@@ -212,28 +219,35 @@ class UnknownNote extends Note {
   @override
   final ({String? url}) integratedData;
 
+  @override
+  final DateTime createdAt;
+
   /// To create a new object, use an appropriate factory instead of this
   /// constructor.
-  UnknownNote._({
-    required this.id,
-    this.title,
-    required this.captures,
-    required this.integratedData,
-  }) : localData = UnknownLocalData();
+  UnknownNote._(
+      {required this.id,
+      this.title,
+      required this.captures,
+      required this.integratedData,
+      required this.createdAt})
+      : localData = UnknownLocalData();
 
   // Factories
 
   /// Accept notes from the database with no/minimal invariants checks.
-  factory UnknownNote.fromDb(
-      {required String id,
-      String? title,
-      required List<Capture> captures,
-      required ({String? url}) integratedData}) {
+  factory UnknownNote.fromDb({
+    required String id,
+    String? title,
+    required List<Capture> captures,
+    required ({String? url}) integratedData,
+    required DateTime createdAt,
+  }) {
     return UnknownNote._(
       id: id,
       title: title,
       captures: captures,
       integratedData: integratedData,
+      createdAt: createdAt,
     );
   }
 

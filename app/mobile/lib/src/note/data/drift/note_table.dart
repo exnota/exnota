@@ -25,6 +25,7 @@ class NoteTable extends Table {
   TextColumn get captures => text().map(NoteTableCapturesConverter())();
   TextColumn get localData => text().map(LocalDataAllConverter())();
   TextColumn get integratedData => text().map(IntegratedDataRepoConverter())();
+  DateTimeColumn get createdAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};

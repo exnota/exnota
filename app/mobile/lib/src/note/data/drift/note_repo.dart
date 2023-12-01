@@ -15,7 +15,9 @@ class NoteRepo {
   NoteRepo(this.db);
 
   Stream<List<Note>> list() {
-    return db.select(db.noteTable).asyncMap<Note>((noteData) async {
+    final query = db.select(db.noteTable);
+    query.orderBy([(row) => OrderingTerm.desc(row.createdAt)]);
+    return query.asyncMap<Note>((noteData) async {
       return await getNoteByIdOrThrow(noteData.id);
     }).watch();
   }
@@ -28,12 +30,14 @@ class NoteRepo {
           captureDatas.add(CaptureTableData(
             id: capture.id,
             type: CaptureTableType.audio,
+            createdAt: capture.createdAt,
           ));
           break;
         case UnknownCapture():
           captureDatas.add(CaptureTableData(
             id: capture.id,
             type: CaptureTableType.unknown,
+            createdAt: capture.createdAt,
           ));
           break;
       }
@@ -52,6 +56,7 @@ class NoteRepo {
       captures: captureDatas.map((c) => c.id).toList(),
       localData: LocalDataAll(status: localDataStatus, filePath: filePath),
       integratedData: IntegratedDataRepo(url: note.integratedData.url),
+      createdAt: note.createdAt,
     );
 
     await db.transaction(() async {
@@ -116,12 +121,14 @@ class NoteRepo {
           captureDatas.add(CaptureTableData(
             id: capture.id,
             type: CaptureTableType.audio,
+            createdAt: capture.createdAt,
           ));
           break;
         case UnknownCapture():
           captureDatas.add(CaptureTableData(
             id: capture.id,
             type: CaptureTableType.unknown,
+            createdAt: capture.createdAt,
           ));
           break;
       }
@@ -141,6 +148,7 @@ class NoteRepo {
       captures: captureDatas.map((c) => c.id).toList(),
       localData: LocalDataAll(status: localDataStatus, filePath: filePath),
       integratedData: IntegratedDataRepo(url: updatedNote.integratedData.url),
+      createdAt: updatedNote.createdAt,
     );
 
     await db.transaction(() async {
@@ -215,17 +223,15 @@ class NoteRepoMapper {
         switch (capture.type) {
           case CaptureTableType.audio:
             return AudioFileCapture(
-              id: capture.id,
-            );
+                id: capture.id, createdAt: capture.createdAt);
 
           case CaptureTableType.unknown:
-            return UnknownCapture(
-              id: capture.id,
-            );
+            return UnknownCapture(id: capture.id, createdAt: capture.createdAt);
         }
       }).toList(),
       localData: localData,
       integratedData: (url: data.integratedData.url),
+      createdAt: data.createdAt,
     );
   }
 

@@ -1,8 +1,10 @@
 sealed class Capture {
   final String id;
+  final DateTime createdAt;
 
   Capture({
     required this.id,
+    required this.createdAt,
   });
 
   String typeAsString();
@@ -24,9 +26,10 @@ class AudioFileCapture extends Capture {
 
   AudioFileCapture({
     required String id,
+    required DateTime createdAt,
     this.transcription,
     this.url,
-  }) : super(id: id);
+  }) : super(id: id, createdAt: createdAt);
 
   @override
   String typeAsString() {
@@ -38,6 +41,7 @@ class AudioFileCapture extends Capture {
     return {
       "id": id,
       "type": typeAsString(),
+      "createdAt": createdAt.toString(),
     };
   }
 }
@@ -45,7 +49,8 @@ class AudioFileCapture extends Capture {
 class UnknownCapture extends Capture {
   UnknownCapture({
     required String id,
-  }) : super(id: id);
+    required DateTime createdAt,
+  }) : super(id: id, createdAt: createdAt);
 
   @override
   String typeAsString() {
@@ -57,6 +62,7 @@ class UnknownCapture extends Capture {
     return {
       "id": id,
       "type": typeAsString(),
+      "createdAt": createdAt.toString(),
     };
   }
 }

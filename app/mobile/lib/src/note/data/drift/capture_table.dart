@@ -15,6 +15,7 @@ class CaptureTable extends Table {
 
   TextColumn get id => text()();
   TextColumn get type => text().map(CaptureTableTypeConverter())();
+  DateTimeColumn get createdAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};
