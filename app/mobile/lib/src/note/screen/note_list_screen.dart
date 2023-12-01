@@ -223,12 +223,6 @@ class _NoteListTileState extends State<NoteListTile> {
       });
     }
 
-    // TODO:
-    // - if status is 'captured'
-    // - display 'uploading' for 5 seconds
-    // - display 'transcribing' for 5 seconds
-    // - then display exporting to notion
-
     return ListTile(
         key: Key(widget.note.id),
         title: Visibility(
