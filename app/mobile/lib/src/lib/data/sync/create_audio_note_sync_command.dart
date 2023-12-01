@@ -6,7 +6,7 @@ import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/note.dart';
-import 'package:exnota/src/note/service/note_service.dart';
+import 'package:exnota/src/note/service/note_mutation_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -74,7 +74,7 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
       logger.debug("transcription=$transcription");
       logger.debug("url=$url");
 
-      await ref.read(noteServiceProvider.notifier).setNoteSynced(
+      await ref.read(noteMutationServiceProvider.notifier).setNoteSynced(
           id: entityId, title: transcription, integratedUrl: url ?? "");
 
       return;

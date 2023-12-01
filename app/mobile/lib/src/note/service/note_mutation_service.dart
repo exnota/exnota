@@ -7,15 +7,15 @@ import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/lib/data/sync/sync_command_repo.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'note_service.g.dart';
+part 'note_mutation_service.g.dart';
 
 enum NoteCreateError { authError, noPageError, network, other }
 
 @riverpod
-class NoteService extends _$NoteService {
+class NoteMutationService extends _$NoteMutationService {
   @override
-  FutureOr<List<Note>> build() {
-    return [];
+  FutureOr<void> build() {
+    // no-op
   }
 
   Future<VoiceNote> createCapturingAudioNote({required String filePath}) async {

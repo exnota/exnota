@@ -14,6 +14,12 @@ class NoteRepo {
 
   NoteRepo(this.db);
 
+  Stream<List<Note>> list() {
+    return db.select(db.noteTable).asyncMap<Note>((noteData) async {
+      return await getNoteByIdOrThrow(noteData.id);
+    }).watch();
+  }
+
   Future<void> createVoiceNote({required Note note}) async {
     List<CaptureTableData> captureDatas = [];
     for (final capture in note.captures) {
@@ -143,6 +149,14 @@ class NoteRepo {
       }
       await db.into(db.noteTable).insertOnConflictUpdate(noteData);
     });
+  }
+
+  Future<Note> getNoteByIdOrThrow(String id) async {
+    final note = await getNoteById(id);
+    if (note == null) {
+      throw Exception("Note $id not found");
+    }
+    return note;
   }
 
   Future<Note?> getNoteById(String id) async {

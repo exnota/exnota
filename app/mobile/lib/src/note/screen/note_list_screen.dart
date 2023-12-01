@@ -5,11 +5,12 @@ import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/note.dart';
+import 'package:exnota/src/note/service/note_list_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/screen/notion_settings_screen.dart';
-import 'package:exnota/src/note/service/note_service.dart';
+import 'package:exnota/src/note/service/note_mutation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,7 +31,6 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
   @override
   Widget build(BuildContext context) {
     final notionConnected = ref.watch(notionConnectedServiceProvider);
-    final notes = ref.watch(noteServiceProvider).valueOrNull ?? [];
     final environment = ref.watch(environmentServiceProvider);
     String title;
     switch (environment) {
@@ -85,51 +85,7 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
         // building all Widgets up front, the ListView.builder constructor lazily
         // builds Widgets as they’re scrolled into view.
         // true => const Text("connected"),
-        true => ListView.builder(
-            // Providing a restorationId allows the ListView to restore the
-            // scroll position when a user leaves and returns to the app after it
-            // has been killed while running in the background.
-            restorationId: 'noteListView',
-            itemCount: notes.length,
-            itemBuilder: (BuildContext context, int index) {
-              final note = notes[index];
-              final url = note.integratedData.url;
-
-              return ListTile(
-                  title: Text(
-                      note.captures.first.asAudioFileCapture()?.transcription ??
-                          ""),
-                  leading: const Icon(Icons.audio_file),
-                  // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
-                  trailing: Visibility(
-                      visible: url is String,
-                      replacement: const Icon(Icons.question_mark),
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onTap: () {
-                          if (url is String) {
-                            launchUrl(Uri.parse(url));
-                          }
-                        },
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.link),
-                        ),
-                      )),
-                  onTap: () {
-                    // Navigate to the details page. If the user leaves and returns to
-                    // the app after it has been killed while running in the
-                    // background, the navigation stack is restored.
-                    // Navigator.restorablePushNamed(
-                    //   context,
-                    //   SampleItemDetailsScreen.routeName,
-                    // );
-                  });
-            },
-          ),
+        true => const NoteList(),
       },
       floatingActionButton: switch (notionConnected) {
         false => null,
@@ -149,13 +105,71 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
                   final appDirectory = await getApplicationDocumentsDirectory();
                   final filePath = "${appDirectory.path}/recording2.m4a";
                   final note = await ref
-                      .read(noteServiceProvider.notifier)
+                      .read(noteMutationServiceProvider.notifier)
                       .createCapturingAudioNote(filePath: filePath);
                   ref.read(loggerProvider).debug("Created note", note);
                 }),
             const RecordButton()
           ]),
       },
+    );
+  }
+}
+
+class NoteList extends ConsumerWidget {
+  const NoteList({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final noteStream = ref.watch(noteListServiceProvider);
+    return noteStream.when(
+      data: (notes) {
+        return ListView.builder(
+          // Providing a restorationId allows the ListView to restore the
+          // scroll position when a user leaves and returns to the app after it
+          // has been killed while running in the background.
+          restorationId: 'noteListView',
+          itemCount: notes.length,
+          itemBuilder: (BuildContext context, int index) {
+            final note = notes[index];
+            final url = note.integratedData.url;
+
+            return ListTile(
+                title: Text(note.title ?? ""),
+                leading: const Icon(Icons.audio_file),
+                // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
+                trailing: Visibility(
+                    visible: url is String,
+                    replacement: const Icon(Icons.question_mark),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () {
+                        if (url is String) {
+                          launchUrl(Uri.parse(url));
+                        }
+                      },
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.link),
+                      ),
+                    )),
+                onTap: () {
+                  // Navigate to the details page. If the user leaves and returns to
+                  // the app after it has been killed while running in the
+                  // background, the navigation stack is restored.
+                  // Navigator.restorablePushNamed(
+                  //   context,
+                  //   SampleItemDetailsScreen.routeName,
+                  // );
+                });
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Text("Error: $err"),
     );
   }
 }
@@ -235,7 +249,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
             isUploading = true;
           });
           await ref
-              .read(noteServiceProvider.notifier)
+              .read(noteMutationServiceProvider.notifier)
               .setNoteCaptured(note: note!);
           setState(() {
             isUploading = false;
@@ -286,7 +300,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
 
         ref.read(loggerProvider).debug("Creating note");
         final note = await ref
-            .read(noteServiceProvider.notifier)
+            .read(noteMutationServiceProvider.notifier)
             .createCapturingAudioNote(filePath: path!);
         setState(() {
           this.note = note;
