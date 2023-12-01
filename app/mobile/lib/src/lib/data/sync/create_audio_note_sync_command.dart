@@ -78,6 +78,9 @@ class CreateAudioNoteSyncCommand extends SyncCommand<AudioNote> {
           .read(noteServiceProvider.notifier)
           .insert(filePath: filePath, transcription: transcription, url: url);
 
+      await ref.read(noteServiceProvider.notifier).setNoteSynced(
+          id: entityId, title: transcription, integratedUrl: url ?? "");
+
       return;
     }
 

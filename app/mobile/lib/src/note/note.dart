@@ -18,6 +18,7 @@ sealed class Note {
   abstract final String? title;
   abstract final List<Capture> captures;
   abstract final LocalData localData;
+  abstract final ({String? url}) integratedData;
 
   String typeAsString();
   Map<String, String?> toNonPrivateData();
@@ -70,12 +71,20 @@ class VoiceNote extends Note {
   @override
   final VoiceNoteLocalData localData;
 
+  @override
+  final ({String? url}) integratedData;
+
+  /// To create a new object, use an appropriate factory instead of this
+  /// constructor.
   VoiceNote._(
       {required this.id,
       this.title,
       required List<Capture> captures,
-      required this.localData})
+      required this.localData,
+      required this.integratedData})
       : captures = List.unmodifiable(captures);
+
+  // Local status  mutations
 
   VoiceNote copyAsCaptured() {
     final newLocalData = localData.copyWith(status: LocalStatus.captured);
@@ -87,17 +96,17 @@ class VoiceNote extends Note {
     return _copyWith(localData: newLocalData);
   }
 
-  VoiceNote _copyWith({
-    String? title,
-    VoiceNoteLocalData? localData,
-  }) {
-    return VoiceNote._(
-      id: id,
-      title: title ?? this.title,
-      captures: captures,
-      localData: localData ?? this.localData,
-    );
+  // Other mutations
+
+  VoiceNote copyWithTitle({required String title}) {
+    return _copyWith(title: title);
   }
+
+  VoiceNote copyWithIntegratedUrl({String? url}) {
+    return _copyWith(integratedData: (url: url));
+  }
+
+  // Factories
 
   factory VoiceNote.createCapturing({required String filePath}) {
     final id = generateId();
@@ -112,6 +121,7 @@ class VoiceNote extends Note {
       title: null,
       captures: [capture],
       localData: localData,
+      integratedData: (url: null),
     );
   }
 
@@ -120,23 +130,44 @@ class VoiceNote extends Note {
       {required String id,
       String? title,
       required List<Capture> captures,
-      required VoiceNoteLocalData localData}) {
+      required VoiceNoteLocalData localData,
+      required ({String? url}) integratedData}) {
     return VoiceNote._(
       id: id,
       title: title,
       captures: captures,
       localData: localData,
+      integratedData: integratedData,
     );
   }
+
+  // Mutation helpers
+
+  VoiceNote _copyWith({
+    String? title,
+    VoiceNoteLocalData? localData,
+    ({String? url})? integratedData,
+  }) {
+    return VoiceNote._(
+      id: id,
+      title: title ?? this.title,
+      captures: captures,
+      localData: localData ?? this.localData,
+      integratedData: integratedData ?? this.integratedData,
+    );
+  }
+
+  // Other abstract
 
   @override
   Map<String, String?> toNonPrivateData() {
     return {
       "id": id,
       "type": typeAsString(),
-      "localData": localData.toNonPrivateData().toString(),
       "captures":
           captures.map((capture) => capture.toNonPrivateData()).toString(),
+      "localData": localData.toNonPrivateData().toString(),
+      "integratedData": integratedData.toString(),
     };
   }
 
@@ -181,20 +212,45 @@ class UnknownNote extends Note {
   @override
   final LocalData localData;
 
-  UnknownNote({
+  @override
+  final ({String? url}) integratedData;
+
+  /// To create a new object, use an appropriate factory instead of this
+  /// constructor.
+  UnknownNote._({
     required this.id,
     this.title,
     required this.captures,
+    required this.integratedData,
   }) : localData = UnknownLocalData();
+
+  // Factories
+
+  /// Accept notes from the database with no/minimal invariants checks.
+  factory UnknownNote.fromDb(
+      {required String id,
+      String? title,
+      required List<Capture> captures,
+      required ({String? url}) integratedData}) {
+    return UnknownNote._(
+      id: id,
+      title: title,
+      captures: captures,
+      integratedData: integratedData,
+    );
+  }
+
+  // Other abstract
 
   @override
   Map<String, String?> toNonPrivateData() {
     return {
       "id": id,
       "type": typeAsString(),
-      "localData": localData.toNonPrivateData().toString(),
       "captures":
           captures.map((capture) => capture.toNonPrivateData()).toString(),
+      "localData": localData.toNonPrivateData().toString(),
+      "integratedData": integratedData.toString(),
     };
   }
 

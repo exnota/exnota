@@ -8,7 +8,7 @@ part 'note_table.g.dart';
 enum NoteTableType {
   voice(jsonName: "voice"),
   text(jsonName: "text"),
-  unknown(jsonName: "image");
+  unknown(jsonName: "unknown");
 
   const NoteTableType({required this.jsonName});
 
@@ -24,6 +24,7 @@ class NoteTable extends Table {
   TextColumn get title => text().nullable()();
   TextColumn get captures => text().map(NoteTableCapturesConverter())();
   TextColumn get localData => text().map(LocalDataAllConverter())();
+  TextColumn get integratedData => text().map(IntegratedDataRepoConverter())();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -83,6 +84,33 @@ class LocalDataAllConverter extends TypeConverter<LocalDataAll, String> {
 
   @override
   String toSql(LocalDataAll value) {
+    return jsonEncode(value.toJson());
+  }
+}
+
+@JsonSerializable()
+class IntegratedDataRepo {
+  final String? url;
+
+  IntegratedDataRepo({this.url});
+
+  factory IntegratedDataRepo.fromJson(Map<String, Object?> json) =>
+      _$IntegratedDataRepoFromJson(json);
+
+  Map<String, Object?> toJson() {
+    return _$IntegratedDataRepoToJson(this);
+  }
+}
+
+class IntegratedDataRepoConverter
+    extends TypeConverter<IntegratedDataRepo, String> {
+  @override
+  IntegratedDataRepo fromSql(String fromDb) {
+    return IntegratedDataRepo.fromJson(json.decode(fromDb));
+  }
+
+  @override
+  String toSql(IntegratedDataRepo value) {
     return jsonEncode(value.toJson());
   }
 }

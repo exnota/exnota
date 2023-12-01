@@ -40,11 +40,13 @@ class NoteRepo {
     }
     final localDataStatus = NoteRepoMapper.localStatusToData(localData.status);
     NoteTableData noteData = NoteTableData(
-        id: note.id,
-        type: NoteTableType.voice,
-        title: note.title,
-        captures: captureDatas.map((c) => c.id).toList(),
-        localData: LocalDataAll(status: localDataStatus, filePath: filePath));
+      id: note.id,
+      type: NoteTableType.voice,
+      title: note.title,
+      captures: captureDatas.map((c) => c.id).toList(),
+      localData: LocalDataAll(status: localDataStatus, filePath: filePath),
+      integratedData: IntegratedDataRepo(url: note.integratedData.url),
+    );
 
     await db.transaction(() async {
       for (final captureData in captureDatas) {
@@ -127,11 +129,13 @@ class NoteRepo {
     final localDataStatus = NoteRepoMapper.localStatusToData(localData.status);
 
     NoteTableData noteData = NoteTableData(
-        id: updatedNote.id,
-        type: NoteTableType.voice,
-        title: updatedNote.title,
-        captures: captureDatas.map((c) => c.id).toList(),
-        localData: LocalDataAll(status: localDataStatus, filePath: filePath));
+      id: updatedNote.id,
+      type: NoteTableType.voice,
+      title: updatedNote.title,
+      captures: captureDatas.map((c) => c.id).toList(),
+      localData: LocalDataAll(status: localDataStatus, filePath: filePath),
+      integratedData: IntegratedDataRepo(url: updatedNote.integratedData.url),
+    );
 
     await db.transaction(() async {
       for (final captureData in captureDatas) {
@@ -207,6 +211,7 @@ class NoteRepoMapper {
         }
       }).toList(),
       localData: localData,
+      integratedData: (url: data.integratedData.url),
     );
   }
 

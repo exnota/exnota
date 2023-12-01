@@ -1,6 +1,7 @@
-import 'dart:math';
+// ignore_for_file: dead_code
 
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/data/drift/note_repo.dart';
 import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/lib/data/sync/sync_command_repo.dart';
@@ -45,7 +46,6 @@ class NoteService extends _$NoteService {
       final noteRepo = NoteRepo(db);
       await noteRepo.updateVoiceNote(updatedNote: note);
 
-      // TODO: Test that if this fails, the note is not marked as captured.
       final syncCommandRepo = SyncCommandRepo(db);
       final filePath = note.localData.filePath;
       if (filePath == null) {
@@ -56,25 +56,33 @@ class NoteService extends _$NoteService {
     });
   }
 
-  // Future<void> setNoteSynced({required VoiceNote note, required }) async {
-  //   note = note.copyAsSynced();
-  //   note = note.copyWithTitle(title: title)
+  Future<void> setNoteSynced(
+      {required String id,
+      required String title,
+      String? integratedUrl}) async {
+    final transaction = ref.read(transactionProvider);
 
-  //   final db = ref.read(databaseProvider);
-  //   final noteRepo = NoteRepo(db);
-  //   await noteRepo.updateVoiceNote(updatedNote: note);
-  // }
+    await transaction(() async {
+      final db = ref.read(databaseProvider);
+      final noteRepo = NoteRepo(db);
+      Note? note = await noteRepo.getNoteById(id);
+      if (note == null) {
+        ref.read(loggerProvider).error("Note not found", nonPrivateData: {
+          "id": id,
+          "integrationUrl": integratedUrl,
+        });
+        return;
+      }
+      if (note is! VoiceNote) {
+        ref.read(loggerProvider).error("Note is not a VoiceNote",
+            nonPrivateData: note.toNonPrivateData());
+        return;
+      }
+      note = note.copyAsSynced();
+      note = note.copyWithTitle(title: title);
+      note = note.copyWithIntegratedUrl(url: integratedUrl);
 
-  // TODO: Replace this and above method with something like:
-  // - createVoiceNote (local status = capturing)
-  // - setNoteCaptured (local status = captured AND creates command)
-  // - setNoteSynced (local status = synced)
-  Future<void> createCommand(String filePath) async {
-    // Add command
-    final db = ref.read(databaseProvider);
-    final syncCommandRepo = SyncCommandRepo(db);
-    int randomNum = Random().nextInt(100);
-    await syncCommandRepo.createAudioNote(
-        entityId: "entityId+$randomNum", filePath: filePath);
+      await noteRepo.updateVoiceNote(updatedNote: note);
+    });
   }
 }
