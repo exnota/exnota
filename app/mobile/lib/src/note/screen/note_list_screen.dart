@@ -20,7 +20,6 @@ import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:lottie/lottie.dart';
-import 'package:flutter_animated_icons/lottiefiles.dart';
 
 class NoteListScreen extends ConsumerStatefulWidget {
   static const routeName = '/';
@@ -157,44 +156,69 @@ class NoteListTile extends StatefulWidget {
   State<NoteListTile> createState() => _NoteListTileState();
 }
 
+enum PendingStatus { capturing, uploading, transcribing, exporting }
+
 class _NoteListTileState extends State<NoteListTile> {
-  ({String text, Widget icon})? capturedConfig;
-  Timer? capturedConfigTranscribingTimer;
-  Timer? capturedConfigExportingTimer;
+  ({String text, Widget icon, PendingStatus status})? pendingConfig;
+  Timer? pendingConfigTranscribingTimer;
+  Timer? pendingConfigExportingTimer;
 
   @override
   Widget build(BuildContext context) {
     final url = widget.note.integratedData.url;
 
-    if (capturedConfig == null &&
+    // When note status has changed to capturing, update config
+    if (pendingConfig == null &&
+        widget.note.localData.status == LocalStatus.capturing) {
+      setState(() {
+        pendingConfig = (
+          text: "Recording",
+          icon: Lottie.asset(Icons8.sound),
+          status: PendingStatus.capturing
+        );
+      });
+    }
+
+    // When note status has changed to captured, update config and set timers
+    if ((pendingConfig?.status == null ||
+            pendingConfig?.status == PendingStatus.capturing) &&
         widget.note.localData.status == LocalStatus.captured) {
-      final transcribingTimer = Timer(const Duration(seconds: 5), () {
+      final transcribingTimer = Timer(const Duration(seconds: 7), () {
         setState(() {
-          capturedConfig =
-              (text: "Transcribing", icon: Lottie.asset(Icons8.document));
+          pendingConfig = (
+            text: "Transcribing",
+            icon: Lottie.asset(Icons8.document),
+            status: PendingStatus.transcribing
+          );
         });
       });
-      final exportingTimer = Timer(const Duration(seconds: 10), () {
+      final exportingTimer = Timer(const Duration(seconds: 14), () {
         setState(() {
-          capturedConfig = (
+          pendingConfig = (
             text: "Exporting to Notion",
-            icon: Lottie.asset(Icons8.synchronize_cloud)
+            icon: Lottie.asset(Icons8.synchronize_cloud),
+            status: PendingStatus.exporting
           );
         });
       });
       setState(() {
-        capturedConfig =
-            (text: "Uploading", icon: Lottie.asset(Icons8.upload_to_cloud));
-        capturedConfigTranscribingTimer = transcribingTimer;
-        capturedConfigExportingTimer = exportingTimer;
+        pendingConfig = (
+          text: "Uploading",
+          icon: Lottie.asset(Icons8.upload_to_cloud),
+          status: PendingStatus.uploading
+        );
+        pendingConfigTranscribingTimer = transcribingTimer;
+        pendingConfigExportingTimer = exportingTimer;
       });
     }
-    if (capturedConfig != null &&
-        widget.note.localData.status != LocalStatus.captured) {
-      capturedConfigTranscribingTimer?.cancel();
-      capturedConfigExportingTimer?.cancel();
+
+    // When note status has changed to synced, clear config and cancel timers
+    if (pendingConfig != null &&
+        widget.note.localData.status == LocalStatus.synced) {
+      pendingConfigTranscribingTimer?.cancel();
+      pendingConfigExportingTimer?.cancel();
       setState(() {
-        capturedConfig = null;
+        pendingConfig = null;
       });
     }
 
@@ -207,9 +231,9 @@ class _NoteListTileState extends State<NoteListTile> {
     return ListTile(
         key: Key(widget.note.id),
         title: Visibility(
-          visible: capturedConfig != null,
+          visible: pendingConfig != null,
           replacement: Text(widget.note.title ?? ""),
-          child: Text(capturedConfig?.text ?? "",
+          child: Text(pendingConfig?.text ?? "",
               style: const TextStyle(color: Colors.grey)),
         ),
         leading: Icon(
@@ -227,7 +251,7 @@ class _NoteListTileState extends State<NoteListTile> {
                   width: 48,
                   child: Center(
                     child: SizedBox(
-                        width: 24, height: 24, child: capturedConfig?.icon),
+                        width: 24, height: 24, child: pendingConfig?.icon),
                   ),
                 ),
               LocalStatus.capturing => SizedBox(
