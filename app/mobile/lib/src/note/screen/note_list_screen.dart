@@ -93,10 +93,12 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
             itemCount: notes.length,
             itemBuilder: (BuildContext context, int index) {
               final note = notes[index];
-              final url = note.url;
+              final url = note.integratedData.url;
 
               return ListTile(
-                  title: Text(note.transcription),
+                  title: Text(
+                      note.captures.first.asAudioFileCapture()?.transcription ??
+                          ""),
                   leading: const Icon(Icons.audio_file),
                   // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
                   trailing: Visibility(

@@ -14,19 +14,8 @@ enum NoteCreateError { authError, noPageError, network, other }
 @riverpod
 class NoteService extends _$NoteService {
   @override
-  FutureOr<List<AudioNote>> build() {
+  FutureOr<List<Note>> build() {
     return [];
-  }
-
-  Future<void> insert(
-      {required String filePath,
-      required String transcription,
-      String? url}) async {
-    final previousState = await future;
-    state = AsyncData([
-      ...previousState,
-      AudioNote(path: filePath, transcription: transcription, url: url)
-    ]);
   }
 
   Future<VoiceNote> createCapturingAudioNote({required String filePath}) async {

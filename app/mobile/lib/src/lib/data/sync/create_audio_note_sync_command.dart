@@ -11,7 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
-class CreateAudioNoteSyncCommand extends SyncCommand<AudioNote> {
+class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
   final String filePath;
 
   CreateAudioNoteSyncCommand(
@@ -73,10 +73,6 @@ class CreateAudioNoteSyncCommand extends SyncCommand<AudioNote> {
       }
       logger.debug("transcription=$transcription");
       logger.debug("url=$url");
-
-      ref
-          .read(noteServiceProvider.notifier)
-          .insert(filePath: filePath, transcription: transcription, url: url);
 
       await ref.read(noteServiceProvider.notifier).setNoteSynced(
           id: entityId, title: transcription, integratedUrl: url ?? "");

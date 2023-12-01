@@ -1,8 +1,5 @@
 import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/data/id_generator.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'note.freezed.dart';
 
 enum LocalStatus { capturing, captured, synced }
 
@@ -258,14 +255,4 @@ class UnknownNote extends Note {
   String typeAsString() {
     return runtimeType.toString();
   }
-}
-
-// TODO: Remove
-@freezed
-sealed class AudioNote with _$AudioNote {
-  const factory AudioNote({
-    required String path,
-    required String transcription,
-    String? url,
-  }) = _AudioNote;
 }

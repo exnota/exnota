@@ -7,6 +7,15 @@ sealed class Capture {
 
   String typeAsString();
   Map<String, String?> toNonPrivateData();
+
+  // Type helpers
+
+  AudioFileCapture? asAudioFileCapture() {
+    if (this is AudioFileCapture) {
+      return this as AudioFileCapture;
+    }
+    return null;
+  }
 }
 
 class AudioFileCapture extends Capture {
