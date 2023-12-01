@@ -233,7 +233,11 @@ class _NoteListTileState extends State<NoteListTile> {
         key: Key(widget.note.id),
         title: Visibility(
           visible: pendingConfig != null,
-          replacement: Text(widget.note.title ?? ""),
+          replacement: Text(
+            widget.note.title ?? "",
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
           child: Text(pendingConfig?.text ?? "",
               style: const TextStyle(color: Colors.grey)),
         ),
