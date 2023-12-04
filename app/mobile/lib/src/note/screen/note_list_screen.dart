@@ -97,7 +97,7 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
         true => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
             if (kDebugMode)
               FloatingActionButton(
-                  heroTag: "btn1",
+                  heroTag: "fab-db-test",
                   child: const Text("DB test"),
                   onPressed: () async {
                     // Get note by id
@@ -352,6 +352,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
     // controller.onRecorderStateChanged.
     if (isRecording) {
       return FloatingActionButton.extended(
+        heroTag: "fab-record",
         onPressed: () async {
           controller.reset();
 
