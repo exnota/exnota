@@ -24,7 +24,6 @@ dependencies:
   path: ^1.8.3
   riverpod_annotation: ^2.2.0
   sqlite3_flutter_libs: ^0.5.0
-  uni_links: ^0.5.1
   url_launcher: ^6.1.14
   # Use this specific commit otherwise an APK cannot be built due to no
   # `namespace` in build.gradle.
@@ -41,6 +40,7 @@ dependencies:
   flutter_animated_icons: ^1.0.1
   lottie: ^1.4.3
   permission_handler: ^11.0.1
+  app_links: ^3.4.5
 
 dev_dependencies:
   flutter_test:

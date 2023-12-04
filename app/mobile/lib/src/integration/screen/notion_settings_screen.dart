@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/integration/service/notion_settings_service.dart';
@@ -7,7 +8,6 @@ import 'package:exnota/src/integration/screen/alternate_notion_settings_screen.d
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uni_links/uni_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:oauth2/oauth2.dart' as oauth2;
 
@@ -29,7 +29,8 @@ class _NotionSettingsScreen extends ConsumerState<NotionSettingsScreen>
   LaunchingBrowserStatus _launchingBrowser = LaunchingBrowserStatus.notLaunched;
   bool _receivedCode = false;
   bool _couldNotRequestCode = false;
-  late StreamSubscription _sub;
+  late AppLinks _appLinks = AppLinks();
+  late StreamSubscription<Uri> _linkSubscription;
 
   bool _requestingToken = false;
   bool _requestingTokenError = false;
@@ -43,7 +44,8 @@ class _NotionSettingsScreen extends ConsumerState<NotionSettingsScreen>
 
   @override
   void dispose() {
-    _sub.cancel();
+    _appLinks = AppLinks();
+    _linkSubscription.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -277,7 +279,7 @@ class _NotionSettingsScreen extends ConsumerState<NotionSettingsScreen>
   }
 
   void _handleIncomingLinks() {
-    _sub = uriLinkStream.listen((Uri? uri) {
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
       if (!mounted) return;
       _saveCode(uri);
       setState(() {
@@ -313,7 +315,7 @@ class _NotionSettingsScreen extends ConsumerState<NotionSettingsScreen>
         _receivedCode = false;
         _couldNotRequestCode = true;
       });
-    }, onDone: () {});
+    });
   }
 
   void _saveCode(Uri? uri) {
