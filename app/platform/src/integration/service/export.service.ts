@@ -167,7 +167,7 @@ export class ExportService {
         )
       }
     }
-    this.logger.log(`Results:`, results)
+    this.logger.log(`Number of results:`, results.length)
     if (results.length === 0) {
       return resultError(
         ExportError.NO_PAGES_SHARED,
