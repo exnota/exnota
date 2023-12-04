@@ -26,7 +26,12 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.0
   uni_links: ^0.5.1
   url_launcher: ^6.1.14
-  audio_waveforms: ^1.0.4
+  # Use this specific commit otherwise an APK cannot be built due to no
+  # `namespace` in build.gradle.
+  audio_waveforms:
+    git:
+      url: https://github.com/SimformSolutionsPvtLtd/audio_waveforms.git
+      ref: ea69c5ec00e5c7a18b8d87d22999ad5c4ddf71ca
   http_parser: ^4.0.2
   drift_db_viewer: ^2.0.0
   logger: ^2.0.2+1
