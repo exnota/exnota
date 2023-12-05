@@ -3,6 +3,7 @@
 - [Development principles](#development-principles)
   - [Robustness: Liberally accept external data](#robustness-liberally-accept-external-data)
   - [Robustness: Be conservative with app-initiated data mutations](#robustness-be-conservative-with-app-initiated-data-mutations)
+- [Design decisions](#design-decisions)
 - [Installation](#installation)
 - [Running locally from VS Code](#running-locally-from-vs-code)
 - [Troubleshooting/debugging](#troubleshootingdebugging)
@@ -39,10 +40,17 @@ This minimises creating invalid or unexpected state.
 
 E.g.
 
+- Send specific mutations to backend, rather than full objects.
+  - So old app versions missing data don't override backend data.
 - Use strict, custom factories when making user-initiated changes to domain objects.
   - E.g. creation: `factory DomainObject.create(...)`
   - E.g. updates: `DomainObject copyWithNewStatus(Status status)`
 - Don't allow updating/exporting of unknown note/capture types.
+
+## Design decisions
+
+- For optional domain object fields, use `required Optional<T>` on constructors
+so an error is thrown if `.fromDb` and other methods are not updated.
 
 ## Installation
 
