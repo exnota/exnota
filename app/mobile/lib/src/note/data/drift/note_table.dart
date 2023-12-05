@@ -45,35 +45,22 @@ class NoteTableCapturesConverter extends TypeConverter<List<String>, String> {
   }
 }
 
-enum LocalStatusRepo {
-  capturing(jsonName: "capturing"),
-  captured(jsonName: "captured"),
-  synced(jsonName: "synced");
-
-  const LocalStatusRepo({required this.jsonName});
-
-  final String jsonName;
-}
+// Don't rename without migration.
+enum NoteLocalStatusRepo { capturing, captured, synced }
 
 /// Local data for all note types. Repo should convert to/from this to the
 /// domain type.
 @JsonSerializable()
 class LocalDataAll {
-  final LocalStatusRepo status;
-  final String? filePath;
+  final NoteLocalStatusRepo status;
 
-  LocalDataAll({this.filePath, required this.status});
+  LocalDataAll({required this.status});
 
   factory LocalDataAll.fromJson(Map<String, Object?> json) =>
       _$LocalDataAllFromJson(json);
 
   Map<String, Object?> toJson() {
     return _$LocalDataAllToJson(this);
-  }
-
-  LocalDataAll copyWith({LocalStatusRepo? status, String? filePath}) {
-    return LocalDataAll(
-        status: status ?? this.status, filePath: filePath ?? this.filePath);
   }
 }
 

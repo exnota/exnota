@@ -6,8 +6,7 @@ import 'package:drift/native.dart';
 import 'package:exnota/src/lib/data/sync/sync_command_table.dart';
 import 'package:exnota/src/note/data/drift/capture_table.dart';
 import 'package:exnota/src/note/data/drift/note_table.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
+import 'package:exnota/src/note/data/file/local_file_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'database.g.dart';
@@ -25,8 +24,8 @@ Future<T> Function<T>(Future<T> Function(), {bool requireNew}) transaction(
   return db.transaction;
 }
 
-AppDatabase initDatabase() {
-  return AppDatabase();
+AppDatabase initDatabase({required LocalFile files}) {
+  return AppDatabase(files: files);
 }
 
 @DriftDatabase(tables: [
@@ -36,17 +35,18 @@ AppDatabase initDatabase() {
   SyncCommandTable
 ])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase({required LocalFile files})
+      : super(_openConnection(
+            path: files.getDatabaseFilePath(filename: 'exnota.sqlite')));
 
   @override
   int get schemaVersion => 1;
 }
 
-LazyDatabase _openConnection() {
+LazyDatabase _openConnection({required String path}) {
   // the LazyDatabase util lets us find the right location for the file async.
   return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'exnota.sqlite'));
+    final file = File(path);
     return NativeDatabase.createInBackground(file);
   });
 }

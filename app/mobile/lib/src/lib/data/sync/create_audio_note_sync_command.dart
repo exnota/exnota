@@ -11,11 +11,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
+typedef CreateAudioNoteCapture = ({String id, String filePath});
+
 class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
-  final String filePath;
+  final CreateAudioNoteCapture capture;
 
   CreateAudioNoteSyncCommand(
-      {required int id, required String entityId, required this.filePath})
+      {required int id, required String entityId, required this.capture})
       : super(id: id, entityId: entityId);
 
   @override
@@ -42,7 +44,7 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
     var request = http.MultipartRequest('POST', uri)
       ..fields['type'] = 'audio'
       ..fields['accessToken'] = notionSettings.accessToken
-      ..files.add(await http.MultipartFile.fromPath('file', filePath,
+      ..files.add(await http.MultipartFile.fromPath('file', capture.filePath,
           contentType: MediaType('audio', 'x-m4a')));
 
     http.StreamedResponse streamedResponse;
@@ -72,8 +74,10 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
         url = json["url"];
       }
 
-      await ref.read(noteMutationServiceProvider.notifier).setNoteSynced(
-          id: entityId, title: transcription, integratedUrl: url ?? "");
+      await ref.read(noteMutationServiceProvider.notifier).setAudioFileSynced(
+          captureId: capture.id,
+          transcription: transcription,
+          integratedUrl: url ?? "");
 
       return;
     }
@@ -98,17 +102,27 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
     return Future.value(null);
   }
 
-  @override
-  Map<String, dynamic> internalDataToJson() {
-    return {'filePath': filePath};
+  static Map<String, dynamic> dataToJson(
+      {required CreateAudioNoteCapture capture}) {
+    return {
+      'capture': {
+        'id': capture.id,
+        'filePath': capture.filePath,
+      }
+    };
   }
 
-  factory CreateAudioNoteSyncCommand.fromJson(
+  factory CreateAudioNoteSyncCommand.fromDb(
       {required int id,
       required String entityId,
-      required Map<String, dynamic> json,
+      required Map<String, dynamic> data,
       required SyncCommandStatus status}) {
+    final capture = data['capture'];
+    final captureId = capture['id'] as String;
+    final filePath = capture['filePath'] as String;
     return CreateAudioNoteSyncCommand(
-        id: id, entityId: entityId, filePath: json['filePath'] as String);
+        id: id,
+        entityId: entityId,
+        capture: (id: captureId, filePath: filePath));
   }
 }

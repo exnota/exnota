@@ -13,10 +13,4 @@ abstract class SyncCommand<T> {
       this.status = SyncCommandStatus.waiting});
 
   Future<void> request(Ref ref);
-
-  Map<String, dynamic> internalDataToJson();
-
-  Map<String, dynamic> dataToJson() {
-    return internalDataToJson();
-  }
 }

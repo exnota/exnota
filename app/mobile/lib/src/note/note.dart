@@ -1,10 +1,10 @@
 import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/data/id_generator.dart';
 
-enum LocalStatus { capturing, captured, synced }
+enum NoteLocalStatus { capturing, captured, synced }
 
-sealed class LocalData {
-  abstract final LocalStatus status;
+sealed class NoteLocalData {
+  abstract final NoteLocalStatus status;
 
   String typeAsString();
   Map<String, String?> toNonPrivateData();
@@ -14,7 +14,7 @@ sealed class Note {
   abstract final String id;
   abstract final String? title;
   abstract final List<Capture> captures;
-  abstract final LocalData localData;
+  abstract final NoteLocalData localData;
   abstract final ({String? url}) integratedData;
   abstract final DateTime createdAt;
 
@@ -22,30 +22,17 @@ sealed class Note {
   Map<String, String?> toNonPrivateData();
 }
 
-class VoiceNoteLocalData implements LocalData {
+class VoiceNoteLocalData implements NoteLocalData {
   @override
-  final LocalStatus status;
-
-  final String? filePath;
+  final NoteLocalStatus status;
 
   VoiceNoteLocalData({
-    required this.filePath,
     required this.status,
   });
-
-  VoiceNoteLocalData copyWith({
-    LocalStatus? status,
-  }) {
-    return VoiceNoteLocalData(
-      status: status ?? this.status,
-      filePath: filePath,
-    );
-  }
 
   @override
   Map<String, String?> toNonPrivateData() {
     return {
-      "filePath": filePath,
       "status": status.toString(),
     };
   }
@@ -81,48 +68,112 @@ class VoiceNote extends Note {
       {required this.id,
       this.title,
       required List<Capture> captures,
-      required this.localData,
       required this.integratedData,
       required this.createdAt})
-      : captures = List.unmodifiable(captures);
+      : captures = List.unmodifiable(captures),
+        localData = VoiceNoteLocalData(
+          // Derive status from captures.
+          status: captures.fold(NoteLocalStatus.synced, (status, capture) {
+            // If at least one is capturing, the whole note is capturing.
+            if (capture.localData.status == CaptureLocalStatus.capturing) {
+              return NoteLocalStatus.capturing;
+            }
 
-  // Local status  mutations
+            // If none are capturing and at least one is captured, the whole
+            // note is captured.
+            if (status != NoteLocalStatus.capturing &&
+                capture.localData.status == CaptureLocalStatus.captured) {
+              return NoteLocalStatus.captured;
+            }
+            return status;
+          }),
+        );
 
-  VoiceNote copyAsCaptured() {
-    final newLocalData = localData.copyWith(status: LocalStatus.captured);
-    return _copyWith(localData: newLocalData);
+  // Local status mutations
+
+  VoiceNote withCaptured({required String captureId}) {
+    if (captures.every((capture) => capture.id != captureId)) {
+      throw ArgumentError("No capture with id $captureId");
+    }
+    final updatedCaptures = captures.map((capture) {
+      if (capture.id == captureId) {
+        if (capture is! AudioFileCapture) {
+          throw ArgumentError("Cannot set file path on non-audio capture");
+        }
+        return capture.withStatus(status: CaptureLocalStatus.captured);
+      }
+      return capture;
+    }).toList();
+    return _copyWith(captures: updatedCaptures);
   }
 
-  VoiceNote copyAsSynced() {
-    final newLocalData = localData.copyWith(status: LocalStatus.synced);
-    return _copyWith(localData: newLocalData);
+  VoiceNote withSynced({required String captureId}) {
+    if (captures.every((capture) => capture.id != captureId)) {
+      throw ArgumentError("No capture with id $captureId");
+    }
+    final updatedCaptures = captures.map((capture) {
+      if (capture.id == captureId) {
+        if (capture is! AudioFileCapture) {
+          throw ArgumentError("Cannot set file path on non-audio capture");
+        }
+        return capture.withStatus(status: CaptureLocalStatus.synced);
+      }
+      return capture;
+    }).toList();
+    return _copyWith(captures: updatedCaptures);
   }
 
   // Other mutations
 
-  VoiceNote copyWithTitle({required String title}) {
-    return _copyWith(title: title);
+  VoiceNote withIntegratedUrl({String? url}) {
+    return _copyWith(integratedData: (url: url));
   }
 
-  VoiceNote copyWithIntegratedUrl({String? url}) {
-    return _copyWith(integratedData: (url: url));
+  VoiceNote withFilePath(
+      {required String captureId, required String filePath}) {
+    if (captures.every((capture) => capture.id != captureId)) {
+      throw ArgumentError("No capture with id $captureId");
+    }
+    final updatedCaptures = captures.map((capture) {
+      if (capture.id == captureId) {
+        if (capture is! AudioFileCapture) {
+          throw ArgumentError("Cannot set file path on non-audio capture");
+        }
+        return capture.withFilePath(filePath: filePath);
+      }
+      return capture;
+    }).toList();
+    return _copyWith(captures: updatedCaptures);
+  }
+
+  VoiceNote withTranscription(
+      {required String captureId, required String transcription}) {
+    if (captures.every((capture) => capture.id != captureId)) {
+      throw ArgumentError("No capture with id $captureId");
+    }
+    final updatedCaptures = captures.map((capture) {
+      if (capture.id == captureId) {
+        if (capture is! AudioFileCapture) {
+          throw ArgumentError("Cannot set file path on non-audio capture");
+        }
+        return capture.withTranscription(transcription: transcription);
+      }
+      return capture;
+    }).toList();
+
+    final title = this.title ?? transcription;
+    return _copyWith(title: title, captures: updatedCaptures);
   }
 
   // Factories
 
-  factory VoiceNote.createCapturing({required String filePath}) {
+  factory VoiceNote.createCapturing() {
     final id = generateId();
-    final captureId = generateId();
-    final capture = AudioFileCapture(id: captureId, createdAt: DateTime.now());
-    final localData = VoiceNoteLocalData(
-      filePath: filePath,
-      status: LocalStatus.capturing,
-    );
+    final capture = AudioFileCapture.createEmptyCapturing();
     return VoiceNote._(
       id: id,
       title: null,
       captures: [capture],
-      localData: localData,
       integratedData: (url: null),
       createdAt: capture.createdAt,
     );
@@ -133,14 +184,12 @@ class VoiceNote extends Note {
       {required String id,
       String? title,
       required List<Capture> captures,
-      required VoiceNoteLocalData localData,
       required ({String? url}) integratedData,
       required DateTime createdAt}) {
     return VoiceNote._(
         id: id,
         title: title,
         captures: captures,
-        localData: localData,
         integratedData: integratedData,
         createdAt: createdAt);
   }
@@ -149,14 +198,13 @@ class VoiceNote extends Note {
 
   VoiceNote _copyWith({
     String? title,
-    VoiceNoteLocalData? localData,
     ({String? url})? integratedData,
+    List<Capture>? captures,
   }) {
     return VoiceNote._(
         id: id,
         title: title ?? this.title,
-        captures: captures,
-        localData: localData ?? this.localData,
+        captures: captures ?? this.captures.toList(),
         integratedData: integratedData ?? this.integratedData,
         createdAt: createdAt);
   }
@@ -181,13 +229,13 @@ class VoiceNote extends Note {
   }
 }
 
-class UnknownLocalData implements LocalData {
+class UnknownLocalData implements NoteLocalData {
   @override
-  final LocalStatus status;
+  final NoteLocalStatus status;
 
   UnknownLocalData({
     // Unknown notes should never be locally modified.
-    this.status = LocalStatus.synced,
+    this.status = NoteLocalStatus.synced,
   });
 
   @override
@@ -214,7 +262,7 @@ class UnknownNote extends Note {
   final List<Capture> captures;
 
   @override
-  final LocalData localData;
+  final NoteLocalData localData;
 
   @override
   final ({String? url}) integratedData;

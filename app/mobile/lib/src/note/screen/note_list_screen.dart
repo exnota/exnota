@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
+import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/note/service/note_list_service.dart';
 import 'package:flutter/foundation.dart';
@@ -19,7 +19,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:exnota/src/account/settings/settings_screen.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:lottie/lottie.dart';
 
 class NoteListScreen extends ConsumerStatefulWidget {
@@ -107,12 +106,9 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
                     // ref.read(loggerProvider).debug("result", result);
 
                     // Create audio note
-                    final appDirectory =
-                        await getApplicationDocumentsDirectory();
-                    final filePath = "${appDirectory.path}/recording2.m4a";
                     final note = await ref
                         .read(noteMutationServiceProvider.notifier)
-                        .createCapturingAudioNote(filePath: filePath);
+                        .createCapturingAudioNote(extension: "m4a");
                     ref.read(loggerProvider).debug("Created note", note);
                   }),
             const RecordButton()
@@ -170,7 +166,7 @@ class _NoteListTileState extends State<NoteListTile> {
 
     // When note status has changed to capturing, update config
     if (pendingConfig == null &&
-        widget.note.localData.status == LocalStatus.capturing) {
+        widget.note.localData.status == NoteLocalStatus.capturing) {
       setState(() {
         pendingConfig = (
           text: "Recording",
@@ -183,7 +179,7 @@ class _NoteListTileState extends State<NoteListTile> {
     // When note status has changed to captured, update config and set timers
     if ((pendingConfig?.status == null ||
             pendingConfig?.status == PendingStatus.capturing) &&
-        widget.note.localData.status == LocalStatus.captured) {
+        widget.note.localData.status == NoteLocalStatus.captured) {
       final transcribingTimer = Timer(const Duration(seconds: 7), () {
         setState(() {
           pendingConfig = (
@@ -215,7 +211,7 @@ class _NoteListTileState extends State<NoteListTile> {
 
     // When note status has changed to synced, clear config and cancel timers
     if (pendingConfig != null &&
-        widget.note.localData.status == LocalStatus.synced) {
+        widget.note.localData.status == NoteLocalStatus.synced) {
       pendingConfigTranscribingTimer?.cancel();
       pendingConfigExportingTimer?.cancel();
       setState(() {
@@ -237,7 +233,7 @@ class _NoteListTileState extends State<NoteListTile> {
         ),
         leading: Icon(
           Icons.audio_file,
-          color: widget.note.localData.status == LocalStatus.synced
+          color: widget.note.localData.status == NoteLocalStatus.synced
               ? null
               : Colors.grey,
         ),
@@ -245,7 +241,7 @@ class _NoteListTileState extends State<NoteListTile> {
         trailing: Visibility(
             visible: url is String,
             replacement: switch (widget.note.localData.status) {
-              LocalStatus.captured => SizedBox(
+              NoteLocalStatus.captured => SizedBox(
                   height: 48,
                   width: 48,
                   child: Center(
@@ -253,7 +249,7 @@ class _NoteListTileState extends State<NoteListTile> {
                         width: 24, height: 24, child: pendingConfig?.icon),
                   ),
                 ),
-              LocalStatus.capturing => SizedBox(
+              NoteLocalStatus.capturing => SizedBox(
                   height: 48,
                   width: 48,
                   child: Center(
@@ -263,7 +259,7 @@ class _NoteListTileState extends State<NoteListTile> {
                         child: Lottie.asset(Icons8.sound)),
                   ),
                 ),
-              LocalStatus.synced => const Icon(Icons.question_mark),
+              NoteLocalStatus.synced => const Icon(Icons.question_mark),
             },
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -303,22 +299,14 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
   late final RecorderController controller;
 
   String? path;
-  VoiceNote? note;
+  AudioFileCapture? audioFileCapture;
   bool isRecording = false;
   bool isUploading = false;
-  late Directory appDirectory;
 
   @override
   void initState() {
     super.initState();
-    _getDir();
     _initialiseControllers();
-  }
-
-  void _getDir() async {
-    appDirectory = await getApplicationDocumentsDirectory();
-    path = "${appDirectory.path}/recording.m4a";
-    setState(() {});
   }
 
   void _initialiseControllers() {
@@ -356,11 +344,14 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
         onPressed: () async {
           controller.reset();
 
-          final path = await controller.stop(false);
+          final actualPath = await controller.stop(false);
+          ref
+              .read(loggerProvider)
+              .debug("Stopped recording. Saved to $actualPath");
           setState(() {
             isRecording = false;
           });
-          if (path == null) {
+          if (actualPath == null) {
             throw Exception("No path for audio file");
           }
 
@@ -369,10 +360,10 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
           });
           await ref
               .read(noteMutationServiceProvider.notifier)
-              .setNoteCaptured(note: note!);
+              .setAudioFileCaptured(capture: audioFileCapture!);
           setState(() {
             isUploading = false;
-            note = null;
+            audioFileCapture = null;
           });
           // TODO: Handle errors
 
@@ -455,14 +446,20 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
         ref.read(loggerProvider).debug("Creating note");
         final note = await ref
             .read(noteMutationServiceProvider.notifier)
-            .createCapturingAudioNote(filePath: path!);
+            .createCapturingAudioNote(extension: "m4a");
         setState(() {
-          this.note = note;
+          audioFileCapture = note.captures.first.asAudioFileCapture();
         });
         ref.read(loggerProvider).debug("Created note", note);
 
-        ref.read(loggerProvider).debug("About to record");
-        await controller.record(path: path!);
+        final path =
+            note.captures.first.asAudioFileCapture()?.localData.filePath;
+        if (path == null) {
+          // TODO: Handle error
+          throw Exception("No path for audio file");
+        }
+        ref.read(loggerProvider).debug("About to record to $path");
+        await controller.record(path: path);
         ref.read(loggerProvider).debug("Recording");
 
         setState(() {

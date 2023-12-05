@@ -2,9 +2,11 @@
 
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/log/logger.dart';
+import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/data/drift/note_repo.dart';
 import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/lib/data/sync/sync_command_repo.dart';
+import 'package:exnota/src/note/data/file/local_file_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'note_mutation_service.g.dart';
@@ -18,60 +20,79 @@ class NoteMutationService extends _$NoteMutationService {
     // no-op
   }
 
-  Future<VoiceNote> createCapturingAudioNote({required String filePath}) async {
-    final note = VoiceNote.createCapturing(filePath: filePath);
+  Future<VoiceNote> createCapturingAudioNote(
+      {required String extension}) async {
+    VoiceNote note = VoiceNote.createCapturing();
+
+    // Set filepath
+    final captureId = note.captures.first.id;
+    final filePath = ref
+        .read(localFileServiceProvider)
+        .getVoiceNoteFilePath(captureId: captureId, extension: extension);
+    note = note.withFilePath(captureId: captureId, filePath: filePath);
+
     final db = ref.read(databaseProvider);
     final noteRepo = NoteRepo(db);
     await noteRepo.createVoiceNote(note: note);
     return note;
   }
 
-  Future<void> setNoteCaptured({required VoiceNote note}) async {
-    note = note.copyAsCaptured();
-
+  Future<void> setAudioFileCaptured({required AudioFileCapture capture}) async {
     final transaction = ref.read(transactionProvider);
     await transaction(() async {
+      // Get note from DB
       final db = ref.read(databaseProvider);
       final noteRepo = NoteRepo(db);
-      await noteRepo.updateVoiceNote(updatedNote: note);
-
-      final syncCommandRepo = SyncCommandRepo(db);
-      final filePath = note.localData.filePath;
-      if (filePath == null) {
-        throw Exception("Cannot create command without filePath");
+      final existingNote = await noteRepo.getNoteByCaptureId(capture.id);
+      if (existingNote is! VoiceNote) {
+        ref.read(loggerProvider).error("Note is not a VoiceNote",
+            nonPrivateData: existingNote.toNonPrivateData());
+        // TODO: Handle error
+        return;
       }
-      await syncCommandRepo.createAudioNote(
-          entityId: note.id, filePath: filePath);
+
+      // Set capture as captured
+      final updatedNote = existingNote.withCaptured(captureId: capture.id);
+      await noteRepo.updateVoiceNote(updatedNote: updatedNote);
+
+      // TODO: Move to sync service?
+      // Create sync command
+      final syncCommandRepo = SyncCommandRepo(db);
+      final filePath = capture.localData.filePath;
+      if (filePath == null) {
+        throw Exception(
+            "Cannot create audio file captured command without filePath");
+      }
+
+      await syncCommandRepo.createCreateAudioNoteSyncCommand(
+          noteId: updatedNote.id, captureId: capture.id, filePath: filePath);
     });
   }
 
-  Future<void> setNoteSynced(
-      {required String id,
-      required String title,
+  Future<void> setAudioFileSynced(
+      {required String captureId,
+      required String transcription,
       String? integratedUrl}) async {
     final transaction = ref.read(transactionProvider);
 
     await transaction(() async {
+      // Get note from DB
       final db = ref.read(databaseProvider);
       final noteRepo = NoteRepo(db);
-      Note? note = await noteRepo.getNoteById(id);
-      if (note == null) {
-        ref.read(loggerProvider).error("Note not found", nonPrivateData: {
-          "id": id,
-          "integrationUrl": integratedUrl,
-        });
-        return;
-      }
-      if (note is! VoiceNote) {
+      final existingNote = await noteRepo.getNoteByCaptureId(captureId);
+      if (existingNote is! VoiceNote) {
         ref.read(loggerProvider).error("Note is not a VoiceNote",
-            nonPrivateData: note.toNonPrivateData());
+            nonPrivateData: existingNote.toNonPrivateData());
+        // TODO: Handle error
         return;
       }
-      note = note.copyAsSynced();
-      note = note.copyWithTitle(title: title);
-      note = note.copyWithIntegratedUrl(url: integratedUrl);
 
-      await noteRepo.updateVoiceNote(updatedNote: note);
+      var updatedNote = existingNote.withSynced(captureId: captureId);
+      updatedNote = updatedNote.withTranscription(
+          captureId: captureId, transcription: transcription);
+      updatedNote = updatedNote.withIntegratedUrl(url: integratedUrl);
+
+      await noteRepo.updateVoiceNote(updatedNote: updatedNote);
     });
   }
 }

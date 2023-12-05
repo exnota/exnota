@@ -32,14 +32,15 @@ class SyncCommandRepo {
     return db.select(db.syncCommandTable).map<SyncCommand>(_toDomain).watch();
   }
 
-  Future<void> createAudioNote(
-      {required String entityId, required String filePath}) async {
-    SyncCommandRepoType type = SyncCommandRepoType.createAudioNote;
+  Future<void> createCreateAudioNoteSyncCommand(
+      {required String noteId,
+      required String captureId,
+      required String filePath}) async {
     SyncCommandTableCompanion toInsert = SyncCommandTableCompanion.insert(
-        type: type,
-        entityId: entityId,
-        // TODO: This should go into the command class itself or it might be forgotten
-        data: jsonEncode({"filePath": filePath}),
+        type: SyncCommandRepoType.createAudioNote,
+        entityId: noteId,
+        data: json.encode(CreateAudioNoteSyncCommand.dataToJson(
+            capture: (id: captureId, filePath: filePath))),
         status: SyncCommandRepoStatus.waiting);
     await db.into(db.syncCommandTable).insert(toInsert);
   }
@@ -55,10 +56,10 @@ class SyncCommandRepo {
     final data = jsonDecode(fromDb.data);
     switch (fromDb.type) {
       case SyncCommandRepoType.createAudioNote:
-        return CreateAudioNoteSyncCommand.fromJson(
+        return CreateAudioNoteSyncCommand.fromDb(
             id: fromDb.id,
             entityId: fromDb.entityId,
-            json: data as Map<String, dynamic>,
+            data: data as Map<String, dynamic>,
             status: _statusFromDb(fromDb.status));
       default:
         throw Exception('Unknown command type');
