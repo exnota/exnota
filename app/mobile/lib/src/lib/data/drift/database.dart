@@ -25,7 +25,8 @@ Future<T> Function<T>(Future<T> Function(), {bool requireNew}) transaction(
 }
 
 AppDatabase initDatabase({required LocalFile files}) {
-  return AppDatabase(files: files);
+  final String path = files.getDatabaseFilePath(filename: 'exnota.sqlite');
+  return AppDatabase(path: path);
 }
 
 @DriftDatabase(tables: [
@@ -35,9 +36,7 @@ AppDatabase initDatabase({required LocalFile files}) {
   SyncCommandTable
 ])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase({required LocalFile files})
-      : super(_openConnection(
-            path: files.getDatabaseFilePath(filename: 'exnota.sqlite')));
+  AppDatabase({required String path}) : super(_openConnection(path: path));
 
   @override
   int get schemaVersion => 1;
