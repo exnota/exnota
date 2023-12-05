@@ -38,6 +38,8 @@ AppDatabase initDatabase({required LocalFile files}) {
 class AppDatabase extends _$AppDatabase {
   AppDatabase({required String path}) : super(_openConnection(path: path));
 
+  AppDatabase.inMemory() : super(NativeDatabase.memory());
+
   @override
   int get schemaVersion => 1;
 }
