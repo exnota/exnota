@@ -3,13 +3,6 @@ import 'package:exnota/src/note/data/id_generator.dart';
 
 enum NoteLocalStatus { capturing, captured, synced }
 
-sealed class NoteLocalData {
-  abstract final NoteLocalStatus status;
-
-  String typeAsString();
-  Map<String, String?> toNonPrivateData();
-}
-
 sealed class Note {
   abstract final String id;
   abstract final String? title;
@@ -22,25 +15,11 @@ sealed class Note {
   Map<String, String?> toNonPrivateData();
 }
 
-class VoiceNoteLocalData implements NoteLocalData {
-  @override
-  final NoteLocalStatus status;
+sealed class NoteLocalData {
+  abstract final NoteLocalStatus status;
 
-  VoiceNoteLocalData({
-    required this.status,
-  });
-
-  @override
-  Map<String, String?> toNonPrivateData() {
-    return {
-      "status": status.toString(),
-    };
-  }
-
-  @override
-  String typeAsString() {
-    return runtimeType.toString();
-  }
+  String typeAsString();
+  Map<String, String?> toNonPrivateData();
 }
 
 class VoiceNote extends Note {
@@ -229,13 +208,12 @@ class VoiceNote extends Note {
   }
 }
 
-class UnknownLocalData implements NoteLocalData {
+class VoiceNoteLocalData implements NoteLocalData {
   @override
   final NoteLocalStatus status;
 
-  UnknownLocalData({
-    // Unknown notes should never be locally modified.
-    this.status = NoteLocalStatus.synced,
+  VoiceNoteLocalData({
+    required this.status,
   });
 
   @override
@@ -310,6 +288,28 @@ class UnknownNote extends Note {
           captures.map((capture) => capture.toNonPrivateData()).toString(),
       "localData": localData.toNonPrivateData().toString(),
       "integratedData": integratedData.toString(),
+    };
+  }
+
+  @override
+  String typeAsString() {
+    return runtimeType.toString();
+  }
+}
+
+class UnknownLocalData implements NoteLocalData {
+  @override
+  final NoteLocalStatus status;
+
+  UnknownLocalData({
+    // Unknown notes should never be locally modified.
+    this.status = NoteLocalStatus.synced,
+  });
+
+  @override
+  Map<String, String?> toNonPrivateData() {
+    return {
+      "status": status.toString(),
     };
   }
 

@@ -5,12 +5,6 @@ import 'package:flutter/material.dart';
 enum CaptureLocalStatus { capturing, captured, synced }
 
 @immutable
-sealed class CaptureLocalData {
-  abstract final CaptureLocalStatus status;
-  Map<String, String?> toNonPrivateData();
-}
-
-@immutable
 sealed class Capture {
   final String id;
   final DateTime createdAt;
@@ -35,25 +29,9 @@ sealed class Capture {
 }
 
 @immutable
-class AudioFileCaptureLocalData implements CaptureLocalData {
-  @override
-  final CaptureLocalStatus status;
-
-  // Initially empty because the path includes the capture ID, which is not
-  // known until the capture is created.
-  final String? filePath;
-
-  AudioFileCaptureLocalData({
-    required this.status,
-    required Optional<String> filePath,
-  }) : filePath = filePath.value;
-
-  @override
-  Map<String, String?> toNonPrivateData() {
-    return {
-      "filePath": filePath,
-    };
-  }
+sealed class CaptureLocalData {
+  abstract final CaptureLocalStatus status;
+  Map<String, String?> toNonPrivateData();
 }
 
 @immutable
@@ -146,17 +124,24 @@ class AudioFileCapture extends Capture {
 }
 
 @immutable
-class UnknownCaptureLocalData implements CaptureLocalData {
+class AudioFileCaptureLocalData implements CaptureLocalData {
   @override
   final CaptureLocalStatus status;
 
-  const UnknownCaptureLocalData({
+  // Initially empty because the path includes the capture ID, which is not
+  // known until the capture is created.
+  final String? filePath;
+
+  AudioFileCaptureLocalData({
     required this.status,
-  });
+    required Optional<String> filePath,
+  }) : filePath = filePath.value;
 
   @override
   Map<String, String?> toNonPrivateData() {
-    return {};
+    return {
+      "filePath": filePath,
+    };
   }
 }
 
@@ -197,5 +182,20 @@ class UnknownCapture extends Capture {
       "type": typeAsString(),
       "createdAt": createdAt.toString(),
     };
+  }
+}
+
+@immutable
+class UnknownCaptureLocalData implements CaptureLocalData {
+  @override
+  final CaptureLocalStatus status;
+
+  const UnknownCaptureLocalData({
+    required this.status,
+  });
+
+  @override
+  Map<String, String?> toNonPrivateData() {
+    return {};
   }
 }
