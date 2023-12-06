@@ -1,13 +1,15 @@
-# Deploy/run
+# Exnota Platform
 
-## Production on render.com
+## Deploy/run
+
+### Production on render.com
 
 1. `Environment` > `Add Secret File` > Copy contents of `.env.template` and
    replace dummy with real values.
 
 2. Press `Manual Deploy`
 
-## Local with VS Code
+### Local with VS Code
 
 1. Copy `.env.template` and name `.env`. Replace dummy with real values.
 
@@ -17,3 +19,10 @@
 3. In `Run and Debug`, run the `Platform` config.
 
 4. It will run on `localhost:3000`
+
+## Troubleshooting
+
+### Transcribing
+
+- `Starter` render.com instance fails to transcribe in parallel. `Pro` doesn't
+seem to have an issue with 3. Did not try the middle-ground `Standard` instance.
