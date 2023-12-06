@@ -48,8 +48,9 @@ void main() {
           final note1 = NoteTableData(
               id: 'note1',
               type: NoteTableType.voice,
-              integratedData: IntegratedDataRepo(url: 'note1 url'),
-              localData: LocalDataAll(status: NoteLocalStatusRepo.capturing),
+              integratedData: IntegratedDataRepo.voice(url: 'note1 url'),
+              localData:
+                  LocalDataAll.voice(status: NoteLocalStatusRepo.capturing),
               createdAt: DateTime.utc(1809, DateTime.february, 12),
               title: 'a title',
               captures: [capture1IsCaptured.id, capture2IsCapturing.id]);
@@ -74,7 +75,7 @@ void main() {
                   }
                   expect(note.integratedData, (url: 'note1 url'));
                   expect(note.localData,
-                      VoiceNoteLocalData(status: NoteLocalStatus.capturing));
+                      VoiceLocalData(status: LocalStatus.capturing));
                   // TODO: Fix
                   // expect(note.createdAt,
                   //     DateTime.utc(1809, DateTime.february, 12));

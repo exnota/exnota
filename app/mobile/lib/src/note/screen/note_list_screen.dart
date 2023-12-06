@@ -166,7 +166,7 @@ class _NoteListTileState extends State<NoteListTile> {
 
     // When note status has changed to capturing, update config
     if (pendingConfig == null &&
-        widget.note.localData.status == NoteLocalStatus.capturing) {
+        widget.note.localData.status == LocalStatus.capturing) {
       setState(() {
         pendingConfig = (
           text: "Recording",
@@ -179,7 +179,7 @@ class _NoteListTileState extends State<NoteListTile> {
     // When note status has changed to captured, update config and set timers
     if ((pendingConfig?.status == null ||
             pendingConfig?.status == PendingStatus.capturing) &&
-        widget.note.localData.status == NoteLocalStatus.captured) {
+        widget.note.localData.status == LocalStatus.captured) {
       final transcribingTimer = Timer(const Duration(seconds: 7), () {
         setState(() {
           pendingConfig = (
@@ -211,7 +211,7 @@ class _NoteListTileState extends State<NoteListTile> {
 
     // When note status has changed to synced, clear config and cancel timers
     if (pendingConfig != null &&
-        widget.note.localData.status == NoteLocalStatus.synced) {
+        widget.note.localData.status == LocalStatus.synced) {
       pendingConfigTranscribingTimer?.cancel();
       pendingConfigExportingTimer?.cancel();
       setState(() {
@@ -233,7 +233,7 @@ class _NoteListTileState extends State<NoteListTile> {
         ),
         leading: Icon(
           Icons.audio_file,
-          color: widget.note.localData.status == NoteLocalStatus.synced
+          color: widget.note.localData.status == LocalStatus.synced
               ? null
               : Colors.grey,
         ),
@@ -241,7 +241,7 @@ class _NoteListTileState extends State<NoteListTile> {
         trailing: Visibility(
             visible: url is String,
             replacement: switch (widget.note.localData.status) {
-              NoteLocalStatus.captured => SizedBox(
+              LocalStatus.captured => SizedBox(
                   height: 48,
                   width: 48,
                   child: Center(
@@ -249,7 +249,7 @@ class _NoteListTileState extends State<NoteListTile> {
                         width: 24, height: 24, child: pendingConfig?.icon),
                   ),
                 ),
-              NoteLocalStatus.capturing => SizedBox(
+              LocalStatus.capturing => SizedBox(
                   height: 48,
                   width: 48,
                   child: Center(
@@ -259,7 +259,7 @@ class _NoteListTileState extends State<NoteListTile> {
                         child: Lottie.asset(Icons8.sound)),
                   ),
                 ),
-              NoteLocalStatus.synced => const Icon(Icons.question_mark),
+              LocalStatus.synced => const Icon(Icons.question_mark),
             },
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,

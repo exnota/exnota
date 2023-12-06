@@ -1,13 +1,13 @@
 import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/data/id_generator.dart';
 
-enum NoteLocalStatus { capturing, captured, synced }
+enum LocalStatus { capturing, captured, synced }
 
 sealed class Note {
   abstract final String id;
   abstract final String? title;
   abstract final List<Capture> captures;
-  abstract final NoteLocalData localData;
+  abstract final LocalData localData;
   abstract final ({String? url}) integratedData;
   abstract final DateTime createdAt;
 
@@ -15,8 +15,8 @@ sealed class Note {
   Map<String, String?> toNonPrivateData();
 }
 
-sealed class NoteLocalData {
-  abstract final NoteLocalStatus status;
+sealed class LocalData {
+  abstract final LocalStatus status;
 
   String typeAsString();
   Map<String, String?> toNonPrivateData();
@@ -33,7 +33,7 @@ class VoiceNote extends Note {
   final List<Capture> captures;
 
   @override
-  final VoiceNoteLocalData localData;
+  final VoiceLocalData localData;
 
   @override
   final ({String? url}) integratedData;
@@ -50,19 +50,19 @@ class VoiceNote extends Note {
       required this.integratedData,
       required this.createdAt})
       : captures = List.unmodifiable(captures),
-        localData = VoiceNoteLocalData(
+        localData = VoiceLocalData(
           // Derive status from captures.
-          status: captures.fold(NoteLocalStatus.synced, (status, capture) {
+          status: captures.fold(LocalStatus.synced, (status, capture) {
             // If at least one is capturing, the whole note is capturing.
             if (capture.localData.status == CaptureLocalStatus.capturing) {
-              return NoteLocalStatus.capturing;
+              return LocalStatus.capturing;
             }
 
             // If none are capturing and at least one is captured, the whole
             // note is captured.
-            if (status != NoteLocalStatus.capturing &&
+            if (status != LocalStatus.capturing &&
                 capture.localData.status == CaptureLocalStatus.captured) {
-              return NoteLocalStatus.captured;
+              return LocalStatus.captured;
             }
             return status;
           }),
@@ -208,11 +208,11 @@ class VoiceNote extends Note {
   }
 }
 
-class VoiceNoteLocalData implements NoteLocalData {
+class VoiceLocalData implements LocalData {
   @override
-  final NoteLocalStatus status;
+  final LocalStatus status;
 
-  VoiceNoteLocalData({
+  VoiceLocalData({
     required this.status,
   });
 
@@ -231,7 +231,7 @@ class VoiceNoteLocalData implements NoteLocalData {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is VoiceNoteLocalData &&
+      other is VoiceLocalData &&
           runtimeType == other.runtimeType &&
           status == other.status;
 
@@ -250,7 +250,7 @@ class UnknownNote extends Note {
   final List<Capture> captures;
 
   @override
-  final NoteLocalData localData;
+  final LocalData localData;
 
   @override
   final ({String? url}) integratedData;
@@ -307,13 +307,13 @@ class UnknownNote extends Note {
   }
 }
 
-class UnknownLocalData implements NoteLocalData {
+class UnknownLocalData implements LocalData {
   @override
-  final NoteLocalStatus status;
+  final LocalStatus status;
 
   UnknownLocalData({
     // Unknown notes should never be locally modified.
-    this.status = NoteLocalStatus.synced,
+    this.status = LocalStatus.synced,
   });
 
   @override

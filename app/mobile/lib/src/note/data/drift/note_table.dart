@@ -13,8 +13,8 @@ class NoteTable extends Table {
   TextColumn get type => textEnum<NoteTableType>()();
   TextColumn get title => text().nullable()();
   TextColumn get captures => text().map(NoteTableCapturesConverter())();
-  TextColumn get localData => text().map(LocalDataAllConverter())();
-  TextColumn get integratedData => text().map(IntegratedDataRepoConverter())();
+  TextColumn get localData => text().map(LocalDataAll.converter)();
+  TextColumn get integratedData => text().map(IntegratedDataRepo.converter)();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -50,11 +50,15 @@ enum NoteLocalStatusRepo { capturing, captured, synced }
 
 /// Local data for all note types. Repo should convert to/from this to the
 /// domain type.
-@JsonSerializable()
+@JsonSerializable(constructor: '_')
 class LocalDataAll {
   final NoteLocalStatusRepo status;
 
-  LocalDataAll({required this.status});
+  LocalDataAll._({required this.status});
+
+  LocalDataAll.voice({required this.status});
+
+  LocalDataAll.unknown({required this.status});
 
   factory LocalDataAll.fromJson(Map<String, Object?> json) =>
       _$LocalDataAllFromJson(json);
@@ -62,25 +66,22 @@ class LocalDataAll {
   Map<String, Object?> toJson() {
     return _$LocalDataAllToJson(this);
   }
+
+  static TypeConverter<LocalDataAll, String> converter = TypeConverter.json(
+    fromJson: (json) => LocalDataAll.fromJson(json as Map<String, Object?>),
+    toJson: (pref) => pref.toJson(),
+  );
 }
 
-class LocalDataAllConverter extends TypeConverter<LocalDataAll, String> {
-  @override
-  LocalDataAll fromSql(String fromDb) {
-    return LocalDataAll.fromJson(json.decode(fromDb) as Map<String, Object?>);
-  }
-
-  @override
-  String toSql(LocalDataAll value) {
-    return jsonEncode(value.toJson());
-  }
-}
-
-@JsonSerializable()
+@JsonSerializable(constructor: '_')
 class IntegratedDataRepo {
   final String? url;
 
-  IntegratedDataRepo({this.url});
+  IntegratedDataRepo._({this.url});
+
+  IntegratedDataRepo.voice({required this.url});
+
+  IntegratedDataRepo.unknown({required this.url});
 
   factory IntegratedDataRepo.fromJson(Map<String, Object?> json) =>
       _$IntegratedDataRepoFromJson(json);
@@ -88,17 +89,11 @@ class IntegratedDataRepo {
   Map<String, Object?> toJson() {
     return _$IntegratedDataRepoToJson(this);
   }
-}
 
-class IntegratedDataRepoConverter
-    extends TypeConverter<IntegratedDataRepo, String> {
-  @override
-  IntegratedDataRepo fromSql(String fromDb) {
-    return IntegratedDataRepo.fromJson(json.decode(fromDb));
-  }
-
-  @override
-  String toSql(IntegratedDataRepo value) {
-    return jsonEncode(value.toJson());
-  }
+  static TypeConverter<IntegratedDataRepo, String> converter =
+      TypeConverter.json(
+    fromJson: (json) =>
+        IntegratedDataRepo.fromJson(json as Map<String, Object?>),
+    toJson: (pref) => pref.toJson(),
+  );
 }

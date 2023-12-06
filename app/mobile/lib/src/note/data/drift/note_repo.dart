@@ -3,10 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/extensions/json1.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/lib/optional.dart';
-import 'package:exnota/src/note/capture.dart';
-import 'package:exnota/src/note/data/drift/capture_table.dart';
-import 'package:exnota/src/note/data/drift/note_table.dart';
+import 'package:exnota/src/note/data/drift/mapper.dart';
 import 'package:exnota/src/note/note.dart';
 
 class NoteRepo {
@@ -24,49 +21,9 @@ class NoteRepo {
   }
 
   Future<void> createVoiceNote({required Note note}) async {
-    List<CaptureTableData> captureDatas = [];
-    for (final capture in note.captures) {
-      switch (capture) {
-        case AudioFileCapture():
-          captureDatas.add(CaptureTableData(
-            id: capture.id,
-            type: CaptureTableType.audio,
-            createdAt: capture.createdAt,
-            localData: CaptureLocalDataAll.audioFile(
-              filePath: capture.localData.filePath,
-              status: NoteRepoMapper.captureLocalStatusToData(
-                  capture.localData.status),
-            ),
-            typeData: CaptureTypeDataAll.audioFile(
-              transcription: capture.transcription,
-            ),
-          ));
-          break;
-        case UnknownCapture():
-          captureDatas.add(CaptureTableData(
-              id: capture.id,
-              type: CaptureTableType.unknown,
-              createdAt: capture.createdAt,
-              localData: CaptureLocalDataAll.unknown(
-                status: NoteRepoMapper.captureLocalStatusToData(
-                    capture.localData.status),
-              ),
-              typeData: CaptureTypeDataAll.unknown()));
-          break;
-      }
-    }
-
-    final localData = note.localData;
-    final localDataStatus = NoteRepoMapper.localStatusToData(localData.status);
-    NoteTableData noteData = NoteTableData(
-      id: note.id,
-      type: NoteTableType.voice,
-      title: note.title,
-      captures: captureDatas.map((c) => c.id).toList(),
-      localData: LocalDataAll(status: localDataStatus),
-      integratedData: IntegratedDataRepo(url: note.integratedData.url),
-      createdAt: note.createdAt,
-    );
+    List<CaptureTableData> captureDatas =
+        note.captures.map((c) => NoteRepoMapper.captureToData(c)).toList();
+    NoteTableData noteData = NoteRepoMapper.noteToData(note);
 
     await db.transaction(() async {
       for (final captureData in captureDatas) {
@@ -123,50 +80,10 @@ class NoteRepo {
 
     // Upsert captures, leave dangling in database as they are not expected
     // and we want to avoid data loss.
-    List<CaptureTableData> captureDatas = [];
-    for (final capture in updatedNote.captures) {
-      switch (capture) {
-        case AudioFileCapture():
-          captureDatas.add(CaptureTableData(
-            id: capture.id,
-            type: CaptureTableType.audio,
-            createdAt: capture.createdAt,
-            localData: CaptureLocalDataAll.audioFile(
-              status: NoteRepoMapper.captureLocalStatusToData(
-                  capture.localData.status),
-              filePath: capture.localData.filePath,
-            ),
-            typeData: CaptureTypeDataAll.audioFile(
-              transcription: capture.transcription,
-            ),
-          ));
-          break;
-        case UnknownCapture():
-          captureDatas.add(CaptureTableData(
-            id: capture.id,
-            type: CaptureTableType.unknown,
-            createdAt: capture.createdAt,
-            localData: CaptureLocalDataAll.unknown(
-              status: NoteRepoMapper.captureLocalStatusToData(
-                  capture.localData.status),
-            ),
-            typeData: CaptureTypeDataAll.unknown(),
-          ));
-          break;
-      }
-    }
-
-    final localDataStatus =
-        NoteRepoMapper.localStatusToData(updatedNote.localData.status);
-    NoteTableData noteData = NoteTableData(
-      id: updatedNote.id,
-      type: NoteTableType.voice,
-      title: updatedNote.title,
-      captures: captureDatas.map((c) => c.id).toList(),
-      localData: LocalDataAll(status: localDataStatus),
-      integratedData: IntegratedDataRepo(url: updatedNote.integratedData.url),
-      createdAt: updatedNote.createdAt,
-    );
+    List<CaptureTableData> captureDatas = updatedNote.captures
+        .map((c) => NoteRepoMapper.captureToData(c))
+        .toList();
+    NoteTableData noteData = NoteRepoMapper.noteToData(updatedNote);
 
     await db.transaction(() async {
       for (final captureData in captureDatas) {
@@ -174,14 +91,6 @@ class NoteRepo {
       }
       await db.into(db.noteTable).insertOnConflictUpdate(noteData);
     });
-  }
-
-  Future<Note> getNoteByIdOrThrow(String id) async {
-    final note = await getNoteById(id);
-    if (note == null) {
-      throw Exception("Note $id not found");
-    }
-    return note;
   }
 
   Future<Note?> getNoteById(String id) async {
@@ -214,6 +123,14 @@ class NoteRepo {
     }).first;
   }
 
+  Future<Note> getNoteByIdOrThrow(String id) async {
+    final note = await getNoteById(id);
+    if (note == null) {
+      throw Exception("Note $id not found");
+    }
+    return note;
+  }
+
   Future<Note> getNoteByCaptureId(String captureId) async {
     final noteData = await (db.select(db.noteTable)
           ..where((tbl) {
@@ -222,92 +139,5 @@ class NoteRepo {
         .getSingle();
 
     return getNoteByIdOrThrow(noteData.id);
-  }
-}
-
-class NoteRepoMapper {
-  static Note fromData(NoteTableData data, List<CaptureTableData> captures) {
-    switch (data.type) {
-      case NoteTableType.voice:
-        return _voiceNoteFromData(data, captures);
-      default:
-        throw Exception("Unknown note type: ${data.type}");
-    }
-  }
-
-  static VoiceNote _voiceNoteFromData(
-      NoteTableData data, List<CaptureTableData> captures) {
-    return VoiceNote.fromDb(
-      id: data.id,
-      title: data.title,
-      captures: captures.map((capture) {
-        switch (capture.type) {
-          case CaptureTableType.audio:
-            return AudioFileCapture.fromDb(
-              id: capture.id,
-              createdAt: capture.createdAt,
-              filePath: Optional(capture.localData.filePath),
-              status: captureLocalStatusFromData(capture.localData.status),
-              transcription: Optional(capture.typeData.transcription),
-            );
-
-          case CaptureTableType.unknown:
-            return UnknownCapture.fromDb(
-                id: capture.id,
-                createdAt: capture.createdAt,
-                localData: UnknownCaptureLocalData(
-                    status:
-                        captureLocalStatusFromData(capture.localData.status)));
-        }
-      }).toList(),
-      integratedData: (url: data.integratedData.url),
-      createdAt: data.createdAt,
-    );
-  }
-
-  static NoteLocalStatus _localStatusFromData(NoteLocalStatusRepo status) {
-    switch (status) {
-      case NoteLocalStatusRepo.capturing:
-        return NoteLocalStatus.capturing;
-      case NoteLocalStatusRepo.captured:
-        return NoteLocalStatus.captured;
-      case NoteLocalStatusRepo.synced:
-        return NoteLocalStatus.synced;
-    }
-  }
-
-  static NoteLocalStatusRepo localStatusToData(NoteLocalStatus status) {
-    switch (status) {
-      case NoteLocalStatus.capturing:
-        return NoteLocalStatusRepo.capturing;
-      case NoteLocalStatus.captured:
-        return NoteLocalStatusRepo.captured;
-      case NoteLocalStatus.synced:
-        return NoteLocalStatusRepo.synced;
-    }
-  }
-
-  static CaptureLocalStatus captureLocalStatusFromData(
-      CaptureLocalStatusRepo status) {
-    switch (status) {
-      case CaptureLocalStatusRepo.capturing:
-        return CaptureLocalStatus.capturing;
-      case CaptureLocalStatusRepo.captured:
-        return CaptureLocalStatus.captured;
-      case CaptureLocalStatusRepo.synced:
-        return CaptureLocalStatus.synced;
-    }
-  }
-
-  static CaptureLocalStatusRepo captureLocalStatusToData(
-      CaptureLocalStatus status) {
-    switch (status) {
-      case CaptureLocalStatus.capturing:
-        return CaptureLocalStatusRepo.capturing;
-      case CaptureLocalStatus.captured:
-        return CaptureLocalStatusRepo.captured;
-      case CaptureLocalStatus.synced:
-        return CaptureLocalStatusRepo.synced;
-    }
   }
 }

@@ -42,10 +42,10 @@ void main() {
               CaptureLocalStatus.captured);
         });
         test('Then the note\'s derived status is updated', () {
-          expect(initial.localData.status, NoteLocalStatus.capturing);
+          expect(initial.localData.status, LocalStatus.capturing);
 
           final updated = initial.withCaptured(captureId: 'id1');
-          expect(updated.localData.status, NoteLocalStatus.captured);
+          expect(updated.localData.status, LocalStatus.captured);
         });
       });
     });
@@ -85,10 +85,10 @@ void main() {
               CaptureLocalStatus.synced);
         });
         test('Then the note\'s derived status is updated', () {
-          expect(initial.localData.status, NoteLocalStatus.captured);
+          expect(initial.localData.status, LocalStatus.captured);
 
           final updated = initial.withSynced(captureId: 'id1');
-          expect(updated.localData.status, NoteLocalStatus.synced);
+          expect(updated.localData.status, LocalStatus.synced);
         });
       });
     });
@@ -223,7 +223,7 @@ void main() {
     group('createCapturing', () {
       test('Creates a note with capturing status', () {
         final note = VoiceNote.createCapturing();
-        expect(note.localData.status, NoteLocalStatus.capturing);
+        expect(note.localData.status, LocalStatus.capturing);
       });
     });
     group('fromDb', () {
@@ -248,7 +248,7 @@ void main() {
                 integratedData: (url: 'a url'),
                 createdAt: DateTime.utc(1809, DateTime.february, 12),
                 title: 'a title');
-            expect(note.localData.status, NoteLocalStatus.capturing);
+            expect(note.localData.status, LocalStatus.capturing);
           });
         });
         group('and their statuses are captured, and capturing', () {
@@ -271,7 +271,7 @@ void main() {
                 integratedData: (url: 'a url'),
                 createdAt: DateTime.utc(1809, DateTime.february, 12),
                 title: 'a title');
-            expect(note.localData.status, NoteLocalStatus.capturing);
+            expect(note.localData.status, LocalStatus.capturing);
           });
         });
         group('and their statuses are captured, and synced', () {
@@ -294,7 +294,7 @@ void main() {
                 integratedData: (url: 'a url'),
                 createdAt: DateTime.utc(1809, DateTime.february, 12),
                 title: 'a title');
-            expect(note.localData.status, NoteLocalStatus.captured);
+            expect(note.localData.status, LocalStatus.captured);
           });
         });
         group('and their statuses are both synced', () {
@@ -317,7 +317,7 @@ void main() {
                 integratedData: (url: 'a url'),
                 createdAt: DateTime.utc(1809, DateTime.february, 12),
                 title: 'a title');
-            expect(note.localData.status, NoteLocalStatus.synced);
+            expect(note.localData.status, LocalStatus.synced);
           });
         });
       });
@@ -347,7 +347,7 @@ void main() {
         );
         expect(voiceNote.id, 'an id');
         expect(voiceNote.createdAt, DateTime.utc(1809, DateTime.february, 12));
-        expect(voiceNote.localData.status, NoteLocalStatus.capturing);
+        expect(voiceNote.localData.status, LocalStatus.capturing);
         expect(voiceNote.integratedData, (url: 'a url'));
         expect(voiceNote.title, 'a title');
         expect(voiceNote.captures, captures);
