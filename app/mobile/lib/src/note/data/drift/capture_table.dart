@@ -20,6 +20,7 @@ class CaptureTable extends Table {
   TextColumn get id => text()();
   TextColumn get type => text().map(CaptureTableTypeConverter())();
   TextColumn get localData => text().map(CaptureLocalDataAllConverter())();
+  TextColumn get typeData => text().map(CaptureTypeDataAll.converter)();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -81,4 +82,26 @@ class CaptureLocalDataAllConverter
   String toSql(CaptureLocalDataAll value) {
     return jsonEncode(value.toJson());
   }
+}
+
+/// Type-specific data for all capture types. Repo should convert to/from this
+/// to the domain type.
+@JsonSerializable()
+class CaptureTypeDataAll {
+  // Audio file
+  final String? transcription;
+
+  CaptureTypeDataAll({this.transcription});
+
+  factory CaptureTypeDataAll.fromJson(Map<String, Object?> json) =>
+      _$CaptureTypeDataAllFromJson(json);
+
+  Map<String, Object?> toJson() => _$CaptureTypeDataAllToJson(this);
+
+  static TypeConverter<CaptureTypeDataAll, String> converter =
+      TypeConverter.json(
+    fromJson: (json) =>
+        CaptureTypeDataAll.fromJson(json as Map<String, Object?>),
+    toJson: (pref) => pref.toJson(),
+  );
 }
