@@ -143,6 +143,17 @@ class AudioFileCaptureLocalData implements CaptureLocalData {
       "filePath": filePath,
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AudioFileCaptureLocalData &&
+          runtimeType == other.runtimeType &&
+          status == other.status &&
+          filePath == other.filePath;
+
+  @override
+  int get hashCode => Object.hash(status, filePath);
 }
 
 @immutable

@@ -227,6 +227,16 @@ class VoiceNoteLocalData implements NoteLocalData {
   String typeAsString() {
     return runtimeType.toString();
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VoiceNoteLocalData &&
+          runtimeType == other.runtimeType &&
+          status == other.status;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, status);
 }
 
 class UnknownNote extends Note {

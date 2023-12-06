@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
+import 'package:drift/extensions/json1.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/lib/optional.dart';
@@ -7,7 +8,6 @@ import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/data/drift/capture_table.dart';
 import 'package:exnota/src/note/data/drift/note_table.dart';
 import 'package:exnota/src/note/note.dart';
-import 'package:drift/extensions/json1.dart';
 
 class NoteRepo {
   final AppDatabase db;
@@ -130,6 +130,7 @@ class NoteRepo {
             localData: CaptureLocalDataAll(
               status: NoteRepoMapper.captureLocalStatusToData(
                   capture.localData.status),
+              // TODO: Add transcription:
               filePath: capture.localData.filePath,
             ),
           ));
@@ -240,7 +241,7 @@ class NoteRepoMapper {
               createdAt: capture.createdAt,
               filePath: Optional(capture.localData.filePath),
               status: captureLocalStatusFromData(capture.localData.status),
-              transcription: Optional(capture.localData.transcription),
+              transcription: Optional.empty(), // TODO: set transcription
             );
 
           case CaptureTableType.unknown:

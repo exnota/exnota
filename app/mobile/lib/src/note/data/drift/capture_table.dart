@@ -60,10 +60,8 @@ class CaptureLocalDataAll {
 
   // Audio file
   final String? filePath;
-  final String? transcription;
 
-  CaptureLocalDataAll(
-      {required this.status, this.filePath, this.transcription});
+  CaptureLocalDataAll({required this.status, this.filePath});
 
   factory CaptureLocalDataAll.fromJson(Map<String, Object?> json) =>
       _$CaptureLocalDataAllFromJson(json);
