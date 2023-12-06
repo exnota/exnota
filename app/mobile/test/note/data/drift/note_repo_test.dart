@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/optional.dart';
 import 'package:exnota/src/note/capture.dart';
@@ -30,20 +29,22 @@ void main() {
       });
       group('given notes', () {
         setUp(() async {
-          final capture1 = CaptureTableData(
+          final capture1IsCaptured = CaptureTableData(
               id: 'capture1',
               createdAt: DateTime.utc(1809, DateTime.february, 12),
               type: CaptureTableType.audio,
-              // TODO: Where does transcription go?
-              localData: CaptureLocalDataAll(
-                  status: CaptureLocalStatusRepo.capturing,
-                  filePath: 'capture1 file path'));
-          final capture2 = CaptureTableData(
+              localData: CaptureLocalDataAll.audioFile(
+                  status: CaptureLocalStatusRepo.captured,
+                  filePath: 'capture1 file path'),
+              typeData: CaptureTypeDataAll.audioFile(
+                  transcription: 'capture 1 transcription'));
+          final capture2IsCapturing = CaptureTableData(
               id: 'capture2',
               createdAt: DateTime.utc(1879, DateTime.march, 14),
               type: CaptureTableType.audio,
-              localData: CaptureLocalDataAll(
-                  status: CaptureLocalStatusRepo.capturing));
+              localData: CaptureLocalDataAll.audioFile(
+                  status: CaptureLocalStatusRepo.capturing, filePath: null),
+              typeData: CaptureTypeDataAll.audioFile(transcription: null));
           final note1 = NoteTableData(
               id: 'note1',
               type: NoteTableType.voice,
@@ -51,10 +52,10 @@ void main() {
               localData: LocalDataAll(status: NoteLocalStatusRepo.capturing),
               createdAt: DateTime.utc(1809, DateTime.february, 12),
               title: 'a title',
-              captures: [capture1.id, capture2.id]);
+              captures: [capture1IsCaptured.id, capture2IsCapturing.id]);
 
-          await db.into(db.captureTable).insert(capture1);
-          await db.into(db.captureTable).insert(capture2);
+          await db.into(db.captureTable).insert(capture1IsCaptured);
+          await db.into(db.captureTable).insert(capture2IsCapturing);
           await db.into(db.noteTable).insert(note1);
         });
         test('returns list of notes', () async {
@@ -89,11 +90,12 @@ void main() {
                   if (capture1 is! AudioFileCapture) {
                     throw Exception('Should be an AudioFileCapture');
                   }
+                  expect(capture1.transcription, 'capture 1 transcription');
                   expect(capture1.localData, isA<AudioFileCaptureLocalData>());
                   expect(
                       capture1.localData,
                       AudioFileCaptureLocalData(
-                          status: CaptureLocalStatus.capturing,
+                          status: CaptureLocalStatus.captured,
                           filePath: const Optional('capture1 file path')));
 
                   final capture2 = note.captures[1];
@@ -105,6 +107,7 @@ void main() {
                   if (capture2 is! AudioFileCapture) {
                     throw Exception('Should be an AudioFileCapture');
                   }
+                  expect(capture2.transcription, isNull);
                   expect(capture2.localData, isA<AudioFileCaptureLocalData>());
                   expect(
                       capture2.localData,

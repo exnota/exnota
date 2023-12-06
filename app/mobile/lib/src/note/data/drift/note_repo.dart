@@ -32,12 +32,12 @@ class NoteRepo {
             id: capture.id,
             type: CaptureTableType.audio,
             createdAt: capture.createdAt,
-            localData: CaptureLocalDataAll(
+            localData: CaptureLocalDataAll.audioFile(
               filePath: capture.localData.filePath,
               status: NoteRepoMapper.captureLocalStatusToData(
                   capture.localData.status),
             ),
-            typeData: CaptureTypeDataAll(
+            typeData: CaptureTypeDataAll.audioFile(
               transcription: capture.transcription,
             ),
           ));
@@ -47,11 +47,11 @@ class NoteRepo {
               id: capture.id,
               type: CaptureTableType.unknown,
               createdAt: capture.createdAt,
-              localData: CaptureLocalDataAll(
+              localData: CaptureLocalDataAll.unknown(
                 status: NoteRepoMapper.captureLocalStatusToData(
                     capture.localData.status),
               ),
-              typeData: CaptureTypeDataAll()));
+              typeData: CaptureTypeDataAll.unknown()));
           break;
       }
     }
@@ -131,12 +131,12 @@ class NoteRepo {
             id: capture.id,
             type: CaptureTableType.audio,
             createdAt: capture.createdAt,
-            localData: CaptureLocalDataAll(
+            localData: CaptureLocalDataAll.audioFile(
               status: NoteRepoMapper.captureLocalStatusToData(
                   capture.localData.status),
               filePath: capture.localData.filePath,
             ),
-            typeData: CaptureTypeDataAll(
+            typeData: CaptureTypeDataAll.audioFile(
               transcription: capture.transcription,
             ),
           ));
@@ -146,11 +146,11 @@ class NoteRepo {
             id: capture.id,
             type: CaptureTableType.unknown,
             createdAt: capture.createdAt,
-            localData: CaptureLocalDataAll(
+            localData: CaptureLocalDataAll.unknown(
               status: NoteRepoMapper.captureLocalStatusToData(
                   capture.localData.status),
             ),
-            typeData: CaptureTypeDataAll(),
+            typeData: CaptureTypeDataAll.unknown(),
           ));
           break;
       }
@@ -248,8 +248,7 @@ class NoteRepoMapper {
               createdAt: capture.createdAt,
               filePath: Optional(capture.localData.filePath),
               status: captureLocalStatusFromData(capture.localData.status),
-              transcription: Optional(
-                  capture.typeData.transcription), // TODO: set transcription
+              transcription: Optional(capture.typeData.transcription),
             );
 
           case CaptureTableType.unknown:
