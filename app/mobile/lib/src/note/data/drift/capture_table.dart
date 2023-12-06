@@ -3,15 +3,6 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'capture_table.g.dart';
 
-enum CaptureTableType {
-  audio(jsonName: "audio"),
-  unknown(jsonName: "unknown");
-
-  const CaptureTableType({required this.jsonName});
-
-  final String jsonName;
-}
-
 class CaptureTable extends Table {
   @override
   String get tableName => 'capture';
@@ -24,6 +15,15 @@ class CaptureTable extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+enum CaptureTableType {
+  audio(jsonName: "audio"),
+  unknown(jsonName: "unknown");
+
+  const CaptureTableType({required this.jsonName});
+
+  final String jsonName;
 }
 
 class CaptureTableTypeConverter

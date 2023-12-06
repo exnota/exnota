@@ -5,16 +5,6 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'note_table.g.dart';
 
-enum NoteTableType {
-  voice(jsonName: "voice"),
-  text(jsonName: "text"),
-  unknown(jsonName: "unknown");
-
-  const NoteTableType({required this.jsonName});
-
-  final String jsonName;
-}
-
 class NoteTable extends Table {
   @override
   String get tableName => 'note';
@@ -29,6 +19,16 @@ class NoteTable extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+enum NoteTableType {
+  voice(jsonName: "voice"),
+  text(jsonName: "text"),
+  unknown(jsonName: "unknown");
+
+  const NoteTableType({required this.jsonName});
+
+  final String jsonName;
 }
 
 /// Stores the list of capture ids as a json array.
