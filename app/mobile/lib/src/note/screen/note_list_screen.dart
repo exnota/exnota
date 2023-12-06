@@ -134,7 +134,7 @@ class NoteList extends ConsumerWidget {
           itemCount: notes.length,
           itemBuilder: (BuildContext context, int index) {
             final note = notes[index];
-            return NoteListTile(note: note);
+            return NoteListTile(note: note, key: Key(note.id));
           },
         );
       },
