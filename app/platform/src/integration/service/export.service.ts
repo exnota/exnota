@@ -2,12 +2,14 @@ import {
   NotionAuthService,
   NotionAuthServiceError,
 } from '@exnota/integration/service/notion-auth.service'
+import { truncateTranscription } from '@exnota/integration/service/truncate'
 import { Result, mapErrorType, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
 import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client'
 import { SearchResponse } from '@notionhq/client/build/src/api-endpoints'
+
 type NoteExport = {
-  title: string
+  transcription: string
 }
 
 type AccessToken = {
@@ -256,7 +258,7 @@ export class ExportService {
           title: [
             {
               text: {
-                content: `Memo: ${note.title}`,
+                content: `Memo: ${truncateTranscription(note.transcription)}`,
               },
             },
           ],

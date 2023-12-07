@@ -140,7 +140,7 @@ export class NoteController {
 
     const exportResult = await this.exportService.export(
       {
-        title: transcriptionResult.value,
+        transcription: transcriptionResult.value,
       },
       {
         token: audioNote.accessToken,
