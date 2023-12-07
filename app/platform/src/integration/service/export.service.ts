@@ -264,6 +264,20 @@ export class ExportService {
           ],
         },
       },
+      children: [
+        {
+          type: 'paragraph',
+          paragraph: {
+            rich_text: [
+              {
+                text: {
+                  content: note.transcription,
+                },
+              },
+            ],
+          },
+        },
+      ],
     })
     this.logger.log('Exported to:', apiResult)
     // Result is either PageObjectResponse or PartialPageObjectResponse. Partial
