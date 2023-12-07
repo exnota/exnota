@@ -2,6 +2,7 @@ import {
   NotionAuthService,
   NotionAuthServiceError,
 } from '@exnota/integration/service/notion-auth.service'
+import { paragraphsForTranscription } from '@exnota/integration/service/notion-content-util'
 import { truncateTranscription } from '@exnota/integration/service/truncate'
 import { Result, mapErrorType, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
@@ -264,20 +265,7 @@ export class ExportService {
           ],
         },
       },
-      children: [
-        {
-          type: 'paragraph',
-          paragraph: {
-            rich_text: [
-              {
-                text: {
-                  content: note.transcription,
-                },
-              },
-            ],
-          },
-        },
-      ],
+      children: paragraphsForTranscription(note.transcription),
     })
     this.logger.log('Exported to:', apiResult)
     // Result is either PageObjectResponse or PartialPageObjectResponse. Partial

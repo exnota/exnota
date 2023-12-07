@@ -1,4 +1,7 @@
-import { truncateTranscription } from '@exnota/integration/service/truncate'
+import {
+  chunkTranscription,
+  truncateTranscription,
+} from '@exnota/integration/service/truncate'
 
 describe('truncateTranscription', () => {
   describe('Given a transcription less than the min', () => {
@@ -274,6 +277,173 @@ describe('truncateTranscription', () => {
           )
         })
       })
+    })
+  })
+})
+describe('chunkTranscription', () => {
+  // cases
+  // - if transcription is less than min, return transcription
+  describe('Given a transcription less than the min', () => {
+    it('should return the transcription', () => {
+      expect(
+        chunkTranscription('some transcription', { min: 100, max: 200 }),
+      ).toEqual(['some transcription'])
+    })
+  })
+  describe('Given a transcription greater than the max', () => {
+    describe('When theres a period after the min', () => {
+      it('should chunk after the period', () => {
+        const transcription =
+          'some transcription that is broken up into lines th' +
+          'at are 50 characters long, so its easier to grok w' +
+          'hat the expected behaviour will be. at this point ' +
+          'we only have a few more characters to go, before r' +
+          'eaching the 200 total characters mark.'
+
+        // Verify the test conditions
+        expect(transcription.length).toBeGreaterThan(200)
+
+        expect(
+          chunkTranscription(transcription, {
+            min: 100,
+            max: 200,
+          }),
+        ).toEqual([
+          // chunk 1
+          'some transcription that is broken up into lines th' +
+            'at are 50 characters long, so its easier to grok w' +
+            'hat the expected behaviour will be.',
+          // chunk 2
+          ' at this point we only have a few more characters ' +
+            'to go, before reaching the 200 total characters mar' +
+            'k.',
+        ])
+      })
+    })
+    describe("When there's no period between min and max", () => {
+      it('should chunk after the max', () => {
+        const transcription =
+          'some transcription that is broken up into lines th' +
+          'at are 50 characters long, so its easier to grok w' +
+          'hat the expected behaviour will be, at this point ' +
+          'we only have a few more characters to go, before r' +
+          'eaching the 200 total characters mark.'
+
+        // Verify the test conditions
+        expect(transcription.length).toBeGreaterThan(200)
+
+        expect(
+          chunkTranscription(transcription, {
+            min: 100,
+            max: 200,
+          }),
+        ).toEqual([
+          // chunk 1
+          'some transcription that is broken up into lines th' +
+            'at are 50 characters long, so its easier to grok w' +
+            'hat the expected behaviour will be, at this point ' +
+            'we only have a few more characters to go, before r',
+          // chunk 2
+          'eaching the 200 total characters mark.',
+        ])
+      })
+    })
+  })
+  describe('Given a transcription more than twice the size of the max', () => {
+    describe('When there is always a period between the min and max', () => {
+      it('should chunk after the periods', () => {
+        const transcription =
+          'some transcription that is broken up into lines th' +
+          'at are 50 characters long, so its easier to grok w' +
+          'hat the expected behaviour will be. at this point ' +
+          'we only have a few more characters to go, before r' +
+          'eaching the 200 total characters mark. and again. ' +
+          'some transcription that is broken up into lines th' +
+          'at are 50 characters long, so its easier to grok w' +
+          'hat the expected behaviour will be. at this point ' +
+          'we only have a few more characters to go, before r' +
+          'eaching the 200 total characters mark. and again. '
+
+        // Verify the test conditions
+        expect(transcription.length).toBeGreaterThan(400)
+
+        expect(
+          chunkTranscription(transcription, {
+            min: 100,
+            max: 200,
+          }),
+        ).toEqual([
+          // chunk 1
+          'some transcription that is broken up into lines th' +
+            'at are 50 characters long, so its easier to grok w' +
+            'hat the expected behaviour will be.',
+          // chunk 2
+          ' at this point we only have a few more characters ' +
+            'to go, before reaching the 200 total characters ma' +
+            'rk.',
+          // chunk 3
+          ' and again. some transcription that is broken up i' +
+            'nto lines that are 50 characters long, so its easi' +
+            'er to grok what the expected behaviour will be.',
+          // chunk 4
+          ' at this point we only have a few more characters ' +
+            'to go, before reaching the 200 total characters ma' +
+            'rk. and again. ',
+        ])
+      })
+    })
+    describe('When there are no periods between mins and maxes', () => {
+      it('should chunk at the max each time', () => {
+        const transcription =
+          'some transcription that is broken up into lines th' +
+          'at are 50 characters long, so its easier to grok w' +
+          'hat the expected behaviour will be, at this point ' +
+          'we only have a few more characters to go, before r' +
+          'eaching the 200 total characters mark, and again, ' +
+          'some transcription that is broken up into lines th' +
+          'at are 50 characters long, so its easier to grok w' +
+          'hat the expected behaviour will be, at this point ' +
+          'we only have a few more characters to go, before r' +
+          'eaching the 200 total characters mark, and again, '
+
+        // Verify the test conditions
+        expect(transcription.length).toBeGreaterThan(400)
+
+        expect(
+          chunkTranscription(transcription, {
+            min: 100,
+            max: 200,
+          }),
+        ).toEqual([
+          // chunk 1
+          'some transcription that is broken up into lines th' +
+            'at are 50 characters long, so its easier to grok w' +
+            'hat the expected behaviour will be, at this point ' +
+            'we only have a few more characters to go, before r',
+          // chunk 2
+          'eaching the 200 total characters mark, and again, ' +
+            'some transcription that is broken up into lines th' +
+            'at are 50 characters long, so its easier to grok w' +
+            'hat the expected behaviour will be, at this point ',
+          // chunk 3
+          'we only have a few more characters to go, before r' +
+            'eaching the 200 total characters mark, and again, ',
+        ])
+      })
+    })
+  })
+  describe("Given a min that's 0 or less", () => {
+    it('should throw ', () => {
+      expect(() => {
+        chunkTranscription('some transcription', { min: -1, max: 200 })
+      }).toThrowError('min must be greater than 0')
+    })
+  })
+  describe("Given a max that's less than the min", () => {
+    it('should throw ', () => {
+      expect(() => {
+        chunkTranscription('some transcription', { min: 100, max: 99 })
+      }).toThrowError('max must be greater than min')
     })
   })
 })
