@@ -16,6 +16,8 @@
     - [Kotlin version error when building an APK](#kotlin-version-error-when-building-an-apk)
 - [Releasing](#releasing)
   - [Android: Install on device](#android-install-on-device)
+  - [iOS: Install on device](#ios-install-on-device)
+    - [Install a release version / Use without Xcode](#install-a-release-version--use-without-xcode)
   - [Android: Release to Play store](#android-release-to-play-store)
 
 ## Development principles
@@ -223,6 +225,35 @@ download:
 1. `flutter build apk`
 2. `flutter install`
 
+### iOS: Install on device
+
+<https://developer.apple.com/documentation/xcode/running-your-app-in-simulator-or-on-a-device>
+
+1. In the root `mobile` folder: `open ios/Runner.xcworkspace`
+2. In breadcrumbs at top of Xcode UI, ensure it says `Runner > [Desired device]`
+3. Click the play button, top left.
+4. You may get "codesign wants to access key chain..."
+   - Enter your computer's user password and select `Always allow`!
+   - `Always allow` is important, otherwise it will keep asking, which makes it
+      seem like the password is wrong.
+5. You may get an 'untrusted developer' error
+   - Trust developer by going to `Settings > General > Device Management` and
+   selecting the profile to trust
+
+This will install in debug mode and cannot be opened when disconnected from
+Xcode.
+
+#### Install a release version / Use without Xcode
+
+To use the non-debug version and be able to use the app without being connected
+to Xcode:
+
+1. Select `Runner` in the breadcrums at the top of Xcode UI
+2. Select `Edit scheme`.
+   - A window should open with the `Run` tab focused.
+3. Change `Build configuration` from `Debug` to `Release`.
+4. Click the play button.
+
 ### Android: Release to Play store
 
 1. Download keystore `upload-keystore.jks` from secure location.
@@ -236,6 +267,6 @@ download:
 4. Update both `storePassword` and `keyPassword` in the file to the keystore
 password. Both are the same password.
 
-5. Bump version in `pubspec.yaml`.
+1. Bump version in `pubspec.yaml`.
 
-6. Run `flutter build appbundle`
+2. Run `flutter build appbundle`
