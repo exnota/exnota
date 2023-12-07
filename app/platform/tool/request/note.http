@@ -91,6 +91,28 @@ Content-Type: audio/wav
 < micro-machines-44k.wav
 --boundary--
 
+
+### post notes - 5 minute test (actually 5:37)
+POST {{baseUrl}}/note/notes
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+audio
+--boundary
+Content-Disposition: form-data; name="accessToken"
+Content-Type: application/json
+
+{{notionAccessToken}}
+--boundary
+Content-Disposition: form-data; name="file"; filename="5min.m4a"
+Content-Type: audio/wav
+
+< 5min.m4a
+--boundary--
+
 ### ----------------------------------------------------
 ### notion api
 ### ----------------------------------------------------
