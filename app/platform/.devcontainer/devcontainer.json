@@ -16,7 +16,9 @@
 				"firsttris.vscode-jest-runner",
 				"Gruntfuggly.todo-tree",
 				"GitHub.copilot",
-				"GitHub.copilot-chat"
+				"GitHub.copilot-chat",
+				"hbenl.vscode-test-explorer",
+				"kavod-io.vscode-jest-test-adapter"
 			]
 		}
 	}
