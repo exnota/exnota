@@ -21,7 +21,7 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
       : super(id: id, entityId: entityId);
 
   @override
-  Future<void> request(Ref ref) async {
+  Future<SyncCommandError?> request(Ref ref) async {
     final logger = Logger();
 
     var uri = ref.read(uriServiceProvider(path: 'note/notes'));
@@ -31,10 +31,7 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
       case NotionSettingsEmpty():
       case NotionSettingsCode():
         logger.error('No access token');
-        // TODO: Set error on job
-        // return NoteCreateError.authError;
-        // TODO: remove this
-        return Future.value(null);
+        return Future.value(const SyncCommandError('No access token'));
       case NotionSettingsAccessToken():
         // Do nothing. Don't use `default` so if a new subtype is added we're
         // forced to update this block due to the exhaustive rule.
@@ -53,9 +50,7 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
       streamedResponse = await request.send();
     } catch (e) {
       logger.warn("Couldn't send request", nonPrivateData: e);
-      // TODO: remove this and replace with error on command
-      return Future.value(null);
-      // return NoteCreateError.network;
+      return Future.value(const SyncCommandError("Couldn't send request"));
     }
 
     logger.info('Received response');
@@ -67,7 +62,8 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
 
       final transcription = json["transcription"];
       if (transcription is! String) {
-        throw Exception("Invalid transcription from server");
+        logger.error("Invalid transcription from server");
+        return Future.value(const SyncCommandError("Invalid transcription"));
       }
       String? url;
       if (json["url"] is String) {
@@ -79,27 +75,25 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
           transcription: transcription,
           integratedUrl: url ?? "");
 
-      return;
+      return null;
     }
 
-    // TODO: Handle error cases
     final json = jsonDecode(response.body);
     final code = json["code"];
     if (code is String && code == "AUTH_ERROR") {
-      print("AUTH_ERROR");
-      // return NoteCreateError.authError;
-      return Future.value(null);
+      logger.warn("AUTH_ERROR");
+      return Future.value(const SyncCommandError("AUTH_ERROR"));
     } else if (code is String && code == "NO_PAGE_ERROR") {
-      print("NO_PAGE_ERROR");
-      // return NoteCreateError.noPageError;
-      return Future.value(null);
+      logger.warn("NO_PAGE_ERROR");
+      return Future.value(const SyncCommandError("NO_PAGE_ERROR"));
     }
-    print("Upload fail");
-    print("Status=${response.statusCode}");
-    print("reasonPhrase=${response.reasonPhrase}");
-    print("code=${json["code"]}");
-    // return NoteCreateError.other;
-    return Future.value(null);
+    logger.error("Unknown error syncing", nonPrivateData: {
+      "status": response.statusCode,
+      "code": code,
+      "reasonPhrase": response.reasonPhrase,
+    });
+    return Future.value(SyncCommandError(
+        "Unknown error syncing. Code: $code, status: ${response.statusCode}, reasonPhrase: ${response.reasonPhrase}"));
   }
 
   static Map<String, dynamic> dataToJson(

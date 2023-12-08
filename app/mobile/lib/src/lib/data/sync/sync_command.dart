@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum SyncCommandStatus { waiting, running, complete }
@@ -12,5 +13,17 @@ abstract class SyncCommand<T> {
       required this.entityId,
       this.status = SyncCommandStatus.waiting});
 
-  Future<void> request(Ref ref);
+  Future<SyncCommandError?> request(Ref ref);
+}
+
+@immutable
+class SyncCommandError {
+  final String message;
+
+  const SyncCommandError(this.message);
+
+  @override
+  String toString() {
+    return 'SyncCommandError{message: $message}';
+  }
 }
