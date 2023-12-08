@@ -45,8 +45,10 @@ class NoteMutationService extends _$NoteMutationService {
       final noteRepo = NoteRepo(db);
       final existingNote = await noteRepo.getNoteByCaptureId(capture.id);
       if (existingNote is! VoiceNote) {
-        ref.read(loggerProvider).error("Note is not a VoiceNote",
-            nonPrivateData: existingNote.toNonPrivateData());
+        ref
+            .read(loggerProvider('NoteMutationService.setAudioFileCaptured'))
+            .error("Note is not a VoiceNote",
+                nonPrivateData: existingNote.toNonPrivateData());
         // TODO: Handle error
         return;
       }
@@ -81,8 +83,10 @@ class NoteMutationService extends _$NoteMutationService {
       final noteRepo = NoteRepo(db);
       final existingNote = await noteRepo.getNoteByCaptureId(captureId);
       if (existingNote is! VoiceNote) {
-        ref.read(loggerProvider).error("Note is not a VoiceNote",
-            nonPrivateData: existingNote.toNonPrivateData());
+        ref
+            .read(loggerProvider('NoteMutationService.setAudioFileSynced'))
+            .error("Note is not a VoiceNote",
+                nonPrivateData: existingNote.toNonPrivateData());
         // TODO: Handle error
         return;
       }

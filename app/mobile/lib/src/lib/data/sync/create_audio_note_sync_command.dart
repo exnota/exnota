@@ -22,7 +22,7 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
 
   @override
   Future<SyncCommandError?> request(Ref ref) async {
-    final logger = Logger();
+    final logger = Logger(context: '$runtimeType.request');
 
     var uri = ref.read(uriServiceProvider(path: 'note/notes'));
     final notionSettings = ref.read(notionSettingsRepoProvider).valueOrNull;

@@ -343,7 +343,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
 
           final actualPath = await controller.stop(false);
           ref
-              .read(loggerProvider)
+              .read(loggerProvider('RecordButton'))
               .debug("Stopped recording. Saved to $actualPath");
           setState(() {
             isRecording = false;
@@ -362,29 +362,6 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
             isUploading = false;
             audioFileCapture = null;
           });
-          // TODO: Handle errors
-
-          // String? errorMessage;
-          // switch (err) {
-          //   case NoteCreateError.authError:
-          //     errorMessage = "Access to Notion lost. Please reconnect.";
-          //     break;
-          //   case NoteCreateError.noPageError:
-          //     errorMessage =
-          //         "No page or database to export to. Please reconnect and select a page.";
-          //     break;
-          //   case NoteCreateError.network:
-          //     errorMessage = "There seems to be a network issue. Please retry.";
-          //     break;
-          //   case NoteCreateError.other:
-          //     errorMessage = "Couldn't export for an unknown reason.";
-          //     break;
-          //   case null:
-          //     break;
-          // }
-          // if (errorMessage != null) {
-          //   _showSnackError(errorMessage);
-          // }
         },
         label: const Text('Stop'),
         icon: const Icon(Icons.stop),
@@ -410,14 +387,14 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
         // Show dialogs for situations where we (probably) can't request
         // permissions.
         if (micPermission.isPermanentlyDenied) {
-          ref.read(loggerProvider).info(
+          ref.read(loggerProvider('RecordButton')).info(
               "Microphone permission permanently denied. Showing dialog.");
           await _showPermanentlyDeniedDialog();
           return;
         }
         if (micPermission.isRestricted) {
           ref
-              .read(loggerProvider)
+              .read(loggerProvider('RecordButton'))
               .info("Microphone permission restricted. Showing dialog.");
           await _showRestrictedDialog();
           return;
@@ -425,29 +402,29 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
 
         // Prompt for permission
         if (!micPermission.isGranted && !micPermission.isLimited) {
-          ref.read(loggerProvider).info(
+          ref.read(loggerProvider('RecordButton')).info(
               "Microphone permission not granted or limited. Requesting permission.");
           micPermission = await Permission.microphone.request();
           if (micPermission != PermissionStatus.granted &&
               micPermission != PermissionStatus.limited) {
-            ref.read(loggerProvider).info(
+            ref.read(loggerProvider('RecordButton')).info(
                 "Microphone permission not granted or limited after requesting.");
             _showSnackError("Microphone permission denied");
             return;
           }
         }
         ref
-            .read(loggerProvider)
+            .read(loggerProvider('RecordButton'))
             .info("Microphone permission should be granted or limited.");
 
-        ref.read(loggerProvider).debug("Creating note");
+        ref.read(loggerProvider('RecordButton')).debug("Creating note");
         final note = await ref
             .read(noteMutationServiceProvider.notifier)
             .createCapturingAudioNote(extension: "m4a");
         setState(() {
           audioFileCapture = note.captures.first.asAudioFileCapture();
         });
-        ref.read(loggerProvider).debug("Created note", note);
+        ref.read(loggerProvider('RecordButton')).debug("Created note", note);
 
         final path =
             note.captures.first.asAudioFileCapture()?.localData.filePath;
@@ -455,9 +432,11 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
           // TODO: Handle error
           throw Exception("No path for audio file");
         }
-        ref.read(loggerProvider).debug("About to record to $path");
+        ref
+            .read(loggerProvider('RecordButton'))
+            .debug("About to record to $path");
         await controller.record(path: path);
-        ref.read(loggerProvider).debug("Recording");
+        ref.read(loggerProvider('RecordButton')).debug("Recording");
 
         setState(() {
           isRecording = true;

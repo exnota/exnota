@@ -14,7 +14,7 @@ class SyncCommandRunner extends _$SyncCommandRunner {
   }
 
   void run() {
-    final logger = ref.read(loggerProvider);
+    final logger = ref.read(loggerProvider('SyncCommandRunner'));
     final db = ref.read(databaseProvider);
     final commandRepo = SyncCommandRepo(db);
     commandRepo
