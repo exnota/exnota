@@ -18,7 +18,13 @@ Future<void> initCrashlytics() async {
   };
 }
 
-Future<void> report({required String description}) async {
+Future<void> report(
+    {required String description, Object? nonPrivateData}) async {
+  if (nonPrivateData != null) {
+    await FirebaseCrashlytics.instance.recordError(null, StackTrace.current,
+        reason: description, information: [nonPrivateData]);
+    return;
+  }
   await FirebaseCrashlytics.instance
       .recordError(null, StackTrace.current, reason: description);
 }
