@@ -97,7 +97,7 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
             if (kDebugMode)
               FloatingActionButton(
                   heroTag: "fab-db-test",
-                  child: const Text("DB test"),
+                  child: const Text("Crash test"),
                   onPressed: () async {
                     // Get note by id
                     // final db = ref.read(databaseProvider);
@@ -106,10 +106,7 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
                     // ref.read(loggerProvider).debug("result", result);
 
                     // Create audio note
-                    final note = await ref
-                        .read(noteMutationServiceProvider.notifier)
-                        .createCapturingAudioNote(extension: "m4a");
-                    ref.read(loggerProvider).debug("Created note", note);
+                    throw Exception('test exception');
                   }),
             const RecordButton()
           ]),
@@ -159,6 +156,13 @@ class _NoteListTileState extends State<NoteListTile> {
   ({String text, Widget icon, PendingStatus status})? pendingConfig;
   Timer? pendingConfigTranscribingTimer;
   Timer? pendingConfigExportingTimer;
+
+  @override
+  void dispose() {
+    pendingConfigTranscribingTimer?.cancel();
+    pendingConfigExportingTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
