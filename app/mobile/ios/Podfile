@@ -1,5 +1,6 @@
-# This package requires 10.0 https://pub.dev/packages/audio_waveforms
-platform :ios, '10.0'
+# audio_waveforms requires 10.0
+# url_launcher requires 11.0 
+platform :ios, '11.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'

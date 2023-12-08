@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "920680379230",
+    "project_id": "exnota-app",
+    "storage_bucket": "exnota-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:920680379230:android:039c2566d5d8e2344195cf",
+        "android_client_info": {
+          "package_name": "com.exnota.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIIUP1n1qejdEWTrio6d9eZod-7Q7o2Kk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

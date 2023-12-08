@@ -41,6 +41,8 @@ dependencies:
   lottie: ^1.4.3
   permission_handler: ^11.0.1
   app_links: ^3.4.5
+  firebase_core: ^2.24.1
+  firebase_crashlytics: ^3.4.7
 
 dev_dependencies:
   flutter_test:
