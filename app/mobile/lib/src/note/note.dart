@@ -1,8 +1,6 @@
 import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/data/id_generator.dart';
 
-enum LocalStatus { capturing, captured, synced }
-
 sealed class Note {
   abstract final String id;
   abstract final String? title;
@@ -16,11 +14,14 @@ sealed class Note {
 }
 
 sealed class LocalData {
+  /// Status of sync with backend.
   abstract final LocalStatus status;
 
   String typeAsString();
   Map<String, String?> toNonPrivateData();
 }
+
+enum LocalStatus { capturing, captured, synced }
 
 class VoiceNote extends Note {
   @override
