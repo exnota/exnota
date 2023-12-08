@@ -92,24 +92,17 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
       },
       floatingActionButton: switch (notionConnected) {
         false => null,
-        // TODO: Revert after testing done
-        true => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-            if (kDebugMode)
-              FloatingActionButton(
-                  heroTag: "fab-db-test",
-                  child: const Text("Crash test"),
-                  onPressed: () async {
-                    // Get note by id
-                    // final db = ref.read(databaseProvider);
-                    // final noteRepo = NoteRepo(db);
-                    // final result = await noteRepo.getNoteById("UdjWpKSEXVa2Fx");
-                    // ref.read(loggerProvider).debug("result", result);
-
-                    // Create audio note
-                    throw Exception('test exception');
-                  }),
-            const RecordButton()
-          ]),
+        true => switch (kDebugMode) {
+            false => const RecordButton(),
+            true => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                if (kDebugMode)
+                  FloatingActionButton(
+                      heroTag: "fab-test",
+                      child: const Text("Test"),
+                      onPressed: () async {}),
+                const RecordButton()
+              ]),
+          },
       },
     );
   }
