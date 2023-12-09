@@ -17,8 +17,11 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
   final CreateAudioNoteCapture capture;
 
   CreateAudioNoteSyncCommand(
-      {required int id, required String entityId, required this.capture})
-      : super(id: id, entityId: entityId);
+      {required int id,
+      required String entityId,
+      required this.capture,
+      required SyncCommandStatus status})
+      : super(id: id, entityId: entityId, status: status);
 
   @override
   Future<SyncCommandError?> request(Ref ref) async {
@@ -117,6 +120,7 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
     return CreateAudioNoteSyncCommand(
         id: id,
         entityId: entityId,
-        capture: (id: captureId, filePath: filePath));
+        capture: (id: captureId, filePath: filePath),
+        status: status);
   }
 }

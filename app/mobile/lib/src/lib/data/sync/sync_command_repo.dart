@@ -74,6 +74,8 @@ class SyncCommandRepo {
         return SyncCommandRepoStatus.running;
       case SyncCommandStatus.complete:
         return SyncCommandRepoStatus.complete;
+      case SyncCommandStatus.error:
+        return SyncCommandRepoStatus.error;
     }
   }
 
@@ -85,6 +87,8 @@ class SyncCommandRepo {
         return SyncCommandStatus.running;
       case SyncCommandRepoStatus.complete:
         return SyncCommandStatus.complete;
+      case SyncCommandRepoStatus.error:
+        return SyncCommandStatus.error;
     }
   }
 }
