@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/lib/data/sync/mapper.dart';
+import 'package:exnota/src/lib/data/sync/repo/mapper.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 
 class SyncCommandRepo {

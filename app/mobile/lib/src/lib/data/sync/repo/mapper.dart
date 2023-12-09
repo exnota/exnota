@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
-import 'package:exnota/src/lib/data/sync/sync_command_table.dart';
+import 'package:exnota/src/lib/data/sync/repo/sync_command_table.dart';
 import 'package:exnota/src/lib/entity_id.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:json_annotation/json_annotation.dart';

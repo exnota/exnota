@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:exnota/src/integration/repo/notion_settings_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:exnota/src/lib/data/sync/sync_command_table.dart';
+import 'package:exnota/src/lib/data/sync/repo/sync_command_table.dart';
 import 'package:exnota/src/note/repo/drift/capture_table.dart';
 import 'package:exnota/src/note/repo/drift/note_table.dart';
 import 'package:exnota/src/note/repo/file/local_file_service.dart';
