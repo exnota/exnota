@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/extensions/json1.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/data/drift/mapper.dart';
+import 'package:exnota/src/note/repo/drift/mapper.dart';
 import 'package:exnota/src/note/note.dart';
 
 class NoteRepo {

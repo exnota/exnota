@@ -1,4 +1,4 @@
-import 'package:exnota/src/note/data/id_generator.dart';
+import 'package:exnota/src/note/repo/id_generator.dart';
 import 'package:exnota/src/lib/optional.dart';
 import 'package:flutter/material.dart';
 

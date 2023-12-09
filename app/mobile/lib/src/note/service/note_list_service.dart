@@ -1,5 +1,5 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/note/data/drift/note_repo.dart';
+import 'package:exnota/src/note/repo/drift/note_repo.dart';
 import 'package:exnota/src/note/note.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

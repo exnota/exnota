@@ -1,6 +1,6 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/log/report.dart';
-import 'package:exnota/src/note/data/file/local_file_service.dart';
+import 'package:exnota/src/note/repo/file/local_file_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

@@ -5,10 +5,10 @@ import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/capture.dart';
-import 'package:exnota/src/note/data/drift/note_repo.dart';
+import 'package:exnota/src/note/repo/drift/note_repo.dart';
 import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/lib/data/sync/sync_command_repo.dart';
-import 'package:exnota/src/note/data/file/local_file_service.dart';
+import 'package:exnota/src/note/repo/file/local_file_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'note_mutation_service.g.dart';

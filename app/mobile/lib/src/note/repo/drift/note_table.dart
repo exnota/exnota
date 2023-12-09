@@ -103,6 +103,7 @@ class LocalDataRepo {
 class IntegratedDataRepo {
   final String? url;
 
+  // ignore: unused_element
   IntegratedDataRepo._({this.url});
 
   IntegratedDataRepo.voice({required this.url});

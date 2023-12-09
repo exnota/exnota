@@ -1,9 +1,9 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/optional.dart';
 import 'package:exnota/src/note/capture.dart';
-import 'package:exnota/src/note/data/drift/capture_table.dart';
-import 'package:exnota/src/note/data/drift/note_repo.dart';
-import 'package:exnota/src/note/data/drift/note_table.dart';
+import 'package:exnota/src/note/repo/drift/capture_table.dart';
+import 'package:exnota/src/note/repo/drift/note_repo.dart';
+import 'package:exnota/src/note/repo/drift/note_table.dart';
 import 'package:exnota/src/note/note.dart';
 import 'package:flutter_test/flutter_test.dart';
 

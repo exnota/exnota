@@ -4,9 +4,9 @@ import 'package:exnota/src/integration/data/notion_settings_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:exnota/src/lib/data/sync/sync_command_table.dart';
-import 'package:exnota/src/note/data/drift/capture_table.dart';
-import 'package:exnota/src/note/data/drift/note_table.dart';
-import 'package:exnota/src/note/data/file/local_file_service.dart';
+import 'package:exnota/src/note/repo/drift/capture_table.dart';
+import 'package:exnota/src/note/repo/drift/note_table.dart';
+import 'package:exnota/src/note/repo/file/local_file_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'database.g.dart';

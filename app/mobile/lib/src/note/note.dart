@@ -1,5 +1,5 @@
 import 'package:exnota/src/note/capture.dart';
-import 'package:exnota/src/note/data/id_generator.dart';
+import 'package:exnota/src/note/repo/id_generator.dart';
 
 sealed class Note {
   abstract final String id;
