@@ -47,10 +47,10 @@ void main() {
               typeData: CaptureTypeDataAll.audioFile(transcription: null));
           final note1 = NoteTableData(
               id: 'note1',
-              type: NoteTableType.voice,
+              type: NoteTypeRepo.voice,
               integratedData: IntegratedDataRepo.voice(url: 'note1 url'),
               localData:
-                  LocalDataAll.voice(status: NoteLocalStatusRepo.capturing),
+                  LocalDataRepo.voice(status: NoteLocalStatusRepo.capturing),
               createdAt: DateTime.utc(1809, DateTime.february, 12),
               title: 'a title',
               captures: [capture1IsCaptured.id, capture2IsCapturing.id]);

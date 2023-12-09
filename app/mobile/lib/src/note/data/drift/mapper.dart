@@ -9,11 +9,11 @@ class NoteRepoMapper {
   static NoteTableData noteToData(Note note) {
     return NoteTableData(
       id: note.id,
-      type: NoteTableType.voice,
+      type: NoteTypeRepo.voice,
       title: note.title,
       captures: note.captures.map((c) => c.id).toList(),
       localData:
-          LocalDataAll.voice(status: localStatusToData(note.localData.status)),
+          LocalDataRepo.voice(status: localStatusToData(note.localData.status)),
       integratedData: IntegratedDataRepo.voice(url: note.integratedData.url),
       createdAt: note.createdAt,
     );
@@ -50,7 +50,7 @@ class NoteRepoMapper {
 
   static Note fromData(NoteTableData data, List<CaptureTableData> captures) {
     switch (data.type) {
-      case NoteTableType.voice:
+      case NoteTypeRepo.voice:
         return _voiceNoteFromData(data, captures);
       default:
         throw Exception("Unknown note type: ${data.type}");

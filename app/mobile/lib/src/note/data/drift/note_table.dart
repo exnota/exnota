@@ -10,10 +10,10 @@ class NoteTable extends Table {
   String get tableName => 'note';
 
   TextColumn get id => text()();
-  TextColumn get type => textEnum<NoteTableType>()();
+  TextColumn get type => text().map(NoteTypeRepoConverter())();
   TextColumn get title => text().nullable()();
-  TextColumn get captures => text().map(NoteTableCapturesConverter())();
-  TextColumn get localData => text().map(LocalDataAll.converter)();
+  TextColumn get captures => text().map(NoteCapturesRepoConverter())();
+  TextColumn get localData => text().map(LocalDataRepo.converter)();
   TextColumn get integratedData => text().map(IntegratedDataRepo.converter)();
   DateTimeColumn get createdAt => dateTime()();
 
@@ -21,18 +21,29 @@ class NoteTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-enum NoteTableType {
-  voice(jsonName: "voice"),
-  text(jsonName: "text"),
-  unknown(jsonName: "unknown");
+// Won't generate without alwaysCreate
+@JsonEnum(alwaysCreate: true, valueField: 'dbName')
+enum NoteTypeRepo {
+  voice(dbName: "voice"),
+  text(dbName: "text"),
+  unknown(dbName: "unknown");
 
-  const NoteTableType({required this.jsonName});
+  const NoteTypeRepo({required this.dbName});
 
-  final String jsonName;
+  final String dbName;
+}
+
+class NoteTypeRepoConverter extends TypeConverter<NoteTypeRepo, String> {
+  @override
+  NoteTypeRepo fromSql(String fromDb) =>
+      _$NoteTypeRepoEnumMap.map((key, value) => MapEntry(value, key))[fromDb]!;
+
+  @override
+  String toSql(NoteTypeRepo value) => _$NoteTypeRepoEnumMap[value]!;
 }
 
 /// Stores the list of capture ids as a json array.
-class NoteTableCapturesConverter extends TypeConverter<List<String>, String> {
+class NoteCapturesRepoConverter extends TypeConverter<List<String>, String> {
   @override
   List<String> fromSql(String fromDb) {
     final List<dynamic> decoded = jsonDecode(fromDb);
@@ -45,30 +56,55 @@ class NoteTableCapturesConverter extends TypeConverter<List<String>, String> {
   }
 }
 
-// Don't rename without migration.
-enum NoteLocalStatusRepo { capturing, captured, synced }
+@JsonEnum(alwaysCreate: true, valueField: 'dbName')
+enum NoteLocalStatusRepo {
+  capturing(dbName: "capturing"),
+  captured(dbName: "captured"),
+  synced(dbName: "synced");
+
+  const NoteLocalStatusRepo({required this.dbName});
+
+  final String dbName;
+
+  factory NoteLocalStatusRepo.fromJson(String json) =>
+      _$NoteLocalStatusRepoEnumMap
+          .map((key, value) => MapEntry(value, key))[json]!;
+
+  String toJson() => _$NoteLocalStatusRepoEnumMap[this]!;
+}
+
+class NoteLocalStatusRepoConverter
+    extends TypeConverter<NoteLocalStatusRepo, String> {
+  @override
+  NoteLocalStatusRepo fromSql(String fromDb) => _$NoteLocalStatusRepoEnumMap
+      .map((key, value) => MapEntry(value, key))[fromDb]!;
+
+  @override
+  String toSql(NoteLocalStatusRepo value) =>
+      _$NoteLocalStatusRepoEnumMap[value]!;
+}
 
 /// Local data for all note types. Repo should convert to/from this to the
 /// domain type.
 @JsonSerializable(constructor: '_')
-class LocalDataAll {
+class LocalDataRepo {
   final NoteLocalStatusRepo status;
 
-  LocalDataAll._({required this.status});
+  LocalDataRepo._({required this.status});
 
-  LocalDataAll.voice({required this.status});
+  LocalDataRepo.voice({required this.status});
 
-  LocalDataAll.unknown({required this.status});
+  LocalDataRepo.unknown({required this.status});
 
-  factory LocalDataAll.fromJson(Map<String, Object?> json) =>
-      _$LocalDataAllFromJson(json);
+  factory LocalDataRepo.fromJson(Map<String, Object?> json) =>
+      _$LocalDataRepoFromJson(json);
 
   Map<String, Object?> toJson() {
-    return _$LocalDataAllToJson(this);
+    return _$LocalDataRepoToJson(this);
   }
 
-  static TypeConverter<LocalDataAll, String> converter = TypeConverter.json(
-    fromJson: (json) => LocalDataAll.fromJson(json as Map<String, Object?>),
+  static TypeConverter<LocalDataRepo, String> converter = TypeConverter.json(
+    fromJson: (json) => LocalDataRepo.fromJson(json as Map<String, Object?>),
     toJson: (pref) => pref.toJson(),
   );
 }
