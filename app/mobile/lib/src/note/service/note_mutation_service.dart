@@ -1,13 +1,11 @@
 // ignore_for_file: dead_code
 
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
-import 'package:exnota/src/lib/data/sync/sync_command.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_mutation_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/repo/drift/note_repo.dart';
 import 'package:exnota/src/note/note.dart';
-import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
 import 'package:exnota/src/note/repo/file/local_file_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -59,19 +57,16 @@ class NoteMutationService extends _$NoteMutationService {
       final updatedNote = existingNote.withCaptured(captureId: capture.id);
       await noteRepo.updateVoiceNote(updatedNote: updatedNote);
 
-      // TODO: Move to sync service?
-      // Create sync command
-      final syncCommandRepo = SyncCommandRepo(db);
       final filePath = capture.localData.filePath;
       if (filePath == null) {
-        throw Exception(
-            "Cannot create audio file captured command without filePath");
+        throw Exception("Cannot create command without filePath");
       }
-      final command = CreateAudioNoteSyncCommand.createPending(
-          entityId: updatedNote.id,
-          capture: (filePath: filePath, id: capture.id),
-          status: SyncCommandStatus.waiting);
-      await syncCommandRepo.createCommand(command: command);
+      await ref
+          .read(syncCommandMutationServiceProvider.notifier)
+          .createAudioNote(
+              noteId: updatedNote.id,
+              captureId: capture.id,
+              filePath: filePath);
     });
   }
 

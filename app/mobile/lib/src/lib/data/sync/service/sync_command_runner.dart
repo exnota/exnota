@@ -1,4 +1,5 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_mutation_service.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
@@ -16,6 +17,8 @@ class SyncCommandRunner extends _$SyncCommandRunner {
   void run() {
     final logger = ref.read(loggerProvider('SyncCommandRunner'));
     final db = ref.read(databaseProvider);
+    final mutationService =
+        ref.read(syncCommandMutationServiceProvider.notifier);
     final commandRepo = SyncCommandRepo(db);
     commandRepo
         .fetchAllStream(status: SyncCommandStatus.waiting)
@@ -27,7 +30,7 @@ class SyncCommandRunner extends _$SyncCommandRunner {
 
       for (final command in commands) {
         logger.info("Executing command...", command);
-        await commandRepo.setStatus(
+        await mutationService.setStatus(
             command.id.idOrThrow, SyncCommandStatus.running);
         final error = await command.request(ref);
         if (error != null) {
@@ -38,7 +41,7 @@ class SyncCommandRunner extends _$SyncCommandRunner {
           continue;
         }
         logger.debug("Finished executing", command);
-        await commandRepo.setStatus(
+        await mutationService.setStatus(
             command.id.idOrThrow, SyncCommandStatus.complete);
         logger.debug("Command status updated");
       }
