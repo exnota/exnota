@@ -32,19 +32,19 @@ void main() {
           final capture1IsCaptured = CaptureTableData(
               id: 'capture1',
               createdAt: DateTime.utc(1809, DateTime.february, 12),
-              type: CaptureTableType.audio,
-              localData: CaptureLocalDataAll.audioFile(
+              type: CaptureTypeRepo.audio,
+              localData: CaptureLocalDataRepo.audioFile(
                   status: CaptureLocalStatusRepo.captured,
                   filePath: 'capture1 file path'),
-              typeData: CaptureTypeDataAll.audioFile(
+              typeData: CaptureTypeDataRepo.audioFile(
                   transcription: 'capture 1 transcription'));
           final capture2IsCapturing = CaptureTableData(
               id: 'capture2',
               createdAt: DateTime.utc(1879, DateTime.march, 14),
-              type: CaptureTableType.audio,
-              localData: CaptureLocalDataAll.audioFile(
+              type: CaptureTypeRepo.audio,
+              localData: CaptureLocalDataRepo.audioFile(
                   status: CaptureLocalStatusRepo.capturing, filePath: null),
-              typeData: CaptureTypeDataAll.audioFile(transcription: null));
+              typeData: CaptureTypeDataRepo.audioFile(transcription: null));
           final note1 = NoteTableData(
               id: 'note1',
               type: NoteTypeRepo.voice,

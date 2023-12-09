@@ -24,27 +24,27 @@ class NoteRepoMapper {
       case AudioFileCapture():
         return CaptureTableData(
           id: capture.id,
-          type: CaptureTableType.audio,
+          type: CaptureTypeRepo.audio,
           createdAt: capture.createdAt,
-          localData: CaptureLocalDataAll.audioFile(
+          localData: CaptureLocalDataRepo.audioFile(
             filePath: capture.localData.filePath,
             status: NoteRepoMapper.captureLocalStatusToData(
                 capture.localData.status),
           ),
-          typeData: CaptureTypeDataAll.audioFile(
+          typeData: CaptureTypeDataRepo.audioFile(
             transcription: capture.transcription,
           ),
         );
       case UnknownCapture():
         return CaptureTableData(
             id: capture.id,
-            type: CaptureTableType.unknown,
+            type: CaptureTypeRepo.unknown,
             createdAt: capture.createdAt,
-            localData: CaptureLocalDataAll.unknown(
+            localData: CaptureLocalDataRepo.unknown(
               status: NoteRepoMapper.captureLocalStatusToData(
                   capture.localData.status),
             ),
-            typeData: CaptureTypeDataAll.unknown());
+            typeData: CaptureTypeDataRepo.unknown());
     }
   }
 
@@ -64,7 +64,7 @@ class NoteRepoMapper {
       title: data.title,
       captures: captures.map((capture) {
         switch (capture.type) {
-          case CaptureTableType.audio:
+          case CaptureTypeRepo.audio:
             return AudioFileCapture.fromDb(
               id: capture.id,
               createdAt: capture.createdAt,
@@ -73,7 +73,7 @@ class NoteRepoMapper {
               transcription: Optional(capture.typeData.transcription),
             );
 
-          case CaptureTableType.unknown:
+          case CaptureTypeRepo.unknown:
             return UnknownCapture.fromDb(
                 id: capture.id,
                 createdAt: capture.createdAt,
