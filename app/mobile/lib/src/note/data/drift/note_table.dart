@@ -56,6 +56,7 @@ class NoteCapturesRepoConverter extends TypeConverter<List<String>, String> {
   }
 }
 
+// Won't generate without alwaysCreate
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
 enum NoteLocalStatusRepo {
   capturing(dbName: "capturing"),
@@ -71,17 +72,6 @@ enum NoteLocalStatusRepo {
           .map((key, value) => MapEntry(value, key))[json]!;
 
   String toJson() => _$NoteLocalStatusRepoEnumMap[this]!;
-}
-
-class NoteLocalStatusRepoConverter
-    extends TypeConverter<NoteLocalStatusRepo, String> {
-  @override
-  NoteLocalStatusRepo fromSql(String fromDb) => _$NoteLocalStatusRepoEnumMap
-      .map((key, value) => MapEntry(value, key))[fromDb]!;
-
-  @override
-  String toSql(NoteLocalStatusRepo value) =>
-      _$NoteLocalStatusRepoEnumMap[value]!;
 }
 
 /// Local data for all note types. Repo should convert to/from this to the

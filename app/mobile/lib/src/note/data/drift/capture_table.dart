@@ -17,39 +17,43 @@ class CaptureTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+// Won't generate without alwaysCreate
+@JsonEnum(alwaysCreate: true, valueField: 'dbName')
 enum CaptureTypeRepo {
-  audio(jsonName: "audio"),
-  unknown(jsonName: "unknown");
+  audio(dbName: "audio"),
+  unknown(dbName: "unknown");
 
-  const CaptureTypeRepo({required this.jsonName});
+  const CaptureTypeRepo({required this.dbName});
 
-  final String jsonName;
+  final String dbName;
 }
 
 class CaptureTypeRepoConverter extends TypeConverter<CaptureTypeRepo, String> {
   @override
-  CaptureTypeRepo fromSql(String fromDb) {
-    if (fromDb == CaptureTypeRepo.audio.jsonName) {
-      return CaptureTypeRepo.audio;
-    } else {
-      return CaptureTypeRepo.unknown;
-    }
-  }
+  CaptureTypeRepo fromSql(String fromDb) => _$CaptureTypeRepoEnumMap
+      .map((key, value) => MapEntry(value, key))[fromDb]!;
 
   @override
-  String toSql(CaptureTypeRepo value) {
-    switch (value) {
-      case CaptureTypeRepo.audio:
-        return CaptureTypeRepo.audio.jsonName;
-      case CaptureTypeRepo.unknown:
-        return CaptureTypeRepo.unknown.jsonName;
-    }
-  }
+  String toSql(CaptureTypeRepo value) => _$CaptureTypeRepoEnumMap[value]!;
 }
 
-// TODO:
-// Don't rename without migration.
-enum CaptureLocalStatusRepo { capturing, captured, synced }
+// Won't generate without alwaysCreate
+@JsonEnum(alwaysCreate: true, valueField: 'dbName')
+enum CaptureLocalStatusRepo {
+  capturing(dbName: "capturing"),
+  captured(dbName: "captured"),
+  synced(dbName: "synced");
+
+  const CaptureLocalStatusRepo({required this.dbName});
+
+  final String dbName;
+
+  factory CaptureLocalStatusRepo.fromJson(String json) =>
+      _$CaptureLocalStatusRepoEnumMap
+          .map((key, value) => MapEntry(value, key))[json]!;
+
+  String toJson() => _$CaptureLocalStatusRepoEnumMap[this]!;
+}
 
 /// Local data for all capture types. Repo should convert to/from this to the
 /// domain type.
