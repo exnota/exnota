@@ -6,7 +6,6 @@ import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/entity_id.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/note/service/note_mutation_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -14,7 +13,7 @@ import 'package:http_parser/http_parser.dart';
 
 typedef CreateAudioNoteCapture = ({String id, String filePath});
 
-class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
+class CreateAudioNoteSyncCommand extends NoteSyncCommand {
   final CreateAudioNoteCapture capture;
 
   CreateAudioNoteSyncCommand._(
@@ -23,6 +22,9 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
       required this.capture,
       required SyncCommandStatus status})
       : super(id: id, entityId: entityId, status: status);
+
+  @override
+  String? get captureId => capture.id;
 
   @override
   Future<SyncCommandError?> request(Ref ref) async {
@@ -74,7 +76,7 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
         url = json["url"];
       }
 
-      await ref.read(noteMutationServiceProvider.notifier).setAudioFileSynced(
+      await ref.read(noteMutationServiceProvider.notifier).setAudioFileData(
           captureId: capture.id,
           transcription: transcription,
           integratedUrl: url ?? "");

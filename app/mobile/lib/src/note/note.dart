@@ -9,6 +9,8 @@ sealed class Note {
   abstract final ({String? url}) integratedData;
   abstract final DateTime createdAt;
 
+  Note withSynced({required String captureId});
+
   String typeAsString();
   Map<String, String?> toNonPrivateData();
 }
@@ -87,15 +89,13 @@ class VoiceNote extends Note {
     return _copyWith(captures: updatedCaptures);
   }
 
+  @override
   VoiceNote withSynced({required String captureId}) {
     if (captures.every((capture) => capture.id != captureId)) {
       throw ArgumentError("No capture with id $captureId");
     }
     final updatedCaptures = captures.map((capture) {
       if (capture.id == captureId) {
-        if (capture is! AudioFileCapture) {
-          throw ArgumentError("Cannot set file path on non-audio capture");
-        }
         return capture.withStatus(status: CaptureLocalStatus.synced);
       }
       return capture;
@@ -305,6 +305,11 @@ class UnknownNote extends Note {
   @override
   String typeAsString() {
     return runtimeType.toString();
+  }
+
+  @override
+  UnknownNote withSynced({required String captureId}) {
+    throw UnsupportedError('Cannot sync unknown note');
   }
 }
 

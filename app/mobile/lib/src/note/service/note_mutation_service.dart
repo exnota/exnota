@@ -70,7 +70,7 @@ class NoteMutationService extends _$NoteMutationService {
     });
   }
 
-  Future<void> setAudioFileSynced(
+  Future<void> setAudioFileData(
       {required String captureId,
       required String transcription,
       String? integratedUrl}) async {
@@ -90,11 +90,22 @@ class NoteMutationService extends _$NoteMutationService {
         return;
       }
 
-      var updatedNote = existingNote.withSynced(captureId: captureId);
-      updatedNote = updatedNote.withTranscription(
+      var updatedNote = existingNote.withTranscription(
           captureId: captureId, transcription: transcription);
       updatedNote = updatedNote.withIntegratedUrl(url: integratedUrl);
 
+      await noteRepo.updateVoiceNote(updatedNote: updatedNote);
+    });
+  }
+
+  Future<void> setCaptureSynced({required String captureId}) async {
+    final transaction = ref.read(transactionProvider);
+
+    await transaction(() async {
+      final db = ref.read(databaseProvider);
+      final noteRepo = NoteRepo(db);
+      final existingNote = await noteRepo.getNoteByCaptureId(captureId);
+      final updatedNote = existingNote.withSynced(captureId: captureId);
       await noteRepo.updateVoiceNote(updatedNote: updatedNote);
     });
   }

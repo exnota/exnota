@@ -34,6 +34,19 @@ class SyncCommandRepo {
         .watch();
   }
 
+  Future<SyncCommand> fetchById(int id) async {
+    final query = db.select(db.syncCommandTable)..where((t) => t.id.equals(id));
+    return await query
+        .map<SyncCommand>(SyncCommandRepoMapper.fromData)
+        .getSingle();
+  }
+
+  Future<List<SyncCommand>> fetchByEntityId(String entityId) async {
+    final query = db.select(db.syncCommandTable)
+      ..where((t) => t.entityId.equals(entityId));
+    return await query.map<SyncCommand>(SyncCommandRepoMapper.fromData).get();
+  }
+
   Future<void> createCommand({required SyncCommand command}) async {
     SyncCommandTableCompanion toInsert =
         SyncCommandRepoMapper.toDataInsert(command);

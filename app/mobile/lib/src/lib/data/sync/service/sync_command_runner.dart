@@ -30,6 +30,8 @@ class SyncCommandRunner extends _$SyncCommandRunner {
 
       for (final command in commands) {
         logger.info("Executing command...", command);
+        // TODO: Update this to be setRunning which updates the command but also
+        // the entity sync status
         await mutationService.setStatus(
             command.id.idOrThrow, SyncCommandStatus.running);
         final error = await command.request(ref);
@@ -41,8 +43,7 @@ class SyncCommandRunner extends _$SyncCommandRunner {
           continue;
         }
         logger.debug("Finished executing", command);
-        await mutationService.setStatus(
-            command.id.idOrThrow, SyncCommandStatus.complete);
+        await mutationService.setComplete(command.id.idOrThrow);
         logger.debug("Command status updated");
       }
     });

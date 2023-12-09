@@ -26,6 +26,8 @@ sealed class Capture {
     }
     return null;
   }
+
+  Capture withStatus({required CaptureLocalStatus status});
 }
 
 @immutable
@@ -61,6 +63,7 @@ class AudioFileCapture extends Capture {
     );
   }
 
+  @override
   AudioFileCapture withStatus({required CaptureLocalStatus status}) {
     return AudioFileCapture._(
       id: id,
@@ -193,6 +196,11 @@ class UnknownCapture extends Capture {
       "type": typeAsString(),
       "createdAt": createdAt.toString(),
     };
+  }
+
+  @override
+  UnknownCapture withStatus({required CaptureLocalStatus status}) {
+    throw UnsupportedError('Cannot update status of unknown capture');
   }
 }
 

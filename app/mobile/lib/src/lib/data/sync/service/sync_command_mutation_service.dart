@@ -2,6 +2,7 @@ import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
+import 'package:exnota/src/note/service/note_mutation_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'sync_command_mutation_service.g.dart';
@@ -39,6 +40,41 @@ class SyncCommandMutationService extends _$SyncCommandMutationService {
     await transaction(() async {
       final syncCommandRepo = SyncCommandRepo(db);
       await syncCommandRepo.setStatus(id, status);
+    });
+  }
+
+  Future<void> setComplete(int id) async {
+    final db = ref.read(databaseProvider);
+    final transaction = ref.read(transactionProvider);
+    await transaction(() async {
+      // Set command complete
+      final syncCommandRepo = SyncCommandRepo(db);
+      await syncCommandRepo.setStatus(id, SyncCommandStatus.complete);
+
+      // Update sync status of entities
+      final command = await syncCommandRepo.fetchById(id);
+      switch (command) {
+        case NoteSyncCommand():
+          final captureId = command.captureId;
+          if (captureId == null) {
+            return;
+          }
+          final commandsForNote =
+              await syncCommandRepo.fetchByEntityId(command.entityId);
+          final hasMore = commandsForNote.any((c) =>
+              c is NoteSyncCommand &&
+              c.captureId == captureId &&
+              c.status != SyncCommandStatus.complete);
+
+          if (!hasMore) {
+            await ref
+                .read(noteMutationServiceProvider.notifier)
+                .setCaptureSynced(captureId: captureId);
+          }
+          break;
+        default:
+          throw Exception("Unknown command type");
+      }
     });
   }
 }
