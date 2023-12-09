@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:exnota/src/account/settings/uri_service.dart';
-import 'package:exnota/src/integration/data/notion_settings_repo.dart';
+import 'package:exnota/src/integration/repo/notion_settings_repo.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/entity_id.dart';
