@@ -1,10 +1,9 @@
+import 'package:exnota/src/lib/entity_id.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum SyncCommandStatus { waiting, running, complete, error }
-
 abstract class SyncCommand<T> {
-  final int id;
+  final EntityId id;
   final String entityId;
   final SyncCommandStatus status;
 
@@ -12,6 +11,8 @@ abstract class SyncCommand<T> {
 
   Future<SyncCommandError?> request(Ref ref);
 }
+
+enum SyncCommandStatus { waiting, running, complete, error }
 
 @immutable
 class SyncCommandError {

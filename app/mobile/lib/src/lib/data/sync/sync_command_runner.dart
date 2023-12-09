@@ -27,7 +27,8 @@ class SyncCommandRunner extends _$SyncCommandRunner {
 
       for (final command in commands) {
         logger.info("Executing command...", command);
-        await commandRepo.setStatus(command.id, SyncCommandStatus.running);
+        await commandRepo.setStatus(
+            command.id.idOrThrow, SyncCommandStatus.running);
         final error = await command.request(ref);
         if (error != null) {
           logger.warn("Command failed", nonPrivateData: {
@@ -37,7 +38,8 @@ class SyncCommandRunner extends _$SyncCommandRunner {
           continue;
         }
         logger.debug("Finished executing", command);
-        await commandRepo.setStatus(command.id, SyncCommandStatus.complete);
+        await commandRepo.setStatus(
+            command.id.idOrThrow, SyncCommandStatus.complete);
         logger.debug("Command status updated");
       }
     });

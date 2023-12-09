@@ -4,6 +4,7 @@ import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/integration/data/notion_settings_repo.dart';
 import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
+import 'package:exnota/src/lib/entity_id.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/note/service/note_mutation_service.dart';
@@ -16,8 +17,8 @@ typedef CreateAudioNoteCapture = ({String id, String filePath});
 class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
   final CreateAudioNoteCapture capture;
 
-  CreateAudioNoteSyncCommand(
-      {required int id,
+  CreateAudioNoteSyncCommand._(
+      {required EntityId id,
       required String entityId,
       required this.capture,
       required SyncCommandStatus status})
@@ -99,26 +100,27 @@ class CreateAudioNoteSyncCommand extends SyncCommand<VoiceNote> {
         "Unknown error syncing. Code: $code, status: ${response.statusCode}, reasonPhrase: ${response.reasonPhrase}"));
   }
 
-  static Map<String, dynamic> dataToJson(
-      {required CreateAudioNoteCapture capture}) {
-    return {
-      'capture': {
-        'id': capture.id,
-        'filePath': capture.filePath,
-      }
-    };
+  // Factories
+
+  factory CreateAudioNoteSyncCommand.createPending(
+      {required String entityId,
+      required CreateAudioNoteCapture capture,
+      required SyncCommandStatus status}) {
+    return CreateAudioNoteSyncCommand._(
+        id: EntityPendingId(),
+        entityId: entityId,
+        capture: capture,
+        status: status);
   }
 
   factory CreateAudioNoteSyncCommand.fromDb(
       {required int id,
       required String entityId,
-      required Map<String, dynamic> data,
+      required String captureId,
+      required String filePath,
       required SyncCommandStatus status}) {
-    final capture = data['capture'];
-    final captureId = capture['id'] as String;
-    final filePath = capture['filePath'] as String;
-    return CreateAudioNoteSyncCommand(
-        id: id,
+    return CreateAudioNoteSyncCommand._(
+        id: EntityWithId(id),
         entityId: entityId,
         capture: (id: captureId, filePath: filePath),
         status: status);

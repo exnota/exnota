@@ -1,6 +1,8 @@
 // ignore_for_file: dead_code
 
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
+import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/data/drift/note_repo.dart';
@@ -65,9 +67,11 @@ class NoteMutationService extends _$NoteMutationService {
         throw Exception(
             "Cannot create audio file captured command without filePath");
       }
-
-      await syncCommandRepo.createCreateAudioNoteSyncCommand(
-          noteId: updatedNote.id, captureId: capture.id, filePath: filePath);
+      final command = CreateAudioNoteSyncCommand.createPending(
+          entityId: updatedNote.id,
+          capture: (filePath: filePath, id: capture.id),
+          status: SyncCommandStatus.waiting);
+      await syncCommandRepo.createCommand(command: command);
     });
   }
 
