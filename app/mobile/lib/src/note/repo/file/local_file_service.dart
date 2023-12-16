@@ -11,12 +11,12 @@ final subdirDatabasePath = ['exnota', 'database'];
 final subdirNotesAudioPath = ['exnota', 'notes', 'audio'];
 
 @Riverpod(keepAlive: true)
-LocalFile localFileService(LocalFileServiceRef ref) {
+LocalPathGenerator localFileService(LocalFileServiceRef ref) {
   // This will be added using an override in main.dart as per https://github.com/bizz84/flutter-tips-and-tricks/blob/main/tips/0056-async-init-provider-overrides/index.md
   throw UnimplementedError();
 }
 
-Future<LocalFile> initLocalFile() async {
+Future<LocalPathGenerator> initLocalFile() async {
   final documentsDir = await getApplicationDocumentsDirectory();
 
   final databasePath =
@@ -26,16 +26,16 @@ Future<LocalFile> initLocalFile() async {
       await Directory(p.joinAll([documentsDir.path, ...subdirNotesAudioPath]))
           .create(recursive: true);
 
-  return LocalFile._(
+  return LocalPathGenerator._(
       databasePath: databasePath.path, notesAudioPath: notesAudioPath.path);
 }
 
 @immutable
-class LocalFile {
+class LocalPathGenerator {
   final String _databasePath;
   final String _notesAudioPath;
 
-  const LocalFile._(
+  const LocalPathGenerator._(
       {required String databasePath, required String notesAudioPath})
       : _databasePath = databasePath,
         _notesAudioPath = notesAudioPath;
@@ -44,7 +44,17 @@ class LocalFile {
     return p.joinAll([_databasePath, filename]);
   }
 
-  getVoiceNoteFilePath({required String captureId, required String extension}) {
+  deprecatedGetVoiceNoteFilePath(
+      {required String captureId, required String extension}) {
     return p.joinAll([_notesAudioPath, 'capture-$captureId.$extension']);
+  }
+
+  generateAudioBlockFilePath(
+      {required String blockId, required String extension}) async {
+    final path = p.joinAll([_notesAudioPath, 'block-$blockId.$extension']);
+    if (await File(path).exists()) {
+      throw Exception("File already exists");
+    }
+    return path;
   }
 }

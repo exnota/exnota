@@ -28,7 +28,8 @@ class DeprecatedNoteMutationService extends _$DeprecatedNoteMutationService {
     final captureId = note.captures.first.id;
     final filePath = ref
         .read(localFileServiceProvider)
-        .getVoiceNoteFilePath(captureId: captureId, extension: extension);
+        .deprecatedGetVoiceNoteFilePath(
+            captureId: captureId, extension: extension);
     note = note.withFilePath(captureId: captureId, filePath: filePath);
 
     final db = ref.read(databaseProvider);
