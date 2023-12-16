@@ -4,10 +4,11 @@ import 'package:exnota/src/integration/repo/notion_settings_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_table.dart';
+import 'package:exnota/src/lib/file/repo/drift/local_file_table.dart';
+import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:exnota/src/note/repo/drift/block_table.dart';
 import 'package:exnota/src/note/repo/drift/capture_table.dart';
 import 'package:exnota/src/note/repo/drift/note_table.dart';
-import 'package:exnota/src/note/repo/file/local_file_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'database.g.dart';
@@ -36,6 +37,7 @@ AppDatabase initDatabase({required LocalPathGenerator files}) {
   NoteTable,
   SyncCommandTable,
   BlockTable,
+  LocalFileTable,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase({required String path}) : super(_openConnection(path: path));

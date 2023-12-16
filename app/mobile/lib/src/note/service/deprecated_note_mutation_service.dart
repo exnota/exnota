@@ -2,11 +2,11 @@
 
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_mutation_service.dart';
+import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/repo/drift/note_repo.dart';
 import 'package:exnota/src/note/note.dart';
-import 'package:exnota/src/note/repo/file/local_file_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'deprecated_note_mutation_service.g.dart';
@@ -27,7 +27,7 @@ class DeprecatedNoteMutationService extends _$DeprecatedNoteMutationService {
     // Set filepath
     final captureId = note.captures.first.id;
     final filePath = ref
-        .read(localFileServiceProvider)
+        .read(localFilePathServiceProvider)
         .deprecatedGetVoiceNoteFilePath(
             captureId: captureId, extension: extension);
     note = note.withFilePath(captureId: captureId, filePath: filePath);

@@ -1,8 +1,8 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/lib/file/local_file.dart';
+import 'package:exnota/src/lib/file/service/local_file_mutation_service.dart';
 import 'package:exnota/src/note/block.dart';
-import 'package:exnota/src/note/local_file.dart';
 import 'package:exnota/src/note/repo/drift/block_repo.dart';
-import 'package:exnota/src/note/repo/file/local_file_service.dart';
 import 'package:exnota/src/note/repo/id_generator.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -17,6 +17,7 @@ class BlockMutationService extends _$BlockMutationService {
 
   Future<LocalFile> createAudioBlock({required String extension}) {
     final now = DateTime.now();
+
     final block = Block(
       id: generateId(),
       type: BlockType.audio,
@@ -25,23 +26,21 @@ class BlockMutationService extends _$BlockMutationService {
       lastEditedAt: now,
     );
 
-    final localFileService = ref.read(localFileServiceProvider);
-    final path = localFileService.generateAudioBlockFilePath(
-        blockId: block.id, extension: extension);
-    final file = LocalFile(
-        id: generateId(),
-        blockId: block.id,
-        path: path,
-        createdAt: now,
-        syncedAt: now);
-
     final db = ref.read(databaseProvider);
     final transaction = ref.read(transactionProvider);
-    transaction(() async {
+    final file = transaction(() async {
+      final file = await ref
+          .read(localFileMutationServiceProvider.notifier)
+          .createForAudioBlock(
+            blockId: block.id,
+            extension: extension,
+            createdAt: now,
+          );
+
       final blockRepo = BlockRepo(db);
       await blockRepo.create(block: block);
 
-      // TODO: Persist file
+      return file;
     });
 
     return Future.value(file);
