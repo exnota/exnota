@@ -8,19 +8,28 @@ class Block with _$Block {
   const factory Block({
     required String id,
     required BlockType type,
-    required Map<String, List<List>> properties,
+    required Map<String, dynamic> properties,
     required DateTime createdAt,
     required DateTime lastEditedAt,
   }) = _Block;
 
   const Block._();
 
-  List<List> get transcription =>
-      properties[Property.transcription.toString()]?[0][0]!;
+  String get title => properties[Property.title.toString()]?[0][0]!;
 }
 
 enum BlockType {
   audio,
 }
 
-enum Property { transcription }
+@JsonEnum(alwaysCreate: true, valueField: 'dbName')
+enum Property {
+  title(dbName: 'title');
+
+  const Property({required this.dbName});
+
+  final String dbName;
+
+  @override
+  String toString() => dbName;
+}
