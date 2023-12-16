@@ -24,7 +24,7 @@ Future<T> Function<T>(Future<T> Function(), {bool requireNew}) transaction(
   return db.transaction;
 }
 
-AppDatabase initDatabase({required LocalFile files}) {
+AppDatabase initDatabase({required LocalPathGenerator files}) {
   final String path = files.getDatabaseFilePath(filename: 'exnota.sqlite');
   return AppDatabase(path: path);
 }
