@@ -5,7 +5,7 @@ import 'package:exnota/src/note/repo/drift/capture_table.dart';
 import 'package:exnota/src/note/repo/drift/note_table.dart';
 import 'package:exnota/src/note/note.dart';
 
-class NoteRepoMapper {
+class DeprecatedNoteRepoMapper {
   static NoteTableData noteToData(Note note) {
     return NoteTableData(
       id: note.id,
@@ -28,7 +28,7 @@ class NoteRepoMapper {
           createdAt: capture.createdAt,
           localData: CaptureLocalDataRepo.audioFile(
             filePath: capture.localData.filePath,
-            status: NoteRepoMapper.captureLocalStatusToData(
+            status: DeprecatedNoteRepoMapper.captureLocalStatusToData(
                 capture.localData.status),
           ),
           typeData: CaptureTypeDataRepo.audioFile(
@@ -41,7 +41,7 @@ class NoteRepoMapper {
             type: CaptureTypeRepo.unknown,
             createdAt: capture.createdAt,
             localData: CaptureLocalDataRepo.unknown(
-              status: NoteRepoMapper.captureLocalStatusToData(
+              status: DeprecatedNoteRepoMapper.captureLocalStatusToData(
                   capture.localData.status),
             ),
             typeData: CaptureTypeDataRepo.unknown());

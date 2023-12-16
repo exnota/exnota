@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/extensions/json1.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/repo/drift/mapper.dart';
+import 'package:exnota/src/note/repo/drift/deprecated_mapper.dart';
 import 'package:exnota/src/note/note.dart';
 
 class NoteRepo {
@@ -21,9 +21,10 @@ class NoteRepo {
   }
 
   Future<void> createVoiceNote({required Note note}) async {
-    List<CaptureTableData> captureDatas =
-        note.captures.map((c) => NoteRepoMapper.captureToData(c)).toList();
-    NoteTableData noteData = NoteRepoMapper.noteToData(note);
+    List<CaptureTableData> captureDatas = note.captures
+        .map((c) => DeprecatedNoteRepoMapper.captureToData(c))
+        .toList();
+    NoteTableData noteData = DeprecatedNoteRepoMapper.noteToData(note);
 
     await db.transaction(() async {
       for (final captureData in captureDatas) {
@@ -81,9 +82,9 @@ class NoteRepo {
     // Upsert captures, leave dangling in database as they are not expected
     // and we want to avoid data loss.
     List<CaptureTableData> captureDatas = updatedNote.captures
-        .map((c) => NoteRepoMapper.captureToData(c))
+        .map((c) => DeprecatedNoteRepoMapper.captureToData(c))
         .toList();
-    NoteTableData noteData = NoteRepoMapper.noteToData(updatedNote);
+    NoteTableData noteData = DeprecatedNoteRepoMapper.noteToData(updatedNote);
 
     await db.transaction(() async {
       for (final captureData in captureDatas) {
@@ -119,7 +120,7 @@ class NoteRepo {
         capturesData.add(row.readTable(db.captureTable));
       }
 
-      return NoteRepoMapper.fromData(noteData, capturesData);
+      return DeprecatedNoteRepoMapper.fromData(noteData, capturesData);
     }).first;
   }
 
