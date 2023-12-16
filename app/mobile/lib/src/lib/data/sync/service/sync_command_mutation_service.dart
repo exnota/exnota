@@ -18,9 +18,6 @@ class SyncCommandMutationService extends _$SyncCommandMutationService {
       {required String noteId,
       required String captureId,
       required String filePath}) async {
-    // TODO: Test that if this method throws an error, the calling
-    // method transaction is also aborted
-
     final db = ref.read(databaseProvider);
     final transaction = ref.read(transactionProvider);
     await transaction(() async {
