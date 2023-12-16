@@ -5,18 +5,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'local_file_service.g.dart';
+part 'local_file_path_service.g.dart';
 
 final subdirDatabasePath = ['exnota', 'database'];
 final subdirNotesAudioPath = ['exnota', 'notes', 'audio'];
 
 @Riverpod(keepAlive: true)
-LocalPathGenerator localFileService(LocalFileServiceRef ref) {
+LocalPathGenerator localFilePathService(LocalFilePathServiceRef ref) {
   // This will be added using an override in main.dart as per https://github.com/bizz84/flutter-tips-and-tricks/blob/main/tips/0056-async-init-provider-overrides/index.md
   throw UnimplementedError();
 }
 
-Future<LocalPathGenerator> initLocalFile() async {
+Future<LocalPathGenerator> initLocalFilePathGenerator() async {
   final documentsDir = await getApplicationDocumentsDirectory();
 
   final databasePath =

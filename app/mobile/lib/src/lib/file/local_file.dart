@@ -6,9 +6,14 @@ part 'local_file.freezed.dart';
 class LocalFile with _$LocalFile {
   const factory LocalFile({
     required String id,
-    required String blockId,
+    required EntityType entityType,
+    required String entityId,
     required String path,
     required DateTime createdAt,
-    required DateTime syncedAt,
+    required DateTime? syncedAt,
   }) = _LocalFile;
+}
+
+enum EntityType {
+  block,
 }

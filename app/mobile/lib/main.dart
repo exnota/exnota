@@ -1,6 +1,6 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:exnota/src/lib/log/report.dart';
-import 'package:exnota/src/note/repo/file/local_file_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,8 +15,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await initCrashlytics();
-  final localFile = await initLocalFile();
-  final db = initDatabase(files: localFile);
+  final localFilePathGenerator = await initLocalFilePathGenerator();
+  final db = initDatabase(files: localFilePathGenerator);
 
   // Set up the SettingsController, which will glue user settings to multiple
   // Flutter Widgets.
@@ -29,7 +29,7 @@ void main() async {
   // SettingsController for changes, then passes it further down to the
   // SettingsScreen.
   runApp(ProviderScope(overrides: [
-    localFileServiceProvider.overrideWithValue(localFile),
+    localFilePathServiceProvider.overrideWithValue(localFilePathGenerator),
     databaseProvider.overrideWithValue(db),
   ], child: MyApp(settingsController: settingsController)));
 }
