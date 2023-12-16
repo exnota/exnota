@@ -6,7 +6,7 @@ import 'package:exnota/src/integration/notion_settings.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/entity_id.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/service/note_mutation_service.dart';
+import 'package:exnota/src/note/service/deprecated_note_mutation_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -76,10 +76,12 @@ class CreateAudioNoteSyncCommand extends NoteSyncCommand {
         url = json["url"];
       }
 
-      await ref.read(noteMutationServiceProvider.notifier).setAudioFileData(
-          captureId: capture.id,
-          transcription: transcription,
-          integratedUrl: url ?? "");
+      await ref
+          .read(deprecatedNoteMutationServiceProvider.notifier)
+          .setAudioFileData(
+              captureId: capture.id,
+              transcription: transcription,
+              integratedUrl: url ?? "");
 
       return null;
     }

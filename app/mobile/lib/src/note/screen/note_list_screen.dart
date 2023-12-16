@@ -6,14 +6,14 @@ import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/note.dart';
-import 'package:exnota/src/note/service/note_list_service.dart';
+import 'package:exnota/src/note/service/deprecated_note_list_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_animated_icons/icons8.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/screen/notion_settings_screen.dart';
-import 'package:exnota/src/note/service/note_mutation_service.dart';
+import 'package:exnota/src/note/service/deprecated_note_mutation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -113,7 +113,7 @@ class NoteList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final noteStream = ref.watch(noteListServiceProvider);
+    final noteStream = ref.watch(deprecatedNoteListServiceProvider);
     return noteStream.when(
       data: (notes) {
         return ListView.builder(
@@ -356,7 +356,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
             isUploading = true;
           });
           await ref
-              .read(noteMutationServiceProvider.notifier)
+              .read(deprecatedNoteMutationServiceProvider.notifier)
               .setAudioFileCaptured(capture: audioFileCapture!);
           setState(() {
             isUploading = false;
@@ -419,7 +419,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
 
         ref.read(loggerProvider('RecordButton')).debug("Creating note");
         final note = await ref
-            .read(noteMutationServiceProvider.notifier)
+            .read(deprecatedNoteMutationServiceProvider.notifier)
             .createCapturingAudioNote(extension: "m4a");
         setState(() {
           audioFileCapture = note.captures.first.asAudioFileCapture();

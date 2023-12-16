@@ -2,7 +2,7 @@ import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
-import 'package:exnota/src/note/service/note_mutation_service.dart';
+import 'package:exnota/src/note/service/deprecated_note_mutation_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'sync_command_mutation_service.g.dart';
@@ -65,7 +65,7 @@ class SyncCommandMutationService extends _$SyncCommandMutationService {
 
           if (!hasMore) {
             await ref
-                .read(noteMutationServiceProvider.notifier)
+                .read(deprecatedNoteMutationServiceProvider.notifier)
                 .setCaptureSynced(captureId: captureId);
           }
           break;

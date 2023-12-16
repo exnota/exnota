@@ -9,12 +9,12 @@ import 'package:exnota/src/note/note.dart';
 import 'package:exnota/src/note/repo/file/local_file_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'note_mutation_service.g.dart';
+part 'deprecated_note_mutation_service.g.dart';
 
 enum NoteCreateError { authError, noPageError, network, other }
 
 @riverpod
-class NoteMutationService extends _$NoteMutationService {
+class DeprecatedNoteMutationService extends _$DeprecatedNoteMutationService {
   @override
   FutureOr<void> build() {
     // no-op
