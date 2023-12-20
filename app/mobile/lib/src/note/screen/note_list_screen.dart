@@ -6,6 +6,7 @@ import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/capture.dart';
 import 'package:exnota/src/note/note.dart';
+import 'package:exnota/src/note/service/block_mutation_service.dart';
 import 'package:exnota/src/note/service/deprecated_note_list_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_animated_icons/icons8.dart';
@@ -99,7 +100,14 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
                   FloatingActionButton(
                       heroTag: "fab-test",
                       child: const Text("Test"),
-                      onPressed: () async {}),
+                      onPressed: () async {
+                        final file = await ref
+                            .read(blockMutationServiceProvider.notifier)
+                            .createAudioBlock(extension: "m4a");
+                        ref
+                            .read(loggerProvider('NoteListScreen'))
+                            .debug("Created audio block with file}", file);
+                      }),
                 const RecordButton()
               ]),
           },

@@ -18,7 +18,7 @@ class LocalFileMutationService extends _$LocalFileMutationService {
       {required String blockId,
       required String extension,
       required DateTime createdAt}) async {
-    final path = ref
+    final path = await ref
         .read(localFilePathServiceProvider)
         .generateAudioBlockFilePath(blockId: blockId, extension: extension);
     final file = LocalFile(

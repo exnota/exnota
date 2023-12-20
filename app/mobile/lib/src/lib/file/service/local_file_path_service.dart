@@ -40,16 +40,16 @@ class LocalPathGenerator {
       : _databasePath = databasePath,
         _notesAudioPath = notesAudioPath;
 
-  getDatabaseFilePath({required String filename}) {
+  String getDatabaseFilePath({required String filename}) {
     return p.joinAll([_databasePath, filename]);
   }
 
-  deprecatedGetVoiceNoteFilePath(
+  String deprecatedGetVoiceNoteFilePath(
       {required String captureId, required String extension}) {
     return p.joinAll([_notesAudioPath, 'capture-$captureId.$extension']);
   }
 
-  generateAudioBlockFilePath(
+  Future<String> generateAudioBlockFilePath(
       {required String blockId, required String extension}) async {
     final path = p.joinAll([_notesAudioPath, 'block-$blockId.$extension']);
     if (await File(path).exists()) {
