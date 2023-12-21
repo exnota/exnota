@@ -1,11 +1,10 @@
+// ignore_for_file: invalid_annotation_target
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flutter/foundation.dart';
 
 part 'block.freezed.dart';
-
-typedef External = ({
-  String? url,
-});
+part 'block.g.dart';
 
 @freezed
 class Block with _$Block {
@@ -27,23 +26,21 @@ class Block with _$Block {
 
 enum BlockType { audio, text }
 
+@freezed
+class External with _$External {
+  const factory External({
+    @JsonKey(name: 'url') String? url,
+  }) = _External;
+
+  factory External.fromJson(Map<String, dynamic> json) =>
+      _$ExternalFromJson(json);
+}
+
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
 enum Property {
   title(dbName: 'title');
 
   const Property({required this.dbName});
-
-  final String dbName;
-
-  @override
-  String toString() => dbName;
-}
-
-@JsonEnum(alwaysCreate: true, valueField: 'dbName')
-enum ExternalKey {
-  url(dbName: 'url');
-
-  const ExternalKey({required this.dbName});
 
   final String dbName;
 
