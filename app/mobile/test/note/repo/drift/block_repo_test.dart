@@ -312,14 +312,213 @@ void main() {
           });
         });
       });
+      group('update', () {
+        // - update
+        //   -error if block doesn't exist
+        group('Given a block and valid update operation', () {
+          final validOperation = Operation(
+            type: OperationType.update,
+            path: ['external', 'url'],
+            pointer: (id: 'block1'),
+            args: {
+              SingleValArg.val.toString(): 'https://example.com',
+            },
+          );
+          setUp(() async {
+            final block1 = BlockTableData(
+                id: 'block1',
+                type: BlockTypeRepo.audio,
+                properties: '{"title":[["title 1"]]}',
+                createdAt: DateTime.utc(1809, DateTime.february, 12),
+                lastEditedAt: DateTime.now());
+            await db.into(db.blockTable).insert(block1);
+          });
+          group('When the operation is unmodified', () {
+            test('Then the operation executes successfully', () async {
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [validOperation])),
+                  returnsNormally);
+            });
+          });
+          group('When the operation is given an invalid path', () {
+            test('Then it throws a unsupported error', () async {
+              final operation = validOperation.copyWith(path: ['properties']);
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<UnsupportedError>()));
+            });
+          });
+          group('When the operation is given a non-existing pointer', () {
+            test('Then it throws a state error', () async {
+              final operation =
+                  validOperation.copyWith(pointer: (id: 'blockX'));
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<StateError>()));
+            });
+          });
+        });
+        group('Given a block with no external value', () {
+          setUp(() async {
+            final block1 = BlockTableData(
+                id: 'block1',
+                type: BlockTypeRepo.audio,
+                properties: '{"title":[["title 1"]]}',
+                createdAt: DateTime.utc(1809, DateTime.february, 12),
+                lastEditedAt: DateTime.now());
+            await db.into(db.blockTable).insert(block1);
+          });
+          test('Then it sets the external url', () async {
+            final operation = Operation(
+              type: OperationType.update,
+              path: ['external', 'url'],
+              pointer: (id: 'block1'),
+              args: {
+                SingleValArg.val.toString(): 'https://example.com',
+              },
+            );
+            final repo = BlockRepo(db);
+            await repo.executeTransaction(
+                transaction: Transaction(operations: [operation]));
+            final updatedBlock = await (db.select(db.blockTable)
+                  ..where((tbl) => tbl.id.equals('block1')))
+                .getSingle();
+            expect(updatedBlock.external, '{"url":"https://example.com"}');
+          });
+        });
+        group('Given a block with an empty external value', () {
+          setUp(() async {
+            final block1 = BlockTableData(
+                id: 'block1',
+                type: BlockTypeRepo.audio,
+                properties: '{"title":[["title 1"]]}',
+                external: '{}',
+                createdAt: DateTime.utc(1809, DateTime.february, 12),
+                lastEditedAt: DateTime.now());
+            await db.into(db.blockTable).insert(block1);
+          });
+          test('Then it sets the external url', () async {
+            final operation = Operation(
+              type: OperationType.update,
+              path: ['external', 'url'],
+              pointer: (id: 'block1'),
+              args: {
+                SingleValArg.val.toString(): 'https://example.com',
+              },
+            );
+            final repo = BlockRepo(db);
+            await repo.executeTransaction(
+                transaction: Transaction(operations: [operation]));
+            final updatedBlock = await (db.select(db.blockTable)
+                  ..where((tbl) => tbl.id.equals('block1')))
+                .getSingle();
+            expect(updatedBlock.external, '{"url":"https://example.com"}');
+          });
+        });
+        group('Given a block with an existing external url', () {
+          setUp(() async {
+            final block1 = BlockTableData(
+                id: 'block1',
+                type: BlockTypeRepo.audio,
+                properties: '{"title":[["title 1"]]}',
+                external: '{"url":"https://example.com"}',
+                createdAt: DateTime.utc(1809, DateTime.february, 12),
+                lastEditedAt: DateTime.now());
+            await db.into(db.blockTable).insert(block1);
+          });
+          group('When given a different external url', () {
+            test('Then it updates the external url', () async {
+              final operation = Operation(
+                type: OperationType.update,
+                path: ['external', 'url'],
+                pointer: (id: 'block1'),
+                args: {
+                  SingleValArg.val.toString(): 'https://example2.com',
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final updatedBlock = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(updatedBlock.external, '{"url":"https://example2.com"}');
+            });
+          });
+          group('When given an empty external url', () {
+            test('Then it sets the external url to null', () async {
+              final operation = Operation(
+                type: OperationType.update,
+                path: ['external', 'url'],
+                pointer: (id: 'block1'),
+                args: {
+                  SingleValArg.val.toString(): '',
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final updatedBlock = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(updatedBlock.external, '{"url":null}');
+            });
+          });
+          group('When given no arg', () {
+            test('Then it sets the external url to null', () async {
+              const operation = Operation(
+                type: OperationType.update,
+                path: ['external', 'url'],
+                pointer: (id: 'block1'),
+                args: {},
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: const Transaction(operations: [operation]));
+              final updatedBlock = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(updatedBlock.external, '{"url":null}');
+            });
+          });
+        });
+        group('Given a block with a null external url', () {
+          setUp(() async {
+            final block1 = BlockTableData(
+                id: 'block1',
+                type: BlockTypeRepo.audio,
+                properties: '{"title":[["title 1"]]}',
+                external: '{"url":null}',
+                createdAt: DateTime.utc(1809, DateTime.february, 12),
+                lastEditedAt: DateTime.now());
+            await db.into(db.blockTable).insert(block1);
+          });
+          test('Then it sets the external url', () async {
+            final operation = Operation(
+              type: OperationType.update,
+              path: ['external', 'url'],
+              pointer: (id: 'block1'),
+              args: {
+                SingleValArg.val.toString(): 'https://example.com',
+              },
+            );
+            final repo = BlockRepo(db);
+            await repo.executeTransaction(
+                transaction: Transaction(operations: [operation]));
+            final updatedBlock = await (db.select(db.blockTable)
+                  ..where((tbl) => tbl.id.equals('block1')))
+                .getSingle();
+            expect(updatedBlock.external, '{"url":"https://example.com"}');
+          });
+        });
+      });
       // TODO:
-      // - update
-      //   -error if block doesn't exist
-      //   - error if path not supported
-      //   - handles update external.url
-      //     - from no value to value
-      //     - from value to another value
-      //     - from value to no value
       // - set
       //   - error if block exists
       //   - error if pointer doesn't match id

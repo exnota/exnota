@@ -67,6 +67,18 @@ enum BaseArg {
 }
 
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
+enum ExternalArg {
+  url(dbName: 'url');
+
+  const ExternalArg({required this.dbName});
+
+  final String dbName;
+
+  @override
+  String toString() => dbName;
+}
+
+@JsonEnum(alwaysCreate: true, valueField: 'dbName')
 enum SingleValArg {
   val(dbName: 'val');
 

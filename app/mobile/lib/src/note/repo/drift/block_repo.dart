@@ -129,7 +129,9 @@ class BlockRepo {
               }
 
               // Persist block
-              await db.update(db.blockTable).write(updated);
+              await (db.update(db.blockTable)
+                    ..where((tbl) => tbl.id.equals(pointerId)))
+                  .write(updated);
               break;
             case OperationType.set:
               // Verify block doesn't exist.
@@ -217,7 +219,7 @@ class BlockRepo {
       throw UnsupportedError('Only [\'external\', \'url\'] is supported');
     }
     final propertyPath = path[1];
-    if (propertyPath != ExternalKey.url.toString()) {
+    if (propertyPath != ExternalArg.url.toString()) {
       logger.error('Only [\'url\'] is supported', nonPrivateData: {
         "propertyPath": propertyPath,
       });
@@ -226,8 +228,11 @@ class BlockRepo {
 
     // Get arguments
     final url = operation.args[SingleValArg.val.toString()] as String?;
+    final isEmpty = url?.isEmpty ?? false;
 
-    final External updatedExternal = (url: url);
+    final External updatedExternal = External(
+      url: isEmpty ? null : url,
+    );
     return BlockTableCompanion(
       external: Value(BlockRepoMapper.toExternalRepo(updatedExternal)),
     );

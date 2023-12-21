@@ -75,7 +75,7 @@ class BlockMutationService extends _$BlockMutationService {
             ]
           },
           BaseArg.external.toString(): {
-            ExternalKey.url.toString(): externalUrl,
+            ExternalArg.url.toString(): externalUrl,
           },
           BaseArg.parentId.toString(): blockId,
           BaseArg.createdAt.toString(): now.toIso8601String(),
@@ -95,22 +95,22 @@ class BlockMutationService extends _$BlockMutationService {
       );
     }).toList();
 
-    final updateParentUrl = Operation(type: OperationType.update, pointer: (
-      id: blockId
-    ), path: [
-      BaseArg.external.toString(),
-      ExternalKey.url.toString()
-    ], args: {
-      SingleValArg.val.toString(): externalUrl,
-    });
-    final updateParentEditedAt =
-        Operation(type: OperationType.update, pointer: (
-      id: blockId
-    ), path: [
-      BaseArg.lastEditedAt.toString()
-    ], args: {
-      SingleValArg.val.toString(): now.toIso8601String(),
-    });
+    final updateParentUrl = Operation(
+      type: OperationType.update,
+      pointer: (id: blockId),
+      path: [BaseArg.external.toString(), ExternalArg.url.toString()],
+      args: {
+        SingleValArg.val.toString(): externalUrl,
+      },
+    );
+    final updateParentEditedAt = Operation(
+      type: OperationType.update,
+      pointer: (id: blockId),
+      path: [BaseArg.lastEditedAt.toString()],
+      args: {
+        SingleValArg.val.toString(): now.toIso8601String(),
+      },
+    );
 
     final operations = List<Operation>.from(createChildren)
       ..addAll(listAfterChildren)
