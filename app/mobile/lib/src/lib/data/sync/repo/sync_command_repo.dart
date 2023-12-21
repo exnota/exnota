@@ -48,8 +48,7 @@ class SyncCommandRepo {
   }
 
   Future<void> createCommand({required SyncCommand command}) async {
-    SyncCommandTableCompanion toInsert =
-        SyncCommandRepoMapper.toDataInsert(command);
+    SyncCommandTableCompanion toInsert = SyncCommandRepoMapper.toData(command);
     await db.into(db.syncCommandTable).insert(toInsert);
   }
 

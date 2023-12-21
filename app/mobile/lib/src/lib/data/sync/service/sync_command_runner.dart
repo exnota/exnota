@@ -38,6 +38,7 @@ class SyncCommandRunner extends _$SyncCommandRunner {
         if (error != null) {
           logger.warn("Command failed", nonPrivateData: {
             "command": command.runtimeType,
+            "error": error,
           });
           // TODO: Handle error
           continue;

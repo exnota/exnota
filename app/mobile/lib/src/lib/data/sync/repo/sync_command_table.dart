@@ -18,7 +18,8 @@ class SyncCommandTable extends Table {
 // Won't generate without alwaysCreate
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
 enum SyncCommandRepoType {
-  createAudioNote(dbName: 'createAudioNote');
+  createAudioNote(dbName: 'createAudioNote'), // TODO: Remove
+  executeTransaction(dbName: 'executeTransaction');
 
   const SyncCommandRepoType({required this.dbName});
 

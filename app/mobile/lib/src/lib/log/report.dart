@@ -20,6 +20,11 @@ Future<void> initCrashlytics() async {
 
 Future<void> report(
     {required String description, Object? nonPrivateData}) async {
+  // Crashlytics is not available in unit tests
+  if (Firebase.apps.isEmpty) {
+    return;
+  }
+
   if (nonPrivateData != null) {
     await FirebaseCrashlytics.instance.recordError(null, StackTrace.current,
         reason: description, information: [nonPrivateData]);

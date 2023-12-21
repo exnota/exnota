@@ -2,16 +2,18 @@ import 'dart:convert';
 
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
+import 'package:exnota/src/lib/data/sync/execute_transaction_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_table.dart';
 import 'package:exnota/src/lib/entity_id.dart';
 import 'package:exnota/src/lib/log/logger.dart';
+import 'package:exnota/src/note/transaction.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'mapper.g.dart';
 
 class SyncCommandRepoMapper {
-  static SyncCommandTableCompanion toDataInsert(SyncCommand command) {
+  static SyncCommandTableCompanion toData(SyncCommand command) {
     final logger = Logger(context: 'SyncCommandRepoMapper.toDataInsert');
     switch (command) {
       case CreateAudioNoteSyncCommand():
@@ -33,21 +35,44 @@ class SyncCommandRepoMapper {
             entityId: command.entityId,
             data: json.encode(data.toJson()),
             status: statusToData(command.status));
+      case ExecuteTransactionSyncCommand():
+        final data =
+            ExecuteTransactionDataRepo(transaction: command.transaction);
+        final id = command.id;
+        if (id case EntityWithId()) {
+          logger.warn("Command passed with ID. This will be ignored",
+              nonPrivateData: {
+                'id': id.id,
+                'entityId': command.entityId,
+                'syncCommand': command.runtimeType,
+              });
+        }
+        return SyncCommandTableCompanion.insert(
+            type: SyncCommandRepoType.executeTransaction,
+            entityId: command.entityId,
+            data: json.encode(data.toJson()),
+            status: statusToData(command.status));
       default:
         throw Exception("Unknown command type: ${command.runtimeType}");
     }
   }
 
   static SyncCommand fromData(SyncCommandTableData commandData) {
-    final data =
-        CreateAudioNoteDataRepo.fromJson(json.decode(commandData.data));
     switch (commandData.type) {
       case SyncCommandRepoType.createAudioNote:
+        final data =
+            CreateAudioNoteDataRepo.fromJson(json.decode(commandData.data));
         return CreateAudioNoteSyncCommand.fromDb(
             id: commandData.id,
             entityId: commandData.entityId,
             captureId: data.capture.id,
             filePath: data.capture.filePath,
+            status: statusFromData(commandData.status));
+      case SyncCommandRepoType.executeTransaction:
+        return ExecuteTransactionSyncCommand.fromDb(
+            id: commandData.id,
+            entityId: commandData.entityId,
+            transaction: Transaction.fromJson(jsonDecode(commandData.data)),
             status: statusFromData(commandData.status));
       default:
         throw Exception("Unknown command type: ${commandData.type}");
@@ -92,4 +117,17 @@ class CreateAudioNoteDataRepo {
       _$CreateAudioNoteDataRepoFromJson(json);
 
   Map<String, dynamic> toJson() => _$CreateAudioNoteDataRepoToJson(this);
+}
+
+@JsonSerializable()
+class ExecuteTransactionDataRepo {
+  @JsonKey(name: 'transaction')
+  final Transaction transaction;
+
+  ExecuteTransactionDataRepo({required this.transaction});
+
+  factory ExecuteTransactionDataRepo.fromJson(Map<String, dynamic> json) =>
+      _$ExecuteTransactionDataRepoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ExecuteTransactionDataRepoToJson(this);
 }
