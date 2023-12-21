@@ -49,9 +49,9 @@ class BlockRepoMapper {
     }
   }
 
-  static String toPropertiesRepo(Map<String, dynamic>? properties) {
+  static String? toPropertiesRepo(Map<String, dynamic>? properties) {
     if (properties == null) {
-      return '';
+      return null;
     }
     return jsonEncode(properties);
   }
