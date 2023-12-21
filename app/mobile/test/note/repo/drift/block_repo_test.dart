@@ -341,6 +341,10 @@ void main() {
                       transaction: Transaction(operations: [validOperation])),
                   returnsNormally);
             });
+            test('Then other properties are not overridden', () {
+              // TODO: Implement
+              expect(true, false);
+            });
           });
           group('When the operation is given an invalid path', () {
             test('Then it throws a unsupported error', () async {
@@ -517,23 +521,255 @@ void main() {
             expect(updatedBlock.external, '{"url":"https://example.com"}');
           });
         });
+        group('Given a block with unknown external properties', () {
+          test(
+              'Then it persists the external URL without removing the other properties',
+              () {
+            // TODO: Implement
+            // I.e. we might pull a block with external: {"url": "https://example.com", "other": "value"}
+            // from the server. Even though the client doesn't support "other"
+            // , we don't want to remove it. Doing so would increase the odds of
+            // sending the version of external with "other" removed back to the
+            // server.
+            expect(true, false);
+          });
+        });
       });
-      // TODO:
-      // - set
-      //   - error if block exists
-      //   - error if pointer doesn't match id
-      //   - error if path not empty
-      //   - error if id not provided
-      //   - error if type not provided
-      //   - error if createdAt not provided
-      //   - error if lastEditedAt not provided
-      //   - correctly persists required values
-      //   - correctly persists optional values
-      // - multiple ops
-      //   - realistic example
-      // - single ops
-      //   - realistic example
-      // - no ops
+      group('set', () {
+        group('Given a valid set operation', () {
+          final validOperation = Operation(
+            type: OperationType.set,
+            pointer: (id: 'block1'),
+            path: [],
+            args: {
+              BaseArg.id.toString(): 'block1',
+              BaseArg.type.toString(): BlockType.audio.toString(),
+              BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+              BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+            },
+          );
+
+          group('When the operation is unmodified', () {
+            test('Then the operation executes successfully', () {
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [validOperation])),
+                  returnsNormally);
+            });
+          });
+          group(
+              'When the operation is given an id arg not matching the pointer',
+              () {
+            test('Then it throws an argument error', () async {
+              final operation = validOperation.copyWith(
+                  pointer: (id: 'block1'),
+                  args: {BaseArg.id.toString(): 'blockX'});
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<ArgumentError>()));
+            });
+          });
+          group('When the operation is given a non-empty path', () {
+            test('Then it throws an unsupported error', () async {
+              final operation = validOperation.copyWith(path: ['properties']);
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<UnsupportedError>()));
+            });
+          });
+          group('When the operation has it\'s id arg removed', () {
+            test('Then it throws a type error', () async {
+              final args = Map<String, dynamic>.from(validOperation.args);
+              args.remove(BaseArg.id.toString());
+
+              final operation = validOperation.copyWith(args: args);
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<TypeError>()));
+            });
+          });
+          group('When the operation has it\'s type arg removed', () {
+            test('Then it throws a type error', () async {
+              final args = Map<String, dynamic>.from(validOperation.args);
+              args.remove(BaseArg.type.toString());
+
+              final operation = validOperation.copyWith(args: args);
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<TypeError>()));
+            });
+          });
+          group('When the operation is given an unknown type', () {
+            test('Then it throws an unsupported error', () async {
+              final args = Map<String, dynamic>.from(validOperation.args);
+              args[BaseArg.type.toString()] = 'unknown';
+
+              final operation = validOperation.copyWith(args: args);
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<UnsupportedError>()));
+            });
+          });
+          group('When the operation is given a content ID that doesn\'t exist',
+              () {
+            test('Then it throws a state error', () async {
+              // TODO: This functionality needs implementing in block_repo.dart
+              // I added the test here to remind me to do it.
+              final args = Map<String, dynamic>.from(validOperation.args);
+              args[BaseArg.content.toString()] = ['blockX'];
+
+              final operation = validOperation.copyWith(args: args);
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<StateError>()));
+            });
+          });
+          group('When the operation is given a parent id that doesn\'t exist',
+              () {
+            test('Then it throws a state error', () async {
+              // TODO: This functionality needs implementing in block_repo.dart
+              // I added the test here to remind me to do it.
+              final args = Map<String, dynamic>.from(validOperation.args);
+              args[BaseArg.parentId.toString()] = 'blockX';
+
+              final operation = validOperation.copyWith(args: args);
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<StateError>()));
+            });
+          });
+          group('When the operation has it\'s createdAt arg removed', () {
+            test('Then it throws a type error', () async {
+              final args = Map<String, dynamic>.from(validOperation.args);
+              args.remove(BaseArg.createdAt.toString());
+
+              final operation = validOperation.copyWith(args: args);
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<TypeError>()));
+            });
+          });
+          group('When the operation has it\'s lastEditedAt arg removed', () {
+            test('Then it throws a type error', () async {
+              final args = Map<String, dynamic>.from(validOperation.args);
+              args.remove(BaseArg.lastEditedAt.toString());
+
+              final operation = validOperation.copyWith(args: args);
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  throwsA(isA<TypeError>()));
+            });
+          });
+        });
+        group('Given a block with only required properties', () {
+          test('Then it persists the block', () async {
+            final operation = Operation(
+              type: OperationType.set,
+              pointer: (id: 'block1'),
+              path: [],
+              args: {
+                BaseArg.id.toString(): 'block1',
+                BaseArg.type.toString(): BlockType.audio.toString(),
+                BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+              },
+            );
+            final repo = BlockRepo(db);
+            await repo.executeTransaction(
+                transaction: Transaction(operations: [operation]));
+            final block = await (db.select(db.blockTable)
+                  ..where((tbl) => tbl.id.equals('block1')))
+                .getSingle();
+            expect(block.id, 'block1');
+            expect(block.type, BlockTypeRepo.audio);
+            expect(block.properties, null);
+            expect(block.external, null);
+            expect(block.content, null);
+            expect(block.createdAt, DateTime.utc(2021));
+            expect(block.lastEditedAt, DateTime.utc(2021));
+          });
+        });
+        group('Given a block with all properties', () {
+          test('Then it persists the block', () async {
+            // TODO: This functionality PROBABLY needs implementing in
+            // block_repo.dart. I assume the test is failing because I didn't
+            // write block_repo.dart to support all possible args, only the ones
+            // I expected to need at the time. Should probably implement them all.
+            final operation = Operation(
+              type: OperationType.set,
+              pointer: (id: 'block1'),
+              path: [],
+              args: {
+                BaseArg.id.toString(): 'block1',
+                BaseArg.type.toString(): BlockType.audio.toString(),
+                BaseArg.properties.toString(): {
+                  Property.title.toString(): [
+                    ['a title']
+                  ]
+                },
+                BaseArg.external.toString(): {
+                  ExternalArg.url.toString(): 'https://example.com'
+                },
+                BaseArg.content.toString(): ['block2', 'block3', 'block4'],
+                BaseArg.parentId.toString(): 'block5',
+                BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+              },
+            );
+            final repo = BlockRepo(db);
+            await repo.executeTransaction(
+                transaction: Transaction(operations: [operation]));
+            final block = await (db.select(db.blockTable)
+                  ..where((tbl) => tbl.id.equals('block1')))
+                .getSingle();
+            expect(block.id, 'block1');
+            expect(block.type, BlockTypeRepo.audio);
+            expect(block.properties, '{"title":[["a title"]]}');
+            expect(block.external, '{"url":"https://example.com"}');
+            expect(block.content, '["block2","block3","block4"]');
+            expect(block.parentId, 'block5');
+            expect(block.createdAt, DateTime.utc(2021));
+            expect(block.lastEditedAt, DateTime.utc(2021));
+          });
+        });
+        group('Given a block that already exists', () {
+          test('Then it returns a state error', () {
+            // TODO: Implement
+            expect(true, false);
+          });
+        });
+      });
+      group('Given multiple operations', () {
+        test('Then it executes them in order', () {
+          // TODO: Implement
+          expect(true, false);
+        });
+      });
+      group('Given no operations', () {
+        test('Then it returns a state error', () {
+          // TODO: Implement
+          expect(true, false);
+        });
+      });
     });
   });
 }
