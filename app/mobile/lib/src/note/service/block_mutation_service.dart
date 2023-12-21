@@ -24,10 +24,10 @@ class BlockMutationService extends _$BlockMutationService {
     final createOperation = Operation(type: OperationType.set, pointer: (
       id: blockId
     ), path: [], args: {
-      ArgKey.id.toString(): blockId,
-      ArgKey.type.toString(): BlockType.audio.toString(),
-      ArgKey.createdAt.toString(): now.toIso8601String(),
-      ArgKey.lastEditedAt.toString(): now.toIso8601String(),
+      BaseArg.id.toString(): blockId,
+      BaseArg.type.toString(): BlockType.audio.toString(),
+      BaseArg.createdAt.toString(): now.toIso8601String(),
+      BaseArg.lastEditedAt.toString(): now.toIso8601String(),
     });
 
     final db = ref.read(databaseProvider);
@@ -49,5 +49,75 @@ class BlockMutationService extends _$BlockMutationService {
     });
 
     return Future.value(file);
+  }
+
+  Future<void> setAudioBlockData(
+      {required String blockId,
+      required List<String> transcription,
+      required String externalUrl}) async {
+    final db = ref.read(databaseProvider);
+    final blockRepo = BlockRepo(db);
+    final now = DateTime.now();
+
+    // Create content text blocks
+    final createChildren = transcription.map((t) {
+      final childId = generateId();
+      return Operation(
+        type: OperationType.set,
+        pointer: (id: childId),
+        path: [],
+        args: {
+          BaseArg.id.toString(): childId,
+          BaseArg.type.toString(): BlockType.text.toString(),
+          BaseArg.properties.toString(): {
+            Property.title.toString(): [
+              [t]
+            ]
+          },
+          BaseArg.external.toString(): {
+            ExternalKey.url.toString(): externalUrl,
+          },
+          BaseArg.parentId.toString(): blockId,
+          BaseArg.createdAt.toString(): now.toIso8601String(),
+          BaseArg.lastEditedAt.toString(): now.toIso8601String(),
+        },
+      );
+    }).toList();
+
+    final listAfterChildren = createChildren.map((o) {
+      return Operation(
+        type: OperationType.listAfter,
+        pointer: (id: blockId),
+        path: [BaseArg.content.toString()],
+        args: {
+          ListAfterArg.id.toString(): o.pointer.id,
+        },
+      );
+    }).toList();
+
+    final updateParentUrl = Operation(type: OperationType.update, pointer: (
+      id: blockId
+    ), path: [
+      BaseArg.external.toString(),
+      ExternalKey.url.toString()
+    ], args: {
+      SingleValArg.val.toString(): externalUrl,
+    });
+    final updateParentEditedAt =
+        Operation(type: OperationType.update, pointer: (
+      id: blockId
+    ), path: [
+      BaseArg.lastEditedAt.toString()
+    ], args: {
+      SingleValArg.val.toString(): now.toIso8601String(),
+    });
+
+    final operations = List<Operation>.from(createChildren)
+      ..addAll(listAfterChildren)
+      ..addAll([updateParentUrl, updateParentEditedAt]);
+    await blockRepo.executeTransaction(
+        transaction: Transaction(
+      operations: operations,
+    ));
   }
 }

@@ -10,7 +10,7 @@ class LocalFileTable extends Table {
   TextColumn get id => text()();
   TextColumn get entityType => text().map(EntityTypeRepoConverter())();
   TextColumn get entityId => text()();
-  TextColumn get path => text()();
+  TextColumn get path => text().unique()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
 
@@ -25,6 +25,9 @@ enum EntityTypeRepo {
   const EntityTypeRepo({required this.dbName});
 
   final String dbName;
+
+  @override
+  String toString() => dbName;
 }
 
 class EntityTypeRepoConverter extends TypeConverter<EntityTypeRepo, String> {

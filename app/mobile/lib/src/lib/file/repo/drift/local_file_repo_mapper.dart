@@ -6,7 +6,7 @@ class LocalFileRepoMapper {
   static LocalFileTableData toRepo(LocalFile file) {
     return LocalFileTableData(
       id: file.id,
-      entityType: _typeToRepo(file.entityType),
+      entityType: typeToRepo(file.entityType),
       entityId: file.entityId,
       path: file.path,
       createdAt: file.createdAt,
@@ -17,7 +17,7 @@ class LocalFileRepoMapper {
   static LocalFile fromRepo(LocalFileTableData file) {
     return LocalFile(
       id: file.id,
-      entityType: _typeFromRepo(file.entityType),
+      entityType: typeFromRepo(file.entityType),
       entityId: file.entityId,
       path: file.path,
       createdAt: file.createdAt,
@@ -25,14 +25,14 @@ class LocalFileRepoMapper {
     );
   }
 
-  static EntityTypeRepo _typeToRepo(EntityType type) {
+  static EntityTypeRepo typeToRepo(EntityType type) {
     switch (type) {
       case EntityType.block:
         return EntityTypeRepo.block;
     }
   }
 
-  static EntityType _typeFromRepo(EntityTypeRepo type) {
+  static EntityType typeFromRepo(EntityTypeRepo type) {
     switch (type) {
       case EntityTypeRepo.block:
         return EntityType.block;

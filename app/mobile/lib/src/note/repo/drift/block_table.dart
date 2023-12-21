@@ -9,7 +9,10 @@ class BlockTable extends Table {
 
   TextColumn get id => text()();
   TextColumn get type => text().map(BlockTypeRepoConverter())();
-  TextColumn get properties => text()();
+  TextColumn get properties => text().nullable()();
+  TextColumn get external => text().nullable()();
+  TextColumn get content => text().nullable()();
+  TextColumn get parentId => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get lastEditedAt => dateTime()();
 
@@ -19,7 +22,9 @@ class BlockTable extends Table {
 
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
 enum BlockTypeRepo {
-  audio(dbName: "audio");
+  audio(dbName: "audio"),
+  text(dbName: "text"),
+  ;
 
   const BlockTypeRepo({required this.dbName});
 

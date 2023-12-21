@@ -9,7 +9,10 @@ class BlockRepoMapper {
     return BlockTableData(
       id: block.id,
       type: _toStatusRepo(block.type),
-      properties: _toPropertiesRepo(block.properties),
+      properties: toPropertiesRepo(block.properties),
+      external: toExternalRepo(block.external),
+      content: toContentRepo(block.content),
+      parentId: block.parentId,
       createdAt: block.createdAt,
       lastEditedAt: block.lastEditedAt,
     );
@@ -19,7 +22,10 @@ class BlockRepoMapper {
     return Block(
       id: block.id,
       type: _fromStatusRepo(block.type),
-      properties: _fromPropertiesRepo(block.properties),
+      properties: fromPropertiesRepo(block.properties),
+      external: fromExternalRepo(block.external),
+      content: fromContentRepo(block.content),
+      parentId: block.parentId,
       createdAt: block.createdAt,
       lastEditedAt: block.lastEditedAt,
     );
@@ -29,6 +35,8 @@ class BlockRepoMapper {
     switch (type) {
       case BlockType.audio:
         return BlockTypeRepo.audio;
+      case BlockType.text:
+        return BlockTypeRepo.text;
     }
   }
 
@@ -36,14 +44,56 @@ class BlockRepoMapper {
     switch (type) {
       case BlockTypeRepo.audio:
         return BlockType.audio;
+      case BlockTypeRepo.text:
+        return BlockType.text;
     }
   }
 
-  static String _toPropertiesRepo(Map<String, dynamic> properties) {
+  static String toPropertiesRepo(Map<String, dynamic>? properties) {
+    if (properties == null) {
+      return '';
+    }
     return jsonEncode(properties);
   }
 
-  static Map<String, dynamic> _fromPropertiesRepo(String properties) {
+  static Map<String, dynamic>? fromPropertiesRepo(String? properties) {
+    if (properties == null) {
+      return null;
+    }
+
     return jsonDecode(properties) as Map<String, dynamic>;
+  }
+
+  static String? toExternalRepo(External? external) {
+    if (external == null) {
+      return null;
+    }
+
+    return jsonEncode(external);
+  }
+
+  static External? fromExternalRepo(String? external) {
+    if (external == null) {
+      return null;
+    }
+
+    return jsonDecode(external) as External;
+  }
+
+  static String? toContentRepo(List<String>? content) {
+    if (content == null) {
+      return null;
+    }
+
+    return jsonEncode(content);
+  }
+
+  static List<String>? fromContentRepo(String? content) {
+    if (content == null) {
+      return null;
+    }
+
+    final decoded = jsonDecode(content) as List;
+    return decoded.map((c) => c as String).toList();
   }
 }
