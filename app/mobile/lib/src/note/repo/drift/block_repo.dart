@@ -177,21 +177,36 @@ class BlockRepo {
                 throw UnsupportedError('Unknown block type: $typeStr');
               }
 
-              // properties
-              final properties = operation.args[BaseArg.properties.toString()]
-                  as Map<String, dynamic>?;
-
               // times - required while 'set' is just for creates.
               final createdAt =
                   DateTime.parse(operation.args[BaseArg.createdAt.toString()]);
               final lastEditedAt = DateTime.parse(
                   operation.args[BaseArg.lastEditedAt.toString()]);
 
+              // properties
+              final properties = operation.args[BaseArg.properties.toString()]
+                  as Map<String, dynamic>?;
+
+              // external
+              final external = operation.args[BaseArg.external.toString()]
+                  as Map<String, dynamic>?;
+
+              // content
+              final content =
+                  operation.args[BaseArg.content.toString()] as List<String>?;
+
+              // parentId
+              final parentId =
+                  operation.args[BaseArg.parentId.toString()] as String?;
+
               // Persist block
               final block = BlockTableData(
                   id: id,
                   type: type,
                   properties: BlockRepoMapper.toPropertiesRepo(properties),
+                  external: BlockRepoMapper.toExternalRepo(external),
+                  content: BlockRepoMapper.toContentRepo(content),
+                  parentId: parentId,
                   createdAt: createdAt,
                   lastEditedAt: lastEditedAt);
               await db.into(db.blockTable).insert(block);
@@ -230,9 +245,10 @@ class BlockRepo {
     final url = operation.args[SingleValArg.val.toString()] as String?;
     final isEmpty = url?.isEmpty ?? false;
 
-    final External updatedExternal = External(
-      url: isEmpty ? null : url,
-    );
+    final updatedExternal =
+        BlockRepoMapper.fromExternalRepo(block.external) ?? {};
+    updatedExternal["url"] = isEmpty ? null : url;
+
     return BlockTableCompanion(
       external: Value(BlockRepoMapper.toExternalRepo(updatedExternal)),
     );

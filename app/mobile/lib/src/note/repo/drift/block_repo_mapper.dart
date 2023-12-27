@@ -64,7 +64,7 @@ class BlockRepoMapper {
     return jsonDecode(properties) as Map<String, dynamic>;
   }
 
-  static String? toExternalRepo(External? external) {
+  static String? toExternalRepo(Map<String, dynamic>? external) {
     if (external == null) {
       return null;
     }
@@ -72,12 +72,12 @@ class BlockRepoMapper {
     return jsonEncode(external);
   }
 
-  static External? fromExternalRepo(String? external) {
+  static Map<String, dynamic>? fromExternalRepo(String? external) {
     if (external == null) {
       return null;
     }
 
-    return jsonDecode(external) as External;
+    return jsonDecode(external) as Map<String, dynamic>;
   }
 
   static String? toContentRepo(List<String>? content) {

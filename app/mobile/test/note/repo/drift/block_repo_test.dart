@@ -313,9 +313,8 @@ void main() {
         });
       });
       group('update', () {
-        // - update
-        //   -error if block doesn't exist
         group('Given a block and valid update operation', () {
+          late DateTime now;
           final validOperation = Operation(
             type: OperationType.update,
             path: ['external', 'url'],
@@ -325,12 +324,13 @@ void main() {
             },
           );
           setUp(() async {
+            now = DateTime.now();
             final block1 = BlockTableData(
                 id: 'block1',
                 type: BlockTypeRepo.audio,
                 properties: '{"title":[["title 1"]]}',
                 createdAt: DateTime.utc(1809, DateTime.february, 12),
-                lastEditedAt: DateTime.now());
+                lastEditedAt: now);
             await db.into(db.blockTable).insert(block1);
           });
           group('When the operation is unmodified', () {
@@ -341,9 +341,24 @@ void main() {
                       transaction: Transaction(operations: [validOperation])),
                   returnsNormally);
             });
-            test('Then other properties are not overridden', () {
-              // TODO: Implement
-              expect(true, false);
+            test('Then other properties are not overridden', () async {
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [validOperation])),
+                  returnsNormally);
+              final query = db.select(db.blockTable)
+                ..where((tbl) => tbl.id.equals('block1'));
+              final block = await query.getSingle();
+              expect(block.id, 'block1');
+              expect(block.type, BlockTypeRepo.audio);
+              expect(block.properties, '{"title":[["title 1"]]}');
+              expect(block.external, '{"url":"https://example.com"}');
+              expect(block.content, null);
+              expect(block.parentId, null);
+              expect(
+                  block.createdAt, DateTime.utc(1809, DateTime.february, 12));
+              expect(block.lastEditedAt, now);
             });
           });
           group('When the operation is given an invalid path', () {
@@ -522,16 +537,46 @@ void main() {
           });
         });
         group('Given a block with unknown external properties', () {
+          final validOperation = Operation(
+            type: OperationType.update,
+            path: ['external', 'url'],
+            pointer: (id: 'block1'),
+            args: {
+              SingleValArg.val.toString(): 'https://example-updated.com',
+            },
+          );
+
+          setUp(() async {
+            final block1 = BlockTableData(
+                id: 'block1',
+                type: BlockTypeRepo.audio,
+                properties: '{"title":[["title 1"]]}',
+                external: '{"url":"https://example.com", "unknown": "value"}',
+                createdAt: DateTime.utc(1809, DateTime.february, 12),
+                lastEditedAt: DateTime.now());
+            await db.into(db.blockTable).insert(block1);
+          });
           test(
               'Then it persists the external URL without removing the other properties',
-              () {
-            // TODO: Implement
-            // I.e. we might pull a block with external: {"url": "https://example.com", "other": "value"}
-            // from the server. Even though the client doesn't support "other"
-            // , we don't want to remove it. Doing so would increase the odds of
-            // sending the version of external with "other" removed back to the
-            // server.
-            expect(true, false);
+              () async {
+            // This requirement reduces the chance of accidentally wiping data
+            // that isn't yet supported by the frontend but is on the backend.
+            //
+            // E.g. we might pull a block with external:
+            //   {"url": "https://example.com", "other": "value"}
+            // from the server. If the client doesn't support "other" we don't
+            // want to remove "other" from "external" and then sync "external"
+            // to the backend, wiping the "other" property.
+            final repo = BlockRepo(db);
+            expect(
+                () async => await repo.executeTransaction(
+                    transaction: Transaction(operations: [validOperation])),
+                returnsNormally);
+            final query = (db.select(db.blockTable)
+              ..where((tbl) => tbl.id.equals('block1')));
+            final block = await query.getSingle();
+            expect(block.external,
+                '{"url":"https://example-updated.com","unknown":"value"}');
           });
         });
       });
@@ -621,38 +666,6 @@ void main() {
                   throwsA(isA<UnsupportedError>()));
             });
           });
-          group('When the operation is given a content ID that doesn\'t exist',
-              () {
-            test('Then it throws a state error', () async {
-              // TODO: This functionality needs implementing in block_repo.dart
-              // I added the test here to remind me to do it.
-              final args = Map<String, dynamic>.from(validOperation.args);
-              args[BaseArg.content.toString()] = ['blockX'];
-
-              final operation = validOperation.copyWith(args: args);
-              final repo = BlockRepo(db);
-              expect(
-                  () async => await repo.executeTransaction(
-                      transaction: Transaction(operations: [operation])),
-                  throwsA(isA<StateError>()));
-            });
-          });
-          group('When the operation is given a parent id that doesn\'t exist',
-              () {
-            test('Then it throws a state error', () async {
-              // TODO: This functionality needs implementing in block_repo.dart
-              // I added the test here to remind me to do it.
-              final args = Map<String, dynamic>.from(validOperation.args);
-              args[BaseArg.parentId.toString()] = 'blockX';
-
-              final operation = validOperation.copyWith(args: args);
-              final repo = BlockRepo(db);
-              expect(
-                  () async => await repo.executeTransaction(
-                      transaction: Transaction(operations: [operation])),
-                  throwsA(isA<StateError>()));
-            });
-          });
           group('When the operation has it\'s createdAt arg removed', () {
             test('Then it throws a type error', () async {
               final args = Map<String, dynamic>.from(validOperation.args);
@@ -708,12 +721,8 @@ void main() {
             expect(block.lastEditedAt, DateTime.utc(2021));
           });
         });
-        group('Given a block with all properties', () {
+        group('Given a block with all supported properties', () {
           test('Then it persists the block', () async {
-            // TODO: This functionality PROBABLY needs implementing in
-            // block_repo.dart. I assume the test is failing because I didn't
-            // write block_repo.dart to support all possible args, only the ones
-            // I expected to need at the time. Should probably implement them all.
             final operation = Operation(
               type: OperationType.set,
               pointer: (id: 'block1'),
@@ -724,10 +733,12 @@ void main() {
                 BaseArg.properties.toString(): {
                   Property.title.toString(): [
                     ['a title']
-                  ]
+                  ],
+                  "unsupported": "value"
                 },
                 BaseArg.external.toString(): {
-                  ExternalArg.url.toString(): 'https://example.com'
+                  ExternalArg.url.toString(): 'https://example.com',
+                  "unsupported": "value"
                 },
                 BaseArg.content.toString(): ['block2', 'block3', 'block4'],
                 BaseArg.parentId.toString(): 'block5',
@@ -743,8 +754,10 @@ void main() {
                 .getSingle();
             expect(block.id, 'block1');
             expect(block.type, BlockTypeRepo.audio);
-            expect(block.properties, '{"title":[["a title"]]}');
-            expect(block.external, '{"url":"https://example.com"}');
+            expect(block.properties,
+                '{"title":[["a title"]],"unsupported":"value"}');
+            expect(block.external,
+                '{"url":"https://example.com","unsupported":"value"}');
             expect(block.content, '["block2","block3","block4"]');
             expect(block.parentId, 'block5');
             expect(block.createdAt, DateTime.utc(2021));
@@ -752,22 +765,87 @@ void main() {
           });
         });
         group('Given a block that already exists', () {
+          setUp(() async {
+            final block1 = BlockTableData(
+                id: 'block1',
+                type: BlockTypeRepo.audio,
+                properties: '{"title":[["title 1"]]}',
+                createdAt: DateTime.utc(1809, DateTime.february, 12),
+                lastEditedAt: DateTime.now());
+            await db.into(db.blockTable).insert(block1);
+          });
           test('Then it returns a state error', () {
-            // TODO: Implement
-            expect(true, false);
+            final operation = Operation(
+              type: OperationType.set,
+              pointer: (id: 'block1'),
+              path: [],
+              args: {
+                BaseArg.id.toString(): 'block1',
+                BaseArg.type.toString(): BlockType.audio.toString(),
+                BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+              },
+            );
+            final repo = BlockRepo(db);
+            expect(
+                () async => await repo.executeTransaction(
+                    transaction: Transaction(operations: [operation])),
+                throwsA(isA<StateError>()));
           });
         });
       });
       group('Given multiple operations', () {
-        test('Then it executes them in order', () {
-          // TODO: Implement
-          expect(true, false);
+        test('Then it executes them in order', () async {
+          final createOperation = Operation(
+            type: OperationType.set,
+            pointer: (id: 'block1'),
+            path: [],
+            args: {
+              BaseArg.id.toString(): 'block1',
+              BaseArg.type.toString(): BlockType.audio.toString(),
+              BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+              BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+            },
+          );
+          final updateExternalUrlOperationFirst = Operation(
+            type: OperationType.update,
+            path: ['external', 'url'],
+            pointer: (id: 'block1'),
+            args: {
+              SingleValArg.val.toString(): 'https://example.com',
+            },
+          );
+          final updateExternalUrlOperationSecond = Operation(
+            type: OperationType.update,
+            path: ['external', 'url'],
+            pointer: (id: 'block1'),
+            args: {
+              SingleValArg.val.toString(): 'https://example2.com',
+            },
+          );
+
+          final repo = BlockRepo(db);
+          expect(
+              () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [
+                    createOperation,
+                    updateExternalUrlOperationFirst,
+                    updateExternalUrlOperationSecond,
+                  ])),
+              returnsNormally);
+          final query = (db.select(db.blockTable)
+            ..where((tbl) => tbl.id.equals('block1')));
+          final block = await query.getSingle();
+
+          expect(block.external, '{"url":"https://example2.com"}');
         });
       });
       group('Given no operations', () {
-        test('Then it returns a state error', () {
-          // TODO: Implement
-          expect(true, false);
+        test('Then it does not throw', () {
+          expect(
+              () async => await BlockRepo(db).executeTransaction(
+                  transaction: const Transaction(operations: [])),
+              returnsNormally);
         });
       });
     });

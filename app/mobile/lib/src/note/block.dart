@@ -12,7 +12,7 @@ class Block with _$Block {
     required String id,
     required BlockType type,
     Map<String, dynamic>? properties,
-    External? external,
+    Map<String, dynamic>? external,
     List<String>? content,
     String? parentId,
     required DateTime createdAt,
@@ -25,16 +25,6 @@ class Block with _$Block {
 }
 
 enum BlockType { audio, text }
-
-@freezed
-class External with _$External {
-  const factory External({
-    @JsonKey(name: 'url') String? url,
-  }) = _External;
-
-  factory External.fromJson(Map<String, dynamic> json) =>
-      _$ExternalFromJson(json);
-}
 
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
 enum Property {
