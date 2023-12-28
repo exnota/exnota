@@ -9,6 +9,15 @@ import 'package:exnota/src/note/repo/drift/block_repo_mapper.dart';
 import 'package:exnota/src/note/repo/drift/block_table.dart';
 import 'package:exnota/src/note/transaction.dart';
 import 'package:flutter/foundation.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'block_repo.g.dart';
+
+@riverpod
+BlockRepo blockRepo(BlockRepoRef ref) {
+  final db = ref.read(databaseProvider);
+  return BlockRepo(db);
+}
 
 class BlockRepo {
   final AppDatabase db;

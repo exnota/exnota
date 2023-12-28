@@ -3,16 +3,20 @@ import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/file/repo/drift/local_file_repo.dart';
 import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:exnota/src/note/repo/id_generator.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'local_file_mutation_service.g.dart';
 
 @riverpod
-class LocalFileMutationService extends _$LocalFileMutationService {
-  @override
-  FutureOr<void> build() {
-    // noo-op
-  }
+LocalFileMutator localFileMutator(LocalFileMutatorRef ref) {
+  return LocalFileMutator(ref);
+}
+
+class LocalFileMutator {
+  final Ref ref;
+
+  LocalFileMutator(this.ref);
 
   Future<LocalFile> createForAudioBlock(
       {required String blockId,
