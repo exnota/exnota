@@ -1,3 +1,4 @@
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/file/service/local_file_mutation_service.dart';
@@ -18,9 +19,10 @@ class BlockMutationService extends _$BlockMutationService {
   }
 
   Future<LocalFile> createAudioBlock({required String extension}) {
-    final now = DateTime.now();
+    final now = ref.read(clockProvider).now();
 
-    final blockId = generateId();
+    final idGenerator = ref.read(idGeneratorProvider);
+    final blockId = idGenerator();
     final createOperation = Operation(type: OperationType.set, pointer: (
       id: blockId
     ), path: [], args: {
@@ -30,18 +32,15 @@ class BlockMutationService extends _$BlockMutationService {
       BaseArg.lastEditedAt.toString(): now.toIso8601String(),
     });
 
-    final db = ref.read(databaseProvider);
     final transaction = ref.read(transactionProvider);
     final file = transaction(() async {
-      final file = await ref
-          .read(localFileMutationServiceProvider.notifier)
-          .createForAudioBlock(
+      final file = await ref.read(localFileMutatorProvider).createForAudioBlock(
             blockId: blockId,
             extension: extension,
             createdAt: now,
           );
 
-      final blockRepo = BlockRepo(db);
+      final blockRepo = ref.read(blockRepoProvider);
       await blockRepo.executeTransaction(
           transaction: Transaction(operations: [createOperation]));
 
