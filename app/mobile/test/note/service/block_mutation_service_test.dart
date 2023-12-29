@@ -81,11 +81,11 @@ void main() {
               Operation(type: OperationType.set, pointer: (
             id: "block id"
           ), path: [], args: {
-            BaseArg.id.toString(): "block id",
-            BaseArg.type.toString(): BlockType.audio.toString(),
-            BaseArg.createdAt.toString():
+            Prop.id.toString(): "block id",
+            Prop.type.toString(): BlockType.audio.toString(),
+            Prop.createdAt.toString():
                 DateTime.utc(1809, DateTime.february, 12).toIso8601String(),
-            BaseArg.lastEditedAt.toString():
+            Prop.lastEditedAt.toString():
                 DateTime.utc(1809, DateTime.february, 12).toIso8601String(),
           });
           final expectedTransaction =
@@ -216,6 +216,137 @@ void main() {
 
           verifyZeroInteractions(blockRepo);
           verifyZeroInteractions(localFileMutator);
+        });
+      });
+    });
+    group('setAudioBlockData', () {
+      group('When called with 3 blocks of transcriptions', () {
+        test('Then it creates the expected operations in order', () async {
+          final repo = MockBlockRepo();
+          num childId = 0;
+
+          // DO NOT share ProviderContainers between tests.
+          final container = createContainer(
+            overrides: [
+              transactionProvider.overrideWith(
+                (ref) {
+                  Future<String> dbTransactionMock<String>(
+                      Future<String> Function() arg,
+                      {bool requireNew = false}) {
+                    return arg();
+                  }
+
+                  return dbTransactionMock;
+                },
+              ),
+              blockRepoProvider.overrideWith((ref) {
+                return repo;
+              }),
+              idGeneratorProvider.overrideWith((ref) {
+                return () => 'child id ${childId++}';
+              }),
+              clockProvider.overrideWith((ref) {
+                final mock = MockClock();
+                when(mock.now())
+                    .thenReturn(DateTime.utc(1809, DateTime.february, 12));
+                return mock;
+              }),
+            ],
+          );
+
+          final expectedChild1Create = Operation(
+            type: OperationType.set,
+            pointer: (id: 'child id 0'),
+            path: [],
+            args: {
+              Prop.id.toString(): 'child id 0',
+              Prop.type.toString(): BlockType.text.toString(),
+              Prop.properties.toString(): {
+                Property.title.toString(): [
+                  ['paragraph 1']
+                ]
+              },
+              Prop.parentId.toString(): 'block id',
+              Prop.createdAt.toString():
+                  DateTime.utc(1809, DateTime.february, 12).toIso8601String(),
+              Prop.lastEditedAt.toString():
+                  DateTime.utc(1809, DateTime.february, 12).toIso8601String(),
+            },
+          );
+          final expectedChild2Create = Operation(
+            type: OperationType.set,
+            pointer: (id: 'child id 1'),
+            path: [],
+            args: {
+              Prop.id.toString(): 'child id 1',
+              Prop.type.toString(): BlockType.text.toString(),
+              Prop.properties.toString(): {
+                Property.title.toString(): [
+                  ['paragraph 2']
+                ]
+              },
+              Prop.parentId.toString(): 'block id',
+              Prop.createdAt.toString():
+                  DateTime.utc(1809, DateTime.february, 12).toIso8601String(),
+              Prop.lastEditedAt.toString():
+                  DateTime.utc(1809, DateTime.february, 12).toIso8601String(),
+            },
+          );
+          final expectedlistAfterChild1 = Operation(
+            type: OperationType.listAfter,
+            pointer: (id: 'block id'),
+            path: [Prop.content.toString()],
+            args: {
+              ListAfterArg.id.toString(): 'child id 0',
+            },
+          );
+          final expectedlistAfterChild2 = Operation(
+            type: OperationType.listAfter,
+            pointer: (id: 'block id'),
+            path: [Prop.content.toString()],
+            args: {
+              ListAfterArg.id.toString(): 'child id 1',
+            },
+          );
+          final expectedUpdateUrl = Operation(
+            type: OperationType.update,
+            pointer: (id: 'block id'),
+            path: [Prop.external.toString(), PrepExternal.url.toString()],
+            args: {
+              SingleVal.val.toString(): 'external url',
+            },
+          );
+          final expectedUpdateEditedAt = Operation(
+            type: OperationType.update,
+            pointer: (id: 'block id'),
+            path: [Prop.lastEditedAt.toString()],
+            args: {
+              SingleVal.val.toString():
+                  DateTime.utc(1809, DateTime.february, 12).toIso8601String(),
+            },
+          );
+          final expectedTransaction = Transaction(operations: [
+            expectedChild1Create,
+            expectedChild2Create,
+            expectedlistAfterChild1,
+            expectedlistAfterChild2,
+            expectedUpdateUrl,
+            expectedUpdateEditedAt
+          ]);
+
+          final service = container.read(blockMutationServiceProvider.notifier);
+          await service.setAudioBlockData(
+            blockId: 'block id',
+            transcription: ['paragraph 1', 'paragraph 2'],
+            externalUrl: 'external url',
+          );
+
+          expect(
+              verify(repo.executeTransaction(
+                      transaction: captureAnyNamed("transaction")))
+                  .captured
+                  .first,
+              equals(expectedTransaction));
         });
       });
     });

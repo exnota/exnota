@@ -48,7 +48,7 @@ enum ListAfterArg {
 }
 
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
-enum BaseArg {
+enum Prop {
   id(dbName: 'id'),
   type(dbName: 'type'),
   properties(dbName: 'properties'),
@@ -58,7 +58,7 @@ enum BaseArg {
   createdAt(dbName: 'createdAt'),
   lastEditedAt(dbName: 'lastEditedAt');
 
-  const BaseArg({required this.dbName});
+  const Prop({required this.dbName});
 
   final String dbName;
 
@@ -67,10 +67,10 @@ enum BaseArg {
 }
 
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
-enum ExternalArg {
+enum PrepExternal {
   url(dbName: 'url');
 
-  const ExternalArg({required this.dbName});
+  const PrepExternal({required this.dbName});
 
   final String dbName;
 
@@ -79,10 +79,10 @@ enum ExternalArg {
 }
 
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
-enum SingleValArg {
+enum SingleVal {
   val(dbName: 'val');
 
-  const SingleValArg({required this.dbName});
+  const SingleVal({required this.dbName});
 
   final String dbName;
 

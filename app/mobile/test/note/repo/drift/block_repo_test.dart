@@ -320,7 +320,7 @@ void main() {
             path: ['external', 'url'],
             pointer: (id: 'block1'),
             args: {
-              SingleValArg.val.toString(): 'https://example.com',
+              SingleVal.val.toString(): 'https://example.com',
             },
           );
           setUp(() async {
@@ -399,7 +399,7 @@ void main() {
               path: ['external', 'url'],
               pointer: (id: 'block1'),
               args: {
-                SingleValArg.val.toString(): 'https://example.com',
+                SingleVal.val.toString(): 'https://example.com',
               },
             );
             final repo = BlockRepo(db);
@@ -428,7 +428,7 @@ void main() {
               path: ['external', 'url'],
               pointer: (id: 'block1'),
               args: {
-                SingleValArg.val.toString(): 'https://example.com',
+                SingleVal.val.toString(): 'https://example.com',
               },
             );
             final repo = BlockRepo(db);
@@ -458,7 +458,7 @@ void main() {
                 path: ['external', 'url'],
                 pointer: (id: 'block1'),
                 args: {
-                  SingleValArg.val.toString(): 'https://example2.com',
+                  SingleVal.val.toString(): 'https://example2.com',
                 },
               );
               final repo = BlockRepo(db);
@@ -477,7 +477,7 @@ void main() {
                 path: ['external', 'url'],
                 pointer: (id: 'block1'),
                 args: {
-                  SingleValArg.val.toString(): '',
+                  SingleVal.val.toString(): '',
                 },
               );
               final repo = BlockRepo(db);
@@ -524,7 +524,7 @@ void main() {
               path: ['external', 'url'],
               pointer: (id: 'block1'),
               args: {
-                SingleValArg.val.toString(): 'https://example.com',
+                SingleVal.val.toString(): 'https://example.com',
               },
             );
             final repo = BlockRepo(db);
@@ -542,7 +542,7 @@ void main() {
             path: ['external', 'url'],
             pointer: (id: 'block1'),
             args: {
-              SingleValArg.val.toString(): 'https://example-updated.com',
+              SingleVal.val.toString(): 'https://example-updated.com',
             },
           );
 
@@ -587,10 +587,10 @@ void main() {
             pointer: (id: 'block1'),
             path: [],
             args: {
-              BaseArg.id.toString(): 'block1',
-              BaseArg.type.toString(): BlockType.audio.toString(),
-              BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
-              BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+              Prop.id.toString(): 'block1',
+              Prop.type.toString(): BlockType.audio.toString(),
+              Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+              Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
             },
           );
 
@@ -609,7 +609,7 @@ void main() {
             test('Then it throws an argument error', () async {
               final operation = validOperation.copyWith(
                   pointer: (id: 'block1'),
-                  args: {BaseArg.id.toString(): 'blockX'});
+                  args: {Prop.id.toString(): 'blockX'});
               final repo = BlockRepo(db);
               expect(
                   () async => await repo.executeTransaction(
@@ -630,7 +630,7 @@ void main() {
           group('When the operation has it\'s id arg removed', () {
             test('Then it throws a type error', () async {
               final args = Map<String, dynamic>.from(validOperation.args);
-              args.remove(BaseArg.id.toString());
+              args.remove(Prop.id.toString());
 
               final operation = validOperation.copyWith(args: args);
               final repo = BlockRepo(db);
@@ -643,7 +643,7 @@ void main() {
           group('When the operation has it\'s type arg removed', () {
             test('Then it throws a type error', () async {
               final args = Map<String, dynamic>.from(validOperation.args);
-              args.remove(BaseArg.type.toString());
+              args.remove(Prop.type.toString());
 
               final operation = validOperation.copyWith(args: args);
               final repo = BlockRepo(db);
@@ -656,7 +656,7 @@ void main() {
           group('When the operation is given an unknown type', () {
             test('Then it throws an unsupported error', () async {
               final args = Map<String, dynamic>.from(validOperation.args);
-              args[BaseArg.type.toString()] = 'unknown';
+              args[Prop.type.toString()] = 'unknown';
 
               final operation = validOperation.copyWith(args: args);
               final repo = BlockRepo(db);
@@ -669,7 +669,7 @@ void main() {
           group('When the operation has it\'s createdAt arg removed', () {
             test('Then it throws a type error', () async {
               final args = Map<String, dynamic>.from(validOperation.args);
-              args.remove(BaseArg.createdAt.toString());
+              args.remove(Prop.createdAt.toString());
 
               final operation = validOperation.copyWith(args: args);
               final repo = BlockRepo(db);
@@ -682,7 +682,7 @@ void main() {
           group('When the operation has it\'s lastEditedAt arg removed', () {
             test('Then it throws a type error', () async {
               final args = Map<String, dynamic>.from(validOperation.args);
-              args.remove(BaseArg.lastEditedAt.toString());
+              args.remove(Prop.lastEditedAt.toString());
 
               final operation = validOperation.copyWith(args: args);
               final repo = BlockRepo(db);
@@ -700,10 +700,10 @@ void main() {
               pointer: (id: 'block1'),
               path: [],
               args: {
-                BaseArg.id.toString(): 'block1',
-                BaseArg.type.toString(): BlockType.audio.toString(),
-                BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
-                BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+                Prop.id.toString(): 'block1',
+                Prop.type.toString(): BlockType.audio.toString(),
+                Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
               },
             );
             final repo = BlockRepo(db);
@@ -728,22 +728,22 @@ void main() {
               pointer: (id: 'block1'),
               path: [],
               args: {
-                BaseArg.id.toString(): 'block1',
-                BaseArg.type.toString(): BlockType.audio.toString(),
-                BaseArg.properties.toString(): {
+                Prop.id.toString(): 'block1',
+                Prop.type.toString(): BlockType.audio.toString(),
+                Prop.properties.toString(): {
                   Property.title.toString(): [
                     ['a title']
                   ],
                   "unsupported": "value"
                 },
-                BaseArg.external.toString(): {
-                  ExternalArg.url.toString(): 'https://example.com',
+                Prop.external.toString(): {
+                  PrepExternal.url.toString(): 'https://example.com',
                   "unsupported": "value"
                 },
-                BaseArg.content.toString(): ['block2', 'block3', 'block4'],
-                BaseArg.parentId.toString(): 'block5',
-                BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
-                BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+                Prop.content.toString(): ['block2', 'block3', 'block4'],
+                Prop.parentId.toString(): 'block5',
+                Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
               },
             );
             final repo = BlockRepo(db);
@@ -780,10 +780,10 @@ void main() {
               pointer: (id: 'block1'),
               path: [],
               args: {
-                BaseArg.id.toString(): 'block1',
-                BaseArg.type.toString(): BlockType.audio.toString(),
-                BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
-                BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+                Prop.id.toString(): 'block1',
+                Prop.type.toString(): BlockType.audio.toString(),
+                Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
               },
             );
             final repo = BlockRepo(db);
@@ -801,10 +801,10 @@ void main() {
             pointer: (id: 'block1'),
             path: [],
             args: {
-              BaseArg.id.toString(): 'block1',
-              BaseArg.type.toString(): BlockType.audio.toString(),
-              BaseArg.createdAt.toString(): '2021-01-01T00:00:00.000Z',
-              BaseArg.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+              Prop.id.toString(): 'block1',
+              Prop.type.toString(): BlockType.audio.toString(),
+              Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+              Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
             },
           );
           final updateExternalUrlOperationFirst = Operation(
@@ -812,7 +812,7 @@ void main() {
             path: ['external', 'url'],
             pointer: (id: 'block1'),
             args: {
-              SingleValArg.val.toString(): 'https://example.com',
+              SingleVal.val.toString(): 'https://example.com',
             },
           );
           final updateExternalUrlOperationSecond = Operation(
@@ -820,7 +820,7 @@ void main() {
             path: ['external', 'url'],
             pointer: (id: 'block1'),
             args: {
-              SingleValArg.val.toString(): 'https://example2.com',
+              SingleVal.val.toString(): 'https://example2.com',
             },
           );
 

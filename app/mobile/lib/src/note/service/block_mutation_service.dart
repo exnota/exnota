@@ -26,10 +26,10 @@ class BlockMutationService extends _$BlockMutationService {
     final createOperation = Operation(type: OperationType.set, pointer: (
       id: blockId
     ), path: [], args: {
-      BaseArg.id.toString(): blockId,
-      BaseArg.type.toString(): BlockType.audio.toString(),
-      BaseArg.createdAt.toString(): now.toIso8601String(),
-      BaseArg.lastEditedAt.toString(): now.toIso8601String(),
+      Prop.id.toString(): blockId,
+      Prop.type.toString(): BlockType.audio.toString(),
+      Prop.createdAt.toString(): now.toIso8601String(),
+      Prop.lastEditedAt.toString(): now.toIso8601String(),
     });
 
     final transaction = ref.read(transactionProvider);
@@ -54,31 +54,28 @@ class BlockMutationService extends _$BlockMutationService {
       {required String blockId,
       required List<String> transcription,
       required String externalUrl}) async {
-    final db = ref.read(databaseProvider);
-    final blockRepo = BlockRepo(db);
-    final now = DateTime.now();
+    final blockRepo = ref.read(blockRepoProvider);
+    final now = ref.read(clockProvider).now();
 
     // Create content text blocks
     final createChildren = transcription.map((t) {
-      final childId = generateId();
+      final idGenerator = ref.read(idGeneratorProvider);
+      final childId = idGenerator();
       return Operation(
         type: OperationType.set,
         pointer: (id: childId),
         path: [],
         args: {
-          BaseArg.id.toString(): childId,
-          BaseArg.type.toString(): BlockType.text.toString(),
-          BaseArg.properties.toString(): {
+          Prop.id.toString(): childId,
+          Prop.type.toString(): BlockType.text.toString(),
+          Prop.properties.toString(): {
             Property.title.toString(): [
               [t]
             ]
           },
-          BaseArg.external.toString(): {
-            ExternalArg.url.toString(): externalUrl,
-          },
-          BaseArg.parentId.toString(): blockId,
-          BaseArg.createdAt.toString(): now.toIso8601String(),
-          BaseArg.lastEditedAt.toString(): now.toIso8601String(),
+          Prop.parentId.toString(): blockId,
+          Prop.createdAt.toString(): now.toIso8601String(),
+          Prop.lastEditedAt.toString(): now.toIso8601String(),
         },
       );
     }).toList();
@@ -87,7 +84,7 @@ class BlockMutationService extends _$BlockMutationService {
       return Operation(
         type: OperationType.listAfter,
         pointer: (id: blockId),
-        path: [BaseArg.content.toString()],
+        path: [Prop.content.toString()],
         args: {
           ListAfterArg.id.toString(): o.pointer.id,
         },
@@ -97,17 +94,17 @@ class BlockMutationService extends _$BlockMutationService {
     final updateParentUrl = Operation(
       type: OperationType.update,
       pointer: (id: blockId),
-      path: [BaseArg.external.toString(), ExternalArg.url.toString()],
+      path: [Prop.external.toString(), PrepExternal.url.toString()],
       args: {
-        SingleValArg.val.toString(): externalUrl,
+        SingleVal.val.toString(): externalUrl,
       },
     );
     final updateParentEditedAt = Operation(
       type: OperationType.update,
       pointer: (id: blockId),
-      path: [BaseArg.lastEditedAt.toString()],
+      path: [Prop.lastEditedAt.toString()],
       args: {
-        SingleValArg.val.toString(): now.toIso8601String(),
+        SingleVal.val.toString(): now.toIso8601String(),
       },
     );
 
