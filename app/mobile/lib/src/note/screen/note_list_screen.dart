@@ -122,6 +122,8 @@ class NoteList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final noteStream = ref.watch(deprecatedNoteListServiceProvider);
+
+    // final noteStream = ref.watch(blockListerProvider);
     return noteStream.when(
       data: (notes) {
         return ListView.builder(
@@ -132,7 +134,7 @@ class NoteList extends ConsumerWidget {
           itemCount: notes.length,
           itemBuilder: (BuildContext context, int index) {
             final note = notes[index];
-            return NoteListTile(note: note, key: Key(note.id));
+            return BlockListTile(block: note, key: Key(note.id));
           },
         );
       },
@@ -142,18 +144,18 @@ class NoteList extends ConsumerWidget {
   }
 }
 
-class NoteListTile extends StatefulWidget {
-  final Note note;
+class BlockListTile extends StatefulWidget {
+  final Note block;
 
-  const NoteListTile({Key? key, required this.note}) : super(key: key);
+  const BlockListTile({Key? key, required this.block}) : super(key: key);
 
   @override
-  State<NoteListTile> createState() => _NoteListTileState();
+  State<BlockListTile> createState() => _BlockListTileState();
 }
 
 enum PendingStatus { capturing, uploading, transcribing, exporting }
 
-class _NoteListTileState extends State<NoteListTile> {
+class _BlockListTileState extends State<BlockListTile> {
   ({String text, Widget icon, PendingStatus status})? pendingConfig;
   Timer? pendingConfigTranscribingTimer;
   Timer? pendingConfigExportingTimer;
@@ -167,11 +169,12 @@ class _NoteListTileState extends State<NoteListTile> {
 
   @override
   Widget build(BuildContext context) {
-    final url = widget.note.integratedData.url;
+    // final url = widget.block.externalUrl;
+    final url = widget.block.integratedData.url;
 
     // When note status has changed to capturing, update config
     if (pendingConfig == null &&
-        widget.note.localData.status == LocalStatus.capturing) {
+        widget.block.localData.status == LocalStatus.capturing) {
       setState(() {
         pendingConfig = (
           text: "Recording",
@@ -184,7 +187,7 @@ class _NoteListTileState extends State<NoteListTile> {
     // When note status has changed to captured, update config and set timers
     if ((pendingConfig?.status == null ||
             pendingConfig?.status == PendingStatus.capturing) &&
-        widget.note.localData.status == LocalStatus.captured) {
+        widget.block.localData.status == LocalStatus.captured) {
       final transcribingTimer = Timer(const Duration(seconds: 7), () {
         setState(() {
           pendingConfig = (
@@ -216,7 +219,7 @@ class _NoteListTileState extends State<NoteListTile> {
 
     // When note status has changed to synced, clear config and cancel timers
     if (pendingConfig != null &&
-        widget.note.localData.status == LocalStatus.synced) {
+        widget.block.localData.status == LocalStatus.synced) {
       pendingConfigTranscribingTimer?.cancel();
       pendingConfigExportingTimer?.cancel();
       setState(() {
@@ -225,11 +228,11 @@ class _NoteListTileState extends State<NoteListTile> {
     }
 
     return ListTile(
-        key: Key(widget.note.id),
+        key: Key(widget.block.id),
         title: Visibility(
           visible: pendingConfig != null,
           replacement: Text(
-            widget.note.title ?? "",
+            widget.block.title ?? "",
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
@@ -238,14 +241,14 @@ class _NoteListTileState extends State<NoteListTile> {
         ),
         leading: Icon(
           Icons.audio_file,
-          color: widget.note.localData.status == LocalStatus.synced
+          color: widget.block.localData.status == LocalStatus.synced
               ? null
               : Colors.grey,
         ),
         // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
         trailing: Visibility(
             visible: url is String,
-            replacement: switch (widget.note.localData.status) {
+            replacement: switch (widget.block.localData.status) {
               LocalStatus.captured => SizedBox(
                   height: 48,
                   width: 48,
