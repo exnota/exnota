@@ -45,7 +45,7 @@ class BlockRepo {
           switch (operation.type) {
             case OperationType.listAfter:
               // Currently only supports content
-              if (!listEquals(operation.path, [BaseArg.content.toString()])) {
+              if (!listEquals(operation.path, [Prop.content.toString()])) {
                 logger
                     .error('Only [\'content\'] is supported', nonPrivateData: {
                   "path": operation.path,
@@ -124,8 +124,7 @@ class BlockRepo {
               // Generate updated block companion based on path
               final path = operation.path;
               BlockTableCompanion updated;
-              if (path.isNotEmpty &&
-                  path.first == BaseArg.external.toString()) {
+              if (path.isNotEmpty && path.first == Prop.external.toString()) {
                 updated =
                     _forPathExternal(operation: operation, block: existing);
               } else {
@@ -168,7 +167,7 @@ class BlockRepo {
               }
 
               // Id - required while 'set' is just for creates.
-              final id = operation.args[BaseArg.id.toString()] as String;
+              final id = operation.args[Prop.id.toString()] as String;
               if (pointerId != id) {
                 logger.error('Id must match pointer id', nonPrivateData: {
                   "pointerId": pointerId,
@@ -178,7 +177,7 @@ class BlockRepo {
               }
 
               // type - required while 'set' is just for creates.
-              final typeStr = operation.args[BaseArg.type.toString()] as String;
+              final typeStr = operation.args[Prop.type.toString()] as String;
               late BlockTypeRepo type;
               if (typeStr == BlockType.audio.toString()) {
                 type = BlockTypeRepo.audio;
@@ -188,25 +187,25 @@ class BlockRepo {
 
               // times - required while 'set' is just for creates.
               final createdAt =
-                  DateTime.parse(operation.args[BaseArg.createdAt.toString()]);
-              final lastEditedAt = DateTime.parse(
-                  operation.args[BaseArg.lastEditedAt.toString()]);
+                  DateTime.parse(operation.args[Prop.createdAt.toString()]);
+              final lastEditedAt =
+                  DateTime.parse(operation.args[Prop.lastEditedAt.toString()]);
 
               // properties
-              final properties = operation.args[BaseArg.properties.toString()]
+              final properties = operation.args[Prop.properties.toString()]
                   as Map<String, dynamic>?;
 
               // external
-              final external = operation.args[BaseArg.external.toString()]
+              final external = operation.args[Prop.external.toString()]
                   as Map<String, dynamic>?;
 
               // content
               final content =
-                  operation.args[BaseArg.content.toString()] as List<String>?;
+                  operation.args[Prop.content.toString()] as List<String>?;
 
               // parentId
               final parentId =
-                  operation.args[BaseArg.parentId.toString()] as String?;
+                  operation.args[Prop.parentId.toString()] as String?;
 
               // Persist block
               final block = BlockTableData(
@@ -243,7 +242,7 @@ class BlockRepo {
       throw UnsupportedError('Only [\'external\', \'url\'] is supported');
     }
     final propertyPath = path[1];
-    if (propertyPath != ExternalArg.url.toString()) {
+    if (propertyPath != PrepExternal.url.toString()) {
       logger.error('Only [\'url\'] is supported', nonPrivateData: {
         "propertyPath": propertyPath,
       });
@@ -251,7 +250,7 @@ class BlockRepo {
     }
 
     // Get arguments
-    final url = operation.args[SingleValArg.val.toString()] as String?;
+    final url = operation.args[SingleVal.val.toString()] as String?;
     final isEmpty = url?.isEmpty ?? false;
 
     final updatedExternal =
