@@ -22,6 +22,8 @@ class Block with _$Block {
   const Block._();
 
   String? get title => properties?[Property.title.toString()]?[0]?[0];
+
+  String? get externalUrl => external?['url'];
 }
 
 enum BlockType { audio, text }
