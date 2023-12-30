@@ -88,6 +88,51 @@ void main() {
         });
       });
     });
+    group('get', () {
+      group('Given a request for a block that does not exist', () {
+        late DateTime now;
+        setUp(() async {
+          now = DateTime.now();
+          final block1 = BlockTableData(
+              id: 'block1',
+              type: BlockTypeRepo.audio,
+              properties: '{"title":[["a title"]]}',
+              createdAt: DateTime.utc(1809, DateTime.february, 12),
+              lastEditedAt: now);
+          await db.into(db.blockTable).insert(block1);
+        });
+        test('Then it throws an exception', () {
+          final repo = BlockRepo(db);
+          expectLater(
+              () => repo.get(id: 'unknown block'), throwsA(isA<StateError>()));
+        });
+      });
+      group('Given a request for a block that exists', () {
+        setUp(() async {
+          final block1 = BlockTableData(
+              id: 'block1',
+              type: BlockTypeRepo.audio,
+              properties: '{"title":[["a title"]]}',
+              createdAt: DateTime.utc(1809, DateTime.february, 12),
+              lastEditedAt: DateTime.utc(1809, DateTime.february, 12));
+          await db.into(db.blockTable).insert(block1);
+        });
+        test('Then it returns the block', () async {
+          final repo = BlockRepo(db);
+          final block = await repo.get(id: 'block1');
+          expect(block.id, 'block1');
+          expect(block.type, BlockType.audio);
+          expect(block.properties, {
+            Property.title.toString(): [
+              ['a title']
+            ]
+          });
+          expect(block.title, 'a title');
+          expect(block.createdAt, DateTime.utc(1809, DateTime.february, 12));
+          expect(block.lastEditedAt, DateTime.utc(1809, DateTime.february, 12));
+        });
+      });
+    });
     group('create', () {
       test('persists the given block', () async {
         final repo = BlockRepo(db);

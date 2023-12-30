@@ -31,6 +31,15 @@ class SyncCommandMutationService extends _$SyncCommandMutationService {
     });
   }
 
+  Future<void> createCommand({required SyncCommand command}) async {
+    final db = ref.read(databaseProvider);
+    final transaction = ref.read(transactionProvider);
+    await transaction(() async {
+      final syncCommandRepo = SyncCommandRepo(db);
+      await syncCommandRepo.createCommand(command: command);
+    });
+  }
+
   Future<void> setStatus(int id, SyncCommandStatus status) async {
     final db = ref.read(databaseProvider);
     final transaction = ref.read(transactionProvider);
