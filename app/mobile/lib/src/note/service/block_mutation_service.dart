@@ -1,5 +1,7 @@
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/lib/data/sync/execute_transaction_sync_command.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_mutation_service.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/file/service/local_file_mutation_service.dart';
 import 'package:exnota/src/note/block.dart';
@@ -48,6 +50,33 @@ class BlockMutationService extends _$BlockMutationService {
     });
 
     return Future.value(file);
+  }
+
+  Future<void> syncAudioBlock({required String blockId}) async {
+    final transaction = ref.read(transactionProvider);
+    final repo = ref.read(blockRepoProvider);
+
+    await transaction(() async {
+      final block = await repo.get(id: blockId);
+
+      final createOperation = Operation(type: OperationType.set, pointer: (
+        id: blockId
+      ), path: [], args: {
+        Prop.id.toString(): blockId,
+        Prop.type.toString(): block.type.toString(),
+        Prop.createdAt.toString(): block.createdAt.toIso8601String(),
+        Prop.lastEditedAt.toString(): block.lastEditedAt.toIso8601String(),
+      });
+
+      final cmd = ExecuteTransactionSyncCommand.createPending(
+        entityId: blockId,
+        transaction: Transaction(operations: [createOperation]),
+      );
+
+      final syncCommandService =
+          ref.read(syncCommandMutationServiceProvider.notifier);
+      await syncCommandService.createCommand(command: cmd);
+    });
   }
 
   Future<void> setAudioBlockData(

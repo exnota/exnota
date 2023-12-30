@@ -109,14 +109,12 @@ class ExecuteTransactionSyncCommand extends SyncCommand<Transaction> {
   // Factories
 
   factory ExecuteTransactionSyncCommand.createPending(
-      {required String entityId,
-      required Transaction transaction,
-      required SyncCommandStatus status}) {
+      {required String entityId, required Transaction transaction}) {
     return ExecuteTransactionSyncCommand._(
         id: EntityPendingId(),
         entityId: entityId,
         transaction: transaction,
-        status: status);
+        status: SyncCommandStatus.waiting);
   }
 
   factory ExecuteTransactionSyncCommand.fromDb(

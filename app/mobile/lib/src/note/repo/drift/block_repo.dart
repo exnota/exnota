@@ -36,6 +36,12 @@ class BlockRepo {
     await db.into(db.blockTable).insert(blockData);
   }
 
+  Future<Block> get({required String id}) async {
+    final query = db.select(db.blockTable)..where((tbl) => tbl.id.equals(id));
+    final blockData = await query.getSingle();
+    return BlockRepoMapper.fromRepo(blockData);
+  }
+
   Future<void> executeTransaction({required Transaction transaction}) async {
     await db.transaction(() async {
       try {

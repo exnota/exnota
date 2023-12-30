@@ -3,18 +3,17 @@ import 'dart:async';
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/account/settings/environment_service.dart';
+import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/capture.dart';
-import 'package:exnota/src/note/note.dart';
+import 'package:exnota/src/note/block.dart';
+import 'package:exnota/src/note/service/block_lister.dart';
 import 'package:exnota/src/note/service/block_mutation_service.dart';
-import 'package:exnota/src/note/service/deprecated_note_list_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_animated_icons/icons8.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:exnota/src/integration/service/notion_connected_service.dart';
 import 'package:exnota/src/integration/screen/notion_settings_screen.dart';
-import 'package:exnota/src/note/service/deprecated_note_mutation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -121,20 +120,21 @@ class NoteList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final noteStream = ref.watch(deprecatedNoteListServiceProvider);
+    // final noteStream = ref.watch(deprecatedNoteListServiceProvider);
+    final blockStream = ref.watch(blockListerProvider);
 
-    // final noteStream = ref.watch(blockListerProvider);
-    return noteStream.when(
-      data: (notes) {
+    return blockStream.when(
+      data: (blocks) {
         return ListView.builder(
           // Providing a restorationId allows the ListView to restore the
           // scroll position when a user leaves and returns to the app after it
           // has been killed while running in the background.
           restorationId: 'noteListView',
-          itemCount: notes.length,
+          itemCount: blocks.length,
           itemBuilder: (BuildContext context, int index) {
-            final note = notes[index];
-            return BlockListTile(block: note, key: Key(note.id));
+            final block = blocks[index];
+            return BlockListTile(
+                blockAndStatus: block, key: Key(block.block.id));
           },
         );
       },
@@ -145,9 +145,13 @@ class NoteList extends ConsumerWidget {
 }
 
 class BlockListTile extends StatefulWidget {
-  final Note block;
+  final Block block;
+  final BlockStatus status;
 
-  const BlockListTile({Key? key, required this.block}) : super(key: key);
+  BlockListTile({Key? key, required BlockAndStatus blockAndStatus})
+      : status = blockAndStatus.status,
+        block = blockAndStatus.block,
+        super(key: key);
 
   @override
   State<BlockListTile> createState() => _BlockListTileState();
@@ -169,12 +173,14 @@ class _BlockListTileState extends State<BlockListTile> {
 
   @override
   Widget build(BuildContext context) {
-    // final url = widget.block.externalUrl;
-    final url = widget.block.integratedData.url;
+    final url = widget.block.externalUrl;
+    // final url = widget.block.integratedData.url;
 
     // When note status has changed to capturing, update config
     if (pendingConfig == null &&
-        widget.block.localData.status == LocalStatus.capturing) {
+        // TODO: Some other way to tell when a note is being recorded?
+        // Maybe on the local file?
+        widget.status == BlockStatus.unknown) {
       setState(() {
         pendingConfig = (
           text: "Recording",
@@ -187,7 +193,7 @@ class _BlockListTileState extends State<BlockListTile> {
     // When note status has changed to captured, update config and set timers
     if ((pendingConfig?.status == null ||
             pendingConfig?.status == PendingStatus.capturing) &&
-        widget.block.localData.status == LocalStatus.captured) {
+        widget.status == BlockStatus.exporting) {
       final transcribingTimer = Timer(const Duration(seconds: 7), () {
         setState(() {
           pendingConfig = (
@@ -218,14 +224,15 @@ class _BlockListTileState extends State<BlockListTile> {
     }
 
     // When note status has changed to synced, clear config and cancel timers
-    if (pendingConfig != null &&
-        widget.block.localData.status == LocalStatus.synced) {
+    if (pendingConfig != null && widget.status == BlockStatus.exported) {
       pendingConfigTranscribingTimer?.cancel();
       pendingConfigExportingTimer?.cancel();
       setState(() {
         pendingConfig = null;
       });
     }
+
+    // TODO: Handle error case
 
     return ListTile(
         key: Key(widget.block.id),
@@ -241,15 +248,13 @@ class _BlockListTileState extends State<BlockListTile> {
         ),
         leading: Icon(
           Icons.audio_file,
-          color: widget.block.localData.status == LocalStatus.synced
-              ? null
-              : Colors.grey,
+          color: widget.status == BlockStatus.exported ? null : Colors.grey,
         ),
         // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
         trailing: Visibility(
             visible: url is String,
-            replacement: switch (widget.block.localData.status) {
-              LocalStatus.captured => SizedBox(
+            replacement: switch (widget.status) {
+              BlockStatus.exporting => SizedBox(
                   height: 48,
                   width: 48,
                   child: Center(
@@ -257,7 +262,7 @@ class _BlockListTileState extends State<BlockListTile> {
                         width: 24, height: 24, child: pendingConfig?.icon),
                   ),
                 ),
-              LocalStatus.capturing => SizedBox(
+              BlockStatus.unknown => SizedBox(
                   height: 48,
                   width: 48,
                   child: Center(
@@ -267,7 +272,8 @@ class _BlockListTileState extends State<BlockListTile> {
                         child: Lottie.asset(Icons8.sound)),
                   ),
                 ),
-              LocalStatus.synced => const Icon(Icons.question_mark),
+              BlockStatus.exported => const Icon(Icons.question_mark),
+              BlockStatus.error => const Icon(Icons.error),
             },
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -307,7 +313,8 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
   late final RecorderController controller;
 
   String? path;
-  AudioFileCapture? audioFileCapture;
+  // AudioFileCapture? audioFileCapture;
+  LocalFile? audioFile;
   bool isRecording = false;
   bool isUploading = false;
 
@@ -367,11 +374,14 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
             isUploading = true;
           });
           await ref
-              .read(deprecatedNoteMutationServiceProvider.notifier)
-              .setAudioFileCaptured(capture: audioFileCapture!);
+              .read(blockMutationServiceProvider.notifier)
+              .syncAudioBlock(blockId: audioFile?.entityId ?? '');
+          // await ref
+          //     .read(deprecatedNoteMutationServiceProvider.notifier)
+          //     .setAudioFileCaptured(capture: audioFileCapture!);
           setState(() {
             isUploading = false;
-            audioFileCapture = null;
+            audioFile = null;
           });
         },
         label: const Text('Stop'),
@@ -429,20 +439,20 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
             .info("Microphone permission should be granted or limited.");
 
         ref.read(loggerProvider('RecordButton')).debug("Creating note");
-        final note = await ref
-            .read(deprecatedNoteMutationServiceProvider.notifier)
-            .createCapturingAudioNote(extension: "m4a");
+        final file = await ref
+            .read(blockMutationServiceProvider.notifier)
+            .createAudioBlock(extension: "m4a");
+        // final note = await ref
+        //     .read(deprecatedNoteMutationServiceProvider.notifier)
+        //     .createCapturingAudioNote(extension: "m4a");
         setState(() {
-          audioFileCapture = note.captures.first.asAudioFileCapture();
+          audioFile = file;
         });
-        ref.read(loggerProvider('RecordButton')).debug("Created note", note);
+        ref
+            .read(loggerProvider('RecordButton'))
+            .debug("Created note: ${file.entityId}");
 
-        final path =
-            note.captures.first.asAudioFileCapture()?.localData.filePath;
-        if (path == null) {
-          // TODO: Handle error
-          throw Exception("No path for audio file");
-        }
+        final path = file.path;
         ref
             .read(loggerProvider('RecordButton'))
             .debug("About to record to $path");
