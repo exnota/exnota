@@ -4,6 +4,7 @@ import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/execute_transaction_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/service/deprecated_note_mutation_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -92,6 +93,34 @@ class SyncCommandMutationService extends _$SyncCommandMutationService {
           break;
         default:
           throw Exception("Unknown command type");
+      }
+    });
+  }
+
+  Future<void> retryForRootEntity({required String id}) async {
+    final transaction = ref.read(transactionProvider);
+    final repo = ref.read(syncCommandRepoProvider);
+    final now = ref.read(clockProvider).now();
+    await transaction(() async {
+      final all = await repo.fetchByRootEntityId(id);
+      if (all.isEmpty) {
+        ref
+            .read(loggerProvider('SyncCommandMutationService'))
+            .warn('No commands found for root entity $id');
+        return;
+      }
+      final errored = all.where((c) => c.status == SyncCommandStatus.error);
+      if (errored.isEmpty) {
+        ref
+            .read(loggerProvider('SyncCommandMutationService'))
+            .warn('No errored commands found for root entity $id');
+        return;
+      }
+      for (final command in errored) {
+        await repo.setStatus(
+            id: command.id.idOrThrow,
+            status: SyncCommandStatus.waiting,
+            updatedAt: now);
       }
     });
   }
