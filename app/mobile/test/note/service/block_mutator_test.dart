@@ -18,7 +18,7 @@ import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks(
     [MockSpec<BlockRepo>(), MockSpec<Clock>(), MockSpec<LocalFileMutator>()])
-import 'block_mutation_service_test.mocks.dart';
+import 'block_mutator_test.mocks.dart';
 
 ProviderContainer createContainer({
   ProviderContainer? parent,
