@@ -627,6 +627,240 @@ void main() {
             });
           });
         });
+        group('Given a \'properties\' update that is not the title', () {
+          setUp(() {
+            final block1 = BlockTableData(
+                id: 'block1',
+                type: BlockTypeRepo.audio,
+                properties: '{"title":[["title 1"]]}',
+                createdAt: DateTime.utc(1809, DateTime.february, 12),
+                lastEditedAt: DateTime.now());
+            db.into(db.blockTable).insert(block1);
+          });
+          test('Then it throws an error', () {
+            final operation = Operation(
+              type: OperationType.update,
+              path: ['properties'],
+              pointer: (id: 'block1'),
+              args: {
+                Prop.properties.toString(): {
+                  "unknown property": [
+                    ['a value']
+                  ]
+                },
+              },
+            );
+            final repo = BlockRepo(db);
+            expect(
+                () async => await repo.executeTransaction(
+                    transaction: Transaction(operations: [operation])),
+                throwsA(isA<UnsupportedError>()));
+          });
+        });
+        group('Given a \'properties.title\' update operation', () {
+          group('And the existing block has no properties value', () {
+            setUp(() async {
+              final block1 = BlockTableData(
+                  id: 'block1',
+                  type: BlockTypeRepo.audio,
+                  createdAt: DateTime.utc(1809, DateTime.february, 12),
+                  lastEditedAt: DateTime.now());
+              await db.into(db.blockTable).insert(block1);
+            });
+            test('Then it sets the title property', () async {
+              final operation = Operation(
+                type: OperationType.update,
+                path: ['properties', 'title'],
+                pointer: (id: 'block1'),
+                args: {
+                  SingleVal.val.toString(): [
+                    ['title 1']
+                  ]
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final updatedBlock = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(updatedBlock.properties, '{"title":[["title 1"]]}');
+            });
+          });
+
+          group('And the existing block has an empty properties value', () {
+            setUp(() async {
+              final block1 = BlockTableData(
+                  id: 'block1',
+                  type: BlockTypeRepo.audio,
+                  properties: '{}',
+                  createdAt: DateTime.utc(1809, DateTime.february, 12),
+                  lastEditedAt: DateTime.now());
+              await db.into(db.blockTable).insert(block1);
+            });
+            test('Then it sets the title property', () async {
+              final operation = Operation(
+                type: OperationType.update,
+                path: ['properties', 'title'],
+                pointer: (id: 'block1'),
+                args: {
+                  SingleVal.val.toString(): [
+                    ['title 1']
+                  ]
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final updatedBlock = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(updatedBlock.properties, '{"title":[["title 1"]]}');
+            });
+          });
+          group('And the existing block has a title value', () {
+            setUp(() async {
+              final block1 = BlockTableData(
+                  id: 'block1',
+                  type: BlockTypeRepo.audio,
+                  properties: '{"title":[["title 1"]]}',
+                  createdAt: DateTime.utc(1809, DateTime.february, 12),
+                  lastEditedAt: DateTime.now());
+              await db.into(db.blockTable).insert(block1);
+            });
+            group('When the new title is non-empty', () {
+              test('Then it updates the title property', () async {
+                final operation = Operation(
+                  type: OperationType.update,
+                  path: ['properties', 'title'],
+                  pointer: (id: 'block1'),
+                  args: {
+                    SingleVal.val.toString(): [
+                      ['title 2']
+                    ]
+                  },
+                );
+                final repo = BlockRepo(db);
+                await repo.executeTransaction(
+                    transaction: Transaction(operations: [operation]));
+                final updatedBlock = await (db.select(db.blockTable)
+                      ..where((tbl) => tbl.id.equals('block1')))
+                    .getSingle();
+                expect(updatedBlock.properties, '{"title":[["title 2"]]}');
+              });
+              test('Then it does not update other values', () async {
+                final operation = Operation(
+                  type: OperationType.update,
+                  path: ['properties', 'title'],
+                  pointer: (id: 'block1'),
+                  args: {
+                    SingleVal.val.toString(): [
+                      ['title 2']
+                    ]
+                  },
+                );
+                final repo = BlockRepo(db);
+                expect(
+                    () async => await repo.executeTransaction(
+                        transaction: Transaction(operations: [operation])),
+                    returnsNormally);
+                final query = (db.select(db.blockTable)
+                  ..where((tbl) => tbl.id.equals('block1')));
+                final block = await query.getSingle();
+                expect(block.id, 'block1');
+                expect(block.type, BlockTypeRepo.audio);
+                expect(block.properties, '{"title":[["title 2"]]}');
+                expect(block.content, null);
+                expect(block.parentId, null);
+                expect(
+                    block.createdAt, DateTime.utc(1809, DateTime.february, 12));
+                expect(block.lastEditedAt, isNotNull);
+                return true;
+              });
+            });
+            group('When the new title is empty', () {
+              test('Then it sets the title property to empty', () async {
+                final operation = Operation(
+                  type: OperationType.update,
+                  path: ['properties', 'title'],
+                  pointer: (id: 'block1'),
+                  args: {
+                    SingleVal.val.toString(): [
+                      ['']
+                    ]
+                  },
+                );
+                final repo = BlockRepo(db);
+                await repo.executeTransaction(
+                    transaction: Transaction(operations: [operation]));
+                final updatedBlock = await (db.select(db.blockTable)
+                      ..where((tbl) => tbl.id.equals('block1')))
+                    .getSingle();
+                expect(updatedBlock.properties, '{"title":[[""]]}');
+              });
+            });
+            group('When the new title is null', () {
+              test('Then it sets the title property to null', () async {
+                final operation = Operation(
+                  type: OperationType.update,
+                  path: ['properties', 'title'],
+                  pointer: (id: 'block1'),
+                  args: {SingleVal.val.toString(): null},
+                );
+                final repo = BlockRepo(db);
+                await repo.executeTransaction(
+                    transaction: Transaction(operations: [operation]));
+                final updatedBlock = await (db.select(db.blockTable)
+                      ..where((tbl) => tbl.id.equals('block1')))
+                    .getSingle();
+                expect(updatedBlock.properties, '{"title":null}');
+              });
+            });
+          });
+          group('And the existing block has unknown \'properties\' values', () {
+            setUp(() async {
+              final block1 = BlockTableData(
+                  id: 'block1',
+                  type: BlockTypeRepo.audio,
+                  properties: '{"unknown": "value", "other": "value"}',
+                  createdAt: DateTime.utc(1809, DateTime.february, 12),
+                  lastEditedAt: DateTime.now());
+              await db.into(db.blockTable).insert(block1);
+            });
+            test(
+                'Then it persists the title without removing the other properties',
+                () async {
+              // This requirement reduces the chance of accidentally wiping data
+              // that isn't yet supported by the frontend but is on the backend.
+              //
+              // E.g. we might pull a block with properties:
+              //   {"title": [["title 1"]], "other": "value"}
+              // from the server. If the client doesn't support "other" we don't
+              // want to remove "other" from "properties" and then sync
+              // "properties" to the backend, wiping the "other" property.
+              final operation = Operation(
+                type: OperationType.update,
+                path: ['properties', 'title'],
+                pointer: (id: 'block1'),
+                args: {
+                  SingleVal.val.toString(): [
+                    ['title 2']
+                  ]
+                },
+              );
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [operation])),
+                  returnsNormally);
+              final query = (db.select(db.blockTable)
+                ..where((tbl) => tbl.id.equals('block1')));
+              final block = await query.getSingle();
+              expect(block.properties,
+                  '{"unknown":"value","other":"value","title":[["title 2"]]}');
+            });
+          });
+        });
         group('Given a \'lastEditedAt\' update operation', () {
           setUp(() async {
             final block1 = BlockTableData(

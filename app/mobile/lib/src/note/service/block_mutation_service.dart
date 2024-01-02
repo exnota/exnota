@@ -120,6 +120,16 @@ class BlockMutationService extends _$BlockMutationService {
       );
     }).toList();
 
+    final updateParentTitle = Operation(
+      type: OperationType.update,
+      pointer: (id: blockId),
+      path: [Prop.properties.toString(), Property.title.toString()],
+      args: {
+        SingleVal.val.toString(): [
+          [transcription.first]
+        ],
+      },
+    );
     final updateParentUrl = Operation(
       type: OperationType.update,
       pointer: (id: blockId),
@@ -139,7 +149,7 @@ class BlockMutationService extends _$BlockMutationService {
 
     final operations = List<Operation>.from(createChildren)
       ..addAll(listAfterChildren)
-      ..addAll([updateParentUrl, updateParentEditedAt]);
+      ..addAll([updateParentTitle, updateParentUrl, updateParentEditedAt]);
     await blockRepo.executeTransaction(
         transaction: Transaction(
       operations: operations,
