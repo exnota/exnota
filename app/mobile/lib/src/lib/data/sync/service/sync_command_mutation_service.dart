@@ -21,13 +21,17 @@ class SyncCommandMutationService extends _$SyncCommandMutationService {
       required String filePath}) async {
     final db = ref.read(databaseProvider);
     final transaction = ref.read(transactionProvider);
+    final now = DateTime.now();
     await transaction(() async {
       final syncCommandRepo = SyncCommandRepo(db);
 
       final command = CreateAudioNoteSyncCommand.createPending(
           entityId: noteId,
+          rootEntityId: noteId,
           capture: (filePath: filePath, id: captureId),
-          status: SyncCommandStatus.waiting);
+          status: SyncCommandStatus.waiting,
+          createdAt: now,
+          updatedAt: now);
       await syncCommandRepo.createCommand(command: command);
     });
   }

@@ -20,9 +20,18 @@ class ExecuteTransactionSyncCommand extends SyncCommand<Transaction> {
   ExecuteTransactionSyncCommand._(
       {required EntityId id,
       required String entityId,
+      required String rootEntityId,
       required this.transaction,
-      required SyncCommandStatus status})
-      : super(id: id, entityId: entityId, status: status);
+      required SyncCommandStatus status,
+      required DateTime createdAt,
+      required DateTime updatedAt})
+      : super(
+            id: id,
+            entityId: entityId,
+            rootEntityId: rootEntityId,
+            status: status,
+            createdAt: createdAt,
+            updatedAt: updatedAt);
 
   @override
   Future<SyncCommandError?> request(Ref ref) async {
@@ -109,23 +118,36 @@ class ExecuteTransactionSyncCommand extends SyncCommand<Transaction> {
   // Factories
 
   factory ExecuteTransactionSyncCommand.createPending(
-      {required String entityId, required Transaction transaction}) {
+      {required String entityId,
+      required String rootEntityId,
+      required Transaction transaction,
+      required DateTime createdAt,
+      required DateTime updatedAt}) {
     return ExecuteTransactionSyncCommand._(
         id: EntityPendingId(),
         entityId: entityId,
+        rootEntityId: rootEntityId,
         transaction: transaction,
-        status: SyncCommandStatus.waiting);
+        status: SyncCommandStatus.waiting,
+        createdAt: createdAt,
+        updatedAt: updatedAt);
   }
 
   factory ExecuteTransactionSyncCommand.fromDb(
       {required int id,
       required String entityId,
+      required String rootEntityId,
       required Transaction transaction,
-      required SyncCommandStatus status}) {
+      required SyncCommandStatus status,
+      required DateTime createdAt,
+      required DateTime updatedAt}) {
     return ExecuteTransactionSyncCommand._(
         id: EntityWithId(id),
         entityId: entityId,
+        rootEntityId: rootEntityId,
         transaction: transaction,
-        status: status);
+        status: status,
+        createdAt: createdAt,
+        updatedAt: updatedAt);
   }
 }

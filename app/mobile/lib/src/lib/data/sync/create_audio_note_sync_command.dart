@@ -19,9 +19,18 @@ class CreateAudioNoteSyncCommand extends NoteSyncCommand {
   CreateAudioNoteSyncCommand._(
       {required EntityId id,
       required String entityId,
+      required String rootEntityId,
       required this.capture,
-      required SyncCommandStatus status})
-      : super(id: id, entityId: entityId, status: status);
+      required SyncCommandStatus status,
+      required DateTime createdAt,
+      required DateTime updatedAt})
+      : super(
+            id: id,
+            entityId: entityId,
+            rootEntityId: rootEntityId,
+            status: status,
+            createdAt: createdAt,
+            updatedAt: updatedAt);
 
   @override
   String? get captureId => capture.id;
@@ -108,25 +117,37 @@ class CreateAudioNoteSyncCommand extends NoteSyncCommand {
 
   factory CreateAudioNoteSyncCommand.createPending(
       {required String entityId,
+      required String rootEntityId,
       required CreateAudioNoteCapture capture,
-      required SyncCommandStatus status}) {
+      required SyncCommandStatus status,
+      required DateTime createdAt,
+      required DateTime updatedAt}) {
     return CreateAudioNoteSyncCommand._(
         id: EntityPendingId(),
         entityId: entityId,
+        rootEntityId: rootEntityId,
         capture: capture,
-        status: status);
+        status: status,
+        createdAt: createdAt,
+        updatedAt: updatedAt);
   }
 
   factory CreateAudioNoteSyncCommand.fromDb(
       {required int id,
       required String entityId,
+      required String rootEntityId,
       required String captureId,
       required String filePath,
-      required SyncCommandStatus status}) {
+      required SyncCommandStatus status,
+      required DateTime createdAt,
+      required DateTime updatedAt}) {
     return CreateAudioNoteSyncCommand._(
         id: EntityWithId(id),
         entityId: entityId,
+        rootEntityId: rootEntityId,
         capture: (id: captureId, filePath: filePath),
-        status: status);
+        status: status,
+        createdAt: createdAt,
+        updatedAt: updatedAt);
   }
 }

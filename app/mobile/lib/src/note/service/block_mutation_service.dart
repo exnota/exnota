@@ -55,6 +55,7 @@ class BlockMutationService extends _$BlockMutationService {
   Future<void> syncAudioBlock({required String blockId}) async {
     final transaction = ref.read(transactionProvider);
     final repo = ref.read(blockRepoProvider);
+    final now = ref.read(clockProvider).now();
 
     await transaction(() async {
       final block = await repo.get(id: blockId);
@@ -70,7 +71,10 @@ class BlockMutationService extends _$BlockMutationService {
 
       final cmd = ExecuteTransactionSyncCommand.createPending(
         entityId: blockId,
+        rootEntityId: blockId,
         transaction: Transaction(operations: [createOperation]),
+        createdAt: now,
+        updatedAt: now,
       );
 
       final syncCommandService =

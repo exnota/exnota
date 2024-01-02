@@ -33,8 +33,11 @@ class SyncCommandRepoMapper {
         return SyncCommandTableCompanion.insert(
             type: SyncCommandRepoType.createAudioNote,
             entityId: command.entityId,
+            rootEntityId: command.rootEntityId,
             data: json.encode(data.toJson()),
-            status: statusToData(command.status));
+            status: statusToData(command.status),
+            createdAt: command.createdAt,
+            updatedAt: command.updatedAt);
       case ExecuteTransactionSyncCommand():
         final data =
             ExecuteTransactionDataRepo(transaction: command.transaction);
@@ -50,8 +53,11 @@ class SyncCommandRepoMapper {
         return SyncCommandTableCompanion.insert(
             type: SyncCommandRepoType.executeTransaction,
             entityId: command.entityId,
+            rootEntityId: command.rootEntityId,
             data: json.encode(data.toJson()),
-            status: statusToData(command.status));
+            status: statusToData(command.status),
+            createdAt: command.createdAt,
+            updatedAt: command.updatedAt);
       default:
         throw Exception("Unknown command type: ${command.runtimeType}");
     }
@@ -65,17 +71,23 @@ class SyncCommandRepoMapper {
         return CreateAudioNoteSyncCommand.fromDb(
             id: commandData.id,
             entityId: commandData.entityId,
+            rootEntityId: commandData.rootEntityId,
             captureId: data.capture.id,
             filePath: data.capture.filePath,
-            status: statusFromData(commandData.status));
+            status: statusFromData(commandData.status),
+            createdAt: commandData.createdAt,
+            updatedAt: commandData.updatedAt);
       case SyncCommandRepoType.executeTransaction:
         final decoded = jsonDecode(commandData.data);
         final transaction = Transaction.fromJson(decoded["transaction"]);
         return ExecuteTransactionSyncCommand.fromDb(
             id: commandData.id,
             entityId: commandData.entityId,
+            rootEntityId: commandData.rootEntityId,
             transaction: transaction,
-            status: statusFromData(commandData.status));
+            status: statusFromData(commandData.status),
+            createdAt: commandData.createdAt,
+            updatedAt: commandData.updatedAt);
       default:
         throw Exception("Unknown command type: ${commandData.type}");
     }
