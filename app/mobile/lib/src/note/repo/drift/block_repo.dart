@@ -133,6 +133,14 @@ class BlockRepo {
               if (path.isNotEmpty && path.first == Prop.external.toString()) {
                 updated =
                     _forPathExternal(operation: operation, block: existing);
+              } else if (path.isNotEmpty &&
+                  path.single == Prop.lastEditedAt.toString()) {
+                updated =
+                    _forPathLastEditedAt(operation: operation, block: existing);
+              } else if (path.isEmpty) {
+                updated = BlockTableCompanion(
+                  lastEditedAt: Value(now),
+                );
               } else {
                 logger.error('Unsupported path for \'update\' operation',
                     nonPrivateData: {
@@ -187,6 +195,8 @@ class BlockRepo {
               late BlockTypeRepo type;
               if (typeStr == BlockType.audio.toString()) {
                 type = BlockTypeRepo.audio;
+              } else if (typeStr == BlockType.text.toString()) {
+                type = BlockTypeRepo.text;
               } else {
                 throw UnsupportedError('Unknown block type: $typeStr');
               }
@@ -265,6 +275,24 @@ class BlockRepo {
 
     return BlockTableCompanion(
       external: Value(BlockRepoMapper.toExternalRepo(updatedExternal)),
+    );
+  }
+
+  BlockTableCompanion _forPathLastEditedAt(
+      {required Operation operation, required BlockTableData block}) {
+    // Get argument
+    final lastEditedAt = operation.args[SingleVal.val.toString()] as String?;
+    // if empty, throw
+    if (lastEditedAt == null || lastEditedAt.isEmpty) {
+      logger.error('Last edited at cannot be empty', nonPrivateData: {
+        "lastEditedAt": lastEditedAt,
+        "blockType": operation.type
+      });
+      throw ArgumentError('Last edited at cannot be empty');
+    }
+
+    return BlockTableCompanion(
+      lastEditedAt: Value(DateTime.parse(lastEditedAt)),
     );
   }
 }
