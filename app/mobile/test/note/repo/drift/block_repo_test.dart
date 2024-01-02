@@ -26,7 +26,7 @@ void main() {
           expect(stream, emits([]));
         });
       });
-      group('given two blocks', () {
+      group('Given two root blocks that each have child blocks', () {
         late DateTime now;
         setUp(() async {
           now = DateTime.now();
@@ -34,57 +34,162 @@ void main() {
               id: 'block1',
               type: BlockTypeRepo.audio,
               properties: '{"title":[["a title"]]}',
+              content: '["block3"]',
               createdAt: DateTime.utc(1809, DateTime.february, 12),
               lastEditedAt: now);
           final block2 = BlockTableData(
               id: 'block2',
               type: BlockTypeRepo.audio,
               properties: '{"title":[["a title"]]}',
+              content: '["block4"]',
               createdAt: DateTime.utc(1879, DateTime.march, 14),
+              lastEditedAt: now);
+          final block3 = BlockTableData(
+              id: 'block3',
+              type: BlockTypeRepo.audio,
+              properties: '{"title":[["a title"]]}',
+              parentId: 'block1',
+              createdAt: DateTime.utc(1809, DateTime.february, 13),
+              lastEditedAt: now);
+          final block4 = BlockTableData(
+              id: 'block4',
+              type: BlockTypeRepo.audio,
+              properties: '{"title":[["a title"]]}',
+              parentId: 'block2',
+              createdAt: DateTime.utc(1879, DateTime.march, 15),
               lastEditedAt: now);
           await db.into(db.blockTable).insert(block1);
           await db.into(db.blockTable).insert(block2);
+          await db.into(db.blockTable).insert(block3);
+          await db.into(db.blockTable).insert(block4);
         });
-        test('returns both blocks with most recently created first', () async {
-          final repo = BlockRepo(db);
-          final stream = repo.listWatch().timeout(const Duration(seconds: 30));
-          expectLater(
-              stream,
-              emitsInOrder([
-                predicate<List<Block>>((blocks) {
-                  expect(blocks, hasLength(2));
+        group('When only root blocks are requested', () {
+          test(
+              'Then it returns only root blocks with most recently created first',
+              () async {
+            final repo = BlockRepo(db);
+            final stream =
+                repo.listWatch().timeout(const Duration(seconds: 30));
+            expectLater(
+                stream,
+                emitsInOrder([
+                  predicate<List<Block>>((blocks) {
+                    expect(blocks, hasLength(2));
 
-                  // First
-                  final block = blocks[0];
-                  expect(block.id, 'block2');
-                  expect(block.type, BlockType.audio);
-                  expect(block.properties, {
-                    Property.title.toString(): [
-                      ['a title']
-                    ]
-                  });
-                  expect(block.title, 'a title');
-                  expect(
-                      block.createdAt, DateTime.utc(1879, DateTime.march, 14));
-                  expect(block.lastEditedAt, now);
+                    // First
+                    final block = blocks[0];
+                    expect(block.id, 'block2');
+                    expect(block.type, BlockType.audio);
+                    expect(block.properties, {
+                      Property.title.toString(): [
+                        ['a title']
+                      ]
+                    });
+                    expect(block.content, ['block4']);
+                    expect(block.title, 'a title');
+                    expect(block.createdAt,
+                        DateTime.utc(1879, DateTime.march, 14));
+                    expect(block.lastEditedAt, now);
 
-                  // Second
-                  final block2 = blocks[1];
-                  expect(block2.id, 'block1');
-                  expect(block2.type, BlockType.audio);
-                  expect(block2.properties, {
-                    Property.title.toString(): [
-                      ['a title']
-                    ]
-                  });
-                  expect(block2.title, 'a title');
-                  expect(block2.createdAt,
-                      DateTime.utc(1809, DateTime.february, 12));
-                  expect(block2.lastEditedAt, now);
+                    // Second
+                    final block2 = blocks[1];
+                    expect(block2.id, 'block1');
+                    expect(block2.type, BlockType.audio);
+                    expect(block2.properties, {
+                      Property.title.toString(): [
+                        ['a title']
+                      ]
+                    });
+                    expect(block2.content, ['block3']);
+                    expect(block2.title, 'a title');
+                    expect(block2.createdAt,
+                        DateTime.utc(1809, DateTime.february, 12));
+                    expect(block2.lastEditedAt, now);
 
-                  return true;
-                }),
-              ]));
+                    return true;
+                  }),
+                ]));
+          });
+        });
+        group('When all blocks are requested', () {
+          test('Then it returns all blocks with most recently created first',
+              () async {
+            final repo = BlockRepo(db);
+            final stream = repo
+                .listWatch(onlyRoot: false)
+                .timeout(const Duration(seconds: 30));
+            expectLater(
+                stream,
+                emitsInOrder([
+                  predicate<List<Block>>((blocks) {
+                    expect(blocks, hasLength(4));
+
+                    // First
+                    final block = blocks[0];
+                    expect(block.id, 'block4');
+                    expect(block.type, BlockType.audio);
+                    expect(block.properties, {
+                      Property.title.toString(): [
+                        ['a title']
+                      ]
+                    });
+                    expect(block.content, null);
+                    expect(block.parentId, 'block2');
+                    expect(block.title, 'a title');
+                    expect(block.createdAt,
+                        DateTime.utc(1879, DateTime.march, 15));
+                    expect(block.lastEditedAt, now);
+
+                    // Second
+                    final block2 = blocks[1];
+                    expect(block2.id, 'block2');
+                    expect(block2.type, BlockType.audio);
+                    expect(block2.properties, {
+                      Property.title.toString(): [
+                        ['a title']
+                      ]
+                    });
+                    expect(block2.content, ['block4']);
+                    expect(block2.title, 'a title');
+                    expect(block2.createdAt,
+                        DateTime.utc(1879, DateTime.march, 14));
+                    expect(block2.lastEditedAt, now);
+
+                    // Third
+                    final block3 = blocks[2];
+                    expect(block3.id, 'block3');
+                    expect(block3.type, BlockType.audio);
+                    expect(block3.properties, {
+                      Property.title.toString(): [
+                        ['a title']
+                      ]
+                    });
+                    expect(block3.content, null);
+                    expect(block3.parentId, 'block1');
+                    expect(block3.title, 'a title');
+                    expect(block3.createdAt,
+                        DateTime.utc(1809, DateTime.february, 13));
+                    expect(block3.lastEditedAt, now);
+
+                    // Fourth
+                    final block4 = blocks[3];
+                    expect(block4.id, 'block1');
+                    expect(block4.type, BlockType.audio);
+                    expect(block4.properties, {
+                      Property.title.toString(): [
+                        ['a title']
+                      ]
+                    });
+                    expect(block4.content, ['block3']);
+                    expect(block4.title, 'a title');
+                    expect(block4.createdAt,
+                        DateTime.utc(1809, DateTime.february, 12));
+                    expect(block4.lastEditedAt, now);
+
+                    return true;
+                  }),
+                ]));
+          });
         });
       });
     });
