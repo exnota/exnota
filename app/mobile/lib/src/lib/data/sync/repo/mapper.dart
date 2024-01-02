@@ -69,10 +69,12 @@ class SyncCommandRepoMapper {
             filePath: data.capture.filePath,
             status: statusFromData(commandData.status));
       case SyncCommandRepoType.executeTransaction:
+        final decoded = jsonDecode(commandData.data);
+        final transaction = Transaction.fromJson(decoded["transaction"]);
         return ExecuteTransactionSyncCommand.fromDb(
             id: commandData.id,
             entityId: commandData.entityId,
-            transaction: Transaction.fromJson(jsonDecode(commandData.data)),
+            transaction: transaction,
             status: statusFromData(commandData.status));
       default:
         throw Exception("Unknown command type: ${commandData.type}");

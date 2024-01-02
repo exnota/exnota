@@ -1,5 +1,6 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
+import 'package:exnota/src/lib/data/sync/execute_transaction_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/note/service/deprecated_note_mutation_service.dart';
@@ -77,6 +78,9 @@ class SyncCommandMutationService extends _$SyncCommandMutationService {
                 .read(deprecatedNoteMutationServiceProvider.notifier)
                 .setCaptureSynced(captureId: captureId);
           }
+          break;
+        case ExecuteTransactionSyncCommand():
+          // Do nothing. Sync status derived solely from command statuses.
           break;
         default:
           throw Exception("Unknown command type");

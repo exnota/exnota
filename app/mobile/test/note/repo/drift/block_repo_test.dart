@@ -428,82 +428,24 @@ void main() {
             });
           });
         });
-        group('Given a block with no external value', () {
-          setUp(() async {
-            final block1 = BlockTableData(
-                id: 'block1',
-                type: BlockTypeRepo.audio,
-                properties: '{"title":[["title 1"]]}',
-                createdAt: DateTime.utc(1809, DateTime.february, 12),
-                lastEditedAt: DateTime.now());
-            await db.into(db.blockTable).insert(block1);
-          });
-          test('Then it sets the external url', () async {
-            final operation = Operation(
-              type: OperationType.update,
-              path: ['external', 'url'],
-              pointer: (id: 'block1'),
-              args: {
-                SingleVal.val.toString(): 'https://example.com',
-              },
-            );
-            final repo = BlockRepo(db);
-            await repo.executeTransaction(
-                transaction: Transaction(operations: [operation]));
-            final updatedBlock = await (db.select(db.blockTable)
-                  ..where((tbl) => tbl.id.equals('block1')))
-                .getSingle();
-            expect(updatedBlock.external, '{"url":"https://example.com"}');
-          });
-        });
-        group('Given a block with an empty external value', () {
-          setUp(() async {
-            final block1 = BlockTableData(
-                id: 'block1',
-                type: BlockTypeRepo.audio,
-                properties: '{"title":[["title 1"]]}',
-                external: '{}',
-                createdAt: DateTime.utc(1809, DateTime.february, 12),
-                lastEditedAt: DateTime.now());
-            await db.into(db.blockTable).insert(block1);
-          });
-          test('Then it sets the external url', () async {
-            final operation = Operation(
-              type: OperationType.update,
-              path: ['external', 'url'],
-              pointer: (id: 'block1'),
-              args: {
-                SingleVal.val.toString(): 'https://example.com',
-              },
-            );
-            final repo = BlockRepo(db);
-            await repo.executeTransaction(
-                transaction: Transaction(operations: [operation]));
-            final updatedBlock = await (db.select(db.blockTable)
-                  ..where((tbl) => tbl.id.equals('block1')))
-                .getSingle();
-            expect(updatedBlock.external, '{"url":"https://example.com"}');
-          });
-        });
-        group('Given a block with an existing external url', () {
-          setUp(() async {
-            final block1 = BlockTableData(
-                id: 'block1',
-                type: BlockTypeRepo.audio,
-                properties: '{"title":[["title 1"]]}',
-                external: '{"url":"https://example.com"}',
-                createdAt: DateTime.utc(1809, DateTime.february, 12),
-                lastEditedAt: DateTime.now());
-            await db.into(db.blockTable).insert(block1);
-          });
-          group('When given a different external url', () {
-            test('Then it updates the external url', () async {
+        group('Given an \'external\' update operation', () {
+          group('And the existing block has no external value', () {
+            setUp(() async {
+              final block1 = BlockTableData(
+                  id: 'block1',
+                  type: BlockTypeRepo.audio,
+                  properties: '{"title":[["title 1"]]}',
+                  createdAt: DateTime.utc(1809, DateTime.february, 12),
+                  lastEditedAt: DateTime.now());
+              await db.into(db.blockTable).insert(block1);
+            });
+            test('Then it sets the external url', () async {
               final operation = Operation(
                 type: OperationType.update,
                 path: ['external', 'url'],
                 pointer: (id: 'block1'),
                 args: {
-                  SingleVal.val.toString(): 'https://example2.com',
+                  SingleVal.val.toString(): 'https://example.com',
                 },
               );
               final repo = BlockRepo(db);
@@ -512,85 +454,180 @@ void main() {
               final updatedBlock = await (db.select(db.blockTable)
                     ..where((tbl) => tbl.id.equals('block1')))
                   .getSingle();
-              expect(updatedBlock.external, '{"url":"https://example2.com"}');
+              expect(updatedBlock.external, '{"url":"https://example.com"}');
             });
           });
-          group('When given an empty external url', () {
-            test('Then it sets the external url to null', () async {
-              final operation = Operation(
-                type: OperationType.update,
-                path: ['external', 'url'],
-                pointer: (id: 'block1'),
-                args: {
-                  SingleVal.val.toString(): '',
-                },
-              );
-              final repo = BlockRepo(db);
-              await repo.executeTransaction(
-                  transaction: Transaction(operations: [operation]));
-              final updatedBlock = await (db.select(db.blockTable)
-                    ..where((tbl) => tbl.id.equals('block1')))
-                  .getSingle();
-              expect(updatedBlock.external, '{"url":null}');
-            });
-          });
-          group('When given no arg', () {
-            test('Then it sets the external url to null', () async {
-              const operation = Operation(
-                type: OperationType.update,
-                path: ['external', 'url'],
-                pointer: (id: 'block1'),
-                args: {},
-              );
-              final repo = BlockRepo(db);
-              await repo.executeTransaction(
-                  transaction: const Transaction(operations: [operation]));
-              final updatedBlock = await (db.select(db.blockTable)
-                    ..where((tbl) => tbl.id.equals('block1')))
-                  .getSingle();
-              expect(updatedBlock.external, '{"url":null}');
-            });
-          });
-        });
-        group('Given a block with a null external url', () {
-          setUp(() async {
-            final block1 = BlockTableData(
-                id: 'block1',
-                type: BlockTypeRepo.audio,
-                properties: '{"title":[["title 1"]]}',
-                external: '{"url":null}',
-                createdAt: DateTime.utc(1809, DateTime.february, 12),
-                lastEditedAt: DateTime.now());
-            await db.into(db.blockTable).insert(block1);
-          });
-          test('Then it sets the external url', () async {
-            final operation = Operation(
-              type: OperationType.update,
-              path: ['external', 'url'],
-              pointer: (id: 'block1'),
-              args: {
-                SingleVal.val.toString(): 'https://example.com',
-              },
-            );
-            final repo = BlockRepo(db);
-            await repo.executeTransaction(
-                transaction: Transaction(operations: [operation]));
-            final updatedBlock = await (db.select(db.blockTable)
-                  ..where((tbl) => tbl.id.equals('block1')))
-                .getSingle();
-            expect(updatedBlock.external, '{"url":"https://example.com"}');
-          });
-        });
-        group('Given a block with unknown external properties', () {
-          final validOperation = Operation(
-            type: OperationType.update,
-            path: ['external', 'url'],
-            pointer: (id: 'block1'),
-            args: {
-              SingleVal.val.toString(): 'https://example-updated.com',
-            },
-          );
 
+          group('And the existing block has an empty external value', () {
+            setUp(() async {
+              final block1 = BlockTableData(
+                  id: 'block1',
+                  type: BlockTypeRepo.audio,
+                  properties: '{"title":[["title 1"]]}',
+                  external: '{}',
+                  createdAt: DateTime.utc(1809, DateTime.february, 12),
+                  lastEditedAt: DateTime.now());
+              await db.into(db.blockTable).insert(block1);
+            });
+            test('Then it sets the external url', () async {
+              final operation = Operation(
+                type: OperationType.update,
+                path: ['external', 'url'],
+                pointer: (id: 'block1'),
+                args: {
+                  SingleVal.val.toString(): 'https://example.com',
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final updatedBlock = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(updatedBlock.external, '{"url":"https://example.com"}');
+            });
+          });
+          group('And the existing block has an existing external url', () {
+            setUp(() async {
+              final block1 = BlockTableData(
+                  id: 'block1',
+                  type: BlockTypeRepo.audio,
+                  properties: '{"title":[["title 1"]]}',
+                  external: '{"url":"https://example.com"}',
+                  createdAt: DateTime.utc(1809, DateTime.february, 12),
+                  lastEditedAt: DateTime.now());
+              await db.into(db.blockTable).insert(block1);
+            });
+            group('When given a different external url', () {
+              test('Then it updates the external url', () async {
+                final operation = Operation(
+                  type: OperationType.update,
+                  path: ['external', 'url'],
+                  pointer: (id: 'block1'),
+                  args: {
+                    SingleVal.val.toString(): 'https://example2.com',
+                  },
+                );
+                final repo = BlockRepo(db);
+                await repo.executeTransaction(
+                    transaction: Transaction(operations: [operation]));
+                final updatedBlock = await (db.select(db.blockTable)
+                      ..where((tbl) => tbl.id.equals('block1')))
+                    .getSingle();
+                expect(updatedBlock.external, '{"url":"https://example2.com"}');
+              });
+            });
+            group('When given an empty external url', () {
+              test('Then it sets the external url to null', () async {
+                final operation = Operation(
+                  type: OperationType.update,
+                  path: ['external', 'url'],
+                  pointer: (id: 'block1'),
+                  args: {
+                    SingleVal.val.toString(): '',
+                  },
+                );
+                final repo = BlockRepo(db);
+                await repo.executeTransaction(
+                    transaction: Transaction(operations: [operation]));
+                final updatedBlock = await (db.select(db.blockTable)
+                      ..where((tbl) => tbl.id.equals('block1')))
+                    .getSingle();
+                expect(updatedBlock.external, '{"url":null}');
+              });
+            });
+            group('When given no arg', () {
+              test('Then it sets the external url to null', () async {
+                const operation = Operation(
+                  type: OperationType.update,
+                  path: ['external', 'url'],
+                  pointer: (id: 'block1'),
+                  args: {},
+                );
+                final repo = BlockRepo(db);
+                await repo.executeTransaction(
+                    transaction: const Transaction(operations: [operation]));
+                final updatedBlock = await (db.select(db.blockTable)
+                      ..where((tbl) => tbl.id.equals('block1')))
+                    .getSingle();
+                expect(updatedBlock.external, '{"url":null}');
+              });
+            });
+          });
+          group('And the existing block has a null external url', () {
+            setUp(() async {
+              final block1 = BlockTableData(
+                  id: 'block1',
+                  type: BlockTypeRepo.audio,
+                  properties: '{"title":[["title 1"]]}',
+                  external: '{"url":null}',
+                  createdAt: DateTime.utc(1809, DateTime.february, 12),
+                  lastEditedAt: DateTime.now());
+              await db.into(db.blockTable).insert(block1);
+            });
+            test('Then it sets the external url', () async {
+              final operation = Operation(
+                type: OperationType.update,
+                path: ['external', 'url'],
+                pointer: (id: 'block1'),
+                args: {
+                  SingleVal.val.toString(): 'https://example.com',
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final updatedBlock = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(updatedBlock.external, '{"url":"https://example.com"}');
+            });
+          });
+          group('And the existing block has unknown external properties', () {
+            final validOperation = Operation(
+              type: OperationType.update,
+              path: ['external', 'url'],
+              pointer: (id: 'block1'),
+              args: {
+                SingleVal.val.toString(): 'https://example-updated.com',
+              },
+            );
+
+            setUp(() async {
+              final block1 = BlockTableData(
+                  id: 'block1',
+                  type: BlockTypeRepo.audio,
+                  properties: '{"title":[["title 1"]]}',
+                  external: '{"url":"https://example.com", "unknown": "value"}',
+                  createdAt: DateTime.utc(1809, DateTime.february, 12),
+                  lastEditedAt: DateTime.now());
+              await db.into(db.blockTable).insert(block1);
+            });
+            test(
+                'Then it persists the external URL without removing the other properties',
+                () async {
+              // This requirement reduces the chance of accidentally wiping data
+              // that isn't yet supported by the frontend but is on the backend.
+              //
+              // E.g. we might pull a block with external:
+              //   {"url": "https://example.com", "other": "value"}
+              // from the server. If the client doesn't support "other" we don't
+              // want to remove "other" from "external" and then sync "external"
+              // to the backend, wiping the "other" property.
+              final repo = BlockRepo(db);
+              expect(
+                  () async => await repo.executeTransaction(
+                      transaction: Transaction(operations: [validOperation])),
+                  returnsNormally);
+              final query = (db.select(db.blockTable)
+                ..where((tbl) => tbl.id.equals('block1')));
+              final block = await query.getSingle();
+              expect(block.external,
+                  '{"url":"https://example-updated.com","unknown":"value"}');
+            });
+          });
+        });
+        group('Given a \'lastEditedAt\' update operation', () {
           setUp(() async {
             final block1 = BlockTableData(
                 id: 'block1',
@@ -601,27 +638,31 @@ void main() {
                 lastEditedAt: DateTime.now());
             await db.into(db.blockTable).insert(block1);
           });
-          test(
-              'Then it persists the external URL without removing the other properties',
-              () async {
-            // This requirement reduces the chance of accidentally wiping data
-            // that isn't yet supported by the frontend but is on the backend.
-            //
-            // E.g. we might pull a block with external:
-            //   {"url": "https://example.com", "other": "value"}
-            // from the server. If the client doesn't support "other" we don't
-            // want to remove "other" from "external" and then sync "external"
-            // to the backend, wiping the "other" property.
+          test('Then it only sets the \'lastEditedAt\' property', () async {
+            final operation = Operation(
+              type: OperationType.update,
+              path: ['lastEditedAt'],
+              pointer: (id: 'block1'),
+              args: {
+                SingleVal.val.toString(): '2021-01-01T00:00:00.000Z',
+              },
+            );
             final repo = BlockRepo(db);
-            expect(
-                () async => await repo.executeTransaction(
-                    transaction: Transaction(operations: [validOperation])),
-                returnsNormally);
-            final query = (db.select(db.blockTable)
-              ..where((tbl) => tbl.id.equals('block1')));
-            final block = await query.getSingle();
-            expect(block.external,
-                '{"url":"https://example-updated.com","unknown":"value"}');
+            await repo.executeTransaction(
+                transaction: Transaction(operations: [operation]));
+            final updatedBlock = await (db.select(db.blockTable)
+                  ..where((tbl) => tbl.id.equals('block1')))
+                .getSingle();
+            expect(updatedBlock.id, 'block1');
+            expect(updatedBlock.type, BlockTypeRepo.audio);
+            expect(updatedBlock.properties, '{"title":[["title 1"]]}');
+            expect(updatedBlock.external,
+                '{"url":"https://example.com", "unknown": "value"}');
+            expect(updatedBlock.content, null);
+            expect(updatedBlock.parentId, null);
+            expect(updatedBlock.createdAt,
+                DateTime.utc(1809, DateTime.february, 12));
+            expect(updatedBlock.lastEditedAt, DateTime.utc(2021));
           });
         });
       });
@@ -738,77 +779,6 @@ void main() {
             });
           });
         });
-        group('Given a block with only required properties', () {
-          test('Then it persists the block', () async {
-            final operation = Operation(
-              type: OperationType.set,
-              pointer: (id: 'block1'),
-              path: [],
-              args: {
-                Prop.id.toString(): 'block1',
-                Prop.type.toString(): BlockType.audio.toString(),
-                Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
-                Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
-              },
-            );
-            final repo = BlockRepo(db);
-            await repo.executeTransaction(
-                transaction: Transaction(operations: [operation]));
-            final block = await (db.select(db.blockTable)
-                  ..where((tbl) => tbl.id.equals('block1')))
-                .getSingle();
-            expect(block.id, 'block1');
-            expect(block.type, BlockTypeRepo.audio);
-            expect(block.properties, null);
-            expect(block.external, null);
-            expect(block.content, null);
-            expect(block.createdAt, DateTime.utc(2021));
-            expect(block.lastEditedAt, DateTime.utc(2021));
-          });
-        });
-        group('Given a block with all supported properties', () {
-          test('Then it persists the block', () async {
-            final operation = Operation(
-              type: OperationType.set,
-              pointer: (id: 'block1'),
-              path: [],
-              args: {
-                Prop.id.toString(): 'block1',
-                Prop.type.toString(): BlockType.audio.toString(),
-                Prop.properties.toString(): {
-                  Property.title.toString(): [
-                    ['a title']
-                  ],
-                  "unsupported": "value"
-                },
-                Prop.external.toString(): {
-                  PrepExternal.url.toString(): 'https://example.com',
-                  "unsupported": "value"
-                },
-                Prop.content.toString(): ['block2', 'block3', 'block4'],
-                Prop.parentId.toString(): 'block5',
-                Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
-                Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
-              },
-            );
-            final repo = BlockRepo(db);
-            await repo.executeTransaction(
-                transaction: Transaction(operations: [operation]));
-            final block = await (db.select(db.blockTable)
-                  ..where((tbl) => tbl.id.equals('block1')))
-                .getSingle();
-            expect(block.id, 'block1');
-            expect(block.type, BlockTypeRepo.audio);
-            expect(block.properties,
-                '{"title":[["a title"]],"unsupported":"value"}');
-            expect(block.external,
-                '{"url":"https://example.com","unsupported":"value"}');
-            expect(block.content, '["block2","block3","block4"]');
-            expect(block.parentId, 'block5');
-            expect(block.createdAt, DateTime.utc(2021));
-            expect(block.lastEditedAt, DateTime.utc(2021));
-          });
-        });
         group('Given a block that already exists', () {
           setUp(() async {
             final block1 = BlockTableData(
@@ -836,6 +806,152 @@ void main() {
                 () async => await repo.executeTransaction(
                     transaction: Transaction(operations: [operation])),
                 throwsA(isA<StateError>()));
+          });
+        });
+        group('Given an audio block set operation', () {
+          group('When it has only the required properties', () {
+            test('Then it persists the block', () async {
+              final operation = Operation(
+                type: OperationType.set,
+                pointer: (id: 'block1'),
+                path: [],
+                args: {
+                  Prop.id.toString(): 'block1',
+                  Prop.type.toString(): BlockType.audio.toString(),
+                  Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                  Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final block = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(block.id, 'block1');
+              expect(block.type, BlockTypeRepo.audio);
+              expect(block.properties, null);
+              expect(block.external, null);
+              expect(block.content, null);
+              expect(block.createdAt, DateTime.utc(2021));
+              expect(block.lastEditedAt, DateTime.utc(2021));
+            });
+          });
+          group('When it has all supported properties', () {
+            test('Then it persists the block', () async {
+              final operation = Operation(
+                type: OperationType.set,
+                pointer: (id: 'block1'),
+                path: [],
+                args: {
+                  Prop.id.toString(): 'block1',
+                  Prop.type.toString(): BlockType.audio.toString(),
+                  Prop.properties.toString(): {
+                    Property.title.toString(): [
+                      ['a title']
+                    ],
+                    "unsupported": "value"
+                  },
+                  Prop.external.toString(): {
+                    PrepExternal.url.toString(): 'https://example.com',
+                    "unsupported": "value"
+                  },
+                  Prop.content.toString(): ['block2', 'block3', 'block4'],
+                  Prop.parentId.toString(): 'block5',
+                  Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                  Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final block = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(block.id, 'block1');
+              expect(block.type, BlockTypeRepo.audio);
+              expect(block.properties,
+                  '{"title":[["a title"]],"unsupported":"value"}');
+              expect(block.external,
+                  '{"url":"https://example.com","unsupported":"value"}');
+              expect(block.content, '["block2","block3","block4"]');
+              expect(block.parentId, 'block5');
+              expect(block.createdAt, DateTime.utc(2021));
+              expect(block.lastEditedAt, DateTime.utc(2021));
+            });
+          });
+        });
+        group('Given a text block set operation', () {
+          group('When it has only the required properties', () {
+            test('Then it persists the block', () async {
+              final operation = Operation(
+                type: OperationType.set,
+                pointer: (id: 'block1'),
+                path: [],
+                args: {
+                  Prop.id.toString(): 'block1',
+                  Prop.type.toString(): BlockType.text.toString(),
+                  Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                  Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final block = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(block.id, 'block1');
+              expect(block.type, BlockTypeRepo.text);
+              expect(block.properties, null);
+              expect(block.external, null);
+              expect(block.content, null);
+              expect(block.createdAt, DateTime.utc(2021));
+              expect(block.lastEditedAt, DateTime.utc(2021));
+            });
+          });
+          group('When it has all supported properties', () {
+            test('Then it persists the block', () async {
+              final operation = Operation(
+                type: OperationType.set,
+                pointer: (id: 'block1'),
+                path: [],
+                args: {
+                  Prop.id.toString(): 'block1',
+                  Prop.type.toString(): BlockType.text.toString(),
+                  Prop.properties.toString(): {
+                    Property.title.toString(): [
+                      ['a title']
+                    ],
+                    "unsupported": "value"
+                  },
+                  Prop.external.toString(): {
+                    PrepExternal.url.toString(): 'https://example.com',
+                    "unsupported": "value"
+                  },
+                  Prop.content.toString(): ['block2', 'block3', 'block4'],
+                  Prop.parentId.toString(): 'block5',
+                  Prop.createdAt.toString(): '2021-01-01T00:00:00.000Z',
+                  Prop.lastEditedAt.toString(): '2021-01-01T00:00:00.000Z',
+                },
+              );
+              final repo = BlockRepo(db);
+              await repo.executeTransaction(
+                  transaction: Transaction(operations: [operation]));
+              final block = await (db.select(db.blockTable)
+                    ..where((tbl) => tbl.id.equals('block1')))
+                  .getSingle();
+              expect(block.id, 'block1');
+              expect(block.type, BlockTypeRepo.text);
+              expect(block.properties,
+                  '{"title":[["a title"]],"unsupported":"value"}');
+              expect(block.external,
+                  '{"url":"https://example.com","unsupported":"value"}');
+              expect(block.content, '["block2","block3","block4"]');
+              expect(block.parentId, 'block5');
+              expect(block.createdAt, DateTime.utc(2021));
+              expect(block.lastEditedAt, DateTime.utc(2021));
+            });
           });
         });
       });

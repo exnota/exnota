@@ -34,13 +34,25 @@ class SyncCommandRunner extends _$SyncCommandRunner {
         // the entity sync status
         await mutationService.setStatus(
             command.id.idOrThrow, SyncCommandStatus.running);
-        final error = await command.request(ref);
+        SyncCommandError? error;
+        try {
+          error = await command.request(ref);
+        } catch (e) {
+          logger.error("Error executing command", nonPrivateData: {
+            "command": command.runtimeType,
+            "error": e,
+          });
+          await mutationService.setStatus(
+              command.id.idOrThrow, SyncCommandStatus.error);
+          continue;
+        }
         if (error != null) {
           logger.warn("Command failed", nonPrivateData: {
             "command": command.runtimeType,
             "error": error,
           });
-          // TODO: Handle error
+          await mutationService.setStatus(
+              command.id.idOrThrow, SyncCommandStatus.error);
           continue;
         }
         logger.debug("Finished executing", command);
