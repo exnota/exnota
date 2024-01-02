@@ -11,7 +11,10 @@ class SyncCommandTable extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get type => text().map(SyncCommandRepoTypeConverter())();
   TextColumn get entityId => text()();
+  TextColumn get rootEntityId => text()();
   TextColumn get status => text().map(SyncCommandRepoStatusConverter())();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
   TextColumn get data => text()();
 }
 

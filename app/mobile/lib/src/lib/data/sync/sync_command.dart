@@ -5,9 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 abstract class SyncCommand<T> {
   final EntityId id;
   final String entityId;
+  final String rootEntityId;
   final SyncCommandStatus status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-  SyncCommand({required this.id, required this.entityId, required this.status});
+  SyncCommand(
+      {required this.id,
+      required this.entityId,
+      required this.rootEntityId,
+      required this.status,
+      required this.createdAt,
+      required this.updatedAt});
 
   Future<SyncCommandError?> request(Ref ref);
 }
@@ -30,8 +39,17 @@ abstract class NoteSyncCommand extends SyncCommand<NoteSyncCommand> {
   NoteSyncCommand(
       {required EntityId id,
       required String entityId,
-      required SyncCommandStatus status})
-      : super(id: id, entityId: entityId, status: status);
+      required String rootEntityId,
+      required SyncCommandStatus status,
+      required DateTime createdAt,
+      required DateTime updatedAt})
+      : super(
+            id: id,
+            entityId: entityId,
+            rootEntityId: rootEntityId,
+            status: status,
+            createdAt: createdAt,
+            updatedAt: updatedAt);
 
   String? get captureId;
 }
