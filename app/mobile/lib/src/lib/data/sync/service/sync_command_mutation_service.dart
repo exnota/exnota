@@ -1,3 +1,4 @@
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/execute_transaction_sync_command.dart';
@@ -48,19 +49,22 @@ class SyncCommandMutationService extends _$SyncCommandMutationService {
   Future<void> setStatus(int id, SyncCommandStatus status) async {
     final db = ref.read(databaseProvider);
     final transaction = ref.read(transactionProvider);
+    final now = ref.read(clockProvider).now();
     await transaction(() async {
       final syncCommandRepo = SyncCommandRepo(db);
-      await syncCommandRepo.setStatus(id, status);
+      await syncCommandRepo.setStatus(id: id, status: status, updatedAt: now);
     });
   }
 
   Future<void> setComplete(int id) async {
     final db = ref.read(databaseProvider);
     final transaction = ref.read(transactionProvider);
+    final now = ref.read(clockProvider).now();
     await transaction(() async {
       // Set command complete
       final syncCommandRepo = SyncCommandRepo(db);
-      await syncCommandRepo.setStatus(id, SyncCommandStatus.complete);
+      await syncCommandRepo.setStatus(
+          id: id, status: SyncCommandStatus.complete, updatedAt: now);
 
       // Update sync status of entities
       final command = await syncCommandRepo.fetchById(id);
