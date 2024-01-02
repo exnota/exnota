@@ -2,7 +2,7 @@ import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/file/repo/drift/local_file_repo.dart';
 import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
-import 'package:exnota/src/note/repo/id_generator.dart';
+import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
