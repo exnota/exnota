@@ -2,7 +2,7 @@ import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/execute_transaction_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
-import 'package:exnota/src/lib/data/sync/service/sync_command_mutation_service.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/note/transaction.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +11,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([MockSpec<SyncCommandRepo>(), MockSpec<Clock>()])
-import 'sync_command_mutation_service_test.mocks.dart';
+import 'sync_command_mutator_test.mocks.dart';
 
 ProviderContainer createContainer({
   ProviderContainer? parent,
@@ -30,7 +30,7 @@ ProviderContainer createContainer({
 }
 
 void main() {
-  group('SyncCommandMutationService', () {
+  group('SyncCommandMutator', () {
     group('retryForRootEntity', () {
       group('Given a block with no sync commands', () {
         test('Then it should not update any statuses', () {
@@ -61,8 +61,7 @@ void main() {
               }),
             ],
           );
-          final service =
-              container.read(syncCommandMutationServiceProvider.notifier);
+          final service = container.read(syncCommandMutatorProvider.notifier);
 
           expect(service.retryForRootEntity(id: 'root'), completion(null));
           verifyNever(repo.setStatus(
@@ -119,8 +118,7 @@ void main() {
               }),
             ],
           );
-          final service =
-              container.read(syncCommandMutationServiceProvider.notifier);
+          final service = container.read(syncCommandMutatorProvider.notifier);
 
           expect(service.retryForRootEntity(id: 'root'), completion(null));
           verifyNever(repo.setStatus(
@@ -194,8 +192,7 @@ void main() {
               }),
             ],
           );
-          final service =
-              container.read(syncCommandMutationServiceProvider.notifier);
+          final service = container.read(syncCommandMutatorProvider.notifier);
 
           await service.retryForRootEntity(id: 'block id');
           verify(repo.fetchByRootEntityId(any)).called(1);

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/account/settings/environment_service.dart';
-import 'package:exnota/src/lib/data/sync/service/sync_command_mutation_service.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/block.dart';
@@ -284,7 +284,7 @@ class _BlockListTileState extends ConsumerState<BlockListTile> {
                 behavior: HitTestBehavior.translucent,
                 onTap: () {
                   ref
-                      .read(syncCommandMutationServiceProvider.notifier)
+                      .read(syncCommandMutatorProvider.notifier)
                       .retryForRootEntity(id: widget.block.id);
                 },
                 child: Container(
