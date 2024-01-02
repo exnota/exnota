@@ -25,18 +25,18 @@ Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
       throw Exception('Unexpected async state');
   }
 
-  final Map<String, List<SyncCommandStatus>> allStatuses = {};
+  final Map<String, List<SyncCommandStatus>> rootStatuses = {};
   for (var command in syncCommands) {
-    final blockId = command.entityId;
-    if (allStatuses.containsKey(blockId)) {
-      allStatuses[blockId]!.add(command.status);
+    final rootBlockId = command.rootEntityId;
+    if (rootStatuses.containsKey(rootBlockId)) {
+      rootStatuses[rootBlockId]!.add(command.status);
     } else {
-      allStatuses[blockId] = [command.status];
+      rootStatuses[rootBlockId] = [command.status];
     }
   }
 
   final logger = ref.watch(loggerProvider('BlockLister'));
-  final statuses = allStatuses.map<String, BlockStatus>((key, value) {
+  final statuses = rootStatuses.map<String, BlockStatus>((key, value) {
     if (value.contains(SyncCommandStatus.error)) {
       return MapEntry(key, BlockStatus.error);
     } else if (value.contains(SyncCommandStatus.running) ||
