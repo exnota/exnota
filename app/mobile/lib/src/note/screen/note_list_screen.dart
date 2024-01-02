@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/account/settings/environment_service.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_mutation_service.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/block.dart';
@@ -144,7 +145,7 @@ class NoteList extends ConsumerWidget {
   }
 }
 
-class BlockListTile extends StatefulWidget {
+class BlockListTile extends ConsumerStatefulWidget {
   final Block block;
   final BlockStatus status;
 
@@ -154,12 +155,12 @@ class BlockListTile extends StatefulWidget {
         super(key: key);
 
   @override
-  State<BlockListTile> createState() => _BlockListTileState();
+  ConsumerState<BlockListTile> createState() => _BlockListTileState();
 }
 
 enum PendingStatus { capturing, uploading, transcribing, exporting }
 
-class _BlockListTileState extends State<BlockListTile> {
+class _BlockListTileState extends ConsumerState<BlockListTile> {
   ({String text, Widget icon, PendingStatus status})? pendingConfig;
   Timer? pendingConfigTranscribingTimer;
   Timer? pendingConfigExportingTimer;
@@ -260,44 +261,57 @@ class _BlockListTileState extends State<BlockListTile> {
         ),
         // Accessible tap area according to https://api.flutter.dev/flutter/material/ListTile-class.html#material.ListTile.9
         trailing: Visibility(
-            visible: url is String,
-            replacement: switch (widget.status) {
-              BlockStatus.exporting => SizedBox(
-                  height: 48,
-                  width: 48,
-                  child: Center(
-                    child: SizedBox(
-                        width: 24, height: 24, child: pendingConfig?.icon),
-                  ),
-                ),
-              BlockStatus.unknown => SizedBox(
-                  height: 48,
-                  width: 48,
-                  child: Center(
-                    child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Lottie.asset(Icons8.sound)),
-                  ),
-                ),
-              BlockStatus.exported => const Icon(Icons.question_mark),
-              BlockStatus.error => const Icon(Icons.error),
-            },
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                if (url is String) {
-                  launchUrl(Uri.parse(url));
-                }
-              },
-              child: Container(
-                width: 48,
+          visible: url is String,
+          replacement: switch (widget.status) {
+            BlockStatus.exporting => SizedBox(
                 height: 48,
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                alignment: Alignment.center,
-                child: const Icon(Icons.link),
+                width: 48,
+                child: Center(
+                  child: SizedBox(
+                      width: 24, height: 24, child: pendingConfig?.icon),
+                ),
               ),
-            )),
+            BlockStatus.unknown => SizedBox(
+                height: 48,
+                width: 48,
+                child: Center(
+                  child: SizedBox(
+                      width: 24, height: 24, child: Lottie.asset(Icons8.sound)),
+                ),
+              ),
+            BlockStatus.exported => const Icon(Icons.question_mark),
+            BlockStatus.error => GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  ref
+                      .read(syncCommandMutationServiceProvider.notifier)
+                      .retryForRootEntity(id: widget.block.id);
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.replay_circle_filled),
+                ),
+              ),
+          },
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              if (url is String) {
+                launchUrl(Uri.parse(url));
+              }
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              alignment: Alignment.center,
+              child: const Icon(Icons.link),
+            ),
+          ),
+        ),
         onTap: () {
           // Navigate to the details page. If the user leaves and returns to
           // the app after it has been killed while running in the
