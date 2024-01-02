@@ -11,10 +11,10 @@ import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/note/transaction.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'block_mutation_service.g.dart';
+part 'block_mutator.g.dart';
 
 @riverpod
-class BlockMutationService extends _$BlockMutationService {
+class BlockMutator extends _$BlockMutator {
   @override
   FutureOr<void> build() {
     // noo-op

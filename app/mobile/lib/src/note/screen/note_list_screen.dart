@@ -8,7 +8,7 @@ import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/block.dart';
 import 'package:exnota/src/note/service/block_lister.dart';
-import 'package:exnota/src/note/service/block_mutation_service.dart';
+import 'package:exnota/src/note/service/block_mutator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_animated_icons/icons8.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -102,7 +102,7 @@ class _NoteListScreenState extends ConsumerState<NoteListScreen> {
                       child: const Text("Test"),
                       onPressed: () async {
                         final file = await ref
-                            .read(blockMutationServiceProvider.notifier)
+                            .read(blockMutatorProvider.notifier)
                             .createAudioBlock(extension: "m4a");
                         ref
                             .read(loggerProvider('NoteListScreen'))
@@ -395,7 +395,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
             isUploading = true;
           });
           await ref
-              .read(blockMutationServiceProvider.notifier)
+              .read(blockMutatorProvider.notifier)
               .syncAudioBlock(blockId: audioFile?.entityId ?? '');
           setState(() {
             isUploading = false;
@@ -458,11 +458,8 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
 
         ref.read(loggerProvider('RecordButton')).debug("Creating note");
         final file = await ref
-            .read(blockMutationServiceProvider.notifier)
+            .read(blockMutatorProvider.notifier)
             .createAudioBlock(extension: "m4a");
-        // final note = await ref
-        //     .read(deprecatedNoteMutationServiceProvider.notifier)
-        //     .createCapturingAudioNote(extension: "m4a");
         setState(() {
           audioFile = file;
         });

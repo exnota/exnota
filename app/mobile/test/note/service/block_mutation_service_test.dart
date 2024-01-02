@@ -8,7 +8,7 @@ import 'package:exnota/src/note/block.dart';
 import 'package:exnota/src/note/operation.dart';
 import 'package:exnota/src/note/repo/drift/block_repo.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
-import 'package:exnota/src/note/service/block_mutation_service.dart';
+import 'package:exnota/src/note/service/block_mutator.dart';
 import 'package:exnota/src/note/transaction.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,7 +37,7 @@ ProviderContainer createContainer({
 }
 
 void main() {
-  group('BlockMutationService', () {
+  group('BlockMutator', () {
     group('createAudioBlock', () {
       group('When called', () {
         test('Then it sends a create operation to the repo', () async {
@@ -74,7 +74,7 @@ void main() {
               }),
             ],
           );
-          final service = container.read(blockMutationServiceProvider.notifier);
+          final service = container.read(blockMutatorProvider.notifier);
           await service.createAudioBlock(extension: 'mp3');
 
           final expectedCreateOperation =
@@ -152,7 +152,7 @@ void main() {
               }),
             ],
           );
-          final service = container.read(blockMutationServiceProvider.notifier);
+          final service = container.read(blockMutatorProvider.notifier);
           final actualFile = await service.createAudioBlock(extension: 'mp3');
 
           final expectedFile = LocalFile(
@@ -211,7 +211,7 @@ void main() {
               }),
             ],
           );
-          final service = container.read(blockMutationServiceProvider.notifier);
+          final service = container.read(blockMutatorProvider.notifier);
           await service.createAudioBlock(extension: 'mp3');
 
           verifyZeroInteractions(blockRepo);
@@ -345,7 +345,7 @@ void main() {
             expectedUpdateEditedAt
           ]);
 
-          final service = container.read(blockMutationServiceProvider.notifier);
+          final service = container.read(blockMutatorProvider.notifier);
           await service.setAudioBlockData(
             blockId: 'block id',
             transcription: ['paragraph 1', 'paragraph 2'],
