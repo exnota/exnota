@@ -1,5 +1,5 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/lib/data/sync/service/sync_command_mutation_service.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
@@ -17,8 +17,7 @@ class SyncCommandRunner extends _$SyncCommandRunner {
   void run() {
     final logger = ref.read(loggerProvider('SyncCommandRunner'));
     final db = ref.read(databaseProvider);
-    final mutationService =
-        ref.read(syncCommandMutationServiceProvider.notifier);
+    final mutator = ref.read(syncCommandMutatorProvider.notifier);
     final commandRepo = SyncCommandRepo(db);
     commandRepo
         .fetchAllStream(status: SyncCommandStatus.waiting)
@@ -32,7 +31,7 @@ class SyncCommandRunner extends _$SyncCommandRunner {
         logger.info("Executing command...", command);
         // TODO: Update this to be setRunning which updates the command but also
         // the entity sync status
-        await mutationService.setStatus(
+        await mutator.setStatus(
             command.id.idOrThrow, SyncCommandStatus.running);
         SyncCommandError? error;
         try {
@@ -42,7 +41,7 @@ class SyncCommandRunner extends _$SyncCommandRunner {
             "command": command.runtimeType,
             "error": e,
           });
-          await mutationService.setStatus(
+          await mutator.setStatus(
               command.id.idOrThrow, SyncCommandStatus.error);
           continue;
         }
@@ -51,12 +50,12 @@ class SyncCommandRunner extends _$SyncCommandRunner {
             "command": command.runtimeType,
             "error": error,
           });
-          await mutationService.setStatus(
+          await mutator.setStatus(
               command.id.idOrThrow, SyncCommandStatus.error);
           continue;
         }
         logger.debug("Finished executing", command);
-        await mutationService.setComplete(command.id.idOrThrow);
+        await mutator.setComplete(command.id.idOrThrow);
         logger.debug("Command status updated");
       }
     });

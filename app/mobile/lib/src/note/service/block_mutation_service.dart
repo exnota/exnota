@@ -1,7 +1,7 @@
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/execute_transaction_sync_command.dart';
-import 'package:exnota/src/lib/data/sync/service/sync_command_mutation_service.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/file/service/local_file_mutation_service.dart';
 import 'package:exnota/src/note/block.dart';
@@ -77,8 +77,7 @@ class BlockMutationService extends _$BlockMutationService {
         updatedAt: now,
       );
 
-      final syncCommandService =
-          ref.read(syncCommandMutationServiceProvider.notifier);
+      final syncCommandService = ref.read(syncCommandMutatorProvider.notifier);
       await syncCommandService.createCommand(command: cmd);
     });
   }

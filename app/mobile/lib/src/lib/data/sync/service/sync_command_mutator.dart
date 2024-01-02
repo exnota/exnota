@@ -6,10 +6,10 @@ import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'sync_command_mutation_service.g.dart';
+part 'sync_command_mutator.g.dart';
 
 @riverpod
-class SyncCommandMutationService extends _$SyncCommandMutationService {
+class SyncCommandMutator extends _$SyncCommandMutator {
   @override
   FutureOr<void> build() {
     // no-op
@@ -64,14 +64,14 @@ class SyncCommandMutationService extends _$SyncCommandMutationService {
       final all = await repo.fetchByRootEntityId(id);
       if (all.isEmpty) {
         ref
-            .read(loggerProvider('SyncCommandMutationService'))
+            .read(loggerProvider('SyncCommandMutator'))
             .warn('No commands found for root entity $id');
         return;
       }
       final errored = all.where((c) => c.status == SyncCommandStatus.error);
       if (errored.isEmpty) {
         ref
-            .read(loggerProvider('SyncCommandMutationService'))
+            .read(loggerProvider('SyncCommandMutator'))
             .warn('No errored commands found for root entity $id');
         return;
       }
