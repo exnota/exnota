@@ -6,7 +6,7 @@ import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'local_file_mutation_service.g.dart';
+part 'local_file_mutator.g.dart';
 
 @riverpod
 LocalFileMutator localFileMutator(LocalFileMutatorRef ref) {
