@@ -8,7 +8,7 @@ import 'package:exnota/src/lib/entity_id.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/file/service/get_local_file_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/service/block_mutation_service.dart';
+import 'package:exnota/src/note/service/block_mutator.dart';
 import 'package:exnota/src/note/transaction.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -89,7 +89,7 @@ class ExecuteTransactionSyncCommand extends SyncCommand<Transaction> {
         url = json["url"];
       }
 
-      await ref.read(blockMutationServiceProvider.notifier).setAudioBlockData(
+      await ref.read(blockMutatorProvider.notifier).setAudioBlockData(
           blockId: entityId,
           transcription: [transcription],
           externalUrl: url ?? '');
