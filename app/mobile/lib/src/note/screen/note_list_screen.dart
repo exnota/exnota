@@ -174,7 +174,6 @@ class _BlockListTileState extends State<BlockListTile> {
   @override
   Widget build(BuildContext context) {
     final url = widget.block.externalUrl;
-    // final url = widget.block.integratedData.url;
 
     // When note status has changed to capturing, update config
     if (pendingConfig == null &&
@@ -232,14 +231,23 @@ class _BlockListTileState extends State<BlockListTile> {
       });
     }
 
-    // TODO: Handle error case
+    // When note status has changed to errored, clear config and cancel timers
+    if (pendingConfig != null && widget.status == BlockStatus.error) {
+      pendingConfigTranscribingTimer?.cancel();
+      pendingConfigExportingTimer?.cancel();
+      setState(() {
+        pendingConfig = null;
+      });
+    }
 
     return ListTile(
         key: Key(widget.block.id),
         title: Visibility(
           visible: pendingConfig != null,
           replacement: Text(
-            widget.block.title ?? "",
+            widget.status == BlockStatus.error
+                ? 'Error exporting'
+                : widget.block.title ?? "",
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
