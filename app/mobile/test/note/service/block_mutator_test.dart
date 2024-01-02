@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
-import 'package:exnota/src/lib/file/service/local_file_mutation_service.dart';
+import 'package:exnota/src/lib/file/service/local_file_mutator.dart';
 import 'package:exnota/src/note/block.dart';
 import 'package:exnota/src/note/operation.dart';
 import 'package:exnota/src/note/repo/drift/block_repo.dart';
