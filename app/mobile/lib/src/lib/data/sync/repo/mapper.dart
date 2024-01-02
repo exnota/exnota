@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/execute_transaction_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_table.dart';
@@ -16,28 +15,6 @@ class SyncCommandRepoMapper {
   static SyncCommandTableCompanion toData(SyncCommand command) {
     final logger = Logger(context: 'SyncCommandRepoMapper.toDataInsert');
     switch (command) {
-      case CreateAudioNoteSyncCommand():
-        final data = CreateAudioNoteDataRepo(capture: (
-          id: command.capture.id,
-          filePath: command.capture.filePath
-        ));
-        final id = command.id;
-        if (id case EntityWithId()) {
-          logger.warn("Command passed with ID. This will be ignored",
-              nonPrivateData: {
-                'id': id.id,
-                'entityId': command.entityId,
-                'syncCommand': command.runtimeType,
-              });
-        }
-        return SyncCommandTableCompanion.insert(
-            type: SyncCommandRepoType.createAudioNote,
-            entityId: command.entityId,
-            rootEntityId: command.rootEntityId,
-            data: json.encode(data.toJson()),
-            status: statusToData(command.status),
-            createdAt: command.createdAt,
-            updatedAt: command.updatedAt);
       case ExecuteTransactionSyncCommand():
         final data =
             ExecuteTransactionDataRepo(transaction: command.transaction);
@@ -65,18 +42,6 @@ class SyncCommandRepoMapper {
 
   static SyncCommand fromData(SyncCommandTableData commandData) {
     switch (commandData.type) {
-      case SyncCommandRepoType.createAudioNote:
-        final data =
-            CreateAudioNoteDataRepo.fromJson(json.decode(commandData.data));
-        return CreateAudioNoteSyncCommand.fromDb(
-            id: commandData.id,
-            entityId: commandData.entityId,
-            rootEntityId: commandData.rootEntityId,
-            captureId: data.capture.id,
-            filePath: data.capture.filePath,
-            status: statusFromData(commandData.status),
-            createdAt: commandData.createdAt,
-            updatedAt: commandData.updatedAt);
       case SyncCommandRepoType.executeTransaction:
         final decoded = jsonDecode(commandData.data);
         final transaction = Transaction.fromJson(decoded["transaction"]);
@@ -118,19 +83,6 @@ class SyncCommandRepoMapper {
         return SyncCommandStatus.error;
     }
   }
-}
-
-@JsonSerializable()
-class CreateAudioNoteDataRepo {
-  @JsonKey(name: 'capture')
-  final ({String id, String filePath}) capture;
-
-  CreateAudioNoteDataRepo({required this.capture});
-
-  factory CreateAudioNoteDataRepo.fromJson(Map<String, dynamic> json) =>
-      _$CreateAudioNoteDataRepoFromJson(json);
-
-  Map<String, dynamic> toJson() => _$CreateAudioNoteDataRepoToJson(this);
 }
 
 @JsonSerializable()

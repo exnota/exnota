@@ -34,22 +34,3 @@ class SyncCommandError {
     return 'SyncCommandError{message: $message}';
   }
 }
-
-abstract class NoteSyncCommand extends SyncCommand<NoteSyncCommand> {
-  NoteSyncCommand(
-      {required EntityId id,
-      required String entityId,
-      required String rootEntityId,
-      required SyncCommandStatus status,
-      required DateTime createdAt,
-      required DateTime updatedAt})
-      : super(
-            id: id,
-            entityId: entityId,
-            rootEntityId: rootEntityId,
-            status: status,
-            createdAt: createdAt,
-            updatedAt: updatedAt);
-
-  String? get captureId;
-}

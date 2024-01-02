@@ -335,7 +335,6 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
   late final RecorderController controller;
 
   String? path;
-  // AudioFileCapture? audioFileCapture;
   LocalFile? audioFile;
   bool isRecording = false;
   bool isUploading = false;
@@ -398,9 +397,6 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
           await ref
               .read(blockMutationServiceProvider.notifier)
               .syncAudioBlock(blockId: audioFile?.entityId ?? '');
-          // await ref
-          //     .read(deprecatedNoteMutationServiceProvider.notifier)
-          //     .setAudioFileCaptured(capture: audioFileCapture!);
           setState(() {
             isUploading = false;
             audioFile = null;
