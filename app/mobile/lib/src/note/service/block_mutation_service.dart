@@ -7,7 +7,7 @@ import 'package:exnota/src/lib/file/service/local_file_mutation_service.dart';
 import 'package:exnota/src/note/block.dart';
 import 'package:exnota/src/note/operation.dart';
 import 'package:exnota/src/note/repo/drift/block_repo.dart';
-import 'package:exnota/src/note/repo/id_generator.dart';
+import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/note/transaction.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
