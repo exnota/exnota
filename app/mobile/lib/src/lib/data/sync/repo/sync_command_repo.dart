@@ -53,10 +53,14 @@ class SyncCommandRepo {
   }
 
   // update status of command
-  Future<void> setStatus(int id, SyncCommandStatus status) async {
+  Future<void> setStatus(
+      {required int id,
+      required SyncCommandStatus status,
+      required DateTime updatedAt}) async {
     final query = db.update(db.syncCommandTable)
       ..where((tbl) => tbl.id.equals(id));
     await query.write(SyncCommandTableCompanion(
-        status: Value(SyncCommandRepoMapper.statusToData(status))));
+        status: Value(SyncCommandRepoMapper.statusToData(status)),
+        updatedAt: Value(updatedAt)));
   }
 }
