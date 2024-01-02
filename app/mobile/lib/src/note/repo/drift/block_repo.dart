@@ -25,8 +25,11 @@ class BlockRepo {
 
   BlockRepo(this.db);
 
-  Stream<List<Block>> listWatch() {
+  Stream<List<Block>> listWatch({bool onlyRoot = true}) {
     final query = db.select(db.blockTable);
+    if (onlyRoot) {
+      query.where((tbl) => tbl.parentId.isNull());
+    }
     query.orderBy([(row) => OrderingTerm.desc(row.createdAt)]);
     return query.map(BlockRepoMapper.fromRepo).watch();
   }
