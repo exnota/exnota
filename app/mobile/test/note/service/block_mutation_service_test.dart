@@ -220,7 +220,7 @@ void main() {
       });
     });
     group('setAudioBlockData', () {
-      group('When called with 3 blocks of transcriptions', () {
+      group('When called with 2 blocks of transcriptions', () {
         test('Then it creates the expected operations in order', () async {
           final repo = MockBlockRepo();
           num childId = 0;
@@ -308,6 +308,16 @@ void main() {
               ListAfterArg.id.toString(): 'child id 1',
             },
           );
+          final expectedUpdateTitle = Operation(
+            type: OperationType.update,
+            pointer: (id: 'block id'),
+            path: [Prop.properties.toString(), Property.title.toString()],
+            args: {
+              SingleVal.val.toString(): [
+                ['paragraph 1']
+              ],
+            },
+          );
           final expectedUpdateUrl = Operation(
             type: OperationType.update,
             pointer: (id: 'block id'),
@@ -330,6 +340,7 @@ void main() {
             expectedChild2Create,
             expectedlistAfterChild1,
             expectedlistAfterChild2,
+            expectedUpdateTitle,
             expectedUpdateUrl,
             expectedUpdateEditedAt
           ]);

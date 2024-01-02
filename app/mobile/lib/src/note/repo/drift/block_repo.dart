@@ -134,6 +134,10 @@ class BlockRepo {
                 updated =
                     _forPathExternal(operation: operation, block: existing);
               } else if (path.isNotEmpty &&
+                  path.first == Prop.properties.toString()) {
+                updated =
+                    _forPathProperties(operation: operation, block: existing);
+              } else if (path.isNotEmpty &&
                   path.single == Prop.lastEditedAt.toString()) {
                 updated =
                     _forPathLastEditedAt(operation: operation, block: existing);
@@ -275,6 +279,41 @@ class BlockRepo {
 
     return BlockTableCompanion(
       external: Value(BlockRepoMapper.toExternalRepo(updatedExternal)),
+    );
+  }
+
+  BlockTableCompanion _forPathProperties({
+    required Operation operation,
+    required BlockTableData block,
+  }) {
+    // Only supports ['properties', 'title']
+    final path = operation.path;
+    if (path.length == 1) {
+      logger.error('Only [\'properties\', \'title\'] is supported',
+          nonPrivateData: {
+            "path": path,
+          });
+      throw UnsupportedError('Only [\'properties\', \'title\'] is supported');
+    }
+    final propertyPath = path[1];
+    if (propertyPath != Property.title.toString()) {
+      logger.error('Only [\'title\'] is supported', nonPrivateData: {
+        "propertyPath": propertyPath,
+      });
+      throw UnsupportedError('Only [\'title\'] is supported');
+    }
+
+    // Get arguments
+    final title =
+        operation.args[SingleVal.val.toString()] as List<List<String>>?;
+    final isEmpty = title?.isEmpty ?? false;
+
+    final updatedProperties =
+        BlockRepoMapper.fromPropertiesRepo(block.properties) ?? {};
+    updatedProperties["title"] = isEmpty ? null : title;
+
+    return BlockTableCompanion(
+      properties: Value(BlockRepoMapper.toPropertiesRepo(updatedProperties)),
     );
   }
 
