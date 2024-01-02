@@ -2,6 +2,15 @@ import 'package:drift/drift.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/repo/mapper.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'sync_command_repo.g.dart';
+
+@riverpod
+SyncCommandRepo syncCommandRepo(SyncCommandRepoRef ref) {
+  final db = ref.read(databaseProvider);
+  return SyncCommandRepo(db);
+}
 
 class SyncCommandRepo {
   final AppDatabase db;
@@ -44,6 +53,12 @@ class SyncCommandRepo {
   Future<List<SyncCommand>> fetchByEntityId(String entityId) async {
     final query = db.select(db.syncCommandTable)
       ..where((t) => t.entityId.equals(entityId));
+    return await query.map<SyncCommand>(SyncCommandRepoMapper.fromData).get();
+  }
+
+  Future<List<SyncCommand>> fetchByRootEntityId(String rootEntityId) async {
+    final query = db.select(db.syncCommandTable)
+      ..where((t) => t.rootEntityId.equals(rootEntityId));
     return await query.map<SyncCommand>(SyncCommandRepoMapper.fromData).get();
   }
 
