@@ -209,5 +209,110 @@ void main() {
         });
       });
     });
+    group('retryAllRunning', () {
+      group('Given no running sync commands', () {
+        test('Then it should not update any statuses', () async {
+          final repo = MockSyncCommandRepo();
+          when(repo.fetchAll(status: SyncCommandStatus.running))
+              .thenAnswer((_) async => []);
+
+          final container = createContainer(
+            overrides: [
+              transactionProvider.overrideWith(
+                (ref) {
+                  Future<String> dbTransactionMock<String>(
+                      Future<String> Function() arg,
+                      {bool requireNew = false}) {
+                    return arg();
+                  }
+
+                  return dbTransactionMock;
+                },
+              ),
+              syncCommandRepoProvider.overrideWithValue(
+                repo,
+              ),
+              clockProvider.overrideWith((ref) {
+                final mock = MockClock();
+                when(mock.now()).thenReturn(DateTime.utc(2001));
+                return mock;
+              }),
+            ],
+          );
+          final service = container.read(syncCommandMutatorProvider.notifier);
+
+          await service.retryAllRunning();
+          verify(repo.fetchAll(status: SyncCommandStatus.running)).called(1);
+          verifyNever(repo.setStatus(
+              id: anyNamed('id'),
+              status: anyNamed('status'),
+              updatedAt: anyNamed('updatedAt')));
+          verifyNoMoreInteractions(repo);
+        });
+      });
+      group('Given running sync commands', () {
+        test('Then it should set their statuses to \'waiting\'', () async {
+          final repo = MockSyncCommandRepo();
+          when(repo.fetchAll(status: SyncCommandStatus.running))
+              .thenAnswer((_) async => [
+                    ExecuteTransactionSyncCommand.fromDb(
+                        id: 1,
+                        entityId: 'block id',
+                        rootEntityId: 'block id',
+                        status: SyncCommandStatus.running,
+                        updatedAt: DateTime.utc(1809, DateTime.february, 12),
+                        createdAt: DateTime.utc(1809, DateTime.february, 12),
+                        transaction: const Transaction(operations: [])),
+                    ExecuteTransactionSyncCommand.fromDb(
+                        id: 2,
+                        entityId: 'child id',
+                        rootEntityId: 'block id',
+                        status: SyncCommandStatus.running,
+                        updatedAt: DateTime.utc(1809, DateTime.february, 12),
+                        createdAt: DateTime.utc(1809, DateTime.february, 12),
+                        transaction: const Transaction(operations: [])),
+                  ]);
+
+          final container = createContainer(
+            overrides: [
+              transactionProvider.overrideWith(
+                (ref) {
+                  Future<String> dbTransactionMock<String>(
+                      Future<String> Function() arg,
+                      {bool requireNew = false}) {
+                    return arg();
+                  }
+
+                  return dbTransactionMock;
+                },
+              ),
+              syncCommandRepoProvider.overrideWithValue(
+                repo,
+              ),
+              clockProvider.overrideWith((ref) {
+                final mock = MockClock();
+                when(mock.now()).thenReturn(DateTime.utc(2001));
+                return mock;
+              }),
+            ],
+          );
+          final service = container.read(syncCommandMutatorProvider.notifier);
+
+          await service.retryAllRunning();
+          verify(repo.fetchAll(status: SyncCommandStatus.running)).called(1);
+          verify(repo.setStatus(
+                  id: 1,
+                  status: SyncCommandStatus.waiting,
+                  updatedAt: DateTime.utc(2001)))
+              .called(1);
+          verify(repo.setStatus(
+                  id: 2,
+                  status: SyncCommandStatus.waiting,
+                  updatedAt: DateTime.utc(2001)))
+              .called(1);
+          verifyNoMoreInteractions(repo);
+        });
+      });
+    });
   });
 }
