@@ -4,7 +4,11 @@
 # 3. Add:
 #   "rest-client.environmentVariables": {
 #     "$shared": {
-#         "notionAccessToken": "<token>"
+#         "notionAccessToken": "<token>",
+#         "notionOauthClientId": "<client_id>",
+#         "notionBotId": "<bot_id>",
+#         "notionWorkspaceId": "<workspace_id>",
+#         "notionOwnerUserId": "<owner.id>"
 #     },
 #     "local": {
 #         "baseUrl": "http://localhost:3000"
@@ -13,7 +17,8 @@
 #         "baseUrl": "https://exnota.com/api"
 #     }
 #   }
-# 4. Get a Notion access token and update the notionAccessToken variable.
+# 4. Follow two 'Notion setup' steps below to get the data needed for "$shared"
+#    environment variables and use then instead of the placeholders above.
 #
 # Usage:
 # 1. Change environment:
@@ -38,10 +43,10 @@ Content-Type: application/json
 
 audio
 --boundary
-Content-Disposition: form-data; name="accessToken"
+Content-Disposition: form-data; name="notionInfo"
 Content-Type: application/json
 
-{{notionAccessToken}}
+{"accessToken":"{{notionAccessToken}}","botId":"{{notionBotId}}","workspaceId":"{{notionWorkspaceId}}","ownerUserId":"{{notionOwnerUserId}}"}
 --boundary
 Content-Disposition: form-data; name="file"; filename="short-test.m4a"
 Content-Type: audio/x-m4a
@@ -59,10 +64,10 @@ Content-Type: application/json
 
 audio
 --boundary
-Content-Disposition: form-data; name="accessToken"
+Content-Disposition: form-data; name="notionInfo"
 Content-Type: application/json
 
-{{notionAccessToken}}
+{"accessToken":"{{notionAccessToken}}","botId":"{{notionBotId}}","workspaceId":"{{notionWorkspaceId}}","ownerUserId":"{{notionOwnerUserId}}"}
 --boundary
 Content-Disposition: form-data; name="file"; filename="jfk.wav"
 Content-Type: audio/wav
@@ -80,10 +85,10 @@ Content-Type: application/json
 
 audio
 --boundary
-Content-Disposition: form-data; name="accessToken"
+Content-Disposition: form-data; name="notionInfo"
 Content-Type: application/json
 
-{{notionAccessToken}}
+{"accessToken":"{{notionAccessToken}}","botId":"{{notionBotId}}","workspaceId":"{{notionWorkspaceId}}","ownerUserId":"{{notionOwnerUserId}}"}
 --boundary
 Content-Disposition: form-data; name="file"; filename="micro-machines-44k.wav"
 Content-Type: audio/wav
@@ -102,10 +107,10 @@ Content-Type: application/json
 
 audio
 --boundary
-Content-Disposition: form-data; name="accessToken"
+Content-Disposition: form-data; name="notionInfo"
 Content-Type: application/json
 
-{{notionAccessToken}}
+{"accessToken":"{{notionAccessToken}}","botId":"{{notionBotId}}","workspaceId":"{{notionWorkspaceId}}","ownerUserId":"{{notionOwnerUserId}}"}
 --boundary
 Content-Disposition: form-data; name="file"; filename="5min.m4a"
 Content-Type: audio/wav
@@ -114,16 +119,16 @@ Content-Type: audio/wav
 --boundary--
 
 ### ----------------------------------------------------
-### notion api
+### Notion API
 ### ----------------------------------------------------
-### Get code
-# 1. Get client ID
-# 2. Replace in this URL: https://api.notion.com/v1/oauth/authorize?client_id={{notionOauthClientId}}&response_type=code&owner=user&redirect_uri=https%3A%2F%2Fexnota.com%2Fapi%2Fintegration%2Fnotion%2Fmobile-code-redirect
-# 3. Open in browser and start capturing network requests
+### Notion setup 1/2: Get code
+# 1. Get client ID for the Exnota Notion Integration (see relevant vault)
+# 2. Add it to this URL: https://api.notion.com/v1/oauth/authorize?client_id={{notionOauthClientId}}&response_type=code&owner=user&redirect_uri=https%3A%2F%2Fexnota.com%2Fapi%2Fintegration%2Fnotion%2Fmobile-code-redirect
+# 3. Open in browser AND START CAPTURING NETWORK REQUESTS
 # 4. Go through flow, and get code from attempted redirect
-#    (won't work due to exnota:// scheme).
+#    (won't actually redirect due to exnota:// scheme).
 
-### Get access token
+### Notion setup 2/2: Get access token, workspace_id, bot_id, owner user id.
 POST {{baseUrl}}/notion-token HTTP/1.1
 content-type: application/json
 
