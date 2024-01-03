@@ -282,27 +282,18 @@ class _BlockListTileState extends ConsumerState<BlockListTile> {
             BlockStatus.exported => const Icon(Icons.question_mark),
             BlockStatus.error => GestureDetector(
                 behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  ref
-                      .read(syncCommandMutatorProvider.notifier)
-                      .retryForRootEntity(id: widget.block.id);
-                },
                 child: Container(
                   width: 48,
                   height: 48,
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.replay_circle_filled),
+                  child: const Icon(Icons.replay_circle_filled,
+                      color: Colors.grey),
                 ),
               ),
           },
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (url is String) {
-                launchUrl(Uri.parse(url));
-              }
-            },
             child: Container(
               width: 48,
               height: 48,
@@ -313,13 +304,13 @@ class _BlockListTileState extends ConsumerState<BlockListTile> {
           ),
         ),
         onTap: () {
-          // Navigate to the details page. If the user leaves and returns to
-          // the app after it has been killed while running in the
-          // background, the navigation stack is restored.
-          // Navigator.restorablePushNamed(
-          //   context,
-          //   SampleItemDetailsScreen.routeName,
-          // );
+          if (widget.status == BlockStatus.error) {
+            ref
+                .read(syncCommandMutatorProvider.notifier)
+                .retryForRootEntity(id: widget.block.id);
+          } else if (url is String) {
+            launchUrl(Uri.parse(url));
+          }
         });
   }
 }
