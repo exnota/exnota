@@ -83,4 +83,26 @@ class SyncCommandMutator extends _$SyncCommandMutator {
       }
     });
   }
+
+  Future<void> retryAllRunning() async {
+    final transaction = ref.read(transactionProvider);
+    final repo = ref.read(syncCommandRepoProvider);
+    final now = ref.read(clockProvider).now();
+    final logger = ref.read(loggerProvider('SyncCommandMutator'));
+    await transaction(() async {
+      final all = await repo.fetchAll(status: SyncCommandStatus.running);
+      if (all.isEmpty) {
+        return;
+      }
+      for (final command in all) {
+        logger.info('Retrying command ${command.id}', {
+          'previousUpdatedAt': command.updatedAt.toIso8601String(),
+        });
+        await repo.setStatus(
+            id: command.id.idOrThrow,
+            status: SyncCommandStatus.waiting,
+            updatedAt: now);
+      }
+    });
+  }
 }
