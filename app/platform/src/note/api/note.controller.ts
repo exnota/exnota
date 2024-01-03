@@ -19,7 +19,15 @@ import { diskStorage } from 'multer'
 import { PATH_UPLOAD_AUDIO } from '@exnota/settings'
 import { format as dateFormat } from 'date-fns'
 import { extname } from 'path'
-import { Equals, IsIn, IsNotEmpty, IsString, validate } from 'class-validator'
+import {
+  Equals,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+  validate,
+} from 'class-validator'
 import {
   ExportError,
   ExportService,
@@ -38,13 +46,38 @@ enum NoteError {
   CREDENTIALS_MISSING = 'CREDENTIALS_MISSING',
 }
 
+class NotionInfo {
+  @IsString()
+  @IsNotEmpty()
+  accessToken: string
+
+  @IsString()
+  @IsNotEmpty()
+  botId: string
+
+  @IsString()
+  @IsNotEmpty()
+  workspaceId: string
+
+  @IsString()
+  ownerUserId?: string
+}
+
 class Note {
   @IsIn(['audio', 'text'])
   type: 'audio' | 'text'
 
+  // TODO: Deprecate this. Should use NotionInfo instead.
   @IsString()
-  @IsNotEmpty()
-  accessToken: string
+  @IsOptional()
+  accessToken?: string
+
+  // It doesn't seem to parse this as a nested object. Might be possible using
+  // some other NestJS features but we'll just parse the JSON manually
+  // for now.
+  @IsOptional()
+  @IsString()
+  notionInfo?: string
 }
 
 class AudioNote implements Note {
@@ -52,8 +85,12 @@ class AudioNote implements Note {
   type: 'audio'
 
   @IsString()
-  @IsNotEmpty()
-  accessToken: string
+  @IsOptional()
+  accessToken?: string
+
+  @ValidateNested()
+  @IsOptional()
+  notionInfoJson?: NotionInfo
 }
 
 // Using a polymorphic API approach for notes - i.e. not having /note-audio,
@@ -113,9 +150,30 @@ export class NoteController {
         message: 'Only audio notes supported',
       })
     }
+
     const audioNote = new AudioNote()
-    audioNote.accessToken = note.accessToken
     audioNote.type = note.type
+    audioNote.notionInfoJson = note.notionInfo
+      ? JSON.parse(note.notionInfo)
+      : undefined
+    audioNote.accessToken = note.accessToken
+
+    // Check access token
+    const accessToken =
+      audioNote.notionInfoJson?.accessToken ?? note.accessToken
+    const notionInfo: Parameters<typeof this.fileStorageService.upload>[1] =
+      audioNote.notionInfoJson
+        ? {
+            botId: audioNote.notionInfoJson.botId,
+            workspaceId: audioNote.notionInfoJson.workspaceId,
+            ownerUserId: audioNote.notionInfoJson.ownerUserId,
+          }
+        : undefined
+    if (!accessToken) {
+      throw httpException(HttpStatus.BAD_REQUEST, {
+        message: 'Access token missing',
+      })
+    }
 
     const errors = await validate(audioNote)
     if (errors.length) {
@@ -143,7 +201,7 @@ export class NoteController {
         transcription: transcriptionResult.value,
       },
       {
-        token: audioNote.accessToken,
+        token: accessToken,
       },
     )
 
@@ -173,7 +231,10 @@ export class NoteController {
       }
     }
 
-    const uploadResult = await this.fileStorageService.upload(file.path)
+    const uploadResult = await this.fileStorageService.upload(
+      file.path,
+      notionInfo,
+    )
     if (!uploadResult.ok) {
       switch (uploadResult.type) {
         case FileStorageServiceError.CREDENTIALS_MISSING:
@@ -198,7 +259,7 @@ export class NoteController {
       exportResult.value.id,
       uploadResult.value.url,
       {
-        token: audioNote.accessToken,
+        token: accessToken,
       },
     )
 

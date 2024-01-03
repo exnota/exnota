@@ -16,13 +16,23 @@ type FileStorageServiceResult = {
 
 const BUCKET = 'exnota-userupload-v0'
 const REGION = 'eu-central-1'
+const METADATA_BOT_ID = 'bot_id'
+const METADATA_WORKSPACE_ID = 'workspace_id'
+const METADATA_OWNER_USER_ID = 'ownerUserId'
 
 @Injectable()
 export class FileStorageService {
   private readonly logger = new Logger(FileStorageService.name)
+
   constructor(private configService: ConfigService) {}
+
   async upload(
     path: string,
+    notionInfo?: {
+      botId: string
+      workspaceId: string
+      ownerUserId?: string
+    },
   ): Promise<Result<FileStorageServiceResult, FileStorageServiceError>> {
     const accessKeyId = this.configService.get('S3_ACCESS_KEY_ID')
     const secretAccessKey = this.configService.get('SW_SECRET_ACCESS_KEY')
@@ -51,10 +61,22 @@ export class FileStorageService {
     const parsedPath = parsePath(path)
     const filename = parsedPath.base
     const contents = readFileSync(path)
+
+    const metadata: Record<string, string> | undefined = notionInfo
+      ? {
+          [METADATA_BOT_ID]: notionInfo.botId,
+          [METADATA_WORKSPACE_ID]: notionInfo.workspaceId,
+        }
+      : undefined
+    if (metadata && notionInfo?.ownerUserId) {
+      metadata[METADATA_OWNER_USER_ID] = notionInfo.ownerUserId
+    }
+
     const command = new PutObjectCommand({
       Bucket: BUCKET,
       Key: filename,
       Body: contents,
+      Metadata: metadata,
     })
 
     try {
