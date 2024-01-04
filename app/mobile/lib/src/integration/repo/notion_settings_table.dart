@@ -8,4 +8,7 @@ class IntegrationNotionSettings extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get code => text().nullable().withLength(min: 1)();
   TextColumn get accessToken => text().nullable().withLength(min: 1)();
+  TextColumn get workspaceId => text().nullable().withLength(min: 1)();
+  TextColumn get botId => text().nullable().withLength(min: 1)();
+  TextColumn get ownerUserId => text().nullable().withLength(min: 1)();
 }

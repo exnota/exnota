@@ -59,7 +59,12 @@ class ExecuteTransactionSyncCommand extends SyncCommand<Transaction> {
 
     var request = http.MultipartRequest('POST', uri)
       ..fields['type'] = 'audio'
-      ..fields['accessToken'] = notionSettings.accessToken
+      ..fields['notionInfo'] = jsonEncode({
+        "accessToken": notionSettings.accessToken,
+        "botId": notionSettings.botId,
+        "workspaceId": notionSettings.workspaceId,
+        "ownerUserId": notionSettings.ownerUserId,
+      })
       ..files.add(await http.MultipartFile.fromPath('file', file.path,
           contentType: MediaType('audio', 'x-m4a')));
 

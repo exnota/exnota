@@ -17,7 +17,11 @@ class NotionSettingsRepo extends _$NotionSettingsRepo {
     final setting = settings[0];
     final accessToken = setting.accessToken;
     if (accessToken != null) {
-      return NotionSettings.accessToken(accessToken: accessToken);
+      return NotionSettings.accessToken(
+          accessToken: accessToken,
+          botId: setting.botId,
+          ownerUserId: setting.ownerUserId,
+          workspaceId: setting.workspaceId);
     }
     final code = setting.code;
     if (code != null) {
@@ -76,6 +80,9 @@ class NotionSettingsRepo extends _$NotionSettingsRepo {
       case NotionSettingsAccessToken():
         mapped = IntegrationNotionSettingsCompanion(
             accessToken: Value(settings.accessToken),
+            workspaceId: Value(settings.workspaceId),
+            botId: Value(settings.botId),
+            ownerUserId: Value(settings.ownerUserId),
             // Using Value.absent() here doesn't override existing value
             code: const Value(null),
             id: id != null ? Value(id) : const Value.absent());

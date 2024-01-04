@@ -51,8 +51,19 @@ class NotionSettingsService extends _$NotionSettingsService {
         }
         final body = jsonDecode(response.body);
         final accessToken = body["access_token"];
-        final newSettings =
-            NotionSettings.accessToken(accessToken: accessToken);
+        final workspaceId = body["workspace_id"] as String?;
+        final botId = body["bot_id"] as String?;
+        final owner = body["owner"] as Map<String, dynamic>?;
+        final ownerUser =
+            owner != null ? owner["user"] as Map<String, dynamic>? : null;
+        final ownerUserId =
+            ownerUser != null ? ownerUser["id"] as String? : null;
+
+        final newSettings = NotionSettings.accessToken(
+            accessToken: accessToken,
+            botId: botId,
+            workspaceId: workspaceId,
+            ownerUserId: ownerUserId);
         await ref
             .read(notionSettingsRepoProvider.notifier)
             .updateSettings(newSettings);

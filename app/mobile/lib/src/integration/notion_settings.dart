@@ -18,5 +18,8 @@ sealed class NotionSettings with _$NotionSettings {
 
   const factory NotionSettings.accessToken({
     required String accessToken,
+    String? workspaceId,
+    String? botId,
+    String? ownerUserId,
   }) = NotionSettingsAccessToken;
 }
