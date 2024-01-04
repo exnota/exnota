@@ -3,8 +3,9 @@ FROM debian:11 AS build
 RUN apt-get update \
     && apt-get install -y libsdl2-dev alsa-utils g++ make wget
 
+# whisper.cpp vs 1.5.3
 RUN mkdir /whisper && \
-    wget -q https://github.com/ggerganov/whisper.cpp/tarball/master -O - | \
+    wget -q https://github.com/ggerganov/whisper.cpp/tarball/9962371f71b91fd236e8af08db1e9e4b10a6c363 -O - | \
     tar -xz -C /whisper --strip-components 1
 
 WORKDIR /whisper
