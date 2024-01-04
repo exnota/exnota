@@ -129,6 +129,8 @@ Content-Type: audio/wav
 #    (won't actually redirect due to exnota:// scheme).
 
 ### Notion setup 2/2: Get access token, workspace_id, bot_id, owner user id.
+# 1. Get code from previous step.
+# 2. Replace "a code" below with this code.
 POST {{baseUrl}}/notion-token HTTP/1.1
 content-type: application/json
 
