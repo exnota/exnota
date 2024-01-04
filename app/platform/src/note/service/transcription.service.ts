@@ -5,6 +5,9 @@ import { isTranscriptionOutput } from './transcription-output'
 import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { parse as parsePath } from 'path'
 
+// From https://platform.openai.com/docs/guides/speech-to-text/prompting
+const PROMPT = 'Hello, welcome to my lecture.'
+
 export enum TranscribeError {
   NO_TRANSCRIPTION_GENERATED = 'NO_TRANSCRIPTION_GENERATED',
 }
@@ -20,7 +23,7 @@ export class TranscriptionService {
       `ffmpeg -i ${path} -ar 16000 -ac 1 -c:a pcm_s16le ${convertedPath}`,
     )
     await exec(
-      `whisper --model /home/node/whisper/models/ggml-base.bin -f ${convertedPath} --output-json`,
+      `whisper --prompt "${PROMPT}" --model /home/node/whisper/models/ggml-base.bin -f ${convertedPath} --output-json`,
     )
     try {
       const contents = await readFile(`${convertedPath}.json`, 'utf8')
