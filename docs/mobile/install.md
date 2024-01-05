@@ -7,7 +7,7 @@
 1. `flutter build apk`
 2. `flutter install`
 
-## iOS: Install on physical device
+## iOS: Install on physical device (some duplication with ./debug.md)
 
 <https://developer.apple.com/documentation/xcode/running-your-app-in-simulator-or-on-a-device>
 
