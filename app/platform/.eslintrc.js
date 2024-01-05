@@ -27,6 +27,13 @@ module.exports = {
         ignoreRestSiblings: true,
       },
     ],
+    '@typescript-eslint/switch-exhaustiveness-check': [
+      'error',
+      {
+        allowDefaultCaseForExhaustiveSwitch: false,
+        requireDefaultForNonUnion: true,
+      },
+    ],
     '@typescript-eslint/switch-exhaustiveness-check': 'error',
   },
 }

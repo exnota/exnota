@@ -8,7 +8,8 @@
 #         "notionOauthClientId": "<client_id>",
 #         "notionBotId": "<bot_id>",
 #         "notionWorkspaceId": "<workspace_id>",
-#         "notionOwnerUserId": "<owner.id>"
+#         "notionOwnerUserId": "<owner.id>",
+#         "openAiKey": "<key>"
 #     },
 #     "local": {
 #         "baseUrl": "http://localhost:3000"
@@ -158,3 +159,24 @@ curl -X PATCH 'https://api.notion.com/v1/blocks/2daf121ec2e742299da72e1df4eb67b9
 		}
 	]
 }'
+
+### ----------------------------------------------------
+### OpenAI Whisper
+### ----------------------------------------------------
+
+### Transcribe
+POST https://api.openai.com/v1/audio/transcriptions
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{openAiKey}}
+
+--boundary
+Content-Disposition: form-data; name="model"
+Content-Type: application/json
+
+whisper-1
+--boundary
+Content-Disposition: form-data; name="file"; filename="short-test.m4a"
+Content-Type: audio/x-m4a
+
+< short-test.m4a
+--boundary--

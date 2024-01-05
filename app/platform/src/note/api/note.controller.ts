@@ -182,12 +182,19 @@ export class NoteController {
       })
     }
 
+    const enableTestData = notionInfo
+      ? this.exportService.enableTestData(notionInfo)
+      : false
+
     const transcriptionResult = await this.transcriptionService.transcribe(
       file.path,
+      enableTestData,
     )
     if (!transcriptionResult.ok) {
       switch (transcriptionResult.type) {
         case TranscribeError.NO_TRANSCRIPTION_GENERATED:
+        case TranscribeError.CREDENTIALS_MISSING:
+        case TranscribeError.OPENAI_REQUEST_ERROR:
           throw httpException(
             HttpStatus.INTERNAL_SERVER_ERROR,
             transcriptionResult,
@@ -198,7 +205,8 @@ export class NoteController {
 
     const exportResult = await this.exportService.export(
       {
-        transcription: transcriptionResult.value,
+        transcription: transcriptionResult.value.local,
+        transcriptionOpenAi: transcriptionResult.value.openAi,
       },
       {
         token: accessToken,
@@ -223,6 +231,7 @@ export class NoteController {
         case ExportError.UNKNOWN_NOTION_ERROR:
         case ExportError.UNKNOWN_ERROR:
         case ExportError.INTERNAL_ERROR:
+        case ExportError.NOTION_TEST_CREDENTIALS_MISSING:
           throw httpException(
             HttpStatus.INTERNAL_SERVER_ERROR,
             exportResult,

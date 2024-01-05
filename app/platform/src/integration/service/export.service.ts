@@ -6,11 +6,13 @@ import { paragraphsForTranscription } from '@exnota/integration/service/notion-c
 import { truncateTranscription } from '@exnota/integration/service/truncate'
 import { Result, mapErrorType, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client'
 import { SearchResponse } from '@notionhq/client/build/src/api-endpoints'
 
 type NoteExport = {
   transcription: string
+  transcriptionOpenAi?: string
 }
 
 type AccessToken = {
@@ -35,6 +37,7 @@ export enum ExportError {
   UNKNOWN_NOTION_ERROR = 'UNKNOWN_NOTION_ERROR',
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
   INTERNAL_ERROR = 'INTERNAL_ERROR',
+  NOTION_TEST_CREDENTIALS_MISSING = 'NOTION_TEST_CREDENTIALS_MISSING',
 }
 
 export enum AddAudioError {
@@ -49,7 +52,10 @@ export enum AddAudioError {
 export class ExportService {
   private readonly logger = new Logger(ExportService.name)
 
-  constructor(private notionAuthService: NotionAuthService) {}
+  constructor(
+    private notionAuthService: NotionAuthService,
+    private configService: ConfigService,
+  ) {}
 
   async export(
     note: NoteExport,
@@ -132,6 +138,63 @@ export class ExportService {
         'Unknown error adding audio to page',
       )
     }
+  }
+
+  enableTestData(notionInfo: {
+    botId: string
+    workspaceId: string
+    ownerUserId?: string
+  }): boolean {
+    const secrets = this.getSecrets()
+    if (!secrets.ok) {
+      return false
+    }
+    if (
+      notionInfo.botId === secrets.value.botId &&
+      notionInfo.workspaceId === secrets.value.workspaceId &&
+      notionInfo.ownerUserId === secrets.value.ownerId
+    ) {
+      return true
+    }
+    return false
+  }
+
+  private getSecrets(): Result<
+    {
+      workspaceId: string
+      botId: string
+      ownerId: string
+    },
+    ExportError
+  > {
+    const notionTestWorkspaceId = this.configService.get(
+      'NOTION_TEST_WORKSPACE_ID',
+    )
+    const notionTestBotId = this.configService.get('NOTION_TEST_BOT_ID')
+    const notionTestOwnerId = this.configService.get(
+      'NOTION_TEST_OWNER_USER_ID',
+    )
+    if (
+      typeof notionTestWorkspaceId !== 'string' ||
+      typeof notionTestBotId !== 'string' ||
+      typeof notionTestOwnerId !== 'string' ||
+      notionTestWorkspaceId === '' ||
+      notionTestBotId === '' ||
+      notionTestOwnerId === '' ||
+      notionTestWorkspaceId.startsWith('DUMMY_') ||
+      notionTestBotId.startsWith('DUMMY_') ||
+      notionTestOwnerId.startsWith('DUMMY_')
+    ) {
+      return resultError(
+        ExportError.NOTION_TEST_CREDENTIALS_MISSING,
+        'Notion credentials missing',
+      )
+    }
+    return resultOk({
+      workspaceId: notionTestWorkspaceId,
+      botId: notionTestBotId,
+      ownerId: notionTestOwnerId,
+    })
   }
 
   private async getDestinationId(
@@ -265,7 +328,7 @@ export class ExportService {
           ],
         },
       },
-      children: paragraphsForTranscription(note.transcription),
+      children: paragraphsForTranscription(note),
     })
     this.logger.log('Exported to:', apiResult)
     // Result is either PageObjectResponse or PartialPageObjectResponse. Partial
