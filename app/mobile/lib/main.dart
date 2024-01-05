@@ -1,5 +1,6 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_initializer.dart';
+import 'package:exnota/src/lib/env/device_info.dart';
 import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:exnota/src/lib/log/report.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,9 @@ void main() async {
   // Needed for the database, Firebase, and more. Don't know why :)
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Device info
+  final deviceInfo = await initDeviceInfo();
+
   // Reporting
   await initCrashlytics();
 
@@ -24,8 +28,9 @@ void main() async {
 
   // Overrides
   final overrides = getOverrides(
-    localFilePathGenerator: localFilePathGenerator,
     db: db,
+    deviceInfo: deviceInfo,
+    localFilePathGenerator: localFilePathGenerator,
   );
 
   // Sync command runner
@@ -49,9 +54,11 @@ void main() async {
 
 List<Override> getOverrides(
     {required LocalPathGenerator localFilePathGenerator,
-    required AppDatabase db}) {
+    required AppDatabase db,
+    required DeviceInfo deviceInfo}) {
   return [
     localFilePathServiceProvider.overrideWithValue(localFilePathGenerator),
     databaseProvider.overrideWithValue(db),
+    deviceInfoProvider.overrideWithValue(deviceInfo)
   ];
 }

@@ -10,6 +10,14 @@
 
 If there's already an app version on, it may error trying to uninstall. Retry - it should work the second time.
 
+#### Local environment
+
+To use a local server when connected via USB:
+1. `adb devices` to find the device ID
+2. `adb -s <device id> reverse tcp:3000 tcp:3000` to forward the port ID
+
+To use a local server over Wifi I think it's necessary to use your computer's network IP or ngrok. The app doesn't have a way to provide this yet.
+
 ### iOS (some duplication with ./install.md)
 
 Apparently need to get it working in Xcode first, then should be able to debug in VS Code ([link](https://stackoverflow.com/questions/54444538/how-do-i-run-test-my-flutter-app-on-a-real-device)).

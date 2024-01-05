@@ -43,6 +43,7 @@ dependencies:
   app_links: ^3.4.5
   firebase_core: ^2.24.1
   firebase_crashlytics: ^3.4.7
+  device_info_plus: ^9.1.1
 
 dev_dependencies:
   flutter_test:
