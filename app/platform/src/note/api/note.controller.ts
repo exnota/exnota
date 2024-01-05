@@ -139,7 +139,7 @@ export class NoteController {
     )
     file: Express.Multer.File,
     @Body() note: Note,
-  ) {
+  ): Promise<{ transcription: string; url?: string }> {
     // Audio file
     const { buffer: _, stream: __, ...logData } = file
     this.logger.log('File uploaded:', logData)
@@ -273,7 +273,7 @@ export class NoteController {
     )
 
     return {
-      transcription: transcriptionResult.value,
+      transcription: transcriptionResult.value.local,
       url: exportResult.value.url,
     }
   }
