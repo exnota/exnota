@@ -185,6 +185,7 @@ export class NoteController {
     const enableTestData = notionInfo
       ? this.exportService.enableTestData(notionInfo)
       : false
+    this.logger.log('Enable test data:', enableTestData)
 
     const transcriptionResult = await this.transcriptionService.transcribe(
       file.path,

@@ -147,6 +147,7 @@ export class ExportService {
   }): boolean {
     const secrets = this.getSecrets()
     if (!secrets.ok) {
+      this.logger.warn('Notion test credentials missing')
       return false
     }
     if (
@@ -156,6 +157,18 @@ export class ExportService {
     ) {
       return true
     }
+    this.logger.log(
+      'Does botId match?',
+      notionInfo.botId === secrets.value.botId,
+    )
+    this.logger.log(
+      'Does workspaceId match?',
+      notionInfo.workspaceId === secrets.value.workspaceId,
+    )
+    this.logger.log(
+      'Does ownerUserId match?',
+      notionInfo.ownerUserId === secrets.value.ownerId,
+    )
     return false
   }
 
