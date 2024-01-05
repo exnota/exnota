@@ -40,7 +40,7 @@ export class TranscriptionService {
       `ffmpeg -i ${path} -ar 16000 -ac 1 -c:a pcm_s16le ${convertedPath}`,
     )
     await exec(
-      `whisper --prompt "${PROMPT}" --model /home/node/whisper/models/ggml-large-v2.bin -f ${convertedPath} --output-json`,
+      `whisper --prompt "${PROMPT}" --model /home/node/whisper/models/ggml-base.bin -f ${convertedPath} --output-json`,
     )
     try {
       const contents = await readFile(`${convertedPath}.json`, 'utf8')
