@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core'
-import { NoteModule } from '@exnota/note/note.module'
 import { test as shellTest, mkdir } from 'shelljs'
 import { PATH_UPLOAD_AUDIO } from './settings'
 import { ValidationPipe } from '@nestjs/common'
+import { AppModule } from '@exnota/app.module'
 
 async function bootstrap() {
   if (!shellTest('-d', PATH_UPLOAD_AUDIO)) {
@@ -21,7 +21,7 @@ async function bootstrap() {
     mkdir('-p', [PATH_UPLOAD_AUDIO])
   }
 
-  const app = await NestFactory.create(NoteModule)
+  const app = await NestFactory.create(AppModule)
   app.useGlobalPipes(new ValidationPipe())
   await app.listen(3000)
 }

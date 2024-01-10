@@ -4,6 +4,7 @@
 # 3. Add:
 #   "rest-client.environmentVariables": {
 #     "$shared": {
+#         "exnotaJwt": "<jwt>", # get from auth/login
 #         "notionAccessToken": "<token>",
 #         "notionOauthClientId": "<client_id>",
 #         "notionBotId": "<bot_id>",
@@ -33,6 +34,7 @@
 ### ----------------------------------------------------
 ### get notes
 GET {{baseUrl}}/note/notes
+Authorization: Bearer {{exnotaJwt}}
 
 ### post notes - m4a short
 POST {{baseUrl}}/note/notes
@@ -180,3 +182,16 @@ Content-Type: audio/x-m4a
 
 < short-test.m4a
 --boundary--
+
+### ----------------------------------------------------
+### Auth
+### ----------------------------------------------------
+# Get JWT
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+	"username": "john",
+	"password": "changeme"
+}
+
