@@ -329,7 +329,7 @@ export class ExportService {
           ],
         },
       },
-      children: paragraphsForTranscription(note),
+      children: await paragraphsForTranscription(note),
     })
     this.logger.log('Exported to:', apiResult)
     // Result is either PageObjectResponse or PartialPageObjectResponse. Partial

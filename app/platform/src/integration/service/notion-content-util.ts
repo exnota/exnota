@@ -1,10 +1,10 @@
-import { chunkTranscription } from '@exnota/integration/service/truncate'
+import { getParagraphs } from '@exnota/integration/service/paragraph'
 import { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints'
 
-function paragraphsForTranscription(noteExport: {
+async function paragraphsForTranscription(noteExport: {
   transcription: string
   transcriptionOpenAi?: string
-}): BlockObjectRequest[] {
+}): Promise<BlockObjectRequest[]> {
   if (noteExport.transcriptionOpenAi) {
     return localAndOpenAi(
       noteExport.transcription,
@@ -14,8 +14,8 @@ function paragraphsForTranscription(noteExport: {
   return localOnly(noteExport.transcription)
 }
 
-function localOnly(transcription: string): BlockObjectRequest[] {
-  const localChunks = chunkTranscription(transcription, {})
+async function localOnly(transcription: string): Promise<BlockObjectRequest[]> {
+  const localChunks = await getParagraphs(transcription)
   return localChunks.map((chunk) => {
     return {
       type: 'paragraph',
@@ -32,12 +32,12 @@ function localOnly(transcription: string): BlockObjectRequest[] {
   })
 }
 
-function localAndOpenAi(
+async function localAndOpenAi(
   transcription: string,
   transcriptionOpenAi: string,
-): BlockObjectRequest[] {
-  const localChunks = chunkTranscription(transcription, {})
-  const openAiChunks = chunkTranscription(transcriptionOpenAi, {})
+): Promise<BlockObjectRequest[]> {
+  const localChunks = await getParagraphs(transcription)
+  const openAiChunks = await getParagraphs(transcriptionOpenAi)
 
   const paragraphs: BlockObjectRequest[] = []
   paragraphs.push({
