@@ -38,6 +38,7 @@ Authorization: Bearer {{exnotaJwt}}
 
 ### post notes - m4a short
 POST {{baseUrl}}/note/notes
+Authorization: Bearer {{exnotaJwt}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -59,6 +60,7 @@ Content-Type: audio/x-m4a
 
 ### post notes - wav jfk
 POST {{baseUrl}}/note/notes
+Authorization: Bearer {{exnotaJwt}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -80,6 +82,7 @@ Content-Type: audio/wav
 
 ### post notes - wav 44k micromachines
 POST {{baseUrl}}/note/notes
+Authorization: Bearer {{exnotaJwt}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -102,6 +105,7 @@ Content-Type: audio/wav
 
 ### post notes - 5 minute test (actually 5:37)
 POST {{baseUrl}}/note/notes
+Authorization: Bearer {{exnotaJwt}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -135,6 +139,7 @@ Content-Type: audio/wav
 # 1. Get code from previous step.
 # 2. Replace "a code" below with this code.
 POST {{baseUrl}}/notion-token HTTP/1.1
+Authorization: Bearer {{exnotaJwt}}
 content-type: application/json
 
 {

@@ -10,7 +10,6 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
-  UseGuards,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import {
@@ -39,7 +38,6 @@ import {
   FileStorageService,
   FileStorageServiceError,
 } from '@exnota/note/service/file-storage.service'
-import { JwtAuthGuard } from '@exnota/auth/jwt-auth.guard'
 
 enum NoteError {
   AUTH_ERROR = 'AUTH_ERROR',
@@ -110,7 +108,6 @@ export class NoteController {
     private fileStorageService: FileStorageService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   getNote(@Request() req: any) {
     console.log(req)
