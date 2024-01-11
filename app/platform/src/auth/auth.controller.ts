@@ -12,6 +12,12 @@ import {
   Res,
   Body,
 } from '@nestjs/common'
+import { IsEmail } from 'class-validator'
+
+class MagicLoginBody {
+  @IsEmail()
+  destination: string
+}
 
 @Controller()
 export class AuthController {
@@ -29,7 +35,11 @@ export class AuthController {
 
   @Post('auth/magic-login')
   @Public()
-  async magicLogin(@Req() req: any, @Res() res: any, @Body() body: any) {
+  async magicLogin(
+    @Req() req: any,
+    @Res() res: any,
+    @Body() body: MagicLoginBody,
+  ) {
     await this.authService.validateUserByEmail(body.destination)
     return this.strategy.send(req, res)
   }
