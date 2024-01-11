@@ -191,12 +191,20 @@ Content-Type: audio/x-m4a
 ### ----------------------------------------------------
 ### Auth
 ### ----------------------------------------------------
-# Get JWT
+### Get JWT
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
 	"username": "john",
 	"password": "changeme"
+}
+
+### Get magic
+POST {{baseUrl}}/auth/magic-login
+Content-Type: application/json
+
+{
+	"destination": "email@matt.fyi"
 }
 

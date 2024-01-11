@@ -7,13 +7,13 @@ import { parse as parsePath } from 'path'
 import { ConfigService } from '@nestjs/config'
 import OpenAI from 'openai'
 import * as fs from 'fs'
+import { Config, ConfigKey } from '@exnota/config'
 
 // From https://platform.openai.com/docs/guides/speech-to-text/prompting
 const PROMPT = 'Hello, welcome to my lecture.'
 
 export enum TranscribeError {
   NO_TRANSCRIPTION_GENERATED = 'NO_TRANSCRIPTION_GENERATED',
-  CREDENTIALS_MISSING = 'CREDENTIALS_MISSING',
   OPENAI_REQUEST_ERROR = 'OPENAI_REQUEST_ERROR',
 }
 
@@ -26,7 +26,7 @@ type TranscribeResult = {
 export class TranscriptionService {
   private readonly logger = new Logger(TranscriptionService.name)
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService<Config>) {}
 
   async transcribe(
     path: string,
@@ -97,18 +97,9 @@ export class TranscriptionService {
     path: string
   }): Promise<Result<string, TranscribeError>> {
     // Get OPENAI_KEY from configService
-    const apiKey = this.configService.get('OPENAI_KEY')
-    if (
-      !apiKey ||
-      typeof apiKey !== 'string' ||
-      apiKey === '' ||
-      apiKey.startsWith('DUMMY_')
-    ) {
-      return resultError(
-        TranscribeError.CREDENTIALS_MISSING,
-        'Credentials not cofigured',
-      )
-    }
+    const apiKey = this.configService.get(ConfigKey.OPENAI_KEY, {
+      infer: true,
+    })
 
     const openai = new OpenAI({
       apiKey: apiKey, // This is the default and can be omitted

@@ -1,17 +1,17 @@
+import { Config, ConfigKey } from '@exnota/config'
 import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 export enum NotionTokenServiceError {
   NOTION_AUTH_ERROR = 'NOTION_AUTH_ERROR',
-  EXNOTA_CREDENTIALS_MISSING = 'EXNOTA_CREDENTIALS_MISSING',
 }
 
 @Injectable()
 export class NotionTokenService {
   private readonly logger = new Logger(NotionTokenService.name)
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService<Config>) {}
 
   // Token for a given user doesn't seem to change, even if the pages they have
   // given access to change. Though a new code is generated each time. Not sure
@@ -19,21 +19,10 @@ export class NotionTokenService {
   async notionToken(
     code: string,
   ): Promise<Result<unknown, NotionTokenServiceError>> {
-    const clientId = this.configService.get('NOTION_OAUTH_CLIENT_ID')
-    const clientSecret = this.configService.get('NOTION_OAUTH_CLIENT_SECRET')
-    if (
-      typeof clientId !== 'string' ||
-      typeof clientSecret !== 'string' ||
-      clientId === '' ||
-      clientSecret === '' ||
-      clientId.startsWith('DUMMY_') ||
-      clientSecret.startsWith('DUMMY_')
-    ) {
-      return resultError(
-        NotionTokenServiceError.EXNOTA_CREDENTIALS_MISSING,
-        'Credentials not configured',
-      )
-    }
+    const clientId = this.configService.get(ConfigKey.NOTION_OAUTH_CLIENT_ID)
+    const clientSecret = this.configService.get(
+      ConfigKey.NOTION_OAUTH_CLIENT_SECRET,
+    )
     const encoded = Buffer.from(`${clientId}:${clientSecret}`).toString(
       'base64',
     )

@@ -9,11 +9,14 @@ import { DEPRECATED_jwtConstants } from './constants'
 import { JwtStrategy } from '@exnota/auth/jwt.strategy'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtAuthGuard } from '@exnota/auth/jwt-auth.guard'
+import { MagicStrategy } from '@exnota/auth/magic.strategy'
+import { ConfigModule } from '@nestjs/config'
 
 @Module({
   imports: [
     AccountModule,
     PassportModule,
+    ConfigModule,
     JwtModule.register({
       secret: DEPRECATED_jwtConstants.secret,
       // TODO: What is best practice?
@@ -23,6 +26,7 @@ import { JwtAuthGuard } from '@exnota/auth/jwt-auth.guard'
   providers: [
     AuthService,
     LocalStrategy,
+    MagicStrategy,
     JwtStrategy,
     {
       provide: APP_GUARD,

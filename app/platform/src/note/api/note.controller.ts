@@ -17,7 +17,6 @@ import {
   TranscriptionService,
 } from '@exnota/note/service/transcription.service'
 import { diskStorage } from 'multer'
-import { PATH_UPLOAD_AUDIO } from '@exnota/settings'
 import { format as dateFormat } from 'date-fns'
 import { extname } from 'path'
 import {
@@ -38,13 +37,14 @@ import {
   FileStorageService,
   FileStorageServiceError,
 } from '@exnota/note/service/file-storage.service'
+import { ConfigService } from '@nestjs/config'
+import { Config, PATH_UPLOAD_AUDIO } from '@exnota/config'
 
 enum NoteError {
   AUTH_ERROR = 'AUTH_ERROR',
   NO_PAGE_ERROR = 'NO_PAGE_ERROR',
   UNEXPECTED = 'UNEXPECTED',
   UPLOAD_ERROR = 'UPLOAD_ERROR',
-  CREDENTIALS_MISSING = 'CREDENTIALS_MISSING',
 }
 
 class NotionInfo {
@@ -106,6 +106,7 @@ export class NoteController {
     private transcriptionService: TranscriptionService,
     private exportService: ExportService,
     private fileStorageService: FileStorageService,
+    private configService: ConfigService<Config>,
   ) {}
 
   @Get()
@@ -119,6 +120,8 @@ export class NoteController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: function (_req, _file, cb) {
+          // This could be pulled from the config service if FileInterceptor
+          // is wrapped with a mixin. Some info in: /docs/platform/nestjs.md
           cb(null, PATH_UPLOAD_AUDIO)
         },
         filename: function (_req, file, cb) {
@@ -196,7 +199,6 @@ export class NoteController {
     if (!transcriptionResult.ok) {
       switch (transcriptionResult.type) {
         case TranscribeError.NO_TRANSCRIPTION_GENERATED:
-        case TranscribeError.CREDENTIALS_MISSING:
         case TranscribeError.OPENAI_REQUEST_ERROR:
           throw httpException(
             HttpStatus.INTERNAL_SERVER_ERROR,
@@ -234,7 +236,6 @@ export class NoteController {
         case ExportError.UNKNOWN_NOTION_ERROR:
         case ExportError.UNKNOWN_ERROR:
         case ExportError.INTERNAL_ERROR:
-        case ExportError.NOTION_TEST_CREDENTIALS_MISSING:
           throw httpException(
             HttpStatus.INTERNAL_SERVER_ERROR,
             exportResult,
@@ -249,12 +250,6 @@ export class NoteController {
     )
     if (!uploadResult.ok) {
       switch (uploadResult.type) {
-        case FileStorageServiceError.CREDENTIALS_MISSING:
-          throw httpException(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            uploadResult,
-            NoteError.CREDENTIALS_MISSING,
-          )
         case FileStorageServiceError.UPLOAD_ERROR:
           throw httpException(
             HttpStatus.INTERNAL_SERVER_ERROR,

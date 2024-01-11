@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core'
 import { test as shellTest, mkdir } from 'shelljs'
-import { PATH_UPLOAD_AUDIO } from './settings'
 import { ValidationPipe } from '@nestjs/common'
 import { AppModule } from '@exnota/app.module'
+import { PATH_UPLOAD_AUDIO } from '@exnota/config'
 
 async function bootstrap() {
   if (!shellTest('-d', PATH_UPLOAD_AUDIO)) {

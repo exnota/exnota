@@ -27,6 +27,15 @@ export class AuthService {
     return null
   }
 
+  async validateUserByEmail(email: string): Promise<any> {
+    const user = await this.usersService.findOneByEmail(email)
+    if (user && user.email === email) {
+      const { password, ...result } = user
+      return result
+    }
+    return null
+  }
+
   async login(user: any) {
     const payload = { username: user.username, sub: user.userId }
     return {

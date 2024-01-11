@@ -1,10 +1,8 @@
-import {
-  NotionAuthService,
-  NotionAuthServiceError,
-} from '@exnota/integration/service/notion-auth.service'
+import { ConfigKey, Config } from '@exnota/config'
+import { NotionAuthService } from '@exnota/integration/service/notion-auth.service'
 import { paragraphsForTranscription } from '@exnota/integration/service/notion-content-util'
 import { truncateTranscription } from '@exnota/integration/service/truncate'
-import { Result, mapErrorType, resultError, resultOk } from '@exnota/lib/result'
+import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client'
@@ -37,7 +35,6 @@ export enum ExportError {
   UNKNOWN_NOTION_ERROR = 'UNKNOWN_NOTION_ERROR',
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
   INTERNAL_ERROR = 'INTERNAL_ERROR',
-  NOTION_TEST_CREDENTIALS_MISSING = 'NOTION_TEST_CREDENTIALS_MISSING',
 }
 
 export enum AddAudioError {
@@ -54,7 +51,7 @@ export class ExportService {
 
   constructor(
     private notionAuthService: NotionAuthService,
-    private configService: ConfigService,
+    private configService: ConfigService<Config>,
   ) {}
 
   async export(
@@ -62,14 +59,7 @@ export class ExportService {
     token: AccessToken,
   ): Promise<Result<ExportResult, ExportError>> {
     this.logger.log(`Received note to export:`, note)
-    const notionResult = this.notionAuthService.getClient(token)
-    if (!notionResult.ok) {
-      switch (notionResult.type) {
-        case NotionAuthServiceError.EXNOTA_CREDENTIALS_MISSING:
-          return mapErrorType(ExportError.INTERNAL_ERROR, notionResult)
-      }
-    }
-    const notion = notionResult.value
+    const notion = this.notionAuthService.getClient(token)
 
     const destinationResult = await this.getDestinationId(notion)
     if (!destinationResult.ok) {
@@ -93,14 +83,7 @@ export class ExportService {
     url: string,
     token: AccessToken,
   ): Promise<Result<void, AddAudioError>> {
-    const notionResult = this.notionAuthService.getClient(token)
-    if (!notionResult.ok) {
-      switch (notionResult.type) {
-        case NotionAuthServiceError.EXNOTA_CREDENTIALS_MISSING:
-          return mapErrorType(AddAudioError.INTERNAL_ERROR, notionResult)
-      }
-    }
-    const notion = notionResult.value
+    const notion = this.notionAuthService.getClient(token)
 
     try {
       this.logger.log('Adding audio to page...')
@@ -146,56 +129,33 @@ export class ExportService {
     ownerUserId?: string
   }): boolean {
     const secrets = this.getSecrets()
-    if (!secrets.ok) {
-      this.logger.error('Notion test credentials missing')
-      return false
-    }
     if (
-      notionInfo.botId === secrets.value.botId &&
-      notionInfo.workspaceId === secrets.value.workspaceId &&
-      notionInfo.ownerUserId === secrets.value.ownerId
+      notionInfo.botId === secrets.botId &&
+      notionInfo.workspaceId === secrets.workspaceId &&
+      notionInfo.ownerUserId === secrets.ownerId
     ) {
       return true
     }
     return false
   }
 
-  private getSecrets(): Result<
-    {
-      workspaceId: string
-      botId: string
-      ownerId: string
-    },
-    ExportError
-  > {
+  private getSecrets(): {
+    workspaceId: string
+    botId: string
+    ownerId: string
+  } {
     const notionTestWorkspaceId = this.configService.get(
-      'NOTION_TEST_WORKSPACE_ID',
+      ConfigKey.NOTION_TEST_WORKSPACE_ID,
     )
-    const notionTestBotId = this.configService.get('NOTION_TEST_BOT_ID')
+    const notionTestBotId = this.configService.get(ConfigKey.NOTION_TEST_BOT_ID)
     const notionTestOwnerId = this.configService.get(
-      'NOTION_TEST_OWNER_USER_ID',
+      ConfigKey.NOTION_TEST_OWNER_USER_ID,
     )
-    if (
-      typeof notionTestWorkspaceId !== 'string' ||
-      typeof notionTestBotId !== 'string' ||
-      typeof notionTestOwnerId !== 'string' ||
-      notionTestWorkspaceId === '' ||
-      notionTestBotId === '' ||
-      notionTestOwnerId === '' ||
-      notionTestWorkspaceId.startsWith('DUMMY_') ||
-      notionTestBotId.startsWith('DUMMY_') ||
-      notionTestOwnerId.startsWith('DUMMY_')
-    ) {
-      return resultError(
-        ExportError.NOTION_TEST_CREDENTIALS_MISSING,
-        'Notion credentials missing',
-      )
-    }
-    return resultOk({
+    return {
       workspaceId: notionTestWorkspaceId,
       botId: notionTestBotId,
       ownerId: notionTestOwnerId,
-    })
+    }
   }
 
   private async getDestinationId(

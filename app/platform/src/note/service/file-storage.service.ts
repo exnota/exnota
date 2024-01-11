@@ -4,9 +4,9 @@ import { Result, resultError, resultOk } from '@exnota/lib/result'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { readFileSync } from 'node:fs'
+import { Config, ConfigKey } from '@exnota/config'
 
 export enum FileStorageServiceError {
-  CREDENTIALS_MISSING = 'CREDENTIALS_MISSING',
   UPLOAD_ERROR = 'UPLOAD_ERROR',
 }
 
@@ -24,7 +24,7 @@ const METADATA_OWNER_USER_ID = 'ownerUserId'
 export class FileStorageService {
   private readonly logger = new Logger(FileStorageService.name)
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService<Config>) {}
 
   async upload(
     path: string,
@@ -34,21 +34,10 @@ export class FileStorageService {
       ownerUserId?: string
     },
   ): Promise<Result<FileStorageServiceResult, FileStorageServiceError>> {
-    const accessKeyId = this.configService.get('S3_ACCESS_KEY_ID')
-    const secretAccessKey = this.configService.get('SW_SECRET_ACCESS_KEY')
-    if (
-      typeof accessKeyId !== 'string' ||
-      typeof secretAccessKey !== 'string' ||
-      accessKeyId === '' ||
-      secretAccessKey === '' ||
-      accessKeyId.startsWith('DUMMY_') ||
-      secretAccessKey.startsWith('DUMMY_')
-    ) {
-      return resultError(
-        FileStorageServiceError.CREDENTIALS_MISSING,
-        'Credentials not configured',
-      )
-    }
+    const accessKeyId = this.configService.get(ConfigKey.S3_ACCESS_KEY_ID)
+    const secretAccessKey = this.configService.get(
+      ConfigKey.SW_SECRET_ACCESS_KEY,
+    )
 
     const client = new S3Client({
       credentials: {
