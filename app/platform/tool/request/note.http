@@ -205,6 +205,6 @@ POST {{baseUrl}}/auth/magic-login
 Content-Type: application/json
 
 {
-	"destination": "email@matt.fyi"
+	"destination": "john@example.com"
 }
 

@@ -1,6 +1,6 @@
 import MagicLoginStrategy from 'passport-magic-login'
 import { PassportStrategy } from '@nestjs/passport'
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { ConfigService } from '@nestjs/config'
 import { ConfigKey, Config } from '@exnota/config'
@@ -26,6 +26,7 @@ export class MagicStrategy extends PassportStrategy(MagicLoginStrategy) {
         expiresIn: '365 days',
       },
 
+      // eslint-disable-next-line require-await
       sendMagicLink: async (destination: any, href: any) => {
         this.logger.log(
           `Sending magic link to ${destination} with href ${href}`,
@@ -51,10 +52,6 @@ export class MagicStrategy extends PassportStrategy(MagicLoginStrategy) {
   // Note: This is executed *after* auth is successful. If auth fails, it won't
   // run.
   async validate(payload: { destination: string }): Promise<any> {
-    const user = await this.authService.validateUserByEmail(payload.destination)
-    if (!user) {
-      throw new UnauthorizedException()
-    }
-    return user
+    return await this.authService.validateUserByEmail(payload.destination)
   }
 }

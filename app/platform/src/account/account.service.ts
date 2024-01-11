@@ -20,10 +20,12 @@ export class AccountService {
     },
   ]
 
+  // eslint-disable-next-line require-await
   async findOne(username: string): Promise<User | undefined> {
     return this.users.find((user) => user.username === username)
   }
 
+  // eslint-disable-next-line require-await
   async findOneByEmail(email: string): Promise<User | undefined> {
     return this.users.find((user) => user.email === email)
   }

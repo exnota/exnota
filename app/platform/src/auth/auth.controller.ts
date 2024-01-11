@@ -10,6 +10,7 @@ import {
   UseGuards,
   Req,
   Res,
+  Body,
 } from '@nestjs/common'
 
 @Controller()
@@ -23,12 +24,13 @@ export class AuthController {
   @Public()
   @UseGuards(LocalAuthGuard)
   async login(@Request() req: any) {
-    return this.authService.login(req.user)
+    return await this.authService.login(req.user)
   }
 
   @Post('auth/magic-login')
   @Public()
-  async magicLogin(@Req() req: any, @Res() res: any) {
+  async magicLogin(@Req() req: any, @Res() res: any, @Body() body: any) {
+    await this.authService.validateUserByEmail(body.destination)
     return this.strategy.send(req, res)
   }
 

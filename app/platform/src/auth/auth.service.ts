@@ -1,5 +1,5 @@
 import { AccountService } from '@exnota/account/account.service'
-import { Injectable } from '@nestjs/common'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 
 @Injectable()
@@ -29,13 +29,14 @@ export class AuthService {
 
   async validateUserByEmail(email: string): Promise<any> {
     const user = await this.usersService.findOneByEmail(email)
-    if (user && user.email === email) {
-      const { password, ...result } = user
-      return result
+    if (!user) {
+      throw new UnauthorizedException()
     }
-    return null
+
+    return user
   }
 
+  // eslint-disable-next-line require-await
   async login(user: any) {
     const payload = { username: user.username, sub: user.userId }
     return {
