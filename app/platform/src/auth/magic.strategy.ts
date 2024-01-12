@@ -10,12 +10,12 @@ export class MagicStrategy extends PassportStrategy(MagicLoginStrategy) {
   private readonly logger = new Logger(MagicStrategy.name)
 
   constructor(
-    private configService: ConfigService<Config>,
+    configService: ConfigService<Config>,
     private authService: AuthService,
   ) {
     super({
       // Used to encrypt the authentication token. Needs to be long, unique and (duh) secret.
-      secret: 'TODO: Add secret',
+      secret: configService.get(ConfigKey.MAGIC_LINK_SECRET),
 
       callbackUrl: `${configService.get(
         ConfigKey.BASE_URL,
