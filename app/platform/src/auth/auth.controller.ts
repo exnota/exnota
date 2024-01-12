@@ -1,4 +1,5 @@
 import { AuthService } from '@exnota/auth/auth.service'
+import { HttpBearerGuard } from '@exnota/auth/http-bearer.guard'
 import { LocalAuthGuard } from '@exnota/auth/local-auth.guard'
 import { MagicAuthGuard } from '@exnota/auth/magic-auth.guard'
 import { MagicStrategy } from '@exnota/auth/magic.strategy'
@@ -54,6 +55,8 @@ export class AuthController {
     res.redirect(302, `exnota://auth/success?token=${token}`)
   }
 
+  @Public()
+  @UseGuards(HttpBearerGuard)
   @Get('auth/profile')
   getProfile(@Request() req: any): Promise<any> {
     return req.user

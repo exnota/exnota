@@ -3,6 +3,7 @@ import { AuthService } from './auth.service'
 import { AccountModule } from '@exnota/account/account.module'
 import { PassportModule } from '@nestjs/passport'
 import { LocalStrategy } from '@exnota/auth/local.strategy'
+import { HttpBearerStrategy } from '@exnota/auth/http-bearer.strategy'
 import { AuthController } from './auth.controller'
 import { JwtModule } from '@nestjs/jwt'
 import { DEPRECATED_jwtConstants } from './constants'
@@ -28,6 +29,8 @@ import { ConfigModule } from '@nestjs/config'
     LocalStrategy,
     MagicStrategy,
     JwtStrategy,
+    HttpBearerStrategy,
+    // TODO: This should be updated to bearer
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

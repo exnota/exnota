@@ -20,7 +20,16 @@ export class AccountService {
     },
   ]
 
-  private tokens: { userId: string; token: string }[] = []
+  private tokens: { userId: string; token: string }[] = [
+    {
+      token: '5aa3b88e9670f4850876f7edeb0aa8fba4284bfd7507e4da2728f6851d6b33c6',
+      userId: '1',
+    },
+    {
+      userId: '2',
+      token: 'a-token',
+    },
+  ]
 
   // eslint-disable-next-line require-await
   async findOne(username: string): Promise<User | undefined> {
@@ -42,5 +51,19 @@ export class AccountService {
       throw new Error('User not found')
     }
     this.tokens.push(req)
+  }
+
+  getUserFromToken(token: string): any {
+    const userId = this.tokens.find((t) => t.token === token)?.userId
+    if (!userId) {
+      return null
+    }
+    const user =
+      this.users.find((user) => user.userId.toString() === userId) ?? null
+    if (!user) {
+      return null
+    }
+    const { password, ...result } = user
+    return result
   }
 }

@@ -50,4 +50,8 @@ export class AuthService {
     this.usersService.saveToken({ userId, token })
     return token
   }
+
+  userFromToken(token: string): any {
+    return this.usersService.getUserFromToken(token)
+  }
 }
