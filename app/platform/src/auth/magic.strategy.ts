@@ -21,9 +21,9 @@ export class MagicStrategy extends PassportStrategy(MagicLoginStrategy) {
         ConfigKey.BASE_URL,
       )}/auth/magic-success`,
 
-      // Optional: options passed to the jwt.sign call (https://github.com/auth0/node-jsonwebtoken#jwtsignpayload-secretorprivatekey-options-callback)
+      // Options passed to the jwt.sign call (https://github.com/auth0/node-jsonwebtoken#jwtsignpayload-secretorprivatekey-options-callback)
       jwtOptions: {
-        // This is how long the magic link is valid for.
+        // How long the magic link is valid for.
         expiresIn: '10 minutes',
       },
 
@@ -32,17 +32,9 @@ export class MagicStrategy extends PassportStrategy(MagicLoginStrategy) {
         this.logger.log(
           `Sending magic link to ${destination} with href ${href}`,
         )
-        // await sendEmail({
-        //   to: destination,
-        //   body: `Click this link to finish logging in: https://yourcompany.com${href}`
-        // })
       },
 
-      // Once the user clicks on the magic link and verifies their login attempt,
-      // you have to match their email to a user record in the database.
-      // If it doesn't exist yet they are trying to sign up so you have to create a new one.
-      // "payload" contains { "destination": "email" }
-      // In standard passport fashion, call callback with the error as the first argument (if there was one)
+      // Callback should be called with the error as the first argument (if there was one)
       // and the user data as the second argument!
       verify: (payload: any, callback: any) => {
         callback(null, this.validate(payload))
@@ -50,8 +42,6 @@ export class MagicStrategy extends PassportStrategy(MagicLoginStrategy) {
     })
   }
 
-  // Note: This is executed *after* auth is successful. If auth fails, it won't
-  // run.
   async validate(payload: { destination: string }): Promise<any> {
     return await this.authService.validateUserByEmail(payload.destination)
   }

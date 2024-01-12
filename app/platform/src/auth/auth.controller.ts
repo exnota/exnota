@@ -1,5 +1,4 @@
 import { AuthService } from '@exnota/auth/auth.service'
-import { HttpBearerGuard } from '@exnota/auth/http-bearer.guard'
 import { MagicAuthGuard } from '@exnota/auth/magic-auth.guard'
 import { MagicStrategy } from '@exnota/auth/magic.strategy'
 import { Public } from '@exnota/lib/public.annotation'
@@ -35,7 +34,15 @@ export class AuthController {
     @Body() body: MagicLoginBody,
   ): Promise<void> {
     await this.authService.validateUserByEmail(body.destination)
-    return this.strategy.send(req, res)
+
+    // This will add the following to the response object:
+    // {
+    //   "success": true,
+    //   "code": "<code>"
+    // }
+    // The code can be displayed to the user to verify they are clicking the
+    // link for the current login attempt.
+    this.strategy.send(req, res)
   }
 
   // eslint-disable-next-line require-await
@@ -47,8 +54,6 @@ export class AuthController {
     res.redirect(302, `exnota://auth/success?token=${token}`)
   }
 
-  @Public()
-  @UseGuards(HttpBearerGuard)
   @Get('auth/profile')
   getProfile(@Request() req: any): Promise<any> {
     return req.user

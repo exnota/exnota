@@ -17,7 +17,7 @@ export class NotionTokenController {
   constructor(private notionTokenService: NotionTokenService) {}
 
   @Post()
-  async notionToken(@Body() request: NotionTokenRequest) {
+  async notionToken(@Body() request: NotionTokenRequest): Promise<unknown> {
     const result = await this.notionTokenService.notionToken(request.code)
     if (!result.ok) {
       switch (result.type) {

@@ -4,7 +4,7 @@
 # 3. Add:
 #   "rest-client.environmentVariables": {
 #     "$shared": {
-#         "exnotaJwt": "<jwt>", # get from auth/login
+#         "{{exnotaBearer}}": "<token>", # get from auth/magic-login
 #         "notionAccessToken": "<token>",
 #         "notionOauthClientId": "<client_id>",
 #         "notionBotId": "<bot_id>",
@@ -34,11 +34,11 @@
 ### ----------------------------------------------------
 ### get notes
 GET {{baseUrl}}/note/notes
-Authorization: Bearer {{exnotaJwt}}
+Authorization: Bearer {{exnotaBearer}}
 
 ### post notes - m4a short
 POST {{baseUrl}}/note/notes
-Authorization: Bearer {{exnotaJwt}}
+Authorization: Bearer {{exnotaBearer}}x
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -60,7 +60,7 @@ Content-Type: audio/x-m4a
 
 ### post notes - wav jfk
 POST {{baseUrl}}/note/notes
-Authorization: Bearer {{exnotaJwt}}
+Authorization: Bearer {{exnotaBearer}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -82,7 +82,7 @@ Content-Type: audio/wav
 
 ### post notes - wav 44k micromachines
 POST {{baseUrl}}/note/notes
-Authorization: Bearer {{exnotaJwt}}
+Authorization: Bearer {{exnotaBearer}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -105,7 +105,7 @@ Content-Type: audio/wav
 
 ### post notes - 5 minute test (actually 5:37)
 POST {{baseUrl}}/note/notes
-Authorization: Bearer {{exnotaJwt}}
+Authorization: Bearer {{exnotaBearer}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -139,7 +139,7 @@ Content-Type: audio/wav
 # 1. Get code from previous step.
 # 2. Replace "a code" below with this code.
 POST {{baseUrl}}/notion-token HTTP/1.1
-Authorization: Bearer {{exnotaJwt}}
+Authorization: Bearer {{exnotaBearer}}
 content-type: application/json
 
 {
@@ -201,5 +201,5 @@ Content-Type: application/json
 
 ### Profile
 GET {{baseUrl}}/auth/profile
-Authorization: Bearer 5aa3b88e9670f4850876f7edeb0aa8fba4284bfd7507e4da2728f6851d6b33c6
+Authorization: Bearer {{exnotaBearer}}
 
