@@ -31,29 +31,16 @@ export class AccountService {
     },
   ]
 
-  // eslint-disable-next-line require-await
-  async findOne(username: string): Promise<User | undefined> {
+  find(username: string): User | undefined {
     return this.users.find((user) => user.username === username)
   }
 
-  // eslint-disable-next-line require-await
-  async findOneByEmail(email: string): Promise<User | undefined> {
+  findByEmail(email: string): User | undefined {
     return this.users.find((user) => user.email === email)
   }
 
-  saveToken(req: { userId: string; token: string }): void {
-    if (
-      !this.users.find(
-        // TS things req.userId will be a string, but in runtime it's a number
-        (user) => user.userId.toString() === req.userId.toString(),
-      )
-    ) {
-      throw new Error('User not found')
-    }
-    this.tokens.push(req)
-  }
-
-  getUserFromToken(token: string): any {
+  findByToken(token: string): any {
+    // TODO: In future, ignore expired tokens
     const userId = this.tokens.find((t) => t.token === token)?.userId
     if (!userId) {
       return null
@@ -65,5 +52,17 @@ export class AccountService {
     }
     const { password, ...result } = user
     return result
+  }
+
+  saveToken(req: { userId: string; token: string }): void {
+    if (
+      !this.users.find(
+        // TS thinks req.userId will be a string, but in runtime it's a number.
+        (user) => user.userId.toString() === req.userId.toString(),
+      )
+    ) {
+      throw new Error('User not found')
+    }
+    this.tokens.push(req)
   }
 }

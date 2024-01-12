@@ -45,15 +45,15 @@ export class AuthController {
     this.strategy.send(req, res)
   }
 
-  // eslint-disable-next-line require-await
   @Get('auth/magic-success')
   @Public()
   @UseGuards(MagicAuthGuard)
-  async magicSuccess(@Req() req: any, @Res() res: any): Promise<any> {
-    const token = this.authService.getToken(req.user.userId)
+  magicSuccess(@Req() req: any, @Res() res: any): any {
+    const token = this.authService.generateToken(req.user.userId)
     res.redirect(302, `exnota://auth/success?token=${token}`)
   }
 
+  // TODO: Remove when done testing
   @Get('auth/profile')
   getProfile(@Request() req: any): Promise<any> {
     return req.user
