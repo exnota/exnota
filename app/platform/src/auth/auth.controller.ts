@@ -1,5 +1,6 @@
 import { AuthService } from '@exnota/auth/auth.service'
 import { LocalAuthGuard } from '@exnota/auth/local-auth.guard'
+import { MagicAuthGuard } from '@exnota/auth/magic-auth.guard'
 import { MagicStrategy } from '@exnota/auth/magic.strategy'
 import { Public } from '@exnota/lib/public.annotation'
 import {
@@ -42,6 +43,14 @@ export class AuthController {
   ) {
     await this.authService.validateUserByEmail(body.destination)
     return this.strategy.send(req, res)
+  }
+
+  // eslint-disable-next-line require-await
+  @Get('auth/magic-success')
+  @Public()
+  @UseGuards(MagicAuthGuard)
+  async magicSuccess(@Request() req: any) {
+    return req.user
   }
 
   @Get('auth/profile')

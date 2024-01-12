@@ -17,13 +17,14 @@ export class MagicStrategy extends PassportStrategy(MagicLoginStrategy) {
       // Used to encrypt the authentication token. Needs to be long, unique and (duh) secret.
       secret: 'TODO: Add secret',
 
-      // TODO: set up
-      // TODO: full path?
-      callbackUrl: `${configService.get(ConfigKey.BASE_URL)}/auth/magiclogin`,
+      callbackUrl: `${configService.get(
+        ConfigKey.BASE_URL,
+      )}/auth/magic-success`,
 
       // Optional: options passed to the jwt.sign call (https://github.com/auth0/node-jsonwebtoken#jwtsignpayload-secretorprivatekey-options-callback)
       jwtOptions: {
-        expiresIn: '365 days',
+        // This is how long the magic link is valid for.
+        expiresIn: '10 minutes',
       },
 
       // eslint-disable-next-line require-await
