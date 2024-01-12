@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { AccountModule } from '@exnota/account/account.module'
 import { PassportModule } from '@nestjs/passport'
-import { LocalStrategy } from '@exnota/auth/local.strategy'
 import { HttpBearerStrategy } from '@exnota/auth/http-bearer.strategy'
 import { AuthController } from './auth.controller'
 import { JwtModule } from '@nestjs/jwt'
@@ -26,7 +25,6 @@ import { ConfigModule } from '@nestjs/config'
   ],
   providers: [
     AuthService,
-    LocalStrategy,
     MagicStrategy,
     JwtStrategy,
     HttpBearerStrategy,

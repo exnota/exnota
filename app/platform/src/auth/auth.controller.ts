@@ -1,6 +1,5 @@
 import { AuthService } from '@exnota/auth/auth.service'
 import { HttpBearerGuard } from '@exnota/auth/http-bearer.guard'
-import { LocalAuthGuard } from '@exnota/auth/local-auth.guard'
 import { MagicAuthGuard } from '@exnota/auth/magic-auth.guard'
 import { MagicStrategy } from '@exnota/auth/magic.strategy'
 import { Public } from '@exnota/lib/public.annotation'
@@ -27,13 +26,6 @@ export class AuthController {
     private authService: AuthService,
     private strategy: MagicStrategy,
   ) {}
-
-  @Post('auth/login')
-  @Public()
-  @UseGuards(LocalAuthGuard)
-  async login(@Request() req: any): Promise<{ access_token: string }> {
-    return await this.authService.login(req.user)
-  }
 
   @Post('auth/magic-login')
   @Public()
