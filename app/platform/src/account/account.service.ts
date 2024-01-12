@@ -20,6 +20,8 @@ export class AccountService {
     },
   ]
 
+  private tokens: { userId: string; token: string }[] = []
+
   // eslint-disable-next-line require-await
   async findOne(username: string): Promise<User | undefined> {
     return this.users.find((user) => user.username === username)
@@ -28,5 +30,17 @@ export class AccountService {
   // eslint-disable-next-line require-await
   async findOneByEmail(email: string): Promise<User | undefined> {
     return this.users.find((user) => user.email === email)
+  }
+
+  saveToken(req: { userId: string; token: string }): void {
+    if (
+      !this.users.find(
+        // TS things req.userId will be a string, but in runtime it's a number
+        (user) => user.userId.toString() === req.userId.toString(),
+      )
+    ) {
+      throw new Error('User not found')
+    }
+    this.tokens.push(req)
   }
 }

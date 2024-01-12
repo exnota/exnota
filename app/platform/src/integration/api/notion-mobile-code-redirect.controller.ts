@@ -4,10 +4,10 @@ import type { Response, Request } from 'express'
 @Controller('integration/notion/mobile-code-redirect')
 export class NotionMobileCodeRedirectController {
   @Get()
-  async notionMobileCodeRedirect(
+  notionMobileCodeRedirect(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): void {
     const code = req.query.code
     if (code) {
       res.redirect(

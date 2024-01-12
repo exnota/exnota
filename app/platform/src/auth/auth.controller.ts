@@ -30,7 +30,7 @@ export class AuthController {
   @Post('auth/login')
   @Public()
   @UseGuards(LocalAuthGuard)
-  async login(@Request() req: any) {
+  async login(@Request() req: any): Promise<{ access_token: string }> {
     return await this.authService.login(req.user)
   }
 
@@ -40,7 +40,7 @@ export class AuthController {
     @Req() req: any,
     @Res() res: any,
     @Body() body: MagicLoginBody,
-  ) {
+  ): Promise<void> {
     await this.authService.validateUserByEmail(body.destination)
     return this.strategy.send(req, res)
   }
@@ -49,12 +49,13 @@ export class AuthController {
   @Get('auth/magic-success')
   @Public()
   @UseGuards(MagicAuthGuard)
-  async magicSuccess(@Request() req: any) {
-    return req.user
+  async magicSuccess(@Req() req: any, @Res() res: any): Promise<any> {
+    const token = this.authService.getToken(req.user.userId)
+    res.redirect(302, `exnota://auth/success?token=${token}`)
   }
 
   @Get('auth/profile')
-  getProfile(@Request() req: any) {
+  getProfile(@Request() req: any): Promise<any> {
     return req.user
   }
 }

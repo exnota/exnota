@@ -1,6 +1,7 @@
 import { AccountService } from '@exnota/account/account.service'
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import * as crypto from 'crypto'
 
 @Injectable()
 export class AuthService {
@@ -37,10 +38,16 @@ export class AuthService {
   }
 
   // eslint-disable-next-line require-await
-  async login(user: any) {
+  async login(user: any): Promise<{ access_token: string }> {
     const payload = { username: user.username, sub: user.userId }
     return {
       access_token: this.jwtService.sign(payload),
     }
+  }
+
+  getToken(userId: string): string {
+    const token = crypto.randomBytes(32).toString('hex')
+    this.usersService.saveToken({ userId, token })
+    return token
   }
 }

@@ -110,7 +110,7 @@ export class NoteController {
   ) {}
 
   @Get()
-  getNote(@Request() req: any) {
+  getNote(@Request() req: any): string {
     console.log(req)
     return 'audio memo'
   }
