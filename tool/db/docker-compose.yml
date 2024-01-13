@@ -1,0 +1,15 @@
+version: '3'
+volumes:
+  pgdata:
+services:
+  db:
+    image: postgres:15.5-bookworm
+    restart: always # recommended in https://www.docker.com/blog/how-to-use-the-postgres-docker-official-image/
+    environment:
+      POSTGRES_USER: exnota_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: exnota
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
