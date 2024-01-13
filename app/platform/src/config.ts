@@ -6,6 +6,15 @@ export enum ConfigKey {
   BASE_URL = 'BASE_URL',
   PATH_UPLOAD_AUDIO = 'PATH_UPLOAD_AUDIO',
 
+  // Environment specific: Database source
+  DATABASE_HOST = 'DATABASE_HOST',
+  DATABASE_PORT = 'DATABASE_PORT',
+
+  // Environment specific: Database credentials (see relevant vault)
+  DATABASE_DATABASE = 'DATABASE_DATABASE',
+  DATABASE_USER = 'DATABASE_USER',
+  DATABASE_PASSWORD = 'DATABASE_PASSWORD',
+
   // Environment specific: Internal keys (see relevant vault)
   MAGIC_LINK_SECRET = 'MAGIC_LINK_SECRET',
 
@@ -35,6 +44,15 @@ export type Config = {
   // Environment specific: Config
   [ConfigKey.BASE_URL]: string
   [ConfigKey.PATH_UPLOAD_AUDIO]: string
+
+  // Environment specific: Database source
+  [ConfigKey.DATABASE_HOST]: string
+  [ConfigKey.DATABASE_PORT]: string
+
+  // Environment specific: Database credentials (see relevant vault)
+  [ConfigKey.DATABASE_DATABASE]: string
+  [ConfigKey.DATABASE_USER]: string
+  [ConfigKey.DATABASE_PASSWORD]: string
 
   // Environment specific: Internal keys (see relevant vault)
   [ConfigKey.MAGIC_LINK_SECRET]: string
@@ -76,6 +94,15 @@ export const configSchema = Joi.object<Config>({
   // Environment specific: Config
   [ConfigKey.BASE_URL]: requiredString,
   [ConfigKey.PATH_UPLOAD_AUDIO]: Joi.string().default(PATH_UPLOAD_AUDIO),
+
+  // Environment specific: Database source
+  [ConfigKey.DATABASE_HOST]: requiredString,
+  [ConfigKey.DATABASE_PORT]: requiredString,
+
+  // Environment specific: Database credentials (see relevant vault)
+  [ConfigKey.DATABASE_DATABASE]: requiredString,
+  [ConfigKey.DATABASE_USER]: requiredString,
+  [ConfigKey.DATABASE_PASSWORD]: requiredString,
 
   // Environment specific: Internal keys (see relevant vault)
   [ConfigKey.MAGIC_LINK_SECRET]: requiredString,

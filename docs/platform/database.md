@@ -2,11 +2,14 @@
 
 - [Database](#database)
   - [DBeaver tips](#dbeaver-tips)
+  - [Setting up the user/schema of a database (local or prod)](#setting-up-the-userschema-of-a-database-local-or-prod)
   - [Connecting to prod](#connecting-to-prod)
   - [Setting up local database](#setting-up-local-database)
   - [Backup/restore manually via Dbeaver](#backuprestore-manually-via-dbeaver)
     - [Backup](#backup)
     - [Restore](#restore)
+  - [Assorted](#assorted)
+    - [Local environment: Accessing database from VSCode Dev Container](#local-environment-accessing-database-from-vscode-dev-container)
 
 ## DBeaver tips
 
@@ -15,6 +18,17 @@
   'Commit' when you want to persist the change, it won't be saved.
   - Some changes require pressing 'Save', but that simply adds the command to
   the transaction, it doesn't commit the transaction.
+
+## Setting up the user/schema of a database (local or prod)
+
+1. Use PostgreSQL 15.5
+2. Create the PostgreSQL user and password as per `app/platform/.env`
+
+   ```postgres
+   CREATE USER <DATABASE_USER> WITH PASSWORD '<DATABASE_PASSWORD>';
+   ```
+
+3. Use migrations to build the schema
 
 ## Connecting to prod
 
@@ -36,6 +50,7 @@
       1. Select 'Connection details'
       2. For 'Connection name', set `exnota (prod)`
       3. For 'Connection type' select 'Production'
+      4. Under the 'PostgreSQL' tab, select `Show all databases`
    6. Select 'Test Connection'. It will need to download drivers if this is the first time.
 6. Select 'Finish'
 
@@ -64,6 +79,7 @@
       1. Select 'Connection details'
       2. For 'Connection name', set `exnota (prod)`
       3. For 'Connection type' select 'Development'
+      4. Under the 'PostgreSQL' tab, select `Show all databases`
    5. Select 'Test Connection' to verify
    6. Select 'Finish'
 
@@ -92,6 +108,8 @@ A local Postgresql client is needed. This can be done using the steps in 'Settin
 
 Note: Sometimes this process doesn't work when testing locally. Unsure what causes it. I've been able to get it work by closing DBeaver, trying again, etc. My hunch is that the Docker `postgres` is only intended to support one database, and if one takes to long with the below steps, the new database is deleted or becomes inaccessible. Maybe there's a better way to restore.
 
+Update to above note: The issues may have been because `Show all databases` was not enabled for the connection.
+
 1. Select the target connection
 2. Create a new database. Name something like `torestore`
 3. Right click and set `torestore` as the default database
@@ -108,3 +126,17 @@ Note: Sometimes this process doesn't work when testing locally. Unsure what caus
    ```bash
    pg_restore: error: could not execute query: ERROR:  schema "public" already exists
    ```
+
+## Assorted
+
+### Local environment: Accessing database from VSCode Dev Container
+Try these commands:
+```bash
+apt update
+
+apt-get install postgresql-client
+
+apt-get install locales
+
+psql -h host.docker.internal -p 5432 -U platform --dbname exnota
+```
