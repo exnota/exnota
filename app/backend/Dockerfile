@@ -14,7 +14,7 @@ ARG model=base
 RUN bash ./models/download-ggml-model.sh "${model}"
 RUN make main stream
 
-FROM debian:11 AS whisper
+FROM golang:1.21.6-bullseye AS whisper
 
 # TODO: Is there a newer version?
 ARG PB_VERSION=0.20.6
