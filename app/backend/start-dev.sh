@@ -1,1 +1,1 @@
-go run main.go serve
+go run main.go serve --dev
