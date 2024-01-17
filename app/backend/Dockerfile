@@ -1,0 +1,77 @@
+FROM debian:11 AS build
+
+RUN apt-get update \
+    && apt-get install -y libsdl2-dev alsa-utils g++ make wget
+
+# whisper.cpp vs 1.5.3
+RUN mkdir /whisper && \
+    wget -q https://github.com/ggerganov/whisper.cpp/tarball/9962371f71b91fd236e8af08db1e9e4b10a6c363 -O - | \
+    tar -xz -C /whisper --strip-components 1
+
+WORKDIR /whisper
+
+ARG model=base
+RUN bash ./models/download-ggml-model.sh "${model}"
+RUN make main stream
+
+FROM debian:11 AS whisper
+
+# TODO: Is there a newer version?
+ARG PB_VERSION=0.20.6
+
+RUN apt-get update \
+    && apt-get install -y unzip ca-certificates curl
+
+# RUN apk add --no-cache \
+#     unzip \
+#     ca-certificates
+
+# download and unzip PocketBase
+ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip /tmp/pb.zip
+RUN unzip /tmp/pb.zip -d /pb/
+
+# uncomment to copy the local pb_migrations dir into the image
+# COPY ./pb_migrations /pb/pb_migrations
+
+EXPOSE 8080
+
+# start PocketBase
+CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8080", "--dev"]
+
+
+# RUN apt-get update \
+#     && apt-get install -y libsdl2-dev alsa-utils \
+#     && apt-get clean \
+#     && rm -rf /var/lib/apt/lists/*
+# # ffmpg isn't available via apt-get
+# RUN apt update \
+#     && apt install -y ffmpeg
+
+# WORKDIR /home/node
+
+# ARG model=base
+# RUN mkdir -p /home/node/whisper/models
+# RUN mkdir /home/node/whisper/audio
+# RUN chown -R node /home/node/whisper 
+# COPY --chown=node:node ./data/jfk.wav /home/node/whisper/audio
+# COPY --from=build --chown=node:node "/whisper/models/ggml-${model}.bin" "/home/node/whisper/models/ggml-${model}.bin"
+# COPY --from=build --chown=node:node /whisper/main /usr/local/bin/whisper
+# COPY --from=build --chown=node:node /whisper/stream /usr/local/bin/stream
+
+# ENV HOST=0.0.0.0
+# ENV PORT=3000
+
+# USER node
+# RUN mkdir /home/node/app
+# WORKDIR /home/node/app
+
+# COPY --chown=node:node package*.json ./
+# RUN npm ci
+
+# COPY --chown=node:node . .
+# RUN npm run build 
+
+# EXPOSE 3000
+
+# CMD [ "node", "dist/main.js" ]
+# USER root
