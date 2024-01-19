@@ -1,3 +1,6 @@
 pb_data
 # executable
 /backend
+
+# VS Code
+__debug_bin*
