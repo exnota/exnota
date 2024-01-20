@@ -25,6 +25,7 @@ RUN apt-get update \
 # copy app
 WORKDIR /pb
 COPY go.mod go.sum main.go build.sh start.sh ./
+ADD migrations ./migrations
 
 # Build app
 RUN ./build.sh
