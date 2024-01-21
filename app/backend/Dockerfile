@@ -16,6 +16,12 @@ RUN make main stream
 
 FROM golang:1.21.6-bullseye AS whisper
 
+# Dev environment
+# TODO: Put these in a separate build stage (https://docs.docker.com/build/building/multi-stage/)
+# that is only used in dev environment: https://stackoverflow.com/a/60820156
+RUN go install -v github.com/go-delve/delve/cmd/dlv@latest
+RUN go install -v golang.org/x/tools/gopls@latest
+
 # TODO: Update to 0.20.7
 ARG PB_VERSION=0.20.6
 
@@ -23,15 +29,15 @@ RUN apt-get update \
     && apt-get install -y unzip ca-certificates curl
 
 # copy app
+# TODO: Don't do this in dev environment, where we work from the mounted
+# /workspaces directory.
 WORKDIR /pb
 COPY go.mod go.sum main.go build.sh start.sh ./
 ADD migrations ./migrations
 
 # Build app
+# TODO: Don't do this in dev environment
 RUN ./build.sh
-
-# uncomment to copy the local pb_migrations dir into the image
-# COPY ./pb_migrations /pb/pb_migrations
 
 EXPOSE 8080
 
