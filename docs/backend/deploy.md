@@ -20,20 +20,20 @@
 
 ### Dokku
 
-1. Install Dokku and create app as per [official docs](https://dokku.com/docs/getting-started/installation/).
+1. Install Dokku and create app as per the official [installation](https://dokku.com/docs/getting-started/installation/) and [deployment](https://dokku.com/docs/deployment/application-deployment/) docs.
 2. Set build directory
 
     ```bash
-    dokku builder:set exnota0 build-dir app/backend
+    dokku builder:set <app-name> build-dir app/backend
     ```
 
 3. Set builder type to Docker
 
     ```bash
-    dokku builder:set exnota0 selected dockerfile
+    dokku builder:set <app-name> selected dockerfile
     ```
 
-4. Add domain
+4. Add domain (assuming its DNS config already points to VPS IP)
 
    ```bash
    dokku domains:add <app-name> <domain>
@@ -54,8 +54,11 @@
 7. Setup lets encrypt
 
     ```bash
-    dokku letsencrypt:set exnota0 email email@mattschultz.info
-    dokku letsencrypt:enable exnota0
+    dokku letsencrypt:set <app-name> email email@mattschultz.info
+    dokku letsencrypt:enable <app-name>
+
+    # Have not tested this. Unsure how to.
+    dokku letsencrypt:cron-job --add
     ```
 
     It will give a warning like
@@ -70,11 +73,22 @@
     # In the future should probably follow these steps INSTEAD of separate mkdir
     # and chown commands: https://dokku.com/docs/advanced-usage/persistent-storage/#creating-storage-directories
 
-    mkdir -p /var/lib/dokku/data/storage/exnota0/pb_data
+    mkdir -p /var/lib/dokku/data/storage/<app-name>/pb_data
 
-    chown dokku:dokku /var/lib/dokku/data/storage/exnota0/pb_data
+    chown dokku:dokku /var/lib/dokku/data/storage/<app-name>/pb_data
 
-    dokku docker-options:add exnota0 deploy "-v /var/lib/dokku/data/storage/exnota0/pb_data:/pb/pb_data"
+    dokku docker-options:add <app-name> deploy "-v /var/lib/dokku/data/storage/<app-name>/pb_data:/pb/pb_data"
     ```
 
----
+## Deploy to prod
+
+### Non-main branch
+
+1. Ensure SSH key is set up
+   * It probably won't be inside dev container.
+2. Run
+
+    ```bash
+    # Pushes local '<branch-name>' to remote 'master'
+    git push dokku <branch-name>:master
+    ```
