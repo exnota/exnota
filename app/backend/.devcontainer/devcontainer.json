@@ -22,7 +22,8 @@
         "wayou.vscode-todo-highlight",
         "eamodio.gitlens",
         "yzhang.markdown-all-in-one",
-        "golang.go"
+        "golang.go",
+        "padjon.save-and-run-ext"
       ]
     }
   }
