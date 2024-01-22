@@ -30,6 +30,8 @@ func main() {
 		return nil
 	})
 
+	addHooksUnauthenticated(app)
+
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
 	}
@@ -45,4 +47,45 @@ func isAutoMigrate() bool {
 		fmt.Println("Automigrations off")
 	}
 	return autoMigrate
+}
+
+func addHooksUnauthenticated(app *pocketbase.PocketBase) {
+	app.OnRecordsListRequest().Add(func(e *core.RecordsListEvent) error {
+		requestInfo := apis.RequestInfo(e.HttpContext)
+		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
+			return apis.NewUnauthorizedError("Not logged in", nil)
+		}
+		return nil
+	})
+	app.OnRecordViewRequest().Add(func(e *core.RecordViewEvent) error {
+		requestInfo := apis.RequestInfo(e.HttpContext)
+		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
+			return apis.NewUnauthorizedError("Not logged in", nil)
+		}
+		return nil
+	})
+
+	app.OnRecordBeforeCreateRequest().Add(func(e *core.RecordCreateEvent) error {
+		requestInfo := apis.RequestInfo(e.HttpContext)
+		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
+			return apis.NewUnauthorizedError("Not logged in", nil)
+		}
+		return nil
+	})
+
+	app.OnRecordBeforeUpdateRequest().Add(func(e *core.RecordUpdateEvent) error {
+		requestInfo := apis.RequestInfo(e.HttpContext)
+		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
+			return apis.NewUnauthorizedError("Not logged in", nil)
+		}
+		return nil
+	})
+
+	app.OnRecordBeforeDeleteRequest().Add(func(e *core.RecordDeleteEvent) error {
+		requestInfo := apis.RequestInfo(e.HttpContext)
+		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
+			return apis.NewUnauthorizedError("Not logged in", nil)
+		}
+		return nil
+	})
 }
