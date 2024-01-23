@@ -5,21 +5,42 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Backend Test",
       "type": "node",
       "cwd": "${workspaceFolder}/backend",
       "request": "launch",
-      "name": "Backend Test",
       "skipFiles": ["${workspaceFolder}/backend/<node_internals>/**"],
       "program": "${workspaceFolder}/backend/index.ts",
       "preLaunchTask": "tsc: build - backend/tsconfig.json",
       "outFiles": ["${workspaceFolder}/backend/out/**/*.js"]
     },
     {
+      // This configuration assumes that Vite is already running.
+      "name": "Frontend Test: Debug",
       "type": "chrome",
       "request": "launch",
-      "name": "Frontend Test",
       "url": "http://localhost:5173",
       "webRoot": "${workspaceFolder}/frontend"
+    },
+    {
+      // This configuration starts Vite and attaches the debugger to it.
+      // After some brief testing, I did notice some breakpoint quirks that did
+      // not occur with the "Frontend Test: Debug" configuration.
+      "name": "Frontend Test: Start & Debug",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}/frontend",
+      "serverReadyAction": {
+        "action": "debugWithChrome",
+        // Looks for this pattern in the output of the npm command and captures
+        // the port number.
+        "pattern": "http://localhost:([0-9]+)",
+        // Uses the first captured group matched by the pattern as the port.
+        "uriFormat": "http://localhost:%s",
+        "webRoot": "${workspaceFolder}/frontend"
+      }
     }
   ]
 }
