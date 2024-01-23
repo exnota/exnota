@@ -13,6 +13,13 @@
       "program": "${workspaceFolder}/backend/index.ts",
       "preLaunchTask": "tsc: build - backend/tsconfig.json",
       "outFiles": ["${workspaceFolder}/backend/out/**/*.js"]
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Frontend Test",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/frontend"
     }
   ]
 }
