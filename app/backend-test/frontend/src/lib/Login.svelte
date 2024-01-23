@@ -26,7 +26,7 @@
     console.log(pb.authStore.model?.id);
 
     // "logout" the last authenticated model
-    pb.authStore.clear();
+    // pb.authStore.clear();
   };
 </script>
 
