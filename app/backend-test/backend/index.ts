@@ -44,6 +44,7 @@ await pb
     const result = await pb.collection("block").getList(1, 20, {
       filter: 'created > "2022-08-01 10:00:00"',
     });
+    console.log(result);
   } catch (e) {
     console.log(e);
   }
