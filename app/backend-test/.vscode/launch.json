@@ -16,6 +16,9 @@
     },
     {
       // This configuration assumes that Vite is already running.
+      //
+      // Could not get this working with Firefox with the Debugger for Firefox
+      // extension.
       "name": "Frontend Test: Debug",
       "type": "chrome",
       "request": "launch",
