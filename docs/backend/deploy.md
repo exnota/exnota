@@ -1,24 +1,30 @@
 # Deploy (prod)
 
-## Initial setup
+## Deploy to prod
 
-### Hetzner
+1. Set up
+   - SSH key
+     - Create locally, outside of dev container, and add to Hetzner.
+   - Git remote
 
-1. Login as root (no other option for now)
-2. mkdir deploy
-3. Create ssh key to use as Github Deploy Key ([link](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys#deploy-keys))
-   * Ensure to also follow the Linux steps for 'Adding your SSH key to the ssh-agent'
-4. Might need to manually add `~/.ssh/config` file
-5. Clone. Which must be done via SSH not HTTPS (latter will ask for user/pass rather than use SSH Key)
+        ```bash
+        # `exnota0` is the remote branch name, matching the app name
+        git remote add dokku dokku@<domain>:exnota0
+        ```
+
+2. Deploy
 
     ```bash
-    git clone -b pocketbase-poc git@github.com:mttschltz/exnota.git
+    # Deploy master branch
+    git push dokku main
+
+    # Deploy branch '<branch-name>' to remote 'master'
+    git push dokku <branch-name>:master
     ```
 
-6. cd exnota/app/backend
-7. docker compose up
+## Initial setup
 
-### Dokku
+### Dokku on Hetzner
 
 1. Install Dokku and create app as per the official [installation](https://dokku.com/docs/getting-started/installation/) and [deployment](https://dokku.com/docs/deployment/application-deployment/) docs.
 2. Set build directory
@@ -80,15 +86,18 @@
     dokku docker-options:add <app-name> deploy "-v /var/lib/dokku/data/storage/<app-name>/pb_data:/pb/pb_data"
     ```
 
-## Deploy to prod
+### ~~Hetzner Manual Approach~~ (Replaced with Dokku above)
 
-### Non-main branch
-
-1. Ensure SSH key is set up
-   * It probably won't be inside dev container.
-2. Run
+1. Login as root (no other option for now)
+2. mkdir deploy
+3. Create ssh key to use as Github Deploy Key ([link](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys#deploy-keys))
+   - Ensure to also follow the Linux steps for 'Adding your SSH key to the ssh-agent'
+4. Might need to manually add `~/.ssh/config` file
+5. Clone. Which must be done via SSH not HTTPS (latter will ask for user/pass rather than use SSH Key)
 
     ```bash
-    # Pushes local '<branch-name>' to remote 'master'
-    git push dokku <branch-name>:master
+    git clone -b pocketbase-poc git@github.com:mttschltz/exnota.git
     ```
+
+6. cd exnota/app/backend
+7. docker compose up
