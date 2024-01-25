@@ -23,19 +23,20 @@ func main() {
 		Automigrate: autoMigrate,
 	})
 
-	// TODO: Remove?
-	// serves static files from the provided public dir (if exists)
-	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
-		return nil
-	})
-
-	addHooksUnauthenticated(app)
+	bindAppHooks(app)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
 	}
 }
+
+const (
+	COLLECTION_USER = "users"
+
+	COLLECTION_BLOCK = "block"
+	BLOCK_FIELD_TYPE = "type"
+	BLOCK_FIELD_USER = "user"
+)
 
 func isAutoMigrate() bool {
 	isGoRun := strings.HasPrefix(os.Args[0], os.TempDir())
@@ -49,7 +50,18 @@ func isAutoMigrate() bool {
 	return autoMigrate
 }
 
-func addHooksUnauthenticated(app *pocketbase.PocketBase) {
+func bindAppHooks(app core.App) {
+	// serves static files from the provided public dir (if exists)
+	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
+		return nil
+	})
+
+	bindUnauthenticatedHooks(app)
+	bindBlockInvariantsHooks(app)
+}
+
+func bindUnauthenticatedHooks(app core.App) {
 	app.OnRecordsListRequest().Add(func(e *core.RecordsListEvent) error {
 		requestInfo := apis.RequestInfo(e.HttpContext)
 		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
@@ -88,4 +100,47 @@ func addHooksUnauthenticated(app *pocketbase.PocketBase) {
 		}
 		return nil
 	})
+}
+
+func bindBlockInvariantsHooks(app core.App) {
+	// type cannot be changed
+	app.OnRecordBeforeUpdateRequest().Add(func(e *core.RecordUpdateEvent) error {
+		if e.Record.Collection().Name != COLLECTION_BLOCK {
+			return nil
+		}
+
+		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
+		if err != nil {
+			return err
+		}
+
+		newType := e.Record.GetString(BLOCK_FIELD_TYPE)
+
+		if newType != existingRecord.GetString(BLOCK_FIELD_TYPE) {
+			return apis.NewBadRequestError("Cannot change block type", nil)
+		}
+
+		return nil
+	})
+
+	// user cannot be changed
+	app.OnRecordBeforeUpdateRequest().Add(func(e *core.RecordUpdateEvent) error {
+		if e.Record.Collection().Name != COLLECTION_BLOCK {
+			return nil
+		}
+
+		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
+		if err != nil {
+			return err
+		}
+
+		newUserId := e.Record.GetString(BLOCK_FIELD_USER)
+
+		if newUserId != existingRecord.GetString(BLOCK_FIELD_USER) {
+			return apis.NewBadRequestError("Cannot change block user", nil)
+		}
+
+		return nil
+	})
+
 }

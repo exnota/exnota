@@ -2,5 +2,8 @@ pb_data
 # executable
 /backend
 
+# tool
+tool/test-seed/out
+
 # VS Code
 __debug_bin*
