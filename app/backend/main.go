@@ -165,7 +165,22 @@ type JobCreatorJob struct {
 // TODO: First, perhaps check that I can call transcriptions from a job.
 // 1. Maybe deploy a hardcoded audio file and after some hook fires (doesn't matter
 // which for testing purposes), try to execute whisper on it.
-// 2. Then maybe deploy and try to get it working in prod.
+// 2. Then may
+//
+// TODO: Maybe to improve what's below... the job's work can be triggered by
+// a hook on the job collection itself. Then that job collection hook can
+// essentially function as a service that processes jobs. E.g.
+// 1. After block is created, create a job of type transcription
+// 2. after-create-model-job-collection hook fires
+// 3. it sees it's a transcription job and starts a worker
+// 4. i suppose that worker still needs to update the job status itself, rather
+// than immediately doing it in the hook, in case there is a queue and the job
+// worker isn't actually started yet.
+// 5. the worker sets to complete later
+// 6. after-update-model-job-collection hook fires, notices it's a transcription
+// job that completed, so it creates a new job of type export
+// 7. after-create-model-job-collection hook fires, notices it's an export job
+// and starts worker. Once the worker starts that updates the job status.
 //
 // TODO: flow
 //  1. After create audio block hook fires (which should all have a file)
