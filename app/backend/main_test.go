@@ -29,7 +29,7 @@ type AuthScenario struct {
 	ExpectedEvents  map[string]int
 }
 
-func TestHelloEndpoint(t *testing.T) {
+func TestAppHooks(t *testing.T) {
 	userOneToken, err := generateRecordToken("users", "user1@example.com")
 	if err != nil {
 		t.Fatal(err)
