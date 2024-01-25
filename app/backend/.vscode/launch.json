@@ -11,6 +11,16 @@
       //   "mode": "auto",
       "program": "${workspaceFolder}/main.go",
       "args": ["serve", "--http=0.0.0.0:8080", "--dev"]
+    },
+    {
+      "name": "Tool: Test Seed",
+      "type": "node",
+      "cwd": "${workspaceFolder}/tool/test-seed",
+      "request": "launch",
+      "skipFiles": ["${workspaceFolder}/tool/test-seed/<node_internals>/**"],
+      "program": "${workspaceFolder}/tool/test-seed/index.ts",
+      "preLaunchTask": "tsc: build - tool/test-seed/tsconfig.json",
+      "outFiles": ["${workspaceFolder}/tool/test-seed/out/**/*.js"]
     }
   ]
 }
