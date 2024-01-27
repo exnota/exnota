@@ -165,7 +165,7 @@ type JobCreatorJob struct {
 // TODO: First, perhaps check that I can call transcriptions from a job.
 // 1. Maybe deploy a hardcoded audio file and after some hook fires (doesn't matter
 // which for testing purposes), try to execute whisper on it.
-// 2. Then may
+// 2. Then maybe try in prod
 //
 // TODO: Maybe to improve what's below... the job's work can be triggered by
 // a hook on the job collection itself. Then that job collection hook can
@@ -181,6 +181,9 @@ type JobCreatorJob struct {
 // job that completed, so it creates a new job of type export
 // 7. after-create-model-job-collection hook fires, notices it's an export job
 // and starts worker. Once the worker starts that updates the job status.
+//
+// TODO: Maybe have an initiated_by_id field on the job, so there's a clear trace
+// for which transcription job triggered the export job, etc.
 //
 // TODO: flow
 //  1. After create audio block hook fires (which should all have a file)
