@@ -32,7 +32,7 @@ RUN apt-get update \
 # TODO: Don't do this in dev environment, where we work from the mounted
 # /workspaces directory.
 WORKDIR /pb
-COPY go.mod go.sum main.go build.sh start.sh ./
+COPY go.mod go.sum main.go http.go build.sh start.sh ./
 ADD migrations ./migrations
 
 # Build app
