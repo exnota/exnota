@@ -1,5 +1,11 @@
 # Test
 
+## Troubleshooting
+
+* 
+   Test fails with: `Failed to load the submitted data due to invalid formatting.`
+   * Can occur when re-using the Reader/Buffer passed to `Body` of `tests.ApiScenario` across multiple scenarios. Generate new objects for each scenario.
+
 ## Pocketbase integration
 
 * The test directory won't be modified as it is [cloned by the test helper](https://github.com/pocketbase/pocketbase/blob/3f7db19fdd83774dabe83337523e863773e23689/tests/app.go#L473).
