@@ -2,6 +2,7 @@
 package main
 
 import (
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -13,10 +14,14 @@ import (
 const testDataDir = "./pb_data_test"
 
 type RequestScenario struct {
-	Name           string
-	Method         string
-	Url            string
-	BodyStr        string
+	Name   string
+	Method string
+	Url    string
+
+	// Only one of these should be set
+	BodyStr           string
+	BlockBodyWithFile *BlockWithFile
+
 	TestAppFactory func(t *testing.T) *tests.TestApp
 	AuthScenarios  []AuthScenario
 }
@@ -27,6 +32,19 @@ type AuthScenario struct {
 	ExpectedStatus  int
 	ExpectedContent []string
 	ExpectedEvents  map[string]int
+}
+
+type BlockType string
+
+const (
+	BlockTypeAudio BlockType = "audio"
+	BlockTypeText  BlockType = "text"
+)
+
+type BlockWithFile struct {
+	Type  BlockType
+	Title string
+	User  string
 }
 
 func TestAppHooks(t *testing.T) {
@@ -148,7 +166,7 @@ func TestAppHooks(t *testing.T) {
 			},
 		},
 		{
-			Name:   "Create block",
+			Name:   "Create text block",
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyStr: `{
@@ -156,6 +174,46 @@ func TestAppHooks(t *testing.T) {
 				"type":"text",
 				"user":"user1-15char-id"
 			}`,
+			TestAppFactory: setupTestApp,
+			AuthScenarios: []AuthScenario{
+				{
+					Name:            "Unauthenticated user",
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}"},
+				},
+				{
+					Name: "User creating for self",
+					RequestHeaders: map[string]string{
+						"Authorization": userOneToken,
+					},
+					ExpectedStatus:  200,
+					ExpectedContent: []string{"\"title\":\"test123\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeCreateRequest": 1,
+						"OnRecordAfterCreateRequest":  1,
+						"OnModelBeforeCreate":         1,
+						"OnModelAfterCreate":          1,
+					},
+				},
+				{
+					Name: "User creating for other",
+					RequestHeaders: map[string]string{
+						"Authorization": userTwoToken,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}"},
+				},
+			},
+		},
+		{
+			Name:   "Create audio block",
+			Method: http.MethodPost,
+			Url:    "/api/collections/lrffu3q1yweoljo/records",
+			BlockBodyWithFile: &BlockWithFile{
+				Title: "test123",
+				Type:  BlockTypeAudio,
+				User:  "user1-15char-id",
+			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
 				{
@@ -320,6 +378,89 @@ func TestAppHooks(t *testing.T) {
 			},
 		},
 		{
+			Name:   "Block invariant > Audio type requires file",
+			Method: http.MethodPost,
+			Url:    "/api/collections/lrffu3q1yweoljo/records",
+			BodyStr: `{
+				"title":"test123",
+				"type":"audio",
+				"user":"user1-15char-id"
+			}`,
+			TestAppFactory: setupTestApp,
+			AuthScenarios: []AuthScenario{
+				{
+					Name: "User updating own",
+					RequestHeaders: map[string]string{
+						"Authorization": userOneToken,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Audio block must have a file.\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeCreateRequest": 1,
+					},
+				},
+			},
+		},
+		{
+			Name:   "Block invariant > Non-audio type cannot have a file",
+			Method: http.MethodPost,
+			Url:    "/api/collections/lrffu3q1yweoljo/records",
+			BlockBodyWithFile: &BlockWithFile{
+				Title: "test123",
+				Type:  BlockTypeText,
+				User:  "user1-15char-id",
+			},
+			TestAppFactory: setupTestApp,
+			AuthScenarios: []AuthScenario{
+				{
+					Name: "User updating own",
+					RequestHeaders: map[string]string{
+						"Authorization": userOneToken,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Non-audio block cannot have a file.\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeCreateRequest": 1,
+					},
+				},
+			},
+		},
+		{
+			Name:   "Block job invariant > Cannot update file",
+			Method: http.MethodPatch,
+			Url:    "/api/collections/lrffu3q1yweoljo/records/block10-15chars",
+			BlockBodyWithFile: &BlockWithFile{
+				Type:  BlockTypeAudio,
+				User:  "user1-15char-id",
+				Title: "test123",
+			},
+			TestAppFactory: setupTestApp,
+			AuthScenarios: []AuthScenario{
+				{
+					Name: "Admin updating",
+					RequestHeaders: map[string]string{
+						"Authorization": adminToken,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block file.\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeUpdateRequest": 1,
+					},
+				},
+				{
+					Name: "User updating own",
+					RequestHeaders: map[string]string{
+						"Authorization": userOneToken,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block file.\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeUpdateRequest": 1,
+					},
+				},
+			},
+		},
+		{
 			Name:   "Block job invariant > Cannot update type",
 			Method: http.MethodPatch,
 			Url:    "/api/collections/cml7ayp8msc7q1w/records/block01-job---1",
@@ -447,12 +588,36 @@ func TestAppHooks(t *testing.T) {
 
 	for _, scenario := range requestScenarios {
 		for _, authScenario := range scenario.AuthScenarios {
+
+			var body io.Reader = nil
+			var requestHeaders map[string]string = authScenario.RequestHeaders
+			// The multipart data needs to be generated separately for each
+			// scenario. Re-using the same objects across scenarios causes an
+			// error.
+			if scenario.BlockBodyWithFile != nil {
+				formData, mp, err := tests.MockMultipartData(map[string]string{
+					"title": scenario.BlockBodyWithFile.Title,
+					"type":  string(scenario.BlockBodyWithFile.Type),
+					"user":  scenario.BlockBodyWithFile.User,
+				}, "file")
+				if err != nil {
+					panic(err)
+				}
+				body = formData
+				if requestHeaders == nil {
+					requestHeaders = make(map[string]string)
+				}
+				requestHeaders["Content-Type"] = mp.FormDataContentType()
+			} else {
+				body = strings.NewReader(scenario.BodyStr)
+			}
+
 			apiScenario := tests.ApiScenario{
 				Name:            scenario.Name + ": " + authScenario.Name,
 				Method:          scenario.Method,
 				Url:             scenario.Url,
-				RequestHeaders:  authScenario.RequestHeaders,
-				Body:            strings.NewReader(scenario.BodyStr),
+				RequestHeaders:  requestHeaders,
+				Body:            body,
 				ExpectedStatus:  authScenario.ExpectedStatus,
 				ExpectedContent: authScenario.ExpectedContent,
 				ExpectedEvents:  authScenario.ExpectedEvents,
