@@ -61,9 +61,6 @@ func isAutoMigrate() bool {
 	return autoMigrate
 }
 
-// TODO: Update hooks to target collections where relevant, e.g.:
-//
-//	app.OnRecordBeforeCreateRequest("user", "articles")
 func bindAppHooks(app core.App) {
 	// serves static files from the provided public dir (if exists)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
@@ -77,6 +74,13 @@ func bindAppHooks(app core.App) {
 	setGlobalAuthenticationRules(app)
 	setBlockInvariants(app)
 	setBlockJobInvariants(app)
+}
+
+func setGlobalDeleteRules(app core.App) {
+	// deleting not allowed on any collection
+	app.OnRecordBeforeDeleteRequest().Add(func(e *core.RecordDeleteEvent) error {
+		return NewMethodNotAllowedError("Cannot delete", nil)
+	})
 }
 
 func setGlobalAuthenticationRules(app core.App) {
@@ -112,20 +116,9 @@ func setGlobalAuthenticationRules(app core.App) {
 	})
 }
 
-func setGlobalDeleteRules(app core.App) {
-	// deleting not allowed on any collection (TODO: Add archiving)
-	app.OnRecordBeforeDeleteRequest().Add(func(e *core.RecordDeleteEvent) error {
-		return NewMethodNotAllowedError("Cannot delete", nil)
-	})
-}
-
 func setBlockInvariants(app core.App) {
 	// type cannot be changed
-	app.OnRecordBeforeUpdateRequest().Add(func(e *core.RecordUpdateEvent) error {
-		if e.Record.Collection().Name != COLLECTION_BLOCK {
-			return nil
-		}
-
+	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK).Add(func(e *core.RecordUpdateEvent) error {
 		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
 		if err != nil {
 			return err
@@ -141,11 +134,7 @@ func setBlockInvariants(app core.App) {
 	})
 
 	// user cannot be changed
-	app.OnRecordBeforeUpdateRequest().Add(func(e *core.RecordUpdateEvent) error {
-		if e.Record.Collection().Name != COLLECTION_BLOCK {
-			return nil
-		}
-
+	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK).Add(func(e *core.RecordUpdateEvent) error {
 		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
 		if err != nil {
 			return err
