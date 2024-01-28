@@ -30,12 +30,12 @@ type AuthScenario struct {
 }
 
 func TestAppHooks(t *testing.T) {
-	userOneToken, err := generateRecordToken("users", "user1@example.com")
+	userOneToken, err := generateRecordToken("user", "user1@example.com")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	userTwoToken, err := generateRecordToken("users", "user2@example.com")
+	userTwoToken, err := generateRecordToken("user", "user2@example.com")
 	if err != nil {
 		t.Fatal(err)
 	}

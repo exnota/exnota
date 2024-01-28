@@ -1,6 +1,6 @@
 import PocketBase from "pocketbase";
 
-const COLLECTION_USER = "users";
+const COLLECTION_USER = "user";
 const COLLECTION_BLOCK = "block";
 const COLLECTION_BLOCK_JOB = "block_job";
 
