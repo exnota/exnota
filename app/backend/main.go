@@ -36,7 +36,7 @@ func main() {
 }
 
 const (
-	COLLECTION_USER = "users"
+	COLLECTION_USER = "user"
 
 	COLLECTION_BLOCK  = "block"
 	BLOCK_FIELD_TYPE  = "type"
@@ -63,7 +63,7 @@ func isAutoMigrate() bool {
 
 // TODO: Update hooks to target collections where relevant, e.g.:
 //
-//	app.OnRecordBeforeCreateRequest("users", "articles")
+//	app.OnRecordBeforeCreateRequest("user", "articles")
 func bindAppHooks(app core.App) {
 	// serves static files from the provided public dir (if exists)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
