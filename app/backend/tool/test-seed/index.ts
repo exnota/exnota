@@ -36,7 +36,7 @@ try {
   // Blocks
   // --------------------
 
-  // User 1: Create 5 text blocks and 5 audio blocks
+  // User 1: Create 9 text blocks and 1 audio block
   const block1 = await pb.collection(COLLECTION_BLOCK).create({
     id: "block1--15chars",
     type: "text",
@@ -69,25 +69,25 @@ try {
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block6--15chars",
-    type: "audio",
+    type: "text",
     title: "block 6",
     user: user1.id,
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block7--15chars",
-    type: "audio",
+    type: "text",
     title: "block 7",
     user: user1.id,
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block8--15chars",
-    type: "audio",
+    type: "text",
     title: "block 8",
     user: user1.id,
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block9--15chars",
-    type: "audio",
+    type: "text",
     title: "block 9",
     user: user1.id,
   });
@@ -96,6 +96,7 @@ try {
     type: "audio",
     title: "block 10",
     user: user1.id,
+    file: new Blob([""], { type: "audio/wav" }),
   });
 
   // User 2: Create 2 text blocks

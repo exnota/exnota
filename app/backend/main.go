@@ -42,6 +42,7 @@ const (
 	BLOCK_FIELD_TYPE  = "type"
 	BLOCK_FIELD_USER  = "user"
 	BLOCK_FIELD_TITLE = "title"
+	BLOCK_FIELD_FILE  = "file"
 
 	COLLECTION_BLOCK_JOB  = "block_job"
 	BLOCK_JOB_FIELD_TYPE  = "type"
@@ -148,6 +149,47 @@ func setBlockInvariants(app core.App) {
 
 		return nil
 	})
+
+	// file creation
+	app.OnRecordBeforeCreateRequest(COLLECTION_BLOCK).Add(func(e *core.RecordCreateEvent) error {
+		newType := e.Record.GetString(BLOCK_FIELD_TYPE)
+
+		// audio block must have a file
+		if newType == "audio" {
+			file := e.Record.Get(BLOCK_FIELD_FILE)
+			if file == "" {
+				return apis.NewBadRequestError("Audio block must have a file", nil)
+			}
+
+			// mime type testing? https://github.com/pocketbase/pocketbase/blob/9436efb7fd8b9726715b58eb949f12a634fcafa0/forms/validators/file_test.go#L56
+			// TODO: audio block only supports audio mime types
+		} else {
+			// non-audio block cannot have a file
+			file := e.Record.Get(BLOCK_FIELD_FILE)
+			if file != "" {
+				return apis.NewBadRequestError("Non-audio block cannot have a file", nil)
+			}
+		}
+
+		return nil
+	})
+
+	// file cannot be changed
+	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK).Add(func(e *core.RecordUpdateEvent) error {
+		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
+		if err != nil {
+			return err
+		}
+
+		newFile := e.Record.Get(BLOCK_FIELD_FILE)
+
+		if newFile != existingRecord.Get(BLOCK_FIELD_FILE) {
+			return apis.NewBadRequestError("Cannot change block file", nil)
+		}
+
+		return nil
+	})
+
 }
 
 func setBlockJobInvariants(app core.App) {
