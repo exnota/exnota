@@ -10,7 +10,7 @@ import (
 	"github.com/pocketbase/pocketbase/tokens"
 )
 
-const testDataDir = "./test_pb_data"
+const testDataDir = "./pb_data_test"
 
 type RequestScenario struct {
 	Name           string
@@ -40,10 +40,10 @@ func TestAppHooks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// adminToken, err := generateAdminToken("admin@example.com")
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	adminToken, err := generateAdminToken("admin@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// setup the test ApiScenario app instance
 	setupTestApp := func(t *testing.T) *tests.TestApp {
@@ -256,31 +256,27 @@ func TestAppHooks(t *testing.T) {
 					RequestHeaders: map[string]string{
 						"Authorization": userOneToken,
 					},
-					ExpectedStatus: 204,
+					ExpectedStatus:  405,
+					ExpectedContent: []string{"\"data\":{}"},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeDeleteRequest": 1,
-						"OnRecordAfterDeleteRequest":  1,
-						"OnModelBeforeDelete":         1,
-						"OnModelAfterDelete":          1,
 					},
 				},
 				{
-					Name: "User deleting another's",
+					Name: "Admin deleting",
 					RequestHeaders: map[string]string{
-						"Authorization": userTwoToken,
+						"Authorization": adminToken,
 					},
-					// This is a 404 instead of a 401 because, I think, the API rule
-					// that requires the block user to match logged in user is applied
-					// as part of the database query, which then returns no results.
-					// And this takes place before the on record view hook is called.
-					// See https://github.com/pocketbase/pocketbase/blob/9436efb7fd8b9726715b58eb949f12a634fcafa0/apis/record_crud.go#L129-L131
-					ExpectedStatus:  404,
+					ExpectedStatus:  405,
 					ExpectedContent: []string{"\"data\":{}"},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeDeleteRequest": 1,
+					},
 				},
 			},
 		},
 		{
-			Name:   "Block invariant > Update type",
+			Name:   "Block invariant > Cannot update type",
 			Method: http.MethodPatch,
 			Url:    "/api/collections/lrffu3q1yweoljo/records/block1--15chars",
 			BodyStr: `{
@@ -302,7 +298,7 @@ func TestAppHooks(t *testing.T) {
 			},
 		},
 		{
-			Name:   "Block invariant > Update user",
+			Name:   "Block invariant > Cannot update user",
 			Method: http.MethodPatch,
 			Url:    "/api/collections/lrffu3q1yweoljo/records/block1--15chars",
 			BodyStr: `{
@@ -320,6 +316,130 @@ func TestAppHooks(t *testing.T) {
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeUpdateRequest": 1,
 					},
+				},
+			},
+		},
+		{
+			Name:   "Block job invariant > Cannot update type",
+			Method: http.MethodPatch,
+			Url:    "/api/collections/cml7ayp8msc7q1w/records/block01-job---1",
+			BodyStr: `{
+				"type":"export"
+			}`,
+			TestAppFactory: setupTestApp,
+			AuthScenarios: []AuthScenario{
+				{
+					Name: "Admin updating",
+					RequestHeaders: map[string]string{
+						"Authorization": adminToken,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block job type.\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeUpdateRequest": 1,
+					},
+				},
+				{
+					Name: "User updating own",
+					RequestHeaders: map[string]string{
+						"Authorization": userOneToken,
+					},
+					ExpectedStatus:  403,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Only admins can perform this action.\""},
+				},
+			},
+		},
+		{
+			Name:   "Block job invariant > Cannot update user",
+			Method: http.MethodPatch,
+			Url:    "/api/collections/cml7ayp8msc7q1w/records/block01-job---1",
+			BodyStr: `{
+				"user":"user2-15char-id"
+			}`,
+			TestAppFactory: setupTestApp,
+			AuthScenarios: []AuthScenario{
+				{
+					Name: "Admin updating",
+					RequestHeaders: map[string]string{
+						"Authorization": adminToken,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block job user.\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeUpdateRequest": 1,
+					},
+				},
+				{
+					Name: "User updating own",
+					RequestHeaders: map[string]string{
+						"Authorization": userOneToken,
+					},
+					ExpectedStatus:  403,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Only admins can perform this action.\""},
+				},
+			},
+		},
+		{
+			Name:   "Block job invariant > Cannot update block",
+			Method: http.MethodPatch,
+			Url:    "/api/collections/cml7ayp8msc7q1w/records/block01-job---1",
+			BodyStr: `{
+				"block":"block2--15chars"
+			}`,
+			TestAppFactory: setupTestApp,
+			AuthScenarios: []AuthScenario{
+				{
+					Name: "Admin updating",
+					RequestHeaders: map[string]string{
+						"Authorization": adminToken,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block job block.\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeUpdateRequest": 1,
+					},
+				},
+				{
+					Name: "User updating own",
+					RequestHeaders: map[string]string{
+						"Authorization": userOneToken,
+					},
+					ExpectedStatus:  403,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Only admins can perform this action.\""},
+				},
+			},
+		},
+		{
+			Name:   "Block job invariant > User must match block's user",
+			Url:    "/api/collections/cml7ayp8msc7q1w/records",
+			Method: http.MethodPost,
+			BodyStr: `{
+				"type": "transcription",
+				"status": "waiting",
+				"summary": [],
+				"block": "block2--15chars",
+				"user": "user2-15char-id"
+			}`,
+			TestAppFactory: setupTestApp,
+			AuthScenarios: []AuthScenario{
+				{
+					Name: "Admin updating",
+					RequestHeaders: map[string]string{
+						"Authorization": adminToken,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Block job user must match block user.\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeCreateRequest": 1,
+					},
+				},
+				{
+					Name: "User updating own",
+					RequestHeaders: map[string]string{
+						"Authorization": userOneToken,
+					},
+					ExpectedStatus:  403,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Only admins can perform this action.\""},
 				},
 			},
 		},

@@ -42,6 +42,11 @@ const (
 	BLOCK_FIELD_TYPE  = "type"
 	BLOCK_FIELD_USER  = "user"
 	BLOCK_FIELD_TITLE = "title"
+
+	COLLECTION_BLOCK_JOB  = "block_job"
+	BLOCK_JOB_FIELD_TYPE  = "type"
+	BLOCK_JOB_FIELD_USER  = "user"
+	BLOCK_JOB_FIELD_BLOCK = "block"
 )
 
 func isAutoMigrate() bool {
@@ -67,12 +72,14 @@ func bindAppHooks(app core.App) {
 	})
 
 	// initJobWorker(app)
-	bindJobCreatorHooks(app)
-	bindUnauthenticatedHooks(app)
-	bindBlockInvariantsHooks(app)
+	// bindJobCreatorHooks(app)
+	setGlobalDeleteRules(app)
+	setGlobalAuthenticationRules(app)
+	setBlockInvariants(app)
+	setBlockJobInvariants(app)
 }
 
-func bindUnauthenticatedHooks(app core.App) {
+func setGlobalAuthenticationRules(app core.App) {
 	app.OnRecordsListRequest().Add(func(e *core.RecordsListEvent) error {
 		requestInfo := apis.RequestInfo(e.HttpContext)
 		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
@@ -103,17 +110,16 @@ func bindUnauthenticatedHooks(app core.App) {
 		}
 		return nil
 	})
+}
 
+func setGlobalDeleteRules(app core.App) {
+	// deleting not allowed on any collection (TODO: Add archiving)
 	app.OnRecordBeforeDeleteRequest().Add(func(e *core.RecordDeleteEvent) error {
-		requestInfo := apis.RequestInfo(e.HttpContext)
-		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
-			return apis.NewUnauthorizedError("Not logged in", nil)
-		}
-		return nil
+		return NewMethodNotAllowedError("Cannot delete", nil)
 	})
 }
 
-func bindBlockInvariantsHooks(app core.App) {
+func setBlockInvariants(app core.App) {
 	// type cannot be changed
 	app.OnRecordBeforeUpdateRequest().Add(func(e *core.RecordUpdateEvent) error {
 		if e.Record.Collection().Name != COLLECTION_BLOCK {
@@ -149,6 +155,74 @@ func bindBlockInvariantsHooks(app core.App) {
 
 		if newUserId != existingRecord.GetString(BLOCK_FIELD_USER) {
 			return apis.NewBadRequestError("Cannot change block user", nil)
+		}
+
+		return nil
+	})
+}
+
+func setBlockJobInvariants(app core.App) {
+	// type cannot be changed
+	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK_JOB).Add(func(e *core.RecordUpdateEvent) error {
+		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
+		if err != nil {
+			return err
+		}
+
+		newType := e.Record.GetString(BLOCK_JOB_FIELD_TYPE)
+
+		if newType != existingRecord.GetString(BLOCK_JOB_FIELD_TYPE) {
+			return apis.NewBadRequestError("Cannot change block job type", nil)
+		}
+
+		return nil
+	})
+
+	// user cannot be changed
+	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK_JOB).Add(func(e *core.RecordUpdateEvent) error {
+		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
+		if err != nil {
+			return err
+		}
+
+		newUserId := e.Record.GetString(BLOCK_JOB_FIELD_USER)
+
+		if newUserId != existingRecord.GetString(BLOCK_JOB_FIELD_USER) {
+			return apis.NewBadRequestError("Cannot change block job user", nil)
+		}
+
+		return nil
+	})
+
+	// block cannot be changed
+	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK_JOB).Add(func(e *core.RecordUpdateEvent) error {
+		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
+		if err != nil {
+			return err
+		}
+
+		newBlockId := e.Record.GetString(BLOCK_JOB_FIELD_BLOCK)
+
+		if newBlockId != existingRecord.GetString(BLOCK_JOB_FIELD_BLOCK) {
+			return apis.NewBadRequestError("Cannot change block job block", nil)
+		}
+
+		return nil
+	})
+
+	// user must match block's user
+	app.OnRecordBeforeCreateRequest(COLLECTION_BLOCK_JOB).Add(func(e *core.RecordCreateEvent) error {
+		blockId := e.Record.GetString(BLOCK_JOB_FIELD_BLOCK)
+		block, err := app.Dao().FindRecordById(COLLECTION_BLOCK, blockId, nil)
+		if err != nil {
+			return err
+		}
+
+		blockUserId := block.GetString(BLOCK_FIELD_USER)
+		jobUserId := e.Record.GetString(BLOCK_JOB_FIELD_USER)
+
+		if blockUserId != jobUserId {
+			return apis.NewBadRequestError("Block job user must match block user", nil)
 		}
 
 		return nil
