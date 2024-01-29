@@ -9,10 +9,12 @@ import (
 	"time"
 
 	_ "exnota.com/backend/migrations"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
+	"github.com/pocketbase/pocketbase/forms/validators"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/pocketbase/pocketbase/tools/cron"
@@ -156,17 +158,25 @@ func setBlockInvariants(app core.App) {
 
 		// audio block must have a file
 		if newType == "audio" {
-			file := e.Record.Get(BLOCK_FIELD_FILE)
-			if file == "" {
-				return apis.NewBadRequestError("Audio block must have a file", nil)
+			files := e.UploadedFiles[BLOCK_FIELD_FILE]
+			if len(files) != 1 {
+				return apis.NewBadRequestError("Audio block must have exactly 1 file", nil)
 			}
 
-			// mime type testing? https://github.com/pocketbase/pocketbase/blob/9436efb7fd8b9726715b58eb949f12a634fcafa0/forms/validators/file_test.go#L56
-			// TODO: audio block only supports audio mime types
+			// Content types supported by Pocketbase: https://github.com/gabriel-vasile/mimetype/blob/master/supported_mimes.md
+			if err := validators.UploadedFileMimeType([]string{"audio/wav", "audio/mpeg"})(files[0]); err != nil {
+				// Verify it's a mime type error, because if we simply return
+				// the err object the error message will be a generic
+				// "Something went wrong while processing your request."
+				errObj := err.(validation.ErrorObject)
+				if errObj.Code() == "validation_invalid_mime_type" {
+					return apis.NewBadRequestError("Audio block must have a .wav or .mp3 file.", nil)
+				}
+				return err
+			}
 		} else {
-			// non-audio block cannot have a file
-			file := e.Record.Get(BLOCK_FIELD_FILE)
-			if file != "" {
+			files := e.UploadedFiles[BLOCK_FIELD_FILE]
+			if len(files) != 0 {
 				return apis.NewBadRequestError("Non-audio block cannot have a file", nil)
 			}
 		}

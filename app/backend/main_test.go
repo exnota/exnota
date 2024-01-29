@@ -2,8 +2,12 @@
 package main
 
 import (
+	"bytes"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -19,8 +23,8 @@ type RequestScenario struct {
 	Url    string
 
 	// Only one of these should be set
-	BodyStr           string
-	BlockBodyWithFile *BlockWithFile
+	BodyStr              string
+	BodyForBlockWithFile *MockBlockWithFile
 
 	TestAppFactory func(t *testing.T) *tests.TestApp
 	AuthScenarios  []AuthScenario
@@ -41,39 +45,15 @@ const (
 	BlockTypeText  BlockType = "text"
 )
 
-type BlockWithFile struct {
-	Type  BlockType
-	Title string
-	User  string
-}
-
-type Tokens struct {
-	Admin   string
-	UserOne string
-	UserTwo string
+type MockBlockWithFile struct {
+	Type     BlockType
+	Title    string
+	User     string
+	FilePath string
 }
 
 func TestAppHooks(t *testing.T) {
-	userOneToken, err := generateRecordToken("user", "user1@example.com")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	userTwoToken, err := generateRecordToken("user", "user2@example.com")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	adminToken, err := generateAdminToken("admin@example.com")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tokens := Tokens{
-		Admin:   adminToken,
-		UserOne: userOneToken,
-		UserTwo: userTwoToken,
-	}
+	tokens := getTokens(t)
 
 	// setup the test ApiScenario app instance
 	setupTestApp := func(t *testing.T) *tests.TestApp {
@@ -93,7 +73,7 @@ func TestAppHooks(t *testing.T) {
 	//
 	// Docs: docs/backend/test.md
 	//
-	// IDs can be found in tool/test-seed/index.ts
+	// Entity IDs can be found in tool/test-seed/index.ts
 	//
 	// To populate ExpectedContent:
 	// 1. When test fails, check that the actual ExpectedContent value is expected.
@@ -111,18 +91,11 @@ func TestAppHooks(t *testing.T) {
 
 			var body io.Reader = nil
 			var requestHeaders map[string]string = authScenario.RequestHeaders
-			// The multipart data needs to be generated separately for each
-			// scenario. Re-using the same objects across scenarios causes an
-			// error.
-			if scenario.BlockBodyWithFile != nil {
-				formData, mp, err := tests.MockMultipartData(map[string]string{
-					"title": scenario.BlockBodyWithFile.Title,
-					"type":  string(scenario.BlockBodyWithFile.Type),
-					"user":  scenario.BlockBodyWithFile.User,
-				}, "file")
-				if err != nil {
-					panic(err)
-				}
+			if scenario.BodyForBlockWithFile != nil {
+				// The multipart data needs to be generated separately for each
+				// scenario. Re-using the same objects across scenarios causes an
+				// error.
+				formData, mp := generateBodyWithFile(scenario)
 				body = formData
 				if requestHeaders == nil {
 					requestHeaders = make(map[string]string)
@@ -146,6 +119,50 @@ func TestAppHooks(t *testing.T) {
 			apiScenario.Test(t)
 		}
 	}
+}
+
+func generateBodyWithFile(scenario RequestScenario) (io.Reader, *multipart.Writer) {
+	blockBody := scenario.BodyForBlockWithFile
+	formData, mp, err := MockMultipartData(map[string]string{
+		"title": blockBody.Title,
+		"type":  string(blockBody.Type),
+		"user":  blockBody.User,
+	}, MockField{
+		name: "file",
+		path: blockBody.FilePath,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return formData, mp
+}
+
+type Tokens struct {
+	Admin   string
+	UserOne string
+	UserTwo string
+}
+
+func getTokens(t *testing.T) Tokens {
+	userOneToken, err := generateRecordToken("user", "user1@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	userTwoToken, err := generateRecordToken("user", "user2@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminToken, err := generateAdminToken("admin@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tokens := Tokens{
+		Admin:   adminToken,
+		UserOne: userOneToken,
+		UserTwo: userTwoToken,
+	}
+	return tokens
 }
 
 func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, tokens Tokens) []RequestScenario {
@@ -269,10 +286,11 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 			Name:   "Create audio block",
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
-			BlockBodyWithFile: &BlockWithFile{
-				Title: "test123",
-				Type:  BlockTypeAudio,
-				User:  "user1-15char-id",
+			BodyForBlockWithFile: &MockBlockWithFile{
+				Title:    "test123",
+				Type:     BlockTypeAudio,
+				User:     "user1-15char-id",
+				FilePath: "tool/test/test.wav",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -443,7 +461,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			},
 		},
 		{
-			Name:   "Block invariant > Audio type requires file",
+			Name:   "Block invariant > Audio type > File required",
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyStr: `{
@@ -459,7 +477,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 						"Authorization": tokens.UserOne,
 					},
 					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Audio block must have a file.\""},
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Audio block must have exactly 1 file.\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeCreateRequest": 1,
 					},
@@ -467,13 +485,39 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			},
 		},
 		{
-			Name:   "Block invariant > Non-audio type cannot have a file",
+			Name:   "Block invariant > Audio type >  Non-wav/mp3 not allowed",
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
-			BlockBodyWithFile: &BlockWithFile{
-				Title: "test123",
-				Type:  BlockTypeText,
-				User:  "user1-15char-id",
+			BodyForBlockWithFile: &MockBlockWithFile{
+				Title:    "test123",
+				Type:     BlockTypeAudio,
+				User:     "user1-15char-id",
+				FilePath: "tool/test/test.txt",
+			},
+			TestAppFactory: setupTestApp,
+			AuthScenarios: []AuthScenario{
+				{
+					Name: "User updating own",
+					RequestHeaders: map[string]string{
+						"Authorization": tokens.UserOne,
+					},
+					ExpectedStatus:  400,
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Audio block must have a .wav or .mp3 file.\""},
+					ExpectedEvents: map[string]int{
+						"OnRecordBeforeCreateRequest": 1,
+					},
+				},
+			},
+		},
+		{
+			Name:   "Block invariant > Non-audio type > Cannot have a file",
+			Method: http.MethodPost,
+			Url:    "/api/collections/lrffu3q1yweoljo/records",
+			BodyForBlockWithFile: &MockBlockWithFile{
+				Title:    "test123",
+				Type:     BlockTypeText,
+				User:     "user1-15char-id",
+				FilePath: "tool/test/test.wav",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -494,10 +538,11 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			Name:   "Block invariant > Cannot update file",
 			Method: http.MethodPatch,
 			Url:    "/api/collections/lrffu3q1yweoljo/records/block10-15chars",
-			BlockBodyWithFile: &BlockWithFile{
-				Type:  BlockTypeAudio,
-				User:  "user1-15char-id",
-				Title: "test123",
+			BodyForBlockWithFile: &MockBlockWithFile{
+				Title:    "test123",
+				Type:     BlockTypeAudio,
+				User:     "user1-15char-id",
+				FilePath: "tool/test/test.wav",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -685,4 +730,50 @@ func generateRecordToken(collectionNameOrId string, email string) (string, error
 	}
 
 	return tokens.NewRecordAuthToken(app, record)
+}
+
+type MockField struct {
+	name string
+	path string
+}
+
+// Copied and modified from Pocketbase source: tests/request.go->MockMultipartData
+func MockMultipartData(data map[string]string, fields ...MockField) (*bytes.Buffer, *multipart.Writer, error) {
+	body := new(bytes.Buffer)
+	mp := multipart.NewWriter(body)
+	defer mp.Close()
+
+	// write data fields
+	for k, v := range data {
+		mp.WriteField(k, v)
+	}
+
+	// write file fields
+	for _, field := range fields {
+		err := func() error {
+			wd, err := os.Getwd()
+			file, err := os.OpenFile(path.Join(wd, field.path), os.O_RDONLY, 0666)
+			if err != nil {
+				return err
+			}
+			file.Seek(0, 0)
+			defer file.Close()
+
+			// stub uploaded file
+			w, err := mp.CreateFormFile(field.name, file.Name())
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(w, file); err != nil {
+				return err
+			}
+
+			return nil
+		}()
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return body, mp, nil
 }

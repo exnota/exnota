@@ -8,7 +8,8 @@
 
 ## Pocketbase integration
 
-* The test directory won't be modified as it is [cloned by the test helper](https://github.com/pocketbase/pocketbase/blob/3f7db19fdd83774dabe83337523e863773e23689/tests/app.go#L473).
+* Files mocked using `pocketbase/tests/request.go->MockMultipartData` are detected as "text/plain; charset=utf-8" content type ([link](https://github.com/pocketbase/pocketbase/blob/9436efb7fd8b9726715b58eb949f12a634fcafa0/forms/validators/file_test.go#L85C3-L86C74)).
+* Test directory contents won't be modified. It is [cloned by the test helper](https://github.com/pocketbase/pocketbase/blob/3f7db19fdd83774dabe83337523e863773e23689/tests/app.go#L473).
 
 ## Updating test seed data
 
