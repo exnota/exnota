@@ -14,6 +14,7 @@ import (
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
+	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/forms/validators"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
@@ -46,10 +47,18 @@ const (
 	BLOCK_FIELD_TITLE = "title"
 	BLOCK_FIELD_FILE  = "file"
 
-	COLLECTION_BLOCK_JOB  = "block_job"
-	BLOCK_JOB_FIELD_TYPE  = "type"
-	BLOCK_JOB_FIELD_USER  = "user"
-	BLOCK_JOB_FIELD_BLOCK = "block"
+	COLLECTION_BLOCK_JOB         = "block_job"
+	BLOCK_JOB_FIELD_TYPE         = "type"
+	BLOCK_JOB_TYPE_TRANSCRIPTION = "transcription"
+	BLOCK_JOB_TYPE_EXPORT        = "export"
+	BLOCK_JOB_FIELD_STATUS       = "status"
+	BLOCK_JOB_STATUS_WAITING     = "waiting"
+	BLOCK_JOB_STATUS_RUNNING     = "running"
+	BLOCK_JOB_STATUS_ERROR       = "error"
+	BLOCK_JOB_STATUS_COMPLETE    = "complete"
+	BLOCK_JOB_FIELD_SUMMARY      = "summary"
+	BLOCK_JOB_FIELD_BLOCK        = "block"
+	BLOCK_JOB_FIELD_USER         = "user"
 )
 
 func isAutoMigrate() bool {
@@ -73,10 +82,15 @@ func bindAppHooks(app core.App) {
 
 	// initJobWorker(app)
 	// bindJobCreatorHooks(app)
+
+	// Rules and invariants
 	setGlobalDeleteRules(app)
 	setGlobalAuthenticationRules(app)
 	setBlockInvariants(app)
 	setBlockJobInvariants(app)
+
+	// Processing
+	setBlockProcessingHooks(app)
 }
 
 func setGlobalDeleteRules(app core.App) {
@@ -266,6 +280,36 @@ func setBlockJobInvariants(app core.App) {
 			return apis.NewBadRequestError("Block job user must match block user", nil)
 		}
 
+		return nil
+	})
+}
+
+func setBlockProcessingHooks(app core.App) {
+	// On audio block creation, create a transcription job
+	app.OnModelAfterCreate(COLLECTION_BLOCK).Add(func(e *core.ModelEvent) error {
+		block := e.Model.(*models.Record)
+		if block.GetString(BLOCK_FIELD_TYPE) == "audio" {
+			collection, err := app.Dao().FindCollectionByNameOrId(COLLECTION_BLOCK_JOB)
+			if err != nil {
+				return err
+			}
+
+			job := models.NewRecord(collection)
+
+			form := forms.NewRecordUpsert(app, job)
+
+			form.LoadData(map[string]any{
+				BLOCK_JOB_FIELD_TYPE:   BLOCK_JOB_TYPE_TRANSCRIPTION,
+				BLOCK_JOB_FIELD_STATUS: BLOCK_JOB_STATUS_WAITING,
+				BLOCK_JOB_FIELD_BLOCK:  block.Id,
+				BLOCK_JOB_FIELD_USER:   block.GetString(BLOCK_FIELD_USER),
+			})
+
+			// validate and submit (internally it calls app.Dao().SaveRecord(record) in a transaction)
+			if err := form.Submit(); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 }

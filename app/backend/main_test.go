@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/labstack/echo/v5"
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/tests"
 	"github.com/pocketbase/pocketbase/tokens"
 )
@@ -36,6 +38,8 @@ type AuthScenario struct {
 	ExpectedStatus  int
 	ExpectedContent []string
 	ExpectedEvents  map[string]int
+	BeforeTestFunc  func(t *testing.T, app *tests.TestApp, e *echo.Echo)
+	AfterTestFunc   func(t *testing.T, app *tests.TestApp, res *http.Response)
 }
 
 type BlockType string
@@ -115,6 +119,8 @@ func TestAppHooks(t *testing.T) {
 				ExpectedContent: authScenario.ExpectedContent,
 				ExpectedEvents:  authScenario.ExpectedEvents,
 				TestAppFactory:  scenario.TestAppFactory,
+				BeforeTestFunc:  authScenario.BeforeTestFunc,
+				AfterTestFunc:   authScenario.AfterTestFunc,
 			}
 			apiScenario.Test(t)
 		}
@@ -287,7 +293,7 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyForBlockWithFile: &MockBlockWithFile{
-				Title:    "test123",
+				Title:    "new audio block",
 				Type:     BlockTypeAudio,
 				User:     "user1-15char-id",
 				FilePath: "tool/test/test.wav",
@@ -305,12 +311,45 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 						"Authorization": tokens.UserOne,
 					},
 					ExpectedStatus:  200,
-					ExpectedContent: []string{"\"title\":\"test123\""},
+					ExpectedContent: []string{"\"title\":\"new audio block\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeCreateRequest": 1,
 						"OnRecordAfterCreateRequest":  1,
-						"OnModelBeforeCreate":         1,
-						"OnModelAfterCreate":          1,
+						"OnModelBeforeCreate":         2, // Job is created
+						"OnModelAfterCreate":          2, // Job is created
+					},
+					AfterTestFunc: func(t *testing.T, app *tests.TestApp, res *http.Response) {
+						// Find block that was just created
+						records, err := app.Dao().FindRecordsByExpr(COLLECTION_BLOCK,
+							dbx.HashExp{BLOCK_FIELD_TITLE: "new audio block"},
+							dbx.HashExp{BLOCK_FIELD_TYPE: string(BlockTypeAudio)},
+							dbx.HashExp{BLOCK_FIELD_USER: "user1-15char-id"},
+						)
+						if err != nil {
+							t.Fatal(err)
+						}
+						if len(records) != 1 {
+							t.Errorf("Expected to find 1 newly created block but found %v", len(records))
+						}
+						block := records[0]
+
+						// Find block job that should have been created
+						jobs, err := app.Dao().FindRecordsByExpr(COLLECTION_BLOCK_JOB,
+							dbx.HashExp{BLOCK_JOB_FIELD_BLOCK: block.Id},
+						)
+						if len(jobs) != 1 {
+							t.Errorf("Expected to find 1 newly created block job for block id %v but found %v", block.Id, len(jobs))
+						}
+						job := jobs[0]
+						if job.GetString(BLOCK_JOB_FIELD_TYPE) != string(BLOCK_JOB_TYPE_TRANSCRIPTION) {
+							t.Errorf("Expected block job type to be %v but was %v", BLOCK_JOB_TYPE_TRANSCRIPTION, job.GetString(BLOCK_JOB_FIELD_TYPE))
+						}
+						if job.GetString(BLOCK_JOB_FIELD_STATUS) != string(BLOCK_JOB_STATUS_WAITING) {
+							t.Errorf("Expected block job status to be %v but was %v", BLOCK_JOB_STATUS_WAITING, job.GetString(BLOCK_JOB_FIELD_STATUS))
+						}
+						if job.GetString(BLOCK_JOB_FIELD_USER) != "user1-15char-id" {
+							t.Errorf("Expected block job user to be %v but was %v", "user1-15char-id", job.GetString(BLOCK_JOB_FIELD_USER))
+						}
 					},
 				},
 				{
