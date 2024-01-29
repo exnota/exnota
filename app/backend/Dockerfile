@@ -21,6 +21,9 @@ FROM golang:1.21.6-bullseye AS whisper
 # that is only used in dev environment: https://stackoverflow.com/a/60820156
 RUN go install -v github.com/go-delve/delve/cmd/dlv@latest
 RUN go install -v golang.org/x/tools/gopls@latest
+RUN go install -v  honnef.co/go/tools/cmd/staticcheck@2023.1.6
+# binary will be $(go env GOPATH)/bin/golangci-lint
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
 
 # TODO: Update to 0.20.7
 ARG PB_VERSION=0.20.6
