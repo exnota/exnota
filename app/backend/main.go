@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -90,7 +91,7 @@ func bindAppHooks(app core.App) {
 	setBlockJobInvariants(app)
 
 	// Processing
-	setBlockProcessingHooks(app)
+	setBlockTranscriptionHooks(app)
 }
 
 func setGlobalDeleteRules(app core.App) {
@@ -178,6 +179,7 @@ func setBlockInvariants(app core.App) {
 			}
 
 			// Content types supported by Pocketbase: https://github.com/gabriel-vasile/mimetype/blob/master/supported_mimes.md
+			// The mime type *may* also be in the attributes returned by filesystem.Attributes(): https://github.com/pocketbase/pocketbase/blob/9436efb7fd8b9726715b58eb949f12a634fcafa0/tools/filesystem/filesystem.go#L104
 			if err := validators.UploadedFileMimeType([]string{"audio/wav", "audio/mpeg"})(files[0]); err != nil {
 				// Verify it's a mime type error, because if we simply return
 				// the err object the error message will be a generic
@@ -284,7 +286,14 @@ func setBlockJobInvariants(app core.App) {
 	})
 }
 
-func setBlockProcessingHooks(app core.App) {
+func setBlockTranscriptionHooks(app core.App) {
+	jobs := make(chan TranscriptionJob)
+	results := make(chan string)
+
+	for w := 1; w <= 2; w++ {
+		go transcriptionWorker(w, jobs, results, app)
+	}
+
 	// On audio block creation, create a transcription job
 	app.OnModelAfterCreate(COLLECTION_BLOCK).Add(func(e *core.ModelEvent) error {
 		block := e.Model.(*models.Record)
@@ -312,6 +321,67 @@ func setBlockProcessingHooks(app core.App) {
 		}
 		return nil
 	})
+
+	app.OnModelAfterCreate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
+		record := e.Model.(*models.Record)
+		if record.GetString(BLOCK_JOB_FIELD_TYPE) != BLOCK_JOB_TYPE_TRANSCRIPTION {
+			return nil
+		}
+		if record.GetString(BLOCK_JOB_FIELD_STATUS) != BLOCK_JOB_STATUS_WAITING {
+			return nil
+		}
+
+		jobs <- TranscriptionJob{
+			BlockJobId: record.Id,
+			BlockId:    record.GetString(BLOCK_JOB_FIELD_BLOCK),
+		}
+		return nil
+	})
+}
+
+type TranscriptionJob struct {
+	BlockJobId string
+	BlockId    string
+}
+
+func transcriptionWorker(id int, jobs <-chan TranscriptionJob, results chan<- string, app core.App) {
+	for j := range jobs {
+		fmt.Println("worker", id, "started block job", j.BlockJobId, "for block", j.BlockId)
+
+		var filePath string
+		err := app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+			blockJob, err := txDao.FindRecordById(COLLECTION_BLOCK_JOB, j.BlockJobId)
+			if err != nil {
+				return err
+			}
+
+			blockJob.Set(BLOCK_JOB_FIELD_STATUS, BLOCK_JOB_STATUS_RUNNING)
+			if err := txDao.SaveRecord(blockJob); err != nil {
+				return err
+			}
+
+			block, err := txDao.FindRecordById(COLLECTION_BLOCK, j.BlockId)
+			if err != nil {
+				return err
+			}
+			filePath = path.Join(app.DataDir(), core.LocalStorageDirName, block.BaseFilesPath(), block.GetString(BLOCK_FIELD_FILE))
+
+			return nil
+		})
+		if err != nil {
+			// TODO: Set job errored
+			fmt.Println("worker", id, "errored running job", j.BlockJobId, "for block", j.BlockId, "with error", err)
+			continue
+		}
+
+		// TODO: Perform transcription
+		fmt.Println("filePath", filePath)
+		// TODO: Save transcription to block
+		// TODO: Set job to finished
+
+		// results <- "done"
+		fmt.Println("worker", id, "finished job", j)
+	}
 }
 
 const JOB_CREATOR_WORKER = "job_creator_worker"
