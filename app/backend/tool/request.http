@@ -1,17 +1,117 @@
-@hostname = 0.0.0.0
-@block_job_collection_id = <add>
-@user_id = subsgfzln1r54pa
-@auth_token = <add>
+# Setup:
+# 1. Install REST Client extension for VS Code.
+# 2. Duplicate .vscode/settings.json.template to .vscode/settings.json
+# 3. Add environment variable values.
+#    - For Notion variables, follow 'Notion setup' steps below.
+#
+# Usage:
+# 1. Set environment:
+#      * Cmd (⇧⌘P) > Rest Client: Switch Environment
+#      * This will fix red lines.
+# 2. Quick navigation
+#      * Search (⌘P) > '@'
 
-
+### ----------------------------------------------------
+### Pocketbase API
+### ----------------------------------------------------
 ### Create waiting Block Job
-POST http://{{hostname}}:8080/api/collections/{{block_job_collection_id}}/records HTTP/1.1
+POST {{baseUrl}}/collections/{{block_job_collection_id}}/records HTTP/1.1
 content-type: application/json
 Authorization: {{auth_token}}
 
 {
     "status": "waiting",
     "type": "transcription",
-    "block": "<add>",
-    "user": "{{user_id}}"
+    "block": "hyi1k9zhajjxxx8",
+    "user": "{{user_id}}",
+    "summary": ["initial value"]
 }
+
+### Create audio block
+POST {{baseUrl}}/collections/{{block_collection_id}}/records HTTP/1.1
+Authorization: {{auth_token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+audio
+--boundary
+Content-Disposition: form-data; name="title"
+Content-Type: application/json
+
+block title
+--boundary
+Content-Disposition: form-data; name="user"
+Content-Type: application/json
+
+{{user_id}}
+--boundary
+Content-Disposition: form-data; name="file"; filename="jfk.wav"
+Content-Type: audio/wav
+
+< jfk.wav
+--boundary--
+
+### ----------------------------------------------------
+### Notion API
+### ----------------------------------------------------
+### Notion setup 1/2: Get code
+# 1. Get client ID for the Exnota Notion Integration (see relevant vault)
+# 2. Add it to this URL: https://api.notion.com/v1/oauth/authorize?client_id={{notionOauthClientId}}&response_type=code&owner=user&redirect_uri=https%3A%2F%2Fexnota.com%2Fapi%2Fintegration%2Fnotion%2Fmobile-code-redirect
+# 3. Open in browser AND START CAPTURING NETWORK REQUESTS
+# 4. Go through flow, and get code from attempted redirect
+#    (won't actually redirect due to exnota:// scheme).
+
+### Notion setup 2/2: Get access token, workspace_id, bot_id, owner user id.
+# 1. Get code from previous step.
+# 2. Replace "a code" below with this code.
+POST {{baseUrl}}/notion-token HTTP/1.1
+content-type: application/json
+
+{
+    "code": "a code"
+}
+
+### blocks - append file block
+curl -X PATCH 'https://api.notion.com/v1/blocks/2daf121ec2e742299da72e1df4eb67b9/children' \
+  -H 'Authorization: Bearer '"{{notionAccessToken}}"'' \
+  -H "Content-Type: application/json" \
+  -H "Notion-Version: 2022-06-28" \
+  --data '{
+	"children": [
+		{
+			"object": "block",
+			"type": "file",
+			"file": {
+				"caption": [],
+				"type": "external",
+				"external": {
+					"url": "https://upload.wikimedia.org/wikipedia/commons/d/d5/JFK_inaugural_address.ogg"
+				}
+			}
+		}
+	]
+}'
+
+### ----------------------------------------------------
+### OpenAI Whisper
+### ----------------------------------------------------
+
+### Transcribe
+POST https://api.openai.com/v1/audio/transcriptions
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{openAiKey}}
+
+--boundary
+Content-Disposition: form-data; name="model"
+Content-Type: application/json
+
+whisper-1
+--boundary
+Content-Disposition: form-data; name="file"; filename="short-test.m4a"
+Content-Type: audio/x-m4a
+
+< short-test.m4a
+--boundary--
