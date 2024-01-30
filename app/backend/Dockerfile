@@ -10,20 +10,35 @@ RUN mkdir /whisper && \
 
 WORKDIR /whisper
 
-ARG model=base
-RUN bash ./models/download-ggml-model.sh "${model}"
+RUN bash ./models/download-ggml-model.sh "large-v2"
+RUN bash ./models/download-ggml-model.sh "large-v3"
 RUN make main stream
 
 FROM golang:1.21.6-bullseye AS whisper
 
-# Transcription
+# Transcription packages
 RUN apt-get update \
     && apt-get install -y libsdl2-dev alsa-utils \
+    # This cleanup is apparently to reduce image sizes (I copied it from some
+    # other Dockerfile). See https://stackoverflow.com/a/61990740. It could be
+    # done on other apt(-get) updates in this file.
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-# ffmpg isn't available via apt-get
+# ffmpeg packages. ffmpg isn't available via apt-get
 RUN apt update \
     && apt install -y ffmpeg
+
+# Transcription model
+# WORKDIR /home/node
+
+RUN mkdir -p /whisper/models
+# RUN mkdir /whisper/audio
+# RUN chown -R node /home/node/whisper 
+# COPY --chown=node:node ./data/jfk.wav /home/node/whisper/audio
+COPY --from=build "/whisper/models/ggml-large-v2.bin" "/whisper/models/ggml-large-v2.bin"
+COPY --from=build "/whisper/models/ggml-large-v3.bin" "/whisper/models/ggml-large-v3.bin"
+COPY --from=build /whisper/main /usr/local/bin/whisper
+COPY --from=build /whisper/stream /usr/local/bin/stream
 
 # Dev environment
 # TODO: Put these in a separate build stage (https://docs.docker.com/build/building/multi-stage/)
@@ -57,16 +72,7 @@ EXPOSE 8080
 CMD /pb/start.sh
 
 
-# WORKDIR /home/node
 
-# ARG model=base
-# RUN mkdir -p /home/node/whisper/models
-# RUN mkdir /home/node/whisper/audio
-# RUN chown -R node /home/node/whisper 
-# COPY --chown=node:node ./data/jfk.wav /home/node/whisper/audio
-# COPY --from=build --chown=node:node "/whisper/models/ggml-${model}.bin" "/home/node/whisper/models/ggml-${model}.bin"
-# COPY --from=build --chown=node:node /whisper/main /usr/local/bin/whisper
-# COPY --from=build --chown=node:node /whisper/stream /usr/local/bin/stream
 
 # ENV HOST=0.0.0.0
 # ENV PORT=3000
