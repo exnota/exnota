@@ -1,0 +1,17 @@
+@hostname = 0.0.0.0
+@block_job_collection_id = <add>
+@user_id = subsgfzln1r54pa
+@auth_token = <add>
+
+
+### Create waiting Block Job
+POST http://{{hostname}}:8080/api/collections/{{block_job_collection_id}}/records HTTP/1.1
+content-type: application/json
+Authorization: {{auth_token}}
+
+{
+    "status": "waiting",
+    "type": "transcription",
+    "block": "<add>",
+    "user": "{{user_id}}"
+}
