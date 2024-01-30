@@ -7,3 +7,5 @@ tool/test-seed/out
 
 # VS Code
 __debug_bin*
+# Use this for local environment configuration, e.g. using REST Client extension
+.vscode/settings.json
