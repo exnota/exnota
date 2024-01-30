@@ -16,6 +16,15 @@ RUN make main stream
 
 FROM golang:1.21.6-bullseye AS whisper
 
+# Transcription
+RUN apt-get update \
+    && apt-get install -y libsdl2-dev alsa-utils \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+# ffmpg isn't available via apt-get
+RUN apt update \
+    && apt install -y ffmpeg
+
 # Dev environment
 # TODO: Put these in a separate build stage (https://docs.docker.com/build/building/multi-stage/)
 # that is only used in dev environment: https://stackoverflow.com/a/60820156
@@ -47,14 +56,6 @@ EXPOSE 8080
 # start PocketBase
 CMD /pb/start.sh
 
-
-# RUN apt-get update \
-#     && apt-get install -y libsdl2-dev alsa-utils \
-#     && apt-get clean \
-#     && rm -rf /var/lib/apt/lists/*
-# # ffmpg isn't available via apt-get
-# RUN apt update \
-#     && apt install -y ffmpeg
 
 # WORKDIR /home/node
 
