@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -344,11 +345,17 @@ type TranscriptionJob struct {
 	BlockId    string
 }
 
+const tempTranscriptionDir = "transcription"
+
+// From https://platform.openai.com/docs/guides/speech-to-text/prompting
+const transcriptionPrompt = "Hello, welcome to my lecture."
+
 func transcriptionWorker(id int, jobs <-chan TranscriptionJob, results chan<- string, app core.App) {
 	for j := range jobs {
 		fmt.Println("worker", id, "started block job", j.BlockJobId, "for block", j.BlockId)
 
-		var filePath string
+		var fileDir string
+		var fileName string
 		err := app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
 			blockJob, err := txDao.FindRecordById(COLLECTION_BLOCK_JOB, j.BlockJobId)
 			if err != nil {
@@ -364,7 +371,8 @@ func transcriptionWorker(id int, jobs <-chan TranscriptionJob, results chan<- st
 			if err != nil {
 				return err
 			}
-			filePath = path.Join(app.DataDir(), core.LocalStorageDirName, block.BaseFilesPath(), block.GetString(BLOCK_FIELD_FILE))
+			fileDir = path.Join(app.DataDir(), core.LocalStorageDirName, block.BaseFilesPath())
+			fileName = block.GetString(BLOCK_FIELD_FILE)
 
 			return nil
 		})
@@ -375,7 +383,29 @@ func transcriptionWorker(id int, jobs <-chan TranscriptionJob, results chan<- st
 		}
 
 		// TODO: Perform transcription
-		fmt.Println("filePath", filePath)
+
+		// Make sure that the special Pocketbase temp directory exists
+		// note: it needs to be inside the current pb_data to avoid "cross-device link" errors
+		// From https://github.com/pocketbase/pocketbase/blob/9436efb7fd8b9726715b58eb949f12a634fcafa0/core/base_backup.go#L63C1-L68C3
+		rootTempDir := filepath.Join(app.DataDir(), core.LocalTempDirName)
+		if err := os.MkdirAll(rootTempDir, os.ModePerm); err != nil {
+			// TODO: Set job errored
+			continue
+		}
+		// Ensure transcriptions subdir also exists
+		convertedTempDir := filepath.Join(rootTempDir, tempTranscriptionDir)
+		if err := os.MkdirAll(convertedTempDir, os.ModePerm); err != nil {
+			// TODO: Set job errored
+			continue
+		}
+
+		fmt.Println("filePath", fileDir)
+		convertedName := strings.TrimSuffix(fileName, filepath.Ext(fileName)) + "-converted.wav"
+		convertedPath := path.Join(convertedTempDir, convertedName)
+		fmt.Println("convertedPath", convertedPath)
+		// cmnd := exec.Command("main.exe", "arg")
+		//cmnd.Run() // and wait
+		// cmnd.Start()
 		// TODO: Save transcription to block
 		// TODO: Set job to finished
 
