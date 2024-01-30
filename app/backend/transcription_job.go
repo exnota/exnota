@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -104,6 +105,8 @@ func (j *transJob) setJobStatus(status string, validateWaiting bool, jobErr erro
 			if val == nil {
 				summary = []string{jobErr.Error()}
 			} else {
+				// TODO: There is a limit on the size of the summary field. We
+				// should truncate it if it gets too big.
 				err = blockJob.UnmarshalJSONField(BLOCK_JOB_FIELD_SUMMARY, &summary)
 				if err != nil {
 					return err
@@ -170,6 +173,20 @@ func (j *transJob) convertAudio(fileInfo *FileInfo) (*ConvertedFileInfo, error) 
 	}, nil
 }
 
+type TranscriptionResult struct {
+	Transcription []Transcription `json:"transcription"`
+}
+
+type Transcription struct {
+	Timestamps Timestamp `json:"timestamps"`
+	Text       string    `json:"text"`
+}
+
+type Timestamp struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
 func (j *transJob) transcribe(convertedFileInfo ConvertedFileInfo) error {
 	modelPath := path.Join(whisperModelsDir, whisperModelFilename)
 	cmnd := exec.Command("whisper", "--prompt", transcriptionPrompt, "--model", modelPath, "-f", convertedFileInfo.fullPath, "--output-json")
@@ -179,5 +196,23 @@ func (j *transJob) transcribe(convertedFileInfo ConvertedFileInfo) error {
 	if err != nil {
 		return err
 	}
+
+	raw, err := os.ReadFile(convertedFileInfo.fullPath + ".json")
+	if err != nil {
+		return err
+	}
+	fmt.Println("raw json", string(raw))
+
+	var result TranscriptionResult
+	err = json.Unmarshal(raw, &result)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(result.Transcription); i++ {
+		transcription := result.Transcription[i]
+		fmt.Println(transcription.Text)
+	}
+
 	return nil
 }
