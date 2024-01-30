@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -403,14 +404,20 @@ func transcriptionWorker(id int, jobs <-chan TranscriptionJob, results chan<- st
 		convertedName := strings.TrimSuffix(fileName, filepath.Ext(fileName)) + "-converted.wav"
 		convertedPath := path.Join(convertedTempDir, convertedName)
 		fmt.Println("convertedPath", convertedPath)
-		// cmnd := exec.Command("main.exe", "arg")
-		//cmnd.Run() // and wait
-		// cmnd.Start()
+		cmnd := exec.Command("ffmpeg", "-i", path.Join(fileDir, fileName),
+			"-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", convertedPath)
+		out, err := cmnd.CombinedOutput()
+		fmt.Println("Audio file conversion:")
+		fmt.Println(string(out))
+		if err != nil {
+			// TODO: Set job errored
+			continue
+		}
 		// TODO: Save transcription to block
 		// TODO: Set job to finished
 
 		// results <- "done"
-		fmt.Println("worker", id, "finished job", j)
+		fmt.Println("worker", id, "finished job", j.BlockJobId, "for block", j.BlockId)
 	}
 }
 
