@@ -7,6 +7,7 @@ import (
 )
 
 type BlockJob interface {
+	ID() string
 	Type() JobType
 	Status() JobStatus
 	Block() string
@@ -88,6 +89,10 @@ func (t JobType) String() string {
 
 type blockJob struct {
 	record *models.Record
+}
+
+func (j *blockJob) ID() string {
+	return j.record.Id
 }
 
 func (j *blockJob) Status() JobStatus {

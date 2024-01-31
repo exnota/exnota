@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"exnota.com/backend/record"
 	"exnota.com/backend/test"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/dbx"
@@ -830,7 +831,7 @@ func TestAudioBlockSetters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	block, err := NewAudioBlock(rec)
+	block, err := record.NewAudioBlock(rec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -854,7 +855,7 @@ func TestAudioBlockSetters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	block, err = NewAudioBlock(rec)
+	block, err = record.NewAudioBlock(rec)
 	if err != nil {
 		t.Fatal(err)
 	}
