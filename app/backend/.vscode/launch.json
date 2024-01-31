@@ -8,17 +8,34 @@
       "name": "Backend",
       "type": "go",
       "request": "launch",
-      //   "mode": "auto",
-      "program": "${workspaceFolder}",
-      "args": ["serve", "--http=0.0.0.0:8080", "--dev"]
+      "program": "${workspaceFolder}/cmd",
+      "args": [
+        "serve",
+        "--http=0.0.0.0:8080",
+        "--dev",
+        // Data directory needs to be set because dlv seems to always run from
+        // the 'cmd' folder, even if "cwd" is set in this launch config or --wd
+        // is passed to dlv via dlvFlags
+        "--dir",
+        "${workspaceFolder}/pb_data"
+      ]
     },
     {
       "name": "Backend (skip workers)",
       "type": "go",
       "request": "launch",
-      //   "mode": "auto",
-      "program": "${workspaceFolder}",
-      "args": ["serve", "--http=0.0.0.0:8080", "--dev", "--skip-workers=true"]
+      "program": "${workspaceFolder}/cmd",
+      "args": [
+        "serve",
+        "--http=0.0.0.0:8080",
+        "--dev",
+        "--skip-workers=true",
+        // Data directory needs to be set because dlv seems to always run from
+        // the 'cmd' folder, even if "cwd" is set in this launch config or --wd
+        // is passed to dlv via dlvFlags
+        "--dir",
+        "${workspaceFolder}/pb_data"
+      ]
     },
     {
       "name": "Tool: Test Seed",

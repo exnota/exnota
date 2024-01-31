@@ -1,1 +1,1 @@
-go run exnota.com/backend serve --http=0.0.0.0:8080 --dev
+go run cmd/main.go serve --http=0.0.0.0:8080 --dev
