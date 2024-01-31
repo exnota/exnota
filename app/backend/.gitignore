@@ -3,7 +3,7 @@ pb_data
 /backend
 
 # tool
-tool/test-seed/out
+tool/test/seed/out
 
 # VS Code
 __debug_bin*

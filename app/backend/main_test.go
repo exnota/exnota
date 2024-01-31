@@ -75,7 +75,7 @@ func TestAppHooks(t *testing.T) {
 	//
 	// Docs: docs/backend/test.md
 	//
-	// Entity IDs can be found in tool/test-seed/index.ts
+	// Entity IDs can be found in tool/test/seed/index.ts
 	//
 	// To populate ExpectedContent:
 	// 1. When test fails, check that the actual ExpectedContent value is expected.
@@ -294,7 +294,7 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 				Title:    "new audio block",
 				Type:     BlockTypeAudio,
 				User:     "user1-15char-id",
-				FilePath: "tool/test/test.wav",
+				FilePath: "test/file/test.wav",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -533,7 +533,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 				Title:    "test123",
 				Type:     BlockTypeAudio,
 				User:     "user1-15char-id",
-				FilePath: "tool/test/test.txt",
+				FilePath: "test/file/test.txt",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -558,7 +558,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 				Title:    "test123",
 				Type:     BlockTypeText,
 				User:     "user1-15char-id",
-				FilePath: "tool/test/test.wav",
+				FilePath: "test/file/test.wav",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -583,7 +583,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 				Title:    "test123",
 				Type:     BlockTypeAudio,
 				User:     "user1-15char-id",
-				FilePath: "tool/test/test.wav",
+				FilePath: "test/file/test.wav",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
