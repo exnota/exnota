@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	_ "exnota.com/backend/migrations"
+	"exnota.com/backend/record"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
@@ -98,6 +99,7 @@ func bindAppHooks(app core.App, skipWorkers *bool) {
 
 	// Processing
 	setBlockTranscriptionHooks(app, skipWorkers)
+	setBlockExportHooks(app)
 }
 
 func setGlobalDeleteRules(app core.App) {
@@ -374,4 +376,45 @@ func transcriptionWorker(id int, jobs <-chan TranscriptionJob, results chan<- st
 		// results <- "done"
 		fmt.Println("worker", id, "finished job", j.BlockJobId, "for block", j.BlockId)
 	}
+}
+
+func setBlockExportHooks(app core.App) {
+	// On transcription job completion, create an export job
+	app.OnModelAfterUpdate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
+		// Transcription jobs only
+		updatedJob := record.LoadBlockJob(e.Model.(*models.Record))
+		if updatedJob.Type() != record.Transcription {
+			return nil
+		}
+
+		// Job complete events only
+		if updatedJob.Status() != record.Complete {
+			return nil
+		}
+		prevUpdatedJob := record.LoadBlockJob(updatedJob.Record().OriginalCopy())
+		if prevUpdatedJob.Status() == record.Complete {
+			return nil
+		}
+
+		collection, err := app.Dao().FindCollectionByNameOrId(COLLECTION_BLOCK_JOB)
+		if err != nil {
+			return err
+		}
+
+		form, err := record.NewExportBlockJobForm(record.NewExportBlockJobFormConfig{
+			Collection: collection,
+			App:        app,
+			BlockId:    updatedJob.Block(),
+			UserId:     updatedJob.User(),
+		})
+		if err != nil {
+			return err
+		}
+
+		// validate and submit (internally it calls app.Dao().SaveRecord(record) in a transaction)
+		if err := form.Submit(); err != nil {
+			return err
+		}
+		return nil
+	})
 }
