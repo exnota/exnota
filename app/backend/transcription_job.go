@@ -56,7 +56,13 @@ func (j *transJob) Run() error {
 		return err
 	}
 
-	err = j.transcribe(*convertedFileInfo)
+	result, err := j.transcribe(*convertedFileInfo)
+	if err != nil {
+		err := j.setJobStatusError(err)
+		return err
+	}
+
+	err = j.saveTranscription(result)
 	if err != nil {
 		err := j.setJobStatusError(err)
 		return err
@@ -187,31 +193,67 @@ type Timestamp struct {
 	To   string `json:"to"`
 }
 
-func (j *transJob) transcribe(convertedFileInfo ConvertedFileInfo) error {
+func (j *transJob) transcribe(convertedFileInfo ConvertedFileInfo) (*TranscriptionResult, error) {
 	modelPath := path.Join(whisperModelsDir, whisperModelFilename)
 	cmnd := exec.Command("whisper", "--prompt", transcriptionPrompt, "--model", modelPath, "-f", convertedFileInfo.fullPath, "--output-json")
 	out, err := cmnd.CombinedOutput()
 	fmt.Println("Transcribe:")
 	fmt.Println(string(out))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	raw, err := os.ReadFile(convertedFileInfo.fullPath + ".json")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Println("raw json", string(raw))
 
 	var result TranscriptionResult
 	err = json.Unmarshal(raw, &result)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for i := 0; i < len(result.Transcription); i++ {
 		transcription := result.Transcription[i]
 		fmt.Println(transcription.Text)
+	}
+
+	return &result, nil
+}
+
+func (j *transJob) saveTranscription(result *TranscriptionResult) error {
+	err := j.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		blockRecord, err := txDao.FindRecordById(COLLECTION_BLOCK, j.blockId)
+		if err != nil {
+			return err
+		}
+
+		block, err := NewAudioBlock(blockRecord)
+		if err != nil {
+			return err
+		}
+
+		transcription := ""
+		for i := 0; i < len(result.Transcription); i++ {
+			transcription += result.Transcription[i].Text
+		}
+		transcription = strings.Trim(transcription, " ")
+		err = block.SetTranscription([]string{transcription})
+		if err != nil {
+			return err
+		}
+
+		err = txDao.SaveRecord(blockRecord)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil

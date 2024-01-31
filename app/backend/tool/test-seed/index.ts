@@ -1,4 +1,5 @@
 import PocketBase from "pocketbase";
+import * as fs from "fs";
 
 const COLLECTION_USER = "user";
 const COLLECTION_BLOCK = "block";
@@ -36,7 +37,7 @@ try {
   // Blocks
   // --------------------
 
-  // User 1: Create 9 text blocks and 1 audio block
+  // User 1: Create 8 text blocks and 2 audio blocks
   const block1 = await pb.collection(COLLECTION_BLOCK).create({
     id: "block1--15chars",
     type: "text",
@@ -85,18 +86,23 @@ try {
     title: "block 8",
     user: user1.id,
   });
+  const testFile = fs.readFileSync("./test.wav");
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block9--15chars",
-    type: "text",
+    type: "audio",
     title: "block 9",
     user: user1.id,
+    file: new Blob([testFile], { type: "audio/wav" }),
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block10-15chars",
     type: "audio",
     title: "block 10",
     user: user1.id,
-    file: new Blob([""], { type: "audio/wav" }),
+    file: new Blob([testFile], { type: "audio/wav" }),
+    audio: {
+      transcription: ["paragraph 1", "paragraph 2"],
+    },
   });
 
   // User 2: Create 2 text blocks
