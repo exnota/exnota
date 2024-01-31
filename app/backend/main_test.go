@@ -11,13 +11,12 @@ import (
 	"strings"
 	"testing"
 
+	"exnota.com/backend/test"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/tests"
 	"github.com/pocketbase/pocketbase/tokens"
 )
-
-const testDataDir = "./pb_data_test"
 
 type RequestScenario struct {
 	Name   string
@@ -61,10 +60,7 @@ func TestAppHooks(t *testing.T) {
 
 	// setup the test ApiScenario app instance
 	setupTestApp := func(t *testing.T) *tests.TestApp {
-		testApp, err := tests.NewTestApp(testDataDir)
-		if err != nil {
-			t.Fatal(err)
-		}
+		testApp := test.TestApp()
 		// no need to cleanup since scenario.Test() will do that for us
 		// defer testApp.Cleanup()
 
@@ -747,10 +743,7 @@ func generateBlockJobInvariantScenarios(setupTestApp func(t *testing.T) *tests.T
 }
 
 func generateAdminToken(email string) (string, error) {
-	app, err := tests.NewTestApp(testDataDir)
-	if err != nil {
-		return "", err
-	}
+	app := test.TestApp()
 	defer app.Cleanup()
 
 	admin, err := app.Dao().FindAdminByEmail(email)
@@ -762,10 +755,7 @@ func generateAdminToken(email string) (string, error) {
 }
 
 func generateRecordToken(collectionNameOrId string, email string) (string, error) {
-	app, err := tests.NewTestApp(testDataDir)
-	if err != nil {
-		return "", err
-	}
+	app := test.TestApp()
 	defer app.Cleanup()
 
 	record, err := app.Dao().FindAuthRecordByEmail(collectionNameOrId, email)
@@ -832,7 +822,7 @@ func MockMultipartData(data map[string]string, fields ...MockField) (*bytes.Buff
 }
 
 func TestAudioBlockSetters(t *testing.T) {
-	app, _ := tests.NewTestApp(testDataDir)
+	app := test.TestApp()
 	defer app.Cleanup()
 
 	// Block with no existing transcription
