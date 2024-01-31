@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"exnota.com/backend/api"
 	"exnota.com/backend/job"
 	_ "exnota.com/backend/migrations"
 	"exnota.com/backend/record"
@@ -106,7 +107,7 @@ func bindAppHooks(app core.App, skipWorkers *bool) {
 func setGlobalDeleteRules(app core.App) {
 	// deleting not allowed on any collection
 	app.OnRecordBeforeDeleteRequest().Add(func(e *core.RecordDeleteEvent) error {
-		return NewMethodNotAllowedError("Cannot delete", nil)
+		return api.NewMethodNotAllowedError("Cannot delete", nil)
 	})
 }
 
