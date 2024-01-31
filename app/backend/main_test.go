@@ -68,7 +68,8 @@ func TestAppHooks(t *testing.T) {
 		// no need to cleanup since scenario.Test() will do that for us
 		// defer testApp.Cleanup()
 
-		bindAppHooks(testApp)
+		skipWorkers := true
+		bindAppHooks(testApp, &skipWorkers)
 
 		return testApp
 	}
@@ -93,7 +94,7 @@ func TestAppHooks(t *testing.T) {
 	for _, scenario := range requestScenarios {
 		for _, authScenario := range scenario.AuthScenarios {
 
-			var body io.Reader = nil
+			var body io.Reader
 			var requestHeaders map[string]string = authScenario.RequestHeaders
 			if scenario.BodyForBlockWithFile != nil {
 				// The multipart data needs to be generated separately for each
@@ -337,6 +338,10 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 						jobs, err := app.Dao().FindRecordsByExpr(COLLECTION_BLOCK_JOB,
 							dbx.HashExp{BLOCK_JOB_FIELD_BLOCK: block.Id},
 						)
+						if err != nil {
+							t.Fatal(err)
+						}
+
 						if len(jobs) != 1 {
 							t.Errorf("Expected to find 1 newly created block job for block id %v but found %v", block.Id, len(jobs))
 						}
@@ -784,18 +789,27 @@ func MockMultipartData(data map[string]string, fields ...MockField) (*bytes.Buff
 
 	// write data fields
 	for k, v := range data {
-		mp.WriteField(k, v)
+		err := mp.WriteField(k, v)
+		if err != nil {
+			panic("could not write to multipart field")
+		}
 	}
 
 	// write file fields
 	for _, field := range fields {
 		err := func() error {
 			wd, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			file, err := os.OpenFile(path.Join(wd, field.path), os.O_RDONLY, 0666)
 			if err != nil {
 				return err
 			}
-			file.Seek(0, 0)
+			_, err = file.Seek(0, 0)
+			if err != nil {
+				return err
+			}
 			defer file.Close()
 
 			// stub uploaded file
@@ -815,4 +829,52 @@ func MockMultipartData(data map[string]string, fields ...MockField) (*bytes.Buff
 	}
 
 	return body, mp, nil
+}
+
+func TestAudioBlockSetters(t *testing.T) {
+	app, _ := tests.NewTestApp(testDataDir)
+	defer app.Cleanup()
+
+	// Block with no existing transcription
+	rec, err := app.Dao().FindRecordById("block", "block9--15chars", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block, err := NewAudioBlock(rec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	block.SetTitle("updated title")
+	err = block.SetTranscription([]string{"new paragraph 1", "new paragraph 2"})
+	if err != nil {
+		t.Errorf("Expected transcription to be set, got error %v", err)
+	}
+
+	if rec.GetString("title") != "updated title" {
+		t.Errorf("Expected title to be updated, got %v", rec.GetString("title"))
+	}
+
+	if rec.GetString("audio") != "{\"transcription\":[\"new paragraph 1\",\"new paragraph 2\"]}" {
+		t.Errorf("Expected audio to be marshalled correctly, but got %v", rec.GetString("audio"))
+	}
+
+	// Block with existing transcription
+	rec, err = app.Dao().FindRecordById("block", "block10-15chars", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block, err = NewAudioBlock(rec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = block.SetTranscription([]string{"new paragraph 1", "new paragraph 2"})
+	if err != nil {
+		t.Errorf("Expected transcription to be set, got error %v", err)
+	}
+
+	if rec.GetString("audio") != "{\"transcription\":[\"new paragraph 1\",\"new paragraph 2\"]}" {
+		t.Errorf("Expected new transcription to be marshalled correctly, but got %v", rec.GetString("audio"))
+	}
 }

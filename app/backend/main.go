@@ -20,6 +20,17 @@ import (
 func main() {
 	app := pocketbase.New()
 
+	// Custom flags
+	cmd := app.RootCmd
+	var skipWorkersCmd bool
+	cmd.PersistentFlags().BoolVar(
+		&skipWorkersCmd,
+		"skip-workers",
+		false,
+		"Skips the queuing of created jobs to prevent background workers from running",
+	)
+
+	// Migrations
 	autoMigrate := isAutoMigrate()
 	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{
 		// enable auto creation of migration files when making collection changes in the Admin UI
@@ -27,7 +38,7 @@ func main() {
 		Automigrate: autoMigrate,
 	})
 
-	bindAppHooks(app)
+	bindAppHooks(app, &skipWorkersCmd)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
@@ -69,7 +80,7 @@ func isAutoMigrate() bool {
 	return autoMigrate
 }
 
-func bindAppHooks(app core.App) {
+func bindAppHooks(app core.App, skipWorkers *bool) {
 	// serves static files from the provided public dir (if exists)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
@@ -86,7 +97,7 @@ func bindAppHooks(app core.App) {
 	setBlockJobInvariants(app)
 
 	// Processing
-	setBlockTranscriptionHooks(app)
+	setBlockTranscriptionHooks(app, skipWorkers)
 }
 
 func setGlobalDeleteRules(app core.App) {
@@ -281,14 +292,7 @@ func setBlockJobInvariants(app core.App) {
 	})
 }
 
-func setBlockTranscriptionHooks(app core.App) {
-	jobs := make(chan TranscriptionJob)
-	results := make(chan string)
-
-	for w := 1; w <= 2; w++ {
-		go transcriptionWorker(w, jobs, results, app)
-	}
-
+func setBlockTranscriptionHooks(app core.App, skipWorkers *bool) {
 	// On audio block creation, create a transcription job
 	app.OnModelAfterCreate(COLLECTION_BLOCK).Add(func(e *core.ModelEvent) error {
 		block := e.Model.(*models.Record)
@@ -317,7 +321,21 @@ func setBlockTranscriptionHooks(app core.App) {
 		return nil
 	})
 
+	jobs := make(chan TranscriptionJob)
+	results := make(chan string)
+
+	for w := 1; w <= 2; w++ {
+		go transcriptionWorker(w, jobs, results, app)
+	}
+
 	app.OnModelAfterCreate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
+		// Flags are resolved (it seems) on app.Start(), so this check has been
+		// added inside the hook, rather than preventing the hook from being
+		// created, as that happens before app.Start() is called.
+		if *skipWorkers {
+			return nil
+		}
+
 		record := e.Model.(*models.Record)
 		if record.GetString(BLOCK_JOB_FIELD_TYPE) != BLOCK_JOB_TYPE_TRANSCRIPTION {
 			return nil

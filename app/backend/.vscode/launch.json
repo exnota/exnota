@@ -13,6 +13,14 @@
       "args": ["serve", "--http=0.0.0.0:8080", "--dev"]
     },
     {
+      "name": "Backend (skip workers)",
+      "type": "go",
+      "request": "launch",
+      //   "mode": "auto",
+      "program": "${workspaceFolder}",
+      "args": ["serve", "--http=0.0.0.0:8080", "--dev", "--skip-workers=true"]
+    },
+    {
       "name": "Tool: Test Seed",
       "type": "node",
       "cwd": "${workspaceFolder}/tool/test-seed",
