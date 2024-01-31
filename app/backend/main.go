@@ -306,12 +306,15 @@ func setBlockTranscriptionHooks(app core.App, skipWorkers *bool) {
 
 			form := forms.NewRecordUpsert(app, job)
 
-			form.LoadData(map[string]any{
+			err = form.LoadData(map[string]any{
 				BLOCK_JOB_FIELD_TYPE:   BLOCK_JOB_TYPE_TRANSCRIPTION,
 				BLOCK_JOB_FIELD_STATUS: BLOCK_JOB_STATUS_WAITING,
 				BLOCK_JOB_FIELD_BLOCK:  block.Id,
 				BLOCK_JOB_FIELD_USER:   block.GetString(BLOCK_FIELD_USER),
 			})
+			if err != nil {
+				return err
+			}
 
 			// validate and submit (internally it calls app.Dao().SaveRecord(record) in a transaction)
 			if err := form.Submit(); err != nil {
