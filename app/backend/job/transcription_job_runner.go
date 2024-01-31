@@ -1,4 +1,4 @@
-package main
+package job
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"exnota.com/backend/record"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 	"github.com/pocketbase/pocketbase/tools/types"
@@ -22,14 +23,18 @@ const whisperModelFilename = "ggml-large-v3.bin"
 // From https://platform.openai.com/docs/guides/speech-to-text/prompting
 const transcriptionPrompt = "Hello, welcome to my lecture."
 
-type transJob struct {
+type TranscriptionJobRunner interface {
+	Run() error
+}
+
+type transcriptionJobRunner struct {
 	blockJobId string
 	blockId    string
 	app        core.App
 }
 
-func NewTransJob(blockJobId string, blockId string, app core.App) *transJob {
-	return &transJob{
+func NewTranscriptionJobRunner(blockJobId string, blockId string, app core.App) TranscriptionJobRunner {
+	return &transcriptionJobRunner{
 		blockJobId: blockJobId,
 		blockId:    blockId,
 		app:        app,
@@ -37,8 +42,8 @@ func NewTransJob(blockJobId string, blockId string, app core.App) *transJob {
 }
 
 // run method
-func (j *transJob) Run() error {
-	err := j.setJobStatus(BLOCK_JOB_STATUS_RUNNING, true, nil)
+func (j *transcriptionJobRunner) Run() error {
+	err := j.setJobStatus("running", true, nil)
 	if err != nil {
 		err := j.setJobStatusError(err)
 		return err
@@ -68,7 +73,7 @@ func (j *transJob) Run() error {
 		return err
 	}
 
-	err = j.setJobStatus(BLOCK_JOB_STATUS_COMPLETE, false, nil)
+	err = j.setJobStatus("complete", false, nil)
 	if err != nil {
 		err := j.setJobStatusError(err)
 		return err
@@ -83,26 +88,26 @@ type FileInfo struct {
 	fullPath string
 }
 
-func (j *transJob) setJobStatusError(jobErr error) error {
-	return j.setJobStatus(BLOCK_JOB_STATUS_ERROR, false, jobErr)
+func (j *transcriptionJobRunner) setJobStatusError(jobErr error) error {
+	return j.setJobStatus("error", false, jobErr)
 }
 
-func (j *transJob) setJobStatus(status string, validateWaiting bool, jobErr error) error {
+func (j *transcriptionJobRunner) setJobStatus(status string, validateWaiting bool, jobErr error) error {
 	err := j.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		blockJob, err := txDao.FindRecordById(COLLECTION_BLOCK_JOB, j.blockJobId)
+		blockJob, err := txDao.FindRecordById("block_job", j.blockJobId)
 		if err != nil {
 			return err
 		}
 
-		if validateWaiting && blockJob.GetString(BLOCK_JOB_FIELD_STATUS) != BLOCK_JOB_STATUS_WAITING {
+		if validateWaiting && blockJob.GetString("status") != "waiting" {
 			return errors.New("Block Job is not in waiting state")
 		}
 
-		blockJob.Set(BLOCK_JOB_FIELD_STATUS, status)
+		blockJob.Set("status", status)
 		if jobErr != nil {
 			var summary []string
 
-			rawField := blockJob.Get(BLOCK_JOB_FIELD_SUMMARY).(types.JsonRaw)
+			rawField := blockJob.Get("summary").(types.JsonRaw)
 			val, err := rawField.Value()
 			if err != nil {
 				return err
@@ -113,14 +118,14 @@ func (j *transJob) setJobStatus(status string, validateWaiting bool, jobErr erro
 			} else {
 				// TODO: There is a limit on the size of the summary field. We
 				// should truncate it if it gets too big.
-				err = blockJob.UnmarshalJSONField(BLOCK_JOB_FIELD_SUMMARY, &summary)
+				err = blockJob.UnmarshalJSONField("summary", &summary)
 				if err != nil {
 					return err
 				}
 				summary = append(summary, jobErr.Error())
 			}
 
-			blockJob.Set(BLOCK_JOB_FIELD_SUMMARY, summary)
+			blockJob.Set("summary", summary)
 			fmt.Println("summary", summary)
 		}
 
@@ -132,13 +137,13 @@ func (j *transJob) setJobStatus(status string, validateWaiting bool, jobErr erro
 	return err
 }
 
-func (j *transJob) getFileInfo() (*FileInfo, error) {
-	block, err := j.app.Dao().FindRecordById(COLLECTION_BLOCK, j.blockId)
+func (j *transcriptionJobRunner) getFileInfo() (*FileInfo, error) {
+	block, err := j.app.Dao().FindRecordById("block", j.blockId)
 	if err != nil {
 		return nil, err
 	}
 	fileDir := path.Join(j.app.DataDir(), core.LocalStorageDirName, block.BaseFilesPath())
-	fileName := block.GetString(BLOCK_FIELD_FILE)
+	fileName := block.GetString("file")
 
 	return &FileInfo{
 		name:     fileName,
@@ -151,7 +156,7 @@ type ConvertedFileInfo struct {
 	fullPath string
 }
 
-func (j *transJob) convertAudio(fileInfo *FileInfo) (*ConvertedFileInfo, error) {
+func (j *transcriptionJobRunner) convertAudio(fileInfo *FileInfo) (*ConvertedFileInfo, error) {
 	rootTempDir := filepath.Join(j.app.DataDir(), core.LocalTempDirName)
 	if err := os.MkdirAll(rootTempDir, os.ModePerm); err != nil {
 		return nil, err
@@ -193,7 +198,7 @@ type Timestamp struct {
 	To   string `json:"to"`
 }
 
-func (j *transJob) transcribe(convertedFileInfo ConvertedFileInfo) (*TranscriptionResult, error) {
+func (j *transcriptionJobRunner) transcribe(convertedFileInfo ConvertedFileInfo) (*TranscriptionResult, error) {
 	modelPath := path.Join(whisperModelsDir, whisperModelFilename)
 	cmnd := exec.Command("whisper", "--prompt", transcriptionPrompt, "--model", modelPath, "-f", convertedFileInfo.fullPath, "--output-json")
 	out, err := cmnd.CombinedOutput()
@@ -223,14 +228,14 @@ func (j *transJob) transcribe(convertedFileInfo ConvertedFileInfo) (*Transcripti
 	return &result, nil
 }
 
-func (j *transJob) saveTranscription(result *TranscriptionResult) error {
+func (j *transcriptionJobRunner) saveTranscription(result *TranscriptionResult) error {
 	err := j.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		blockRecord, err := txDao.FindRecordById(COLLECTION_BLOCK, j.blockId)
+		blockRecord, err := txDao.FindRecordById("block", j.blockId)
 		if err != nil {
 			return err
 		}
 
-		block, err := NewAudioBlock(blockRecord)
+		block, err := record.NewAudioBlock(blockRecord)
 		if err != nil {
 			return err
 		}

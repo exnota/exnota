@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"exnota.com/backend/job"
 	_ "exnota.com/backend/migrations"
 	"exnota.com/backend/record"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -99,7 +100,7 @@ func bindAppHooks(app core.App, skipWorkers *bool) {
 
 	// Processing
 	setBlockTranscriptionHooks(app, skipWorkers)
-	setBlockExportHooks(app)
+	setBlockExportHooks(app, skipWorkers)
 }
 
 func setGlobalDeleteRules(app core.App) {
@@ -326,13 +327,14 @@ func setBlockTranscriptionHooks(app core.App, skipWorkers *bool) {
 		return nil
 	})
 
-	jobs := make(chan TranscriptionJob)
+	jobs := make(chan TranscriptionWorkerJob)
 	results := make(chan string)
 
 	for w := 1; w <= 2; w++ {
 		go transcriptionWorker(w, jobs, results, app)
 	}
 
+	// On transcription job creation, queue it for processing
 	app.OnModelAfterCreate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
 		// Flags are resolved (it seems) on app.Start(), so this check has been
 		// added inside the hook, rather than preventing the hook from being
@@ -346,10 +348,10 @@ func setBlockTranscriptionHooks(app core.App, skipWorkers *bool) {
 			return nil
 		}
 		if record.GetString(BLOCK_JOB_FIELD_STATUS) != BLOCK_JOB_STATUS_WAITING {
-			return nil
+			return fmt.Errorf("Job %s created with a status other than waiting", record.Id)
 		}
 
-		jobs <- TranscriptionJob{
+		jobs <- TranscriptionWorkerJob{
 			BlockJobId: record.Id,
 			BlockId:    record.GetString(BLOCK_JOB_FIELD_BLOCK),
 		}
@@ -357,28 +359,28 @@ func setBlockTranscriptionHooks(app core.App, skipWorkers *bool) {
 	})
 }
 
-type TranscriptionJob struct {
+type TranscriptionWorkerJob struct {
 	BlockJobId string
 	BlockId    string
 }
 
-func transcriptionWorker(id int, jobs <-chan TranscriptionJob, results chan<- string, app core.App) {
+func transcriptionWorker(id int, jobs <-chan TranscriptionWorkerJob, results chan<- string, app core.App) {
 	for j := range jobs {
-		fmt.Println("worker", id, "started block job", j.BlockJobId, "for block", j.BlockId)
+		fmt.Println("transcription worker", id, "started block job", j.BlockJobId, "for block", j.BlockId)
 
-		transJob := NewTransJob(j.BlockJobId, j.BlockId, app)
+		transJob := job.NewTranscriptionJobRunner(j.BlockJobId, j.BlockId, app)
 		err := transJob.Run()
 		if err != nil {
-			fmt.Println("worker", id, "errored running job", j.BlockJobId, "for block", j.BlockId, "with error", err)
+			fmt.Println("transcription worker", id, "errored running job", j.BlockJobId, "for block", j.BlockId, "with error", err)
 			continue
 		}
 
 		// results <- "done"
-		fmt.Println("worker", id, "finished job", j.BlockJobId, "for block", j.BlockId)
+		fmt.Println("transcription worker", id, "finished job", j.BlockJobId, "for block", j.BlockId)
 	}
 }
 
-func setBlockExportHooks(app core.App) {
+func setBlockExportHooks(app core.App, skipWorkers *bool) {
 	// On transcription job completion, create an export job
 	app.OnModelAfterUpdate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
 		// Transcription jobs only
@@ -417,4 +419,57 @@ func setBlockExportHooks(app core.App) {
 		}
 		return nil
 	})
+
+	jobs := make(chan ExportWorkerJob)
+	results := make(chan string)
+
+	for w := 1; w <= 10; w++ {
+		go exportWorker(w, jobs, results, app)
+	}
+
+	// On export job creation, queue it for processing
+	app.OnModelAfterCreate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
+		// Flags are resolved (it seems) on app.Start(), so this check has been
+		// added inside the hook, rather than preventing the hook from being
+		// created, as that happens before app.Start() is called.
+		if *skipWorkers {
+			return nil
+		}
+
+		blockJob := record.LoadBlockJob(e.Model.(*models.Record))
+		if blockJob.Type() != record.Export {
+			return nil
+		}
+		if blockJob.Status() != record.Waiting {
+			return fmt.Errorf("Job %s created with a status other than waiting", blockJob.ID())
+		}
+
+		jobs <- ExportWorkerJob{
+			BlockJobId: blockJob.ID(),
+			BlockId:    blockJob.Block(),
+		}
+
+		return nil
+	})
+}
+
+type ExportWorkerJob struct {
+	BlockJobId string
+	BlockId    string
+}
+
+func exportWorker(id int, jobs <-chan ExportWorkerJob, results chan<- string, app core.App) {
+	for j := range jobs {
+		fmt.Println("export worker", id, "started block job", j.BlockJobId, "for block", j.BlockId)
+
+		runner := job.NewExportJobRunner(j.BlockJobId, j.BlockId, app)
+		err := runner.Run()
+		if err != nil {
+			fmt.Println("export worker", id, "errored running job", j.BlockJobId, "for block", j.BlockId, "with error", err)
+			continue
+		}
+
+		// results <- "done"
+		fmt.Println("export worker", id, "finished job", j.BlockJobId, "for block", j.BlockId)
+	}
 }
