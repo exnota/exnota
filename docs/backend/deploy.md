@@ -1,13 +1,12 @@
 # Deploy (prod)
 
-- [Deploy (prod)](#deploy-prod)
-  - [Steps](#steps)
-  - [Update config](#update-config)
-  - [Initial setup](#initial-setup)
-    - [SSH](#ssh)
-    - [Dokku](#dokku)
-  - [Archive](#archive)
-    - [Manual Hetzner deploy](#manual-hetzner-deploy)
+- [Steps](#steps)
+- [Update config](#update-config)
+- [Initial setup](#initial-setup)
+  - [SSH](#ssh)
+  - [Dokku](#dokku)
+- [Archive](#archive)
+  - [Manual Hetzner deploy](#manual-hetzner-deploy)
 
 ## Steps
 
