@@ -1,7 +1,9 @@
 # Deploy (prod)
 
 - [Steps](#steps)
-- [Update config](#update-config)
+- [Maintenance](#maintenance)
+  - [Specific actions](#specific-actions)
+  - [How to execute Dokku commands](#how-to-execute-dokku-commands)
 - [Initial setup](#initial-setup)
   - [SSH](#ssh)
   - [Dokku](#dokku)
@@ -9,6 +11,8 @@
   - [Manual Hetzner deploy](#manual-hetzner-deploy)
 
 ## Steps
+
+Don't run inside dev container!
 
 1. Setup
    - Ensure you have configured [SSH](#ssh)
@@ -26,10 +30,20 @@
     git push dokku main
 
     # Or: Deploy branch <branch-name>
-    git push dokku <branch-name>:master
+    git push dokku <branch-name>:main
     ```
 
-## Update config
+## Maintenance
+
+### Specific actions
+
+Logs
+
+```bash
+ssh -t dokku@195.201.33.178 logs exnota0 -t
+```
+
+### How to execute Dokku commands
 
 There is an [official client](https://dokku.com/docs/deployment/remote-commands/#official-client) but commands can be executed simply via SSH:
 
@@ -57,22 +71,22 @@ There is an [official client](https://dokku.com/docs/deployment/remote-commands/
 2. Set build directory
 
     ```bash
-    dokku builder:set <app-name> build-dir app/backend
+    dokku builder:set exnota0 build-dir app/backend
     ```
 
 3. Set builder type to Docker and configure
 
     ```bash
-    dokku builder:set <app-name> selected dockerfile
+    dokku builder:set exnota0 selected dockerfile
 
     # Set multi-stage build target
-    dokku docker-options:add <app-name> build "--target prod"
+    dokku docker-options:add exnota0 build "--target prod"
     ```
 
 4. Add domain (assuming its DNS config already points to VPS IP)
 
    ```bash
-   dokku domains:add <app-name> <domain>
+   dokku domains:add exnota0 <domain>
    ```
 
 5. Remove default 'Welcome to nginx' page
@@ -84,14 +98,14 @@ There is an [official client](https://dokku.com/docs/deployment/remote-commands/
 6. Make app accessible without `8080` port:
 
     ```bash
-    dokku ports:add <app-name> http:80:8080
+    dokku ports:add exnota0 http:80:8080
     ```
 
 7. Setup lets encrypt
 
     ```bash
-    dokku letsencrypt:set <app-name> email email@mattschultz.info
-    dokku letsencrypt:enable <app-name>
+    dokku letsencrypt:set exnota0 email email@mattschultz.info
+    dokku letsencrypt:enable exnota0
 
     # Have not tested this. Unsure how to.
     dokku letsencrypt:cron-job --add
@@ -109,11 +123,11 @@ There is an [official client](https://dokku.com/docs/deployment/remote-commands/
     # In the future should probably follow these steps INSTEAD of separate mkdir
     # and chown commands: https://dokku.com/docs/advanced-usage/persistent-storage/#creating-storage-directories
 
-    mkdir -p /var/lib/dokku/data/storage/<app-name>/pb_data
+    mkdir -p /var/lib/dokku/data/storage/exnota0/pb_data
 
-    chown dokku:dokku /var/lib/dokku/data/storage/<app-name>/pb_data
+    chown dokku:dokku /var/lib/dokku/data/storage/exnota0/pb_data
 
-    dokku docker-options:add <app-name> deploy "-v /var/lib/dokku/data/storage/<app-name>/pb_data:/pb/pb_data"
+    dokku docker-options:add exnota0 deploy "-v /var/lib/dokku/data/storage/exnota0/pb_data:/pb/pb_data"
     ```
 
 ## Archive
