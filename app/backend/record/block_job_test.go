@@ -26,20 +26,33 @@ func TestNewExportBlockJob(t *testing.T) {
 		return
 	}
 
-	if form.Data()["status"] != "waiting" {
-		t.Errorf("NewExportBlockJob() form status = %v, want %v", form.Data()["status"], "waiting")
-	}
-	if form.Data()["type"] != "export" {
-		t.Errorf("NewExportBlockJob() form type = %v, want %v", form.Data()["type"], "export")
-	}
-	if form.Data()["block"] != "block1--15chars" {
-		t.Errorf("NewExportBlockJob() form block = %v, want %v", form.Data()["block"], "block1--15chars")
-	}
-	if form.Data()["user"] != "user1-15char-id" {
-		t.Errorf("NewExportBlockJob() form user = %v, want %v", form.Data()["user"], "user1-15char-id")
-	}
+	t.Run("Status is set", func(t *testing.T) {
+		if form.Data()["status"] != "waiting" {
+			t.Errorf("NewExportBlockJob() form status = %v, want %v", form.Data()["status"], "waiting")
+		}
+	})
 
-	if err := form.Submit(); err != nil {
-		t.Fatal(err)
-	}
+	t.Run("Type is set", func(t *testing.T) {
+		if form.Data()["type"] != "export" {
+			t.Errorf("NewExportBlockJob() form type = %v, want %v", form.Data()["type"], "export")
+		}
+	})
+
+	t.Run("Block is set", func(t *testing.T) {
+		if form.Data()["block"] != "block1--15chars" {
+			t.Errorf("NewExportBlockJob() form block = %v, want %v", form.Data()["block"], "block1--15chars")
+		}
+	})
+
+	t.Run("User is set", func(t *testing.T) {
+		if form.Data()["user"] != "user1-15char-id" {
+			t.Errorf("NewExportBlockJob() form user = %v, want %v", form.Data()["user"], "user1-15char-id")
+		}
+	})
+
+	t.Run("Form can be submitted", func(t *testing.T) {
+		if err := form.Submit(); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
