@@ -17,10 +17,14 @@
         }
       ]
     },
+    "markdown.extension.toc.levels": "2..3",
     "go.lintTool": "golangci-lint"
     // Using golangci-lint without --fast can apparently freeze VSCode, but it
     // omits some useful linters. For now it seems fine but the codebase is
     // small. If it starts freezing, uncomment the following.
     // "go.lintFlags": ["--fast"]
+  },
+  "extensions": {
+    "recommendations": ["ldez.ignore-files"]
   }
 }
