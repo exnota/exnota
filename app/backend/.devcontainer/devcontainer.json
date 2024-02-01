@@ -5,8 +5,10 @@
   // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
   "build": {
     // Path is relative to the devcontainer.json file.
-    "dockerfile": "../Dockerfile"
+    "dockerfile": "../Dockerfile",
+    "target": "dev"
   },
+  "postCreateCommand": "go mod download",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -23,7 +25,8 @@
         "eamodio.gitlens",
         "yzhang.markdown-all-in-one",
         "golang.go",
-        "padjon.save-and-run-ext"
+        "padjon.save-and-run-ext",
+        "ldez.ignore-files"
       ]
     }
   }

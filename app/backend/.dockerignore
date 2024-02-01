@@ -1,0 +1,16 @@
+# Tips
+# - Paths are applied only to this dir, not also subdirs like .gitignore.
+#   E.g. to ignore all node_modules dirs, including nested, you would use:
+#      **/node_modules/
+.devcontainer
+.vscode
+# This should be .gitignore'd but taking the extra precaution of ensuring the
+# volume isn't overwritten.
+pb_data
+pb_data_test
+test
+testdata
+.gitignore
+.golangci.yml
+backend.code-workspace
+docker-compose.yml

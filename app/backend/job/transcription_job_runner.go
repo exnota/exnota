@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	whisper "exnota.com/backend/lib"
 	"exnota.com/backend/record"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -17,11 +18,6 @@ import (
 )
 
 const tempTranscriptionDir = "transcription"
-const whisperModelsDir = "/whisper/models"
-const whisperModelFilename = "ggml-large-v3.bin"
-
-// From https://platform.openai.com/docs/guides/speech-to-text/prompting
-const transcriptionPrompt = "Hello, welcome to my lecture."
 
 type TranscriptionJobRunner interface {
 	Run() error
@@ -199,8 +195,7 @@ type Timestamp struct {
 }
 
 func (j *transcriptionJobRunner) transcribe(convertedFileInfo ConvertedFileInfo) (*TranscriptionResult, error) {
-	modelPath := path.Join(whisperModelsDir, whisperModelFilename)
-	cmnd := exec.Command("whisper", "--prompt", transcriptionPrompt, "--model", modelPath, "-f", convertedFileInfo.fullPath, "--output-json")
+	cmnd := whisper.Command(convertedFileInfo.fullPath)
 	out, err := cmnd.CombinedOutput()
 	fmt.Println("Transcribe:")
 	fmt.Println(string(out))
