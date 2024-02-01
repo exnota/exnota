@@ -1,11 +1,19 @@
 # Deploy (prod)
 
-## Deploy to prod
+- [Deploy (prod)](#deploy-prod)
+  - [Steps](#steps)
+  - [Update config](#update-config)
+  - [Initial setup](#initial-setup)
+    - [SSH](#ssh)
+    - [Dokku](#dokku)
+  - [Archive](#archive)
+    - [Manual Hetzner deploy](#manual-hetzner-deploy)
 
-1. Set up
-   - SSH key
-     - Create locally, outside of dev container, and add to Hetzner.
-   - Git remote
+## Steps
+
+1. Setup
+   - Ensure you have configured [SSH](#ssh)
+   - Add Dokku remote to git repo
 
         ```bash
         # `exnota0` is the remote branch name, matching the app name
@@ -18,13 +26,33 @@
     # Deploy master branch
     git push dokku main
 
-    # Deploy branch '<branch-name>' to remote 'master'
+    # Or: Deploy branch <branch-name>
     git push dokku <branch-name>:master
+    ```
+
+## Update config
+
+There is an [official client](https://dokku.com/docs/deployment/remote-commands/#official-client) but commands can be executed simply via SSH:
+
+1. Ensure SSH is setup as below.
+
+2. Omit `dokku` root command and send sub-command.
+
+    ```bash
+        ssh -t dokku@195.201.33.178 <sub-command>
+
+        # E.g. Send `dokku version`
+        ssh -t dokku@195.201.33.178 version
     ```
 
 ## Initial setup
 
-### Dokku on Hetzner
+### SSH
+
+1. Create an SSH key locally and add to Hetzner via UI.
+   - This will be used for deploys and can be used to configure Dokku remotely.
+
+### Dokku
 
 1. Install Dokku and create app as per the official [installation](https://dokku.com/docs/getting-started/installation/) and [deployment](https://dokku.com/docs/deployment/application-deployment/) docs.
 2. Set build directory
@@ -33,10 +61,13 @@
     dokku builder:set <app-name> build-dir app/backend
     ```
 
-3. Set builder type to Docker
+3. Set builder type to Docker and configure
 
     ```bash
     dokku builder:set <app-name> selected dockerfile
+
+    # Set multi-stage build target
+    dokku docker-options:add <app-name> build "--target prod"
     ```
 
 4. Add domain (assuming its DNS config already points to VPS IP)
@@ -86,7 +117,11 @@
     dokku docker-options:add <app-name> deploy "-v /var/lib/dokku/data/storage/<app-name>/pb_data:/pb/pb_data"
     ```
 
-### ~~Hetzner Manual Approach~~ (Replaced with Dokku above)
+## Archive
+
+Notes that may be useful in the future.
+
+### Manual Hetzner deploy
 
 1. Login as root (no other option for now)
 2. mkdir deploy
