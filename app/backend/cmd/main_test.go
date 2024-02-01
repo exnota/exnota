@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"exnota.com/backend/record"
 	"exnota.com/backend/test"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/dbx"
@@ -294,7 +293,7 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 				Title:    "new audio block",
 				Type:     BlockTypeAudio,
 				User:     "user1-15char-id",
-				FilePath: "testdata/test.wav",
+				FilePath: "../testdata/test.wav",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -533,7 +532,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 				Title:    "test123",
 				Type:     BlockTypeAudio,
 				User:     "user1-15char-id",
-				FilePath: "testdata/test.txt",
+				FilePath: "../testdata/test.txt",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -558,7 +557,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 				Title:    "test123",
 				Type:     BlockTypeText,
 				User:     "user1-15char-id",
-				FilePath: "testdata/test.wav",
+				FilePath: "../testdata/test.wav",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -583,7 +582,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 				Title:    "test123",
 				Type:     BlockTypeAudio,
 				User:     "user1-15char-id",
-				FilePath: "testdata/test.wav",
+				FilePath: "../testdata/test.wav",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -820,52 +819,4 @@ func MockMultipartData(data map[string]string, fields ...MockField) (*bytes.Buff
 	}
 
 	return body, mp, nil
-}
-
-func TestAudioBlockSetters(t *testing.T) {
-	app := test.TestApp()
-	defer app.Cleanup()
-
-	// Block with no existing transcription
-	rec, err := app.Dao().FindRecordById("block", "block9--15chars", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	block, err := record.NewAudioBlock(rec)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	block.SetTitle("updated title")
-	err = block.SetTranscription([]string{"new paragraph 1", "new paragraph 2"})
-	if err != nil {
-		t.Errorf("Expected transcription to be set, got error %v", err)
-	}
-
-	if rec.GetString("title") != "updated title" {
-		t.Errorf("Expected title to be updated, got %v", rec.GetString("title"))
-	}
-
-	if rec.GetString("audio") != "{\"transcription\":[\"new paragraph 1\",\"new paragraph 2\"]}" {
-		t.Errorf("Expected audio to be marshalled correctly, but got %v", rec.GetString("audio"))
-	}
-
-	// Block with existing transcription
-	rec, err = app.Dao().FindRecordById("block", "block10-15chars", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	block, err = record.NewAudioBlock(rec)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = block.SetTranscription([]string{"new paragraph 1", "new paragraph 2"})
-	if err != nil {
-		t.Errorf("Expected transcription to be set, got error %v", err)
-	}
-
-	if rec.GetString("audio") != "{\"transcription\":[\"new paragraph 1\",\"new paragraph 2\"]}" {
-		t.Errorf("Expected new transcription to be marshalled correctly, but got %v", rec.GetString("audio"))
-	}
 }
