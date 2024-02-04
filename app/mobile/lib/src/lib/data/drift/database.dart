@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:exnota/src/account/user/repo/user_table.dart';
 import 'package:exnota/src/integration/repo/notion_settings_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -34,6 +35,7 @@ AppDatabase initDatabase({required LocalPathGenerator files}) {
   SyncCommandTable,
   BlockTable,
   LocalFileTable,
+  UserTable,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase({required String path}) : super(_openConnection(path: path));
