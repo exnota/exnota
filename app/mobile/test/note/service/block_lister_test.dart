@@ -83,10 +83,10 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -108,7 +108,7 @@ void main() {
           ),
         ];
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
@@ -165,10 +165,10 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -190,7 +190,7 @@ void main() {
           ),
         ];
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
@@ -247,10 +247,10 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -272,7 +272,7 @@ void main() {
           ),
         ];
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
@@ -331,11 +331,11 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with
         // this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -358,7 +358,7 @@ void main() {
         ];
 
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
@@ -417,10 +417,10 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -442,7 +442,7 @@ void main() {
           ),
         ];
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
@@ -501,11 +501,11 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with
         // this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -528,7 +528,7 @@ void main() {
         ];
 
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
@@ -587,10 +587,10 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -612,7 +612,7 @@ void main() {
           ),
         ];
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
@@ -671,11 +671,11 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with
         // this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -697,7 +697,7 @@ void main() {
           ),
         ];
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
@@ -737,10 +737,10 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -762,7 +762,7 @@ void main() {
           ),
         ];
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
@@ -853,10 +853,10 @@ void main() {
           ],
         );
 
-        // This is needed to prevent blockListerProvider being auto-disposed
+        // This is needed to prevent blockListerLegacyProvider being auto-disposed
         // before the test finishes running. I tried to replace the
         // container.read() call with this, but it didn't work.
-        container.listen(blockListerProvider, (_, __) {});
+        container.listen(blockListerLegacyProvider, (_, __) {});
 
         final expected = [
           BlockAndStatus(
@@ -895,7 +895,7 @@ void main() {
           ),
         ];
         await expectLater(
-          container.read(blockListerProvider.future),
+          container.read(blockListerLegacyProvider.future),
           completion(equals(expected)),
         );
       });
