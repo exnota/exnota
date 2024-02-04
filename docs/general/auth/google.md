@@ -1,5 +1,15 @@
 # Google Sign-in
 
+## Add credentials to Pocketbase
+
+1. Get credentials:
+   1. Open vault entry 'Exnota Backend OAuth Google credentials link`
+   2. Open the URL
+   3. The client ID and client secret should both be on this page.
+2. Add them to Pocketbase: `Settings > Auth Providers > Google`
+
+## Create credentials
+
 <https://medium.com/codebrew/flutter-google-sign-in-without-firebase-3680713966fb>
 
 1. Prep: User support email - required
@@ -15,3 +25,11 @@
      * Don't add Scopes.
      * Add test users.
    * Select Web Application for Pocketbase (and other backends that handle the auth). Selecting Android App won't provide a secret; Presumably it performs some verification of the app itself.
+
+## Add testers
+
+Warning: As of writing, this hasn't actually worked yet. I've only been able to login using my Google account associated with the developer account. When I use an account added to the email list, it gives an error with some detail.
+
+1. Play Console > Select Exnota on dashboard > Testing > Internal Testing ([link](https://play.google.com/console/u/0/developers/6387004654681121800/app/4973901296159773541/tracks/internal-testing))
+2. Select Testers tab
+3. Add to email list (maybe can also copy link and send that?)

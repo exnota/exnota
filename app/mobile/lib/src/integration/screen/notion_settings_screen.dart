@@ -251,8 +251,8 @@ class _NotionSettingsScreen extends ConsumerState<NotionSettingsScreen>
     // TODO: Is this tokenUri even needed? Should we replace the manual request
     // for a token in the relevant service with the implementation from the
     // oauth package? Or just leave a note that it's not used?
-    final tokenUri = ref.read(uriServiceProvider());
-    // Don't use UriServiceProvider because Notion can't redirect to localhost
+    final tokenUri = ref.read(uriServiceLegacyProvider());
+    // Don't use UriServiceLegacyProvider because Notion can't redirect to localhost
     final redirectUri = Uri.parse(
         'https://exnota.com/api/integration/notion/mobile-code-redirect');
     var grant = oauth2.AuthorizationCodeGrant(

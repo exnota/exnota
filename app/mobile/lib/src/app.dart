@@ -1,3 +1,5 @@
+import 'package:exnota/src/account/user/screen/login.dart';
+import 'package:exnota/src/account/user/service/auth_service.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_runner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -83,6 +85,13 @@ class _MyAppState extends ConsumerState<MyApp> {
             return MaterialPageRoute<void>(
               settings: routeSettings,
               builder: (BuildContext context) {
+                final loggedIn = ref.watch(loggedInProvider);
+                if (!loggedIn) {
+                  return const Scaffold(
+                    body: Center(child: LoginScreen()),
+                  );
+                }
+
                 switch (routeSettings.name) {
                   case SettingsScreen.routeName:
                     return SettingsScreen(

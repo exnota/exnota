@@ -758,6 +758,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.6"
+  pocketbase:
+    dependency: "direct main"
+    description:
+      name: pocketbase
+      sha256: "6c1fcb55034cde94bda997e840ce829b76a6a9a7e7a53c2f825ff920497f4f0c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.18.0"
   pointycastle:
     dependency: transitive
     description:

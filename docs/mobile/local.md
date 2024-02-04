@@ -13,6 +13,7 @@
 4. Open `main.dart`.
 
 5. Select `Start Debugging` from the top right of the editor
+   - If the iOS simulator is not started, you'll need to start it then repeat to select it as the device to be used.
 
 ## Troubleshooting/debugging
 

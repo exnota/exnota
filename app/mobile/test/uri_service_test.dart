@@ -1,6 +1,6 @@
 import 'package:exnota/src/account/settings/environment_service.dart';
 import 'package:exnota/src/account/settings/uri_service.dart';
-import 'package:flutter/foundation.dart';
+import 'package:exnota/src/lib/env/device_info.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -48,85 +48,83 @@ class MockProdEnvironmentService extends _$MockProdEnvironmentService
 }
 
 void main() {
-  group('environment service', () {
+  group('uri service', () {
     group('given a local environment', () {
       group('and a non-android platform', () {
         test('it returns the correct uri', () {
           // DO NOT share ProviderContainers between tests.
           final container = createContainer(overrides: [
             environmentServiceProvider
-                .overrideWith(() => MockLocalEnvironmentService())
+                .overrideWith(() => MockLocalEnvironmentService()),
+            deviceInfoProvider.overrideWith((DeviceInfoRef ref) {
+              const deviceInfo = DeviceInfo(
+                  isPhysicalDevice: true, isAndroid: false, isIos: true);
+              return deviceInfo;
+            })
           ]);
-          debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
           expect(
-            container.read(uriServiceProvider(path: 'test/path')),
-            equals(Uri.http('localhost:3000', "test/path")),
+            container.read(uriServiceProvider),
+            equals(Uri.http('localhost:8080')),
           );
         });
       });
-      group('and an android platform', () {
+      group('and an android simulator platform', () {
         test('it returns the correct uri', () {
           // DO NOT share ProviderContainers between tests.
           final container = createContainer(overrides: [
             environmentServiceProvider
-                .overrideWith(() => MockLocalEnvironmentService())
+                .overrideWith(() => MockLocalEnvironmentService()),
+            deviceInfoProvider.overrideWith((DeviceInfoRef ref) {
+              const deviceInfo = DeviceInfo(
+                  isPhysicalDevice: false, isAndroid: true, isIos: false);
+              return deviceInfo;
+            })
           ]);
-          debugDefaultTargetPlatformOverride = TargetPlatform.android;
 
           expect(
-            container.read(uriServiceProvider(path: 'test/path')),
-            equals(Uri.http('10.0.2.2:3000', "test/path")),
+            container.read(uriServiceProvider),
+            equals(Uri.http('10.0.2.2:8080')),
+          );
+        });
+      });
+      group('and an android physical device platform', () {
+        test('it returns the correct uri', () {
+          // DO NOT share ProviderContainers between tests.
+          final container = createContainer(overrides: [
+            environmentServiceProvider
+                .overrideWith(() => MockLocalEnvironmentService()),
+            deviceInfoProvider.overrideWith((DeviceInfoRef ref) {
+              const deviceInfo = DeviceInfo(
+                  isPhysicalDevice: true, isAndroid: true, isIos: false);
+              return deviceInfo;
+            })
+          ]);
+
+          expect(
+            container.read(uriServiceProvider),
+            equals(Uri.http('127.0.0.1:8080')),
           );
         });
       });
     });
     group('given a prod environment', () {
-      group('when noApi is not set', () {
-        test('it returns the correct uri', () {
-          // DO NOT share ProviderContainers between tests.
-          final container = createContainer(overrides: [
-            environmentServiceProvider
-                .overrideWith(() => MockProdEnvironmentService())
-          ]);
+      test('it returns the correct uri', () {
+        // DO NOT share ProviderContainers between tests.
+        final container = createContainer(overrides: [
+          environmentServiceProvider
+              .overrideWith(() => MockProdEnvironmentService()),
+          deviceInfoProvider.overrideWith((DeviceInfoRef ref) {
+            const deviceInfo = DeviceInfo(
+                isPhysicalDevice: true, isAndroid: true, isIos: false);
+            return deviceInfo;
+          })
+        ]);
 
-          expect(
-            container.read(uriServiceProvider(path: 'test/path')),
-            equals(Uri.https('exnota.com', "api/test/path")),
-          );
-        });
-      });
-      group('when noApi is set', () {
-        test('it returns the correct uri', () {
-          // DO NOT share ProviderContainers between tests.
-          final container = createContainer(overrides: [
-            environmentServiceProvider
-                .overrideWith(() => MockProdEnvironmentService())
-          ]);
-
-          expect(
-            container.read(uriServiceProvider(path: 'test/path', noApi: true)),
-            equals(Uri.https('exnota.com', "test/path")),
-          );
-        });
-      });
-      group('when no path is provided', () {
-        test('it returns the correct uri', () {
-          // DO NOT share ProviderContainers between tests.
-          final container = createContainer(overrides: [
-            environmentServiceProvider
-                .overrideWith(() => MockProdEnvironmentService())
-          ]);
-
-          expect(
-            container.read(uriServiceProvider()),
-            equals(Uri.https('exnota.com')),
-          );
-          expect(
-            container.read(uriServiceProvider(noApi: true)),
-            equals(Uri.https('exnota.com')),
-          );
-        });
+        expect(
+          container.read(uriServiceProvider),
+          equals(Uri.https('exnota.matt.to')),
+        );
       });
     });
   });
