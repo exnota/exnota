@@ -122,7 +122,7 @@ class NoteList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // final noteStream = ref.watch(deprecatedNoteListServiceProvider);
-    final blockStream = ref.watch(blockListerProvider);
+    final blockStream = ref.watch(blockListerLegacyProvider);
 
     return blockStream.when(
       data: (blocks) {

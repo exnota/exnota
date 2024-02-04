@@ -10,7 +10,7 @@ part 'block_lister.g.dart';
 part 'block_lister.freezed.dart';
 
 @riverpod
-Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
+Stream<List<BlockAndStatus>> blockListerLegacy(BlockListerLegacyRef ref) {
   final syncCommandsAsync = ref.watch(syncCommandListerProvider);
   final List<SyncCommand> syncCommands = [];
   switch (syncCommandsAsync) {
