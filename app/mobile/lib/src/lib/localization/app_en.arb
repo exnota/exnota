@@ -10,5 +10,9 @@
   "note_connectToNotion": "Connect to Notion",
   "@note_connectToNotion": {
     "description": "Label for button where selecting it initiates the user to grant the app access to Notion."
+  },
+  "note_list_title": "Notes",
+  "@note_notes": {
+    "description": "Title for the notes list"
   }
 }

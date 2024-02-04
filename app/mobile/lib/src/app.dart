@@ -1,6 +1,7 @@
 import 'package:exnota/src/account/user/screen/login.dart';
 import 'package:exnota/src/account/user/service/auth_service.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_runner.dart';
+import 'package:exnota/src/note/screen/block_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -98,7 +99,8 @@ class _MyAppState extends ConsumerState<MyApp> {
                         controller: widget.settingsController);
                   case SampleItemDetailsScreen.routeName:
                     return const SampleItemDetailsScreen();
-                  case NoteListScreen.routeName:
+                  case BlockListScreen.routeName:
+                    return const BlockListScreen();
                   default:
                     return const NoteListScreen();
                 }
