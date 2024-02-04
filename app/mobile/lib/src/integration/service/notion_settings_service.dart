@@ -35,11 +35,11 @@ class NotionSettingsService extends _$NotionSettingsService {
         // given access to change. Though a new code is generated each time. Not sure
         // then if we need to send the new code to this endpoint.
         //
-        // Lint error below looks like a false positive, as uriServiceProvider
+        // Lint error below looks like a false positive, as uriServiceLegacyProvider
         // is not a manual provider. Copied the "family" provider implementation
         // as per: https://codewithandrea.com/articles/flutter-riverpod-generator/
         // ignore: avoid_manual_providers_as_generated_provider_dependency
-        final uri = ref.read(uriServiceProvider(path: 'notion-token'));
+        final uri = ref.read(uriServiceLegacyProvider(path: 'notion-token'));
         final response = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},

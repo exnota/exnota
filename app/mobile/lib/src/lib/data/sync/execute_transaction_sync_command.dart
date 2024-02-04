@@ -43,7 +43,7 @@ class ExecuteTransactionSyncCommand extends SyncCommand<Transaction> {
 
     final logger = Logger(context: '$runtimeType.request');
 
-    var uri = ref.read(uriServiceProvider(path: 'note/notes'));
+    var uri = ref.read(uriServiceLegacyProvider(path: 'note/notes'));
     final notionSettings = ref.read(notionSettingsRepoProvider).valueOrNull;
     switch (notionSettings) {
       case null:
