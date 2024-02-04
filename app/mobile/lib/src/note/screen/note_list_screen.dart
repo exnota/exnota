@@ -7,7 +7,7 @@ import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/block.dart';
-import 'package:exnota/src/note/service/block_lister.dart';
+import 'package:exnota/src/note/service/block_lister_legacy.dart';
 import 'package:exnota/src/note/service/block_mutator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_animated_icons/icons8.dart';
