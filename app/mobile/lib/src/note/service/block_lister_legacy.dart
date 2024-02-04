@@ -6,8 +6,8 @@ import 'package:exnota/src/note/repo/drift/block_repo.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'block_lister.g.dart';
-part 'block_lister.freezed.dart';
+part 'block_lister_legacy.g.dart';
+part 'block_lister_legacy.freezed.dart';
 
 @riverpod
 Stream<List<BlockAndStatus>> blockListerLegacy(BlockListerLegacyRef ref) {

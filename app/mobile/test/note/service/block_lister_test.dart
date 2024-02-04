@@ -3,7 +3,7 @@ import 'package:exnota/src/lib/data/sync/service/sync_command_lister.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/note/block.dart';
 import 'package:exnota/src/note/repo/drift/block_repo.dart';
-import 'package:exnota/src/note/service/block_lister.dart';
+import 'package:exnota/src/note/service/block_lister_legacy.dart';
 import 'package:exnota/src/note/transaction.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
