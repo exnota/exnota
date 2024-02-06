@@ -1,4 +1,5 @@
 import 'package:drift_db_viewer/drift_db_viewer.dart';
+import 'package:exnota/src/account/user/service/user_context_service.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,11 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                       builder: (context) =>
                           DriftDbViewer(ref.read(databaseProvider))));
                 }),
+          IconButton(
+              onPressed: () async {
+                await ref.read(userContextServiceProvider.notifier).logout();
+              },
+              icon: const Icon(Icons.logout)),
         ],
       ),
       body: const BlockList(),

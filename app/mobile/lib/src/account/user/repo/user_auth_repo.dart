@@ -38,9 +38,37 @@ class UserAuthRepo {
     await db.transaction(() async {
       await db.into(db.userAuthTable).insertOnConflictUpdate(repo);
 
-      await (db.update(db.userAuthTable)
-            ..where((tbl) => tbl.id.isNotIn([userAuth.id])))
-          .write(const UserAuthTableCompanion(active: Value(false)));
+      final query = db.update(db.userAuthTable)
+        ..where((tbl) => tbl.id.isNotIn([userAuth.id]));
+      await query.write(const UserAuthTableCompanion(active: Value(false)));
+    });
+  }
+
+  Future<UserAuth> logoutActive({required DateTime updated}) async {
+    logger.info('Logging out active user');
+    return await db.transaction(() async {
+      final active = await (db.select(db.userAuthTable)
+            ..where((tbl) => tbl.active.equals(true)))
+          .getSingle();
+
+      try {
+        final query = db.update(db.userAuthTable)
+          ..where((tbl) => tbl.id.equals(active.id));
+
+        await query.write(UserAuthTableCompanion(
+          active: const Value(false),
+          valid: const Value(false),
+          token: const Value(null),
+          updated: Value(updated),
+        ));
+      } catch (e) {
+        logger.error('Error logging out active user');
+      }
+
+      return await (db.select(db.userAuthTable)
+            ..where((tbl) => tbl.id.equals(active.id)))
+          .map(UserAuthRepoMapper.fromRepo)
+          .getSingle();
     });
   }
 }
