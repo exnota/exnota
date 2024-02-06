@@ -99,6 +99,17 @@ class UserContextService extends _$UserContextService {
       return;
     });
   }
+
+  Future<void> logout() async {
+    final now = DateTime.now();
+    final userAuthRepo = ref.read(userAuthRepoProvider);
+    final userAuth = await userAuthRepo.logoutActive(updated: now);
+
+    final userContext = await future;
+    userContext.pocketBase.authStore.clear();
+
+    state = AsyncData(userContext.copyWith(userAuth: userAuth, error: null));
+  }
 }
 
 /// Assumes user context service is already loaded
