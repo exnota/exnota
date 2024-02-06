@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:pocketbase/pocketbase.dart';
 
 part 'user.freezed.dart';
 
@@ -14,4 +15,24 @@ class User with _$User {
   }) = _User;
 
   const User._();
+
+  factory User.fromRecord(RecordModel model) {
+    return User(
+      id: model.id,
+      email: model.data['email'],
+      verified: model.data['verified'],
+      created: DateTime.tryParse(model.data['created'] ?? ''),
+      updated: DateTime.tryParse(model.data['updated'] ?? ''),
+    );
+  }
+
+  RecordModel toRecord() {
+    return RecordModel(
+        id: id,
+        data: {
+          'email': email,
+          'verified': verified,
+        },
+        collectionName: "user");
+  }
 }

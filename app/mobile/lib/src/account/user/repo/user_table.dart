@@ -11,4 +11,7 @@ class UserTable extends Table {
   BoolColumn get verified => boolean()();
   DateTimeColumn get created => dateTime().nullable()();
   DateTimeColumn get updated => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }

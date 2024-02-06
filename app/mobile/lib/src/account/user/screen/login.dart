@@ -1,4 +1,4 @@
-import 'package:exnota/src/account/user/service/auth_service.dart';
+import 'package:exnota/src/account/user/service/user_context_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,7 +11,7 @@ class LoginScreen extends ConsumerWidget {
       body: Center(
         child: ElevatedButton(
           onPressed: () async {
-            await ref.read(pocketBaseServiceProvider.notifier).signIn();
+            await ref.read(userContextServiceProvider.notifier).loginGoogle();
           },
           child: const Text('Google login'),
         ),

@@ -26,7 +26,7 @@ class LocalFileMutator {
         .read(localFilePathServiceProvider)
         .generateAudioBlockFilePath(blockId: blockId, extension: extension);
     final file = LocalFile(
-        id: generateId(),
+        id: generateIdLegacy(),
         entityType: EntityType.block,
         entityId: blockId,
         path: path,

@@ -1,4 +1,4 @@
-import 'package:exnota/src/account/user/service/auth_service.dart';
+import 'package:exnota/src/account/user/service/user_context_service.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -17,7 +17,7 @@ class PBBlock with _$PBBlock {
 class BlockLister extends _$BlockLister {
   @override
   Future<List<PBBlock>> build() async {
-    final pb = ref.watch(pocketBaseServiceProvider);
+    final pb = ref.watch(pocketBaseProvider);
     final resultList =
         await pb.collection('block').getFullList(sort: '-created');
 

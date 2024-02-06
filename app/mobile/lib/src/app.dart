@@ -1,5 +1,5 @@
 import 'package:exnota/src/account/user/screen/login.dart';
-import 'package:exnota/src/account/user/service/auth_service.dart';
+import 'package:exnota/src/account/user/service/user_context_service.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_runner.dart';
 import 'package:exnota/src/note/screen/block_list_screen.dart';
 import 'package:flutter/material.dart';
@@ -86,24 +86,39 @@ class _MyAppState extends ConsumerState<MyApp> {
             return MaterialPageRoute<void>(
               settings: routeSettings,
               builder: (BuildContext context) {
-                final loggedIn = ref.watch(loggedInProvider);
-                if (!loggedIn) {
-                  return const Scaffold(
-                    body: Center(child: LoginScreen()),
-                  );
-                }
+                final userContextAsync = ref.watch(userContextServiceProvider);
 
-                switch (routeSettings.name) {
-                  case SettingsScreen.routeName:
-                    return SettingsScreen(
-                        controller: widget.settingsController);
-                  case SampleItemDetailsScreen.routeName:
-                    return const SampleItemDetailsScreen();
-                  case BlockListScreen.routeName:
-                    return const BlockListScreen();
-                  default:
-                    return const NoteListScreen();
-                }
+                return userContextAsync.when(
+                  loading: () => const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (error, _) => Scaffold(
+                    body: Center(
+                      child: Text('Error: $error'),
+                    ),
+                  ),
+                  data: (userContext) {
+                    final active = userContext.userAuth?.active ?? false;
+                    final valid = userContext.userAuth?.valid ?? false;
+                    if (!active || !valid) {
+                      return const Scaffold(
+                        body: Center(child: LoginScreen()),
+                      );
+                    }
+
+                    switch (routeSettings.name) {
+                      case SettingsScreen.routeName:
+                        return SettingsScreen(
+                            controller: widget.settingsController);
+                      case SampleItemDetailsScreen.routeName:
+                        return const SampleItemDetailsScreen();
+                      case BlockListScreen.routeName:
+                        return const BlockListScreen();
+                      default:
+                        return const NoteListScreen();
+                    }
+                  },
+                );
               },
             );
           },
