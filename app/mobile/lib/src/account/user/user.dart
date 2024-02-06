@@ -21,8 +21,8 @@ class User with _$User {
       id: model.id,
       email: model.data['email'],
       verified: model.data['verified'],
-      created: DateTime.tryParse(model.data['created'] ?? ''),
-      updated: DateTime.tryParse(model.data['updated'] ?? ''),
+      created: DateTime.tryParse(model.created),
+      updated: DateTime.tryParse(model.updated),
     );
   }
 
