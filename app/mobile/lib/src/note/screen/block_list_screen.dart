@@ -1,3 +1,6 @@
+import 'package:drift_db_viewer/drift_db_viewer.dart';
+import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +21,16 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.note_list_title),
+        actions: [
+          if (kDebugMode)
+            IconButton(
+                icon: const Icon(Icons.storage),
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) =>
+                          DriftDbViewer(ref.read(databaseProvider))));
+                }),
+        ],
       ),
       body: const BlockList(),
     );

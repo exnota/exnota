@@ -23,7 +23,7 @@ class BlockMutator extends _$BlockMutator {
   Future<LocalFile> createAudioBlock({required String extension}) {
     final now = ref.read(clockProvider).now();
 
-    final idGenerator = ref.read(idGeneratorProvider);
+    final idGenerator = ref.read(idGeneratorLegacyProvider);
     final blockId = idGenerator();
     final createOperation = Operation(type: OperationType.set, pointer: (
       id: blockId
@@ -91,7 +91,7 @@ class BlockMutator extends _$BlockMutator {
 
     // Create content text blocks
     final createChildren = transcription.map((t) {
-      final idGenerator = ref.read(idGeneratorProvider);
+      final idGenerator = ref.read(idGeneratorLegacyProvider);
       final childId = idGenerator();
       return Operation(
         type: OperationType.set,

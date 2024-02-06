@@ -63,7 +63,7 @@ void main() {
               localFileMutatorProvider.overrideWith((ref) {
                 return MockLocalFileMutator();
               }),
-              idGeneratorProvider.overrideWith((ref) {
+              idGeneratorLegacyProvider.overrideWith((ref) {
                 return () => 'block id';
               }),
               clockProvider.overrideWith((ref) {
@@ -141,7 +141,7 @@ void main() {
                 );
                 return mock;
               }),
-              idGeneratorProvider.overrideWith((ref) {
+              idGeneratorLegacyProvider.overrideWith((ref) {
                 return () => 'block id';
               }),
               clockProvider.overrideWith((ref) {
@@ -200,7 +200,7 @@ void main() {
               localFileMutatorProvider.overrideWith((ref) {
                 return localFileMutator;
               }),
-              idGeneratorProvider.overrideWith((ref) {
+              idGeneratorLegacyProvider.overrideWith((ref) {
                 return () => 'block id';
               }),
               clockProvider.overrideWith((ref) {
@@ -242,7 +242,7 @@ void main() {
               blockRepoProvider.overrideWith((ref) {
                 return repo;
               }),
-              idGeneratorProvider.overrideWith((ref) {
+              idGeneratorLegacyProvider.overrideWith((ref) {
                 return () => 'child id ${childId++}';
               }),
               clockProvider.overrideWith((ref) {
