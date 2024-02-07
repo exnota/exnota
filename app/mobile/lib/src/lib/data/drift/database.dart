@@ -6,13 +6,9 @@ import 'dart:io';
 
 import 'package:exnota/src/account/user/repo/user_auth_table.dart';
 import 'package:exnota/src/account/user/repo/user_table.dart';
-import 'package:exnota/src/integration/repo/notion_settings_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:exnota/src/lib/data/sync/repo/sync_command_table.dart';
-import 'package:exnota/src/lib/file/repo/drift/local_file_table.dart';
 import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
-import 'package:exnota/src/note/repo/drift/block_table.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/open.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -38,10 +34,10 @@ AppDatabase initDatabase({required LocalPathGenerator files}) {
 }
 
 @DriftDatabase(tables: [
-  IntegrationNotionSettings,
-  SyncCommandTable,
-  BlockTable,
-  LocalFileTable,
+  // IntegrationNotionSettings,
+  // SyncCommandTable,
+  // BlockTable,
+  // LocalFileTable,
   UserTable,
   UserAuthTable,
 ])

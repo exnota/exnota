@@ -7,7 +7,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:exnota/src/note/screen/sample_item_details_screen.dart';
-import 'package:exnota/src/note/screen/note_list_screen.dart';
 import 'package:exnota/src/account/settings/settings_controller.dart';
 import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -113,9 +112,8 @@ class _MyAppState extends ConsumerState<MyApp> {
                       case SampleItemDetailsScreen.routeName:
                         return const SampleItemDetailsScreen();
                       case BlockListScreen.routeName:
-                        return const BlockListScreen();
                       default:
-                        return const NoteListScreen();
+                        return const BlockListScreen();
                     }
                   },
                 );

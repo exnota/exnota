@@ -1,5 +1,4 @@
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/lib/data/sync/service/sync_command_initializer.dart';
 import 'package:exnota/src/lib/env/device_info.dart';
 import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:exnota/src/lib/log/report.dart';
@@ -34,7 +33,7 @@ void main() async {
   );
 
   // Sync command runner
-  await initSyncCommands(overrides: overrides);
+  // await initSyncCommands(overrides: overrides);
 
   // Settings
   // Set up the SettingsController, which will glue user settings to multiple

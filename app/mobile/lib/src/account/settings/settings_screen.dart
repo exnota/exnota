@@ -1,5 +1,4 @@
 import 'package:exnota/src/account/settings/environment_service.dart';
-import 'package:exnota/src/integration/screen/notion_settings_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,15 +32,6 @@ class SettingsScreen extends ConsumerWidget {
           // SettingsController is updated, which rebuilds the MaterialApp.
           child: Column(
             children: [
-              ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const NotionSettingsScreen()),
-                    );
-                  },
-                  child: const Text("Configure Notion")),
               DropdownButton<ThemeMode>(
                 // Read the selected themeMode from the controller
                 value: controller.themeMode,
