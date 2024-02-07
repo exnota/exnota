@@ -1,6 +1,7 @@
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:exnota/src/account/user/service/user_context_service.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/lib/data/sync/service/block_importer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -17,6 +18,35 @@ class BlockListScreen extends ConsumerStatefulWidget {
 }
 
 class _BlockListScreenState extends ConsumerState<BlockListScreen> {
+  BlockImporter? _blockImporter;
+
+  // init
+  @override
+  void initState() {
+    super.initState();
+
+    // When implementing, I got an error reading from ref directly inside
+    // initState. Doing it within Future.delayed is a workaround.
+    //
+    // A better solution may be to perform this in build().
+    Future.delayed(Duration.zero, () async {
+      final blockImporter = ref.read(blockImporterProvider);
+      await blockImporter.subscribe();
+
+      // Call setState because, even though we're inside initState, this is
+      // being delayed. Assuming that's appropriate.
+      setState(() {
+        _blockImporter = blockImporter;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _blockImporter?.unsubscribe();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

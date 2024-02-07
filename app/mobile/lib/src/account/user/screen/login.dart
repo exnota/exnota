@@ -9,11 +9,17 @@ class LoginScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: Center(
-        child: ElevatedButton(
-          onPressed: () async {
-            await ref.read(userContextServiceProvider.notifier).loginGoogle();
-          },
-          child: const Text('Google login'),
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: () async {
+                await ref
+                    .read(userContextServiceProvider.notifier)
+                    .loginGoogle();
+              },
+              child: const Text('Google login'),
+            ),
+          ],
         ),
       ),
     );
