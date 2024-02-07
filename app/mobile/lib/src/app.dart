@@ -1,6 +1,5 @@
 import 'package:exnota/src/account/user/screen/login.dart';
 import 'package:exnota/src/account/user/service/user_context_service.dart';
-import 'package:exnota/src/lib/data/sync/service/sync_command_runner.dart';
 import 'package:exnota/src/note/screen/block_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -29,13 +28,13 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (!syncCommandRunnerStarted) {
-      // TODO: Do we need a way to dispose/stop this?
-      ref.read(syncCommandRunnerProvider.notifier).run();
-      setState(() {
-        syncCommandRunnerStarted = true;
-      });
-    }
+    // if (!syncCommandRunnerStarted) {
+    //   // TODO: Do we need a way to dispose/stop this?
+    //   ref.read(syncCommandRunnerProvider.notifier).run();
+    //   setState(() {
+    //     syncCommandRunnerStarted = true;
+    //   });
+    // }
 
     // Glue the SettingsController to the MaterialApp.
     //
