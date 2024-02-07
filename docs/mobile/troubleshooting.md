@@ -2,6 +2,10 @@
 
 ## Common issues
 
+### Symptom: Platform-specific changes not working
+
+Solution 1: Run `flutter clean`.
+
 ### Symptom: Code involving DB not working; Debugger stepthrough breaks; Behavior inconsistent
 
 Solution 1: Ensure all DB/repo methods are awaited, including transactions.
