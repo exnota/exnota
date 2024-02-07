@@ -17,6 +17,10 @@
 
 ## Troubleshooting/debugging
 
+### App localization compile errors
+
+Solution: Run `flutter run` before attempting VS Code launch config.
+
 ### Deep link testing
 
 [Source](https://pub.dev/packages/app_links#tests).
@@ -61,16 +65,19 @@ iOS Simulator
 
 1. Install sqlitebrowser.org
 
-2. Find the simulator databases
+2. Copy path of the first DB file from this command:
 
    ```bash
-   find /Users/matt/Library/Developer/CoreSimulator/Devices -name "exnota.sqlite" -exec ls -al {} +
+   # List database files, most recently modified first
+   find /Users/matt/Library/Developer/CoreSimulator/Devices -name "exnota.sqlite" -exec ls -alt {} +
    ```
 
-3. Copy the path of the most recently modified database, if that's what you
-want, and open with
+3. Open the file, which can be done via termainal easily:
 
    ```bash
+   open <copied filepath>
+
+   # E.g.
    open /Users/matt/Library/Developer/CoreSimulator/Devices/...etc.../exnota.sqlite
    ```
 
