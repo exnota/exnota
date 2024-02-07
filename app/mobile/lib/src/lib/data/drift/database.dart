@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:exnota/src/lib/data/secure/secure_storage.dart';
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 import 'dart:io';
 
@@ -55,25 +58,30 @@ LazyDatabase _openConnection({required String path}) {
   // the LazyDatabase util lets us find the right location for the file async.
   return LazyDatabase(() async {
     final file = File(path);
+
+    // This will throw an error if done inside `setup` passed to NativeDatabase.careatedInBackground.
+    // This seems to be because it's run in a background isolate and this isn't
+    // supported by flutter_secure_storage, at least not without further setup.
+    final passphrase = await getPassphrase();
+
     return NativeDatabase.createInBackground(file, isolateSetup: setupSqlCipher,
-        setup: (rawDb) {
+        setup: (rawDb) async {
       // Ensure the correct library is being used. It's possible for SQLCipher
       // and sqlite3 to conflict with each other: https://drift.simonbinder.eu/docs/platforms/encryption/#important-notice
       //
       // Note: This assertion failed when initially added it. `flutter clean`
       // fixed it.
       assert(_debugCheckHasCipher(rawDb));
-      // TODO: Get key from shared prefs
-      rawDb.execute("PRAGMA key = 'passphrase';");
 
-      // TODO: Escape
-      // // Then, apply the key to encrypt the database. Unfortunately, this
-      //   // pragma doesn't seem to support prepared statements so we inline the
-      //   // key.
-      //   final escapedKey = _encryptionPassword.replaceAll("'", "''");
-      //   db.execute("pragma key = '$escapedKey'");
+      // Set passphrase
+      //
+      // The pragma command doesn't support prepared statements, so do a simple
+      // escape just for safety, even though it shouldn't be necessary at time
+      // of writing.
+      final escapedPassphrase = passphrase.replaceAll("'", "''");
+      rawDb.execute("PRAGMA key = '$escapedPassphrase';");
 
-      // Test that the key is correct by selecting from a table
+      // Test passphrase. It won't error if wrong, so perform a query (which will).
       rawDb.execute('select count(*) from sqlite_master');
     });
   });
@@ -85,4 +93,34 @@ void setupSqlCipher() {
 
 bool _debugCheckHasCipher(Database database) {
   return database.select('PRAGMA cipher_version;').isNotEmpty;
+}
+
+Future<String> getPassphrase() async {
+  final storage = SecureStorage();
+  var passphrase = await storage.read(key: SecureStorageKey.databasePassphrase);
+  if (passphrase == null) {
+    passphrase = DatabasePassphrase.generate();
+    await storage.write(
+        key: SecureStorageKey.databasePassphrase, value: passphrase);
+  }
+  return passphrase;
+}
+
+class DatabasePassphrase {
+  static const _chars =
+      'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+  static const minLength = 50;
+  static const maxLength = 80;
+
+  static String generate() {
+    Random r = Random.secure();
+    // choose number between minLength and maxLength
+    final length = r.nextInt(maxLength - minLength) + minLength;
+
+    return String.fromCharCodes(Iterable.generate(
+        length,
+        (_) => _chars.codeUnitAt(
+              r.nextInt(_chars.length),
+            )));
+  }
 }
