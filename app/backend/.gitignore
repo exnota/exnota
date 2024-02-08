@@ -1,11 +1,17 @@
+# PocketBase
+# ----
 /pb_data
+# Used for temporarily changing the data directory during local development
+/pb_data_backup
 # executable
 /backend
 
-# tool
+# Tool
+# ----
 tool/test/seed/out
 
 # VS Code
+# ----
 __debug_bin*
 # Use this for local environment configuration, e.g. using REST Client extension
 .vscode/settings.json
