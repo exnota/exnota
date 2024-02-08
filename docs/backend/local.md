@@ -29,3 +29,10 @@ To restart:
 
 * `docker restart backend`
 * Or if already stopped: `docker start backend`
+
+## Troubleshooting
+
+
+### Workspace
+* Don't add folders to workspace, e.g. `docs`
+  * Dev Containers doesn't seem to support multiple. Sometimes it works, other times it seems to load `docs` instead of `backend` and doesn't start the docker container.
