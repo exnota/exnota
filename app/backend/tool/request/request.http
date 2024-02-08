@@ -1,3 +1,6 @@
+# Warning: Open `app/backend` for variables to work. Or save variables (see
+# below) in a settings.json file in your workspace's .vscode folder.
+# 
 # Setup:
 # 1. Install REST Client extension for VS Code.
 # 2. Duplicate .vscode/settings.json.template to .vscode/settings.json
@@ -14,6 +17,11 @@
 ### ----------------------------------------------------
 ### Pocketbase API
 ### ----------------------------------------------------
+### List all blocks
+GET {{baseUrl}}/collections/{{block_collection_id}}/records HTTP/1.1
+content-type: application/json
+Authorization: {{auth_token}}
+
 ### Create waiting Block Job
 POST {{baseUrl}}/collections/{{block_job_collection_id}}/records HTTP/1.1
 content-type: application/json
