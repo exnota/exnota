@@ -14,6 +14,7 @@ class UriService extends _$UriService {
   @override
   Uri build() {
     _log.info('build: Building uri service');
+    // Already loaded with _EagerProviderLoader, so safe to use requireValue.
     final settings = ref.watch(settingsServiceProvider).requireValue;
     final deviceInfo = ref.watch(deviceInfoProvider);
     switch (settings.environment) {
