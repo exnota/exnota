@@ -5,18 +5,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run",
+      "name": "Mobile",
       "request": "launch",
       "type": "dart"
     },
     {
-      "name": "Run (profile mode)",
+      "name": "Mobile (profile mode)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "profile"
     },
     {
-      "name": "Run (release mode)",
+      "name": "Mobile (release mode)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "release"
