@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/app.dart';
-import 'src/account/settings/settings_controller_legacy.dart';
-import 'src/account/settings/settings_service_legacy.dart';
 
 void main() async {
   print('Starting main');
@@ -35,20 +33,11 @@ void main() async {
   // Sync command runner
   // await initSyncCommands(overrides: overrides);
 
-  // Settings
-  // Set up the SettingsController, which will glue user settings to multiple
-  // Flutter Widgets.
-  final settingsController = SettingsControllerLegacy(SettingsServiceLegacy());
-  // Load the user's preferred theme while the splash screen is displayed.
-  // This prevents a sudden theme change when the app is first displayed.
-  await settingsController.loadSettings();
+  // TODO: If I can load theme here rather than after calling runApp, I might
+  // be able to avoid the flash of white when the user wants to be in dark
+  // mode.
 
-  // Run the app and pass in the SettingsController. The app listens to the
-  // SettingsController for changes, then passes it further down to the
-  // SettingsScreen.
-  runApp(ProviderScope(
-      overrides: overrides,
-      child: MyApp(settingsController: settingsController)));
+  runApp(ProviderScope(overrides: overrides, child: const MyApp()));
 }
 
 List<Override> getOverrides(
