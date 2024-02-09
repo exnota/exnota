@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/app.dart';
-import 'src/account/settings/settings_controller.dart';
-import 'src/account/settings/settings_service.dart';
+import 'src/account/settings/settings_controller_legacy.dart';
+import 'src/account/settings/settings_service_legacy.dart';
 
 void main() async {
   print('Starting main');
@@ -38,7 +38,7 @@ void main() async {
   // Settings
   // Set up the SettingsController, which will glue user settings to multiple
   // Flutter Widgets.
-  final settingsController = SettingsController(SettingsService());
+  final settingsController = SettingsControllerLegacy(SettingsServiceLegacy());
   // Load the user's preferred theme while the splash screen is displayed.
   // This prevents a sudden theme change when the app is first displayed.
   await settingsController.loadSettings();

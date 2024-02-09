@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:exnota/src/lib/data/secure/secure_storage.dart';
+import 'package:exnota/src/note/repo/drift/block_table.dart';
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 import 'dart:io';
 
@@ -36,10 +37,10 @@ AppDatabase initDatabase({required LocalPathGenerator files}) {
 @DriftDatabase(tables: [
   // IntegrationNotionSettings,
   // SyncCommandTable,
-  // BlockTable,
   // LocalFileTable,
-  UserTable,
+  BlockTable,
   UserAuthTable,
+  UserTable,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase({required String path}) : super(_openConnection(path: path));
@@ -77,7 +78,8 @@ LazyDatabase _openConnection({required String path}) {
       final escapedPassphrase = passphrase.replaceAll("'", "''");
       rawDb.execute("PRAGMA key = '$escapedPassphrase';");
 
-      // Test passphrase. It won't error if wrong, so perform a query (which will).
+      // Test passphrase. This will error if it's wrong. Setting the pragma key
+      // alone won't error if it's wrong.
       rawDb.execute('select count(*) from sqlite_master');
     });
   });

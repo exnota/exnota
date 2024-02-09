@@ -4,38 +4,31 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flutter/foundation.dart';
 
 part 'block.freezed.dart';
-part 'block.g.dart';
 
 @freezed
 class Block with _$Block {
   const factory Block({
     required String id,
+    String? title,
     required BlockType type,
-    Map<String, dynamic>? properties,
-    Map<String, dynamic>? external,
-    List<String>? content,
-    String? parentId,
-    required DateTime createdAt,
-    required DateTime lastEditedAt,
+    String? externalUrl,
+    String? file,
+    Audio? audio,
+    required String userId,
+    required DateTime userCreated,
+    DateTime? created,
+    DateTime? updated,
+    DateTime? archived,
   }) = _Block;
 
   const Block._();
-
-  String? get title => properties?[Property.title.toString()]?[0]?[0];
-
-  String? get externalUrl => external?['url'];
 }
 
-enum BlockType { audio, text }
+enum BlockType { audio, text, unknown }
 
-@JsonEnum(alwaysCreate: true, valueField: 'dbName')
-enum Property {
-  title(dbName: 'title');
+@freezed
+class Audio with _$Audio {
+  const factory Audio({List<String>? transcription}) = _Audio;
 
-  const Property({required this.dbName});
-
-  final String dbName;
-
-  @override
-  String toString() => dbName;
+  const Audio._();
 }
