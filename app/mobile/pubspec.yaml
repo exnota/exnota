@@ -47,6 +47,7 @@ dependencies:
   sqlcipher_flutter_libs: ^0.6.0
   sqlite3: ^2.3.0
   flutter_secure_storage: ^9.0.0
+  flutter_settings_ui: ^3.0.0
 
 dev_dependencies:
   flutter_test:

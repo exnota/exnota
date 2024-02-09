@@ -1,8 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-enum SecureStorageKey {
-  databasePassphrase,
-}
+enum SecureStorageKey { databasePassphrase, settings }
 
 class SecureStorage {
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
@@ -32,7 +30,9 @@ class SecureStorage {
   String _keyToString(SecureStorageKey key) {
     switch (key) {
       case SecureStorageKey.databasePassphrase:
-        return 'databasePassphrase';
+        return 'exnota.databasePassphrase';
+      case SecureStorageKey.settings:
+        return 'exnota.settings';
     }
   }
 }

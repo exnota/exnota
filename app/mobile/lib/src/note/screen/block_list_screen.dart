@@ -1,8 +1,5 @@
-import 'package:drift_db_viewer/drift_db_viewer.dart';
-import 'package:exnota/src/account/user/service/user_context_service.dart';
-import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:exnota/src/lib/data/sync/service/block_importer.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,11 +30,15 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
       final blockImporter = ref.read(blockImporterProvider);
       await blockImporter.subscribe();
 
-      // Call setState because, even though we're inside initState, this is
-      // being delayed. Assuming that's appropriate.
-      setState(() {
-        _blockImporter = blockImporter;
-      });
+      // Check if mounted to avoid a race condition when logging out that
+      // results in this block being executed after the widget is disposed.
+      if (mounted) {
+        // Call setState because, even though we're inside initState, this is
+        // being delayed. Assuming that's appropriate.
+        setState(() {
+          _blockImporter = blockImporter;
+        });
+      }
     });
   }
 
@@ -53,19 +54,15 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.note_list_title),
         actions: [
-          if (kDebugMode)
-            IconButton(
-                icon: const Icon(Icons.storage),
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) =>
-                          DriftDbViewer(ref.read(databaseProvider))));
-                }),
           IconButton(
-              onPressed: () async {
-                await ref.read(userContextServiceProvider.notifier).logout();
-              },
-              icon: const Icon(Icons.logout)),
+            onPressed: () {
+              // Navigate to the settings page. If the user leaves and returns
+              // to the app after it has been killed while running in the
+              // background, the navigation stack is restored.
+              Navigator.restorablePushNamed(context, SettingsScreen.routeName);
+            },
+            icon: const Icon(Icons.settings),
+          ),
         ],
       ),
       body: const BlockList(),

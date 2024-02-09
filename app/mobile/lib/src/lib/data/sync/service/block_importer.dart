@@ -22,8 +22,22 @@ class BlockImporter {
   Future<void> subscribe() async {
     _log.info('Subscribing to block collection');
     _unsub = await pb.collection('block').subscribe("*", (e) {
-      print(e.action); // create, update, delete
-      print(e.record); // the changed record
+      switch (e.action) {
+        case 'create':
+          // TODO: Call block creation service
+          _log.info('Block created: ${e.record}');
+          break;
+        case 'update':
+          // TODO: Call block update service
+          _log.info('Block updated: ${e.record}');
+          break;
+        case 'delete':
+          // This shouldn't happen
+          _log.warn("Block deleted", nonPrivateData: {
+            "id": e.record?.id,
+          });
+          break;
+      }
     });
   }
 
