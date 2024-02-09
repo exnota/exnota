@@ -21,3 +21,8 @@ Best for: Providers that have side effects.
 Caveat: Must still use a `Future` return type on the provider, which returns an `AsyncValue` type that needs loading/error states handled.
 
 Caveat workaround: Use `.requireValue` on the returned `AsyncValue` skip the loading/error states and get the value. This will throw if the data isn't correctly eagerly initialized.
+
+### Other: ProviderContainer
+
+It's possible to initialize a provider using a `ProviderContainer`, e.g. as in
+`lib/src/lib/data/sync/service/sync_command_initializer.dart`. However this is intended for tests and dart-only usage, [as per docs](https://riverpod.dev/docs/concepts/scopes#providerscope-and-providercontainer).
