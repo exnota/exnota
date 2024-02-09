@@ -1,6 +1,7 @@
-import 'package:exnota/src/account/settings/environment_service.dart';
+import 'package:exnota/src/account/settings/settings_service.dart';
 import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/lib/env/device_info.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -24,44 +25,62 @@ ProviderContainer createContainer({
 }
 
 @Riverpod(keepAlive: true)
-class MockLocalEnvironmentService extends _$MockLocalEnvironmentService
-    implements EnvironmentService {
+class MockLocalSettingsService extends _$MockLocalSettingsService
+    implements SettingsService {
   @override
-  Environment build() {
-    return Environment.local;
+  Future<Settings> build() async {
+    return const Settings(
+      themeMode: ThemeMode.system,
+      environment: Environment.local,
+    );
   }
 
   @override
-  void setEnvironment(Environment environment) {}
+  Future<void> setEnvironment(Environment? environment) async {}
+
+  @override
+  Future<void> setThemeMode(ThemeMode? themeMode) async {}
 }
 
 @Riverpod(keepAlive: true)
-class MockProdEnvironmentService extends _$MockProdEnvironmentService
-    implements EnvironmentService {
+class MockProdSettingsService extends _$MockProdSettingsService
+    implements SettingsService {
   @override
-  Environment build() {
-    return Environment.prod;
+  Future<Settings> build() async {
+    return const Settings(
+      themeMode: ThemeMode.system,
+      environment: Environment.prod,
+    );
   }
 
   @override
-  void setEnvironment(Environment environment) {}
+  Future<void> setEnvironment(Environment? environment) async {}
+
+  @override
+  Future<void> setThemeMode(ThemeMode? themeMode) async {}
 }
 
 void main() {
   group('uri service', () {
     group('given a local environment', () {
       group('and a non-android platform', () {
-        test('it returns the correct uri', () {
+        test('it returns the correct uri', () async {
           // DO NOT share ProviderContainers between tests.
           final container = createContainer(overrides: [
-            environmentServiceProvider
-                .overrideWith(() => MockLocalEnvironmentService()),
+            settingsServiceProvider
+                .overrideWith(() => MockLocalSettingsService()),
             deviceInfoProvider.overrideWith((DeviceInfoRef ref) {
               const deviceInfo = DeviceInfo(
                   isPhysicalDevice: true, isAndroid: false, isIos: true);
               return deviceInfo;
             })
           ]);
+
+          // Eagerly load settings the uri service can use requireValue on it.
+          await container.read(settingsServiceProvider.future);
+
+          // Eagerly load settings the uri service can use requireValue on it.
+          await container.read(settingsServiceProvider.future);
 
           expect(
             container.read(uriServiceProvider),
@@ -70,17 +89,20 @@ void main() {
         });
       });
       group('and an android simulator platform', () {
-        test('it returns the correct uri', () {
+        test('it returns the correct uri', () async {
           // DO NOT share ProviderContainers between tests.
           final container = createContainer(overrides: [
-            environmentServiceProvider
-                .overrideWith(() => MockLocalEnvironmentService()),
+            settingsServiceProvider
+                .overrideWith(() => MockLocalSettingsService()),
             deviceInfoProvider.overrideWith((DeviceInfoRef ref) {
               const deviceInfo = DeviceInfo(
                   isPhysicalDevice: false, isAndroid: true, isIos: false);
               return deviceInfo;
             })
           ]);
+
+          // Eagerly load settings the uri service can use requireValue on it.
+          await container.read(settingsServiceProvider.future);
 
           expect(
             container.read(uriServiceProvider),
@@ -89,17 +111,20 @@ void main() {
         });
       });
       group('and an android physical device platform', () {
-        test('it returns the correct uri', () {
+        test('it returns the correct uri', () async {
           // DO NOT share ProviderContainers between tests.
           final container = createContainer(overrides: [
-            environmentServiceProvider
-                .overrideWith(() => MockLocalEnvironmentService()),
+            settingsServiceProvider
+                .overrideWith(() => MockLocalSettingsService()),
             deviceInfoProvider.overrideWith((DeviceInfoRef ref) {
               const deviceInfo = DeviceInfo(
                   isPhysicalDevice: true, isAndroid: true, isIos: false);
               return deviceInfo;
             })
           ]);
+
+          // Eagerly load settings the uri service can use requireValue on it.
+          await container.read(settingsServiceProvider.future);
 
           expect(
             container.read(uriServiceProvider),
@@ -109,17 +134,19 @@ void main() {
       });
     });
     group('given a prod environment', () {
-      test('it returns the correct uri', () {
+      test('it returns the correct uri', () async {
         // DO NOT share ProviderContainers between tests.
         final container = createContainer(overrides: [
-          environmentServiceProvider
-              .overrideWith(() => MockProdEnvironmentService()),
+          settingsServiceProvider.overrideWith(() => MockProdSettingsService()),
           deviceInfoProvider.overrideWith((DeviceInfoRef ref) {
             const deviceInfo = DeviceInfo(
                 isPhysicalDevice: true, isAndroid: true, isIos: false);
             return deviceInfo;
           })
         ]);
+
+        // Eagerly load settings the uri service can use requireValue on it.
+        await container.read(settingsServiceProvider.future);
 
         expect(
           container.read(uriServiceProvider),
