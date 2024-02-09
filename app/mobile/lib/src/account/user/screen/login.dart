@@ -1,4 +1,6 @@
+import 'package:exnota/src/account/settings/settings_service.dart';
 import 'package:exnota/src/account/user/service/user_context_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,10 +9,23 @@ class LoginScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Already loaded with _EagerProviderLoader, so safe to use requireValue.
+    final settings = ref.watch(settingsServiceProvider).requireValue;
+
     return Scaffold(
       body: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Expanded(
+              child: Align(
+                alignment: FractionalOffset.bottomCenter,
+                child: MaterialButton(
+                  onPressed: () => {},
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
             ElevatedButton(
               onPressed: () async {
                 await ref
@@ -18,6 +33,79 @@ class LoginScreen extends ConsumerWidget {
                     .loginGoogle();
               },
               child: const Text('Google login'),
+            ),
+            Expanded(
+              child: Align(
+                alignment: FractionalOffset.bottomCenter,
+                child: MaterialButton(
+                  onPressed: () => {},
+                  child: Visibility(
+                    visible: kDebugMode,
+                    replacement: const SizedBox(),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        DropdownMenu<Environment>(
+                          inputDecorationTheme: const InputDecorationTheme(
+                            border: null,
+                          ),
+                          initialSelection: settings.environment,
+                          onSelected: (newEnvironment) {
+                            ref
+                                .read(settingsServiceProvider.notifier)
+                                .setEnvironment(newEnvironment);
+                          },
+                          dropdownMenuEntries: [
+                            Environment.prod,
+                            Environment.local
+                          ].map<DropdownMenuEntry<Environment>>(
+                              (Environment value) {
+                            return DropdownMenuEntry<Environment>(
+                                value: value, label: value.toString());
+                          }).toList(),
+                        ),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // child: MaterialButton(
+                //   onPressed: () => {},
+                //   child: Visibility(
+                //     visible: kDebugMode,
+                //     replacement: const SizedBox(),
+                //     child: Column(
+                //       mainAxisAlignment: MainAxisAlignment.end,
+                //       children: [
+                //         DropdownMenu<Environment>(
+                //           inputDecorationTheme: const InputDecorationTheme(
+                //             border: null,
+                //           ),
+                //           initialSelection: settings.environment,
+                //           onSelected: (newEnvironment) {
+                //             ref
+                //                 .read(settingsServiceProvider.notifier)
+                //                 .setEnvironment(newEnvironment);
+                //           },
+                //           dropdownMenuEntries: [
+                //             Environment.prod,
+                //             Environment.local
+                //           ].map<DropdownMenuEntry<Environment>>(
+                //               (Environment value) {
+                //             return DropdownMenuEntry<Environment>(
+                //                 value: value, label: value.toString());
+                //           }).toList(),
+                //         ),
+                //         const SizedBox(
+                //           height: 20,
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+                // ),
+              ),
             ),
           ],
         ),
