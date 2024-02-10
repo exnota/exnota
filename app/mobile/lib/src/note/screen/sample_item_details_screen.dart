@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 class SampleItemDetailsScreen extends StatelessWidget {
   const SampleItemDetailsScreen({super.key});
 
-  static const routeName = '/sample_item';
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

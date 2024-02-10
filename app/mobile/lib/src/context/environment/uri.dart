@@ -1,9 +1,9 @@
-import 'package:exnota/src/account/settings/settings_service.dart';
-import 'package:exnota/src/lib/env/device_info.dart';
+import 'package:exnota/src/context/device/device_info.dart';
+import 'package:exnota/src/context/environment/environment.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'uri_service.g.dart';
+part 'uri.g.dart';
 
 @riverpod
 class UriService extends _$UriService {
@@ -12,10 +12,9 @@ class UriService extends _$UriService {
   @override
   Uri build() {
     _log.info('build: Building uri service');
-    // Already loaded with _EagerProviderLoader, so safe to use requireValue.
-    final settings = ref.watch(settingsServiceProvider).requireValue;
-    final deviceInfo = ref.watch(deviceInfoProvider);
-    switch (settings.environment) {
+    final environment = ref.watch(environmentServiceProvider);
+    final deviceInfo = ref.watch(deviceInfoServiceProvider);
+    switch (environment) {
       case Environment.local:
         _log.info('build: Building local uri');
         if (deviceInfo.isAndroid) {

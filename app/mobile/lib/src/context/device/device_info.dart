@@ -7,7 +7,7 @@ part 'device_info.g.dart';
 part 'device_info.freezed.dart';
 
 @Riverpod(keepAlive: true)
-DeviceInfo deviceInfo(DeviceInfoRef ref) {
+DeviceInfo deviceInfoService(DeviceInfoServiceRef ref) {
   // This will be added using an override in main.dart as per https://github.com/bizz84/flutter-tips-and-tricks/blob/main/tips/0056-async-init-provider-overrides/index.md
   throw UnimplementedError();
 }
@@ -21,7 +21,7 @@ class DeviceInfo with _$DeviceInfo {
   }) = _DeviceInfo;
 }
 
-Future<DeviceInfo> initDeviceInfo() async {
+Future<DeviceInfo> initDeviceInfoService() async {
   switch (defaultTargetPlatform) {
     case TargetPlatform.android:
       final deviceInfo = DeviceInfoPlugin();

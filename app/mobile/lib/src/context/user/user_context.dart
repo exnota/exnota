@@ -1,18 +1,42 @@
-import 'package:exnota/src/account/settings/uri_service.dart';
 import 'package:exnota/src/account/user/repo/user_auth_repo.dart';
 import 'package:exnota/src/account/user/repo/user_repo.dart';
 import 'package:exnota/src/account/user/user.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
+import 'package:exnota/src/context/environment/uri.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/log/logger.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-part 'user_context_service.g.dart';
-part 'user_context_service.freezed.dart';
+part 'user_context.g.dart';
+part 'user_context.freezed.dart';
+
+class UserContextLoader extends ConsumerWidget {
+  const UserContextLoader({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userContext = ref.watch(_userContextInternalProvider);
+
+    // Directionality is needed because any content rendered here will not be
+    // within a MaterialApp instance and throw an error.
+    return userContext.when(
+      loading: () => const Directionality(
+          textDirection: TextDirection.ltr, child: CircularProgressIndicator()),
+      error: (error, _) => Directionality(
+          textDirection: TextDirection.ltr, child: Text('Error: $error')),
+      data: (userContext) {
+        return child;
+      },
+    );
+  }
+}
 
 @freezed
 class UserContext with _$UserContext {
@@ -23,9 +47,32 @@ class UserContext with _$UserContext {
   }) = _UserContext;
 }
 
-@riverpod
+@Riverpod()
 class UserContextService extends _$UserContextService {
-  final Logger _log = Logger(context: 'UserContextService');
+  @override
+  UserContext build() {
+    return ref.watch(_userContextInternalProvider).requireValue;
+  }
+
+  Future<void> loginGoogle() async {
+    return await ref.read(_userContextInternalProvider.notifier).loginGoogle();
+  }
+
+  Future<void> logout() async {
+    return await ref.read(_userContextInternalProvider.notifier).logout();
+  }
+}
+
+@riverpod
+PocketBase pocketBase(PocketBaseRef ref) {
+  Logger(context: 'pocketBaseProvider').info('Building pocketBaseProvider');
+  final userContext = ref.read(userContextServiceProvider);
+  return userContext.pocketBase;
+}
+
+@Riverpod()
+class _UserContextInternal extends _$UserContextInternal {
+  final Logger _log = Logger(context: '_UserContextInternal');
 
   @override
   Future<UserContext> build() async {
@@ -141,12 +188,4 @@ class UserContextService extends _$UserContextService {
     _log.info('logout: Updating user context');
     state = AsyncData(userContext.copyWith(userAuth: userAuth, error: null));
   }
-}
-
-/// Assumes user context service is already loaded
-@riverpod
-PocketBase pocketBase(PocketBaseRef ref) {
-  Logger(context: 'pocketBaseProvider').info('Building pocketBaseProvider');
-  final userContext = ref.read(userContextServiceProvider).asData?.value;
-  return userContext!.pocketBase;
 }
