@@ -1,4 +1,4 @@
-import 'package:exnota/src/account/user/service/user_context_service.dart';
+import 'package:exnota/src/context/user/user_context.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

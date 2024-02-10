@@ -1,5 +1,5 @@
-import 'package:exnota/src/account/settings/settings_service.dart';
-import 'package:exnota/src/account/user/service/user_context_service.dart';
+import 'package:exnota/src/context/environment/environment.dart';
+import 'package:exnota/src/context/user/user_context.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +9,7 @@ class LoginScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Already loaded with _EagerProviderLoader, so safe to use requireValue.
-    final settings = ref.watch(settingsServiceProvider).requireValue;
+    final environment = ref.watch(environmentServiceProvider);
 
     return Scaffold(
       body: Center(
@@ -49,10 +48,10 @@ class LoginScreen extends ConsumerWidget {
                           inputDecorationTheme: const InputDecorationTheme(
                             border: null,
                           ),
-                          initialSelection: settings.environment,
+                          initialSelection: environment,
                           onSelected: (newEnvironment) {
                             ref
-                                .read(settingsServiceProvider.notifier)
+                                .read(environmentServiceProvider.notifier)
                                 .setEnvironment(newEnvironment);
                           },
                           dropdownMenuEntries: [

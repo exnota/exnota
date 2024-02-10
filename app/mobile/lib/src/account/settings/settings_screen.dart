@@ -1,6 +1,7 @@
 import 'package:drift_db_viewer/drift_db_viewer.dart';
-import 'package:exnota/src/account/settings/settings_service.dart';
-import 'package:exnota/src/account/user/service/user_context_service.dart';
+import 'package:exnota/src/context/app/local_settings.dart';
+import 'package:exnota/src/context/environment/environment.dart';
+import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,12 +14,10 @@ import 'package:flutter_settings_ui/flutter_settings_ui.dart';
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  static const routeName = '/settings';
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Already loaded with _EagerProviderLoader, so safe to use requireValue.
-    final settings = ref.watch(settingsServiceProvider).requireValue;
+    final themeMode = ref.watch(themeModeServiceProvider);
+    final environment = ref.watch(environmentServiceProvider);
 
     return Scaffold(
         appBar: AppBar(
@@ -32,7 +31,7 @@ class SettingsScreen extends ConsumerWidget {
               tiles: [
                 SettingsTile(
                   title: const Text('Theme'),
-                  description: switch (settings.themeMode) {
+                  description: switch (themeMode) {
                     ThemeMode.dark => const Text('Dark mode'),
                     ThemeMode.light => const Text('Light mode'),
                     ThemeMode.system => const Text('Use system settings'),
@@ -50,22 +49,22 @@ class SettingsScreen extends ConsumerWidget {
                               // TODO: Translation (and above/below)
                               title: const Text('Light mode'),
                               value: ThemeMode.light,
-                              groupValue: settings.themeMode,
+                              groupValue: themeMode,
                               onChanged: (newThemeMode) async {
-                                Navigator.pop(context);
+                                // Navigator.pop(context);
                                 await ref
-                                    .read(settingsServiceProvider.notifier)
+                                    .read(themeModeServiceProvider.notifier)
                                     .setThemeMode(newThemeMode);
                               },
                             ),
                             RadioListTile(
                               title: const Text('Dark mode'),
                               value: ThemeMode.dark,
-                              groupValue: settings.themeMode,
+                              groupValue: themeMode,
                               onChanged: (newThemeMode) async {
-                                Navigator.pop(context);
+                                // Navigator.pop(context);
                                 await ref
-                                    .read(settingsServiceProvider.notifier)
+                                    .read(themeModeServiceProvider.notifier)
                                     .setThemeMode(newThemeMode);
                               },
                             ),
@@ -74,11 +73,11 @@ class SettingsScreen extends ConsumerWidget {
                               subtitle: const Text(
                                   'We\'ll use your device display theme'),
                               value: ThemeMode.system,
-                              groupValue: settings.themeMode,
+                              groupValue: themeMode,
                               onChanged: (newThemeMode) async {
-                                Navigator.pop(context);
+                                // Navigator.pop(context);
                                 await ref
-                                    .read(settingsServiceProvider.notifier)
+                                    .read(themeModeServiceProvider.notifier)
                                     .setThemeMode(newThemeMode);
                               },
                             ),
@@ -103,7 +102,7 @@ class SettingsScreen extends ConsumerWidget {
             SettingsSection(title: const Text('Developer'), tiles: [
               SettingsTile(
                 title: const Text('Environment'),
-                description: Text(settings.environment.toString()),
+                description: Text(environment.toString()),
                 leading: const Icon(Icons.cloud_outlined),
                 descriptionInlineIos: true,
                 onPressed: (BuildContext context) {
@@ -116,16 +115,13 @@ class SettingsScreen extends ConsumerWidget {
                           RadioListTile(
                             title: const Text('Production'),
                             value: Environment.prod,
-                            groupValue: settings.environment,
+                            groupValue: environment,
                             onChanged: (newEnvironment) async {
-                              Navigator.pop(context); // Close the bottom sheet
-                              Navigator.pop(
-                                  context); // Close the settings screen
                               final userContextNotifier =
                                   ref.read(userContextServiceProvider.notifier);
 
                               await ref
-                                  .read(settingsServiceProvider.notifier)
+                                  .read(environmentServiceProvider.notifier)
                                   .setEnvironment(newEnvironment);
                               // ref is no longer accessible here because
                               // the entire app tree starts rebuilding when
@@ -136,16 +132,13 @@ class SettingsScreen extends ConsumerWidget {
                           RadioListTile(
                             title: const Text('Local'),
                             value: Environment.local,
-                            groupValue: settings.environment,
+                            groupValue: environment,
                             onChanged: (newEnvironment) async {
-                              Navigator.pop(context); // Close the bottom sheet
-                              Navigator.pop(
-                                  context); // Close the settings screen
                               final userContextNotifier =
                                   ref.read(userContextServiceProvider.notifier);
 
                               await ref
-                                  .read(settingsServiceProvider.notifier)
+                                  .read(environmentServiceProvider.notifier)
                                   .setEnvironment(newEnvironment);
                               // ref is no longer accessible here because
                               // the entire app tree starts rebuilding when

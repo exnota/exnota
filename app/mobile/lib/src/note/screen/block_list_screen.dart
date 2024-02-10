@@ -1,13 +1,12 @@
-import 'package:exnota/src/account/settings/settings_screen.dart';
+import 'package:exnota/src/context/app/route.dart';
 import 'package:exnota/src/lib/data/sync/service/block_importer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exnota/src/note/service/block_lister.dart';
+import 'package:go_router/go_router.dart';
 
 class BlockListScreen extends ConsumerStatefulWidget {
-  static const routeName = '/';
-
   const BlockListScreen({super.key});
 
   @override
@@ -59,7 +58,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
               // Navigate to the settings page. If the user leaves and returns
               // to the app after it has been killed while running in the
               // background, the navigation stack is restored.
-              Navigator.restorablePushNamed(context, SettingsScreen.routeName);
+              context.push(to(Screen.settings));
             },
             icon: const Icon(Icons.settings),
           ),
