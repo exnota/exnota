@@ -23,6 +23,8 @@ class ThemeModeService extends _$ThemeModeService {
   }
 }
 
+// Important that changing this state does not cause a rebuild of the router.
+// Otherwise, changing theme mode results in the user losing their place.
 @Riverpod(keepAlive: true)
 class LocalSettingsInternal extends _$LocalSettingsInternal {
   final Logger _log = Logger(context: 'LocalSettingsInternal');
