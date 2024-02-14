@@ -3,6 +3,9 @@ PODS:
     - Flutter
   - audio_waveforms (0.0.1):
     - Flutter
+  - connectivity_plus (0.0.1):
+    - Flutter
+    - ReachabilitySwift
   - device_info_plus (0.0.1):
     - Flutter
   - Firebase/CoreOnly (10.18.0):
@@ -73,6 +76,7 @@ PODS:
   - PromisesObjC (2.3.1)
   - PromisesSwift (2.3.1):
     - PromisesObjC (= 2.3.1)
+  - ReachabilitySwift (5.0.0)
   - SQLCipher (4.5.6):
     - SQLCipher/standard (= 4.5.6)
   - SQLCipher/common (4.5.6)
@@ -87,6 +91,7 @@ PODS:
 DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
   - audio_waveforms (from `.symlinks/plugins/audio_waveforms/ios`)
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_crashlytics (from `.symlinks/plugins/firebase_crashlytics/ios`)
@@ -111,6 +116,7 @@ SPEC REPOS:
     - nanopb
     - PromisesObjC
     - PromisesSwift
+    - ReachabilitySwift
     - SQLCipher
 
 EXTERNAL SOURCES:
@@ -118,6 +124,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/app_links/ios"
   audio_waveforms:
     :path: ".symlinks/plugins/audio_waveforms/ios"
+  connectivity_plus:
+    :path: ".symlinks/plugins/connectivity_plus/ios"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
   firebase_core:
@@ -140,6 +148,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   app_links: 5ef33d0d295a89d9d16bb81b0e3b0d5f70d6c875
   audio_waveforms: cd736909ebc6b6a164eb74701d8c705ce3241e1c
+  connectivity_plus: bf0076dd84a130856aa636df1c71ccaff908fa1d
   device_info_plus: c6fb39579d0f423935b0c9ce7ee2f44b71b9fce6
   Firebase: 414ad272f8d02dfbf12662a9d43f4bba9bec2a06
   firebase_core: 3d2a3f6e075df5207950cc5577202ed2e6805d9e
@@ -159,6 +168,7 @@ SPEC CHECKSUMS:
   permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
   PromisesObjC: c50d2056b5253dadbd6c2bea79b0674bd5a52fa4
   PromisesSwift: 28dca69a9c40779916ac2d6985a0192a5cb4a265
+  ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
   SQLCipher: 838309284f29953a28ad2e81d87d55ea6b7c74fd
   sqlcipher_flutter_libs: 4fe3b0fd930942b8e4fe31c68a029e0a1e467169
   url_launcher_ios: 08a3dfac5fb39e8759aeb0abbd5d9480f30fc8b4
