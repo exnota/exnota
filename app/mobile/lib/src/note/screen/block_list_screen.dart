@@ -1,4 +1,5 @@
 import 'package:exnota/src/context/app/route.dart';
+import 'package:exnota/src/context/os/connection.dart';
 import 'package:exnota/src/lib/data/sync/service/block_importer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -49,6 +50,8 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isOffline = ref.watch(isOfflineProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.note_list_title),
@@ -64,7 +67,29 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
           ),
         ],
       ),
-      body: const BlockList(),
+      body: Column(
+        children: [
+          if (isOffline)
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).secondaryHeaderColor,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.cloud_off_outlined),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    'Offline',
+                  )
+                ],
+              ),
+            ),
+          const Expanded(child: BlockList()),
+        ],
+      ),
     );
   }
 }
