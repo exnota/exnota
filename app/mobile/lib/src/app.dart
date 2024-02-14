@@ -33,8 +33,8 @@ class _MyAppState extends ConsumerState<MyApp> {
     // }
 
     return EnvironmentContextLoader(
-      child: AppContextLoader(
-        child: UserContextLoader(
+      child: UserContextLoader(
+        child: AppContextLoader(
           child: Builder(builder: (context) {
             final themeMode = ref.watch(themeModeServiceProvider);
             final goRouter = ref.watch(routerServiceProvider);

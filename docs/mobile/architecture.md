@@ -10,6 +10,7 @@ To reduce state complexity, the providers that manage state are grouped into lay
   * E.g. The theme and language are both settings specific to the app, not the user, so they go in the App layer which is above the User Auth layer.
 * **Accessing**: Inner layers can synchronously access state from outer layers.
   * E.g. FlutterSecureStorage access is async, the Environment layer loader will load this before inner layers are rendered, thus providing async access.
+  * This is not a hard limitation, but should be abided by.
 * **Mutating**: Changing the state of outer layer will likely cause a re-render and re-generation of inner layer state.
   * E.g. Changing the environment causes user auth and routing to be re-generated.
 
