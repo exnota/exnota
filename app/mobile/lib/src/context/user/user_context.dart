@@ -47,6 +47,13 @@ class UserContext with _$UserContext {
   }) = _UserContext;
 }
 
+/// Assumes there's an active user. Will throw if not.
+@riverpod
+String activeUserId(ActiveUserIdRef ref) {
+  final userContext = ref.watch(userContextServiceProvider);
+  return userContext.userAuth!.userId;
+}
+
 @Riverpod()
 class UserContextService extends _$UserContextService {
   @override

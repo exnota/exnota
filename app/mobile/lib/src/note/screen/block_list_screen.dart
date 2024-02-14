@@ -108,13 +108,13 @@ class BlockList extends ConsumerWidget {
       },
       data: (data) {
         return RefreshIndicator(
-          onRefresh: () async =>
-              ref.read(blockListerProvider.notifier).refresh(),
+          onRefresh: () async => print('refresh'),
           child: ListView.builder(
             itemCount: data.length,
             itemBuilder: (context, index) {
+              final block = data[index].block;
               return ListTile(
-                title: Text(data[index].title),
+                title: Text(block.title ?? ''),
               );
             },
           ),
