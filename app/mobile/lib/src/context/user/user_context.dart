@@ -3,6 +3,7 @@ import 'package:exnota/src/account/user/repo/user_repo.dart';
 import 'package:exnota/src/account/user/user.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
 import 'package:exnota/src/context/environment/uri.dart';
+import 'package:exnota/src/context/user/refresh_queue.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -32,7 +33,7 @@ class UserContextLoader extends ConsumerWidget {
       error: (error, _) => Directionality(
           textDirection: TextDirection.ltr, child: Text('Error: $error')),
       data: (userContext) {
-        return child;
+        return RefreshQueueObserver(child: child);
       },
     );
   }

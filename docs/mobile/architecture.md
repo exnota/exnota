@@ -2,6 +2,10 @@
 
 ## State context layers
 
+### References
+
+* Riverpod discussion on [why providers need to be connected to widgets](https://github.com/rrousselGit/riverpod/issues/238).
+
 ### Principles
 
 To reduce state complexity, the providers that manage state are grouped into layers with the following principles:
