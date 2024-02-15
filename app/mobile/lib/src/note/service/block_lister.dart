@@ -77,30 +77,3 @@ enum BlockStatus {
   error,
   unknown,
 }
-
-
-// @freezed
-// class PBBlock with _$PBBlock {
-//   const factory PBBlock({
-//     required String id,
-//     required String title,
-//   }) = _PBBlock;
-// }
-
-// @riverpod
-// class BlockLister extends _$BlockLister {
-//   @override
-//   Future<List<PBBlock>> build() async {
-//     final pb = ref.watch(pocketBaseProvider);
-//     final resultList =
-//         await pb.collection('block').getFullList(sort: '-created');
-
-//     return resultList
-//         .map((e) => PBBlock(id: e.id, title: e.data['title']))
-//         .toList();
-//   }
-
-//   void refresh() {
-//     ref.invalidateSelf();
-//   }
-// }

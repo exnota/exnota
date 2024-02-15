@@ -1,5 +1,6 @@
 import 'package:exnota/src/context/app/route.dart';
 import 'package:exnota/src/context/os/connection.dart';
+import 'package:exnota/src/context/user/refresh_queue.dart';
 import 'package:exnota/src/lib/data/sync/service/block_importer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -64,6 +65,20 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
               context.push(to(Screen.settings));
             },
             icon: const Icon(Icons.settings),
+          ),
+        ],
+      ),
+      floatingActionButton: ButtonBar(
+        children: [
+          FloatingActionButton(
+            onPressed: () {
+              // Add test requests
+              ref.read(refreshQueueProvider.notifier).addMultipleRequests([
+                ListNotesRequestOne(),
+                ListNotesRequestTwo(),
+              ]);
+            },
+            child: const Icon(Icons.add),
           ),
         ],
       ),
