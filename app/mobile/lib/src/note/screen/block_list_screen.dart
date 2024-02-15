@@ -52,6 +52,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   @override
   Widget build(BuildContext context) {
     final isOffline = ref.watch(isOfflineProvider);
+    final isRefreshQueueErrored = ref.watch(refreshQueueErroredProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -99,6 +100,32 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                   Text(
                     'Offline',
                   )
+                ],
+              ),
+            ),
+          if (isRefreshQueueErrored)
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).secondaryHeaderColor,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.cloud_off_outlined),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  const Text(
+                    'Unable to sync.',
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  FilledButton.tonal(
+                      onPressed: () {
+                        ref.read(refreshQueueProvider.notifier).retry();
+                      },
+                      child: const Text('Retry')),
                 ],
               ),
             ),
