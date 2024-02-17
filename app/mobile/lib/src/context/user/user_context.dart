@@ -2,6 +2,7 @@ import 'package:exnota/src/account/user/repo/user_auth_repo.dart';
 import 'package:exnota/src/account/user/repo/user_repo.dart';
 import 'package:exnota/src/account/user/user.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
+import 'package:exnota/src/context/app/route.dart';
 import 'package:exnota/src/context/environment/uri.dart';
 import 'package:exnota/src/context/user/import_queue.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
@@ -18,8 +19,13 @@ part 'user_context.g.dart';
 part 'user_context.freezed.dart';
 
 class UserContextLoader extends ConsumerWidget {
-  const UserContextLoader({super.key, required this.child});
-  final Widget child;
+  final Widget childWhenActiveUser;
+  final Widget childWhenNoActiveUser;
+
+  const UserContextLoader(
+      {super.key,
+      required this.childWhenActiveUser,
+      required this.childWhenNoActiveUser});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,7 +39,12 @@ class UserContextLoader extends ConsumerWidget {
       error: (error, _) => Directionality(
           textDirection: TextDirection.ltr, child: Text('Error: $error')),
       data: (userContext) {
-        return ImportQueueProcessorWrapper(child: child);
+        switch (ref.watch(_hasActiveUserProvider)) {
+          case true:
+            return ImportQueueProcessorWrapper(child: childWhenActiveUser);
+          case false:
+            return childWhenNoActiveUser;
+        }
       },
     );
   }
@@ -53,6 +64,12 @@ class UserContext with _$UserContext {
 String activeUserId(ActiveUserIdRef ref) {
   final userContext = ref.watch(userContextServiceProvider);
   return userContext.userAuth!.userId;
+}
+
+@riverpod
+bool _hasActiveUser(_HasActiveUserRef ref) {
+  final userContext = ref.watch(userContextServiceProvider);
+  return userContext.userAuth?.active == true;
 }
 
 @Riverpod()
@@ -194,7 +211,13 @@ class _UserContextInternal extends _$UserContextInternal {
     // Clear import queue
     _log.info('logout: Clearing import queue');
     // ignore: unused_result
-    ref.refresh(importQueueProvider);
+    ref.read(importQueueProvider.notifier).clear();
+
+    // Reset router to prevent navigation back to Settings screen, after user
+    // logs out on that screen.
+    _log.info('logout: Resetting router');
+    // ignore: unused_result
+    ref.read(routerServiceProvider.notifier).refresh();
 
     _log.info('logout: Logging out complete');
   }

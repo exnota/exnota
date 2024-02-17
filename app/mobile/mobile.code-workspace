@@ -1,11 +1,13 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../../docs"
-		}
-	],
-	"settings": {}
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "../../docs"
+    }
+  ],
+  "settings": {
+    "markdown.extension.toc.levels": "2..3"
+  }
 }
