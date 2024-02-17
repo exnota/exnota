@@ -195,8 +195,6 @@ class RefreshQueue extends _$RefreshQueue {
 
 abstract class RefreshRequest<T> {
   Future<void> request({required PocketBase pb});
-
-  Future<void> persist({required T data});
 }
 
 class ListNotesRequestOne extends RefreshRequest<List<RecordModel>> {
@@ -214,15 +212,6 @@ class ListNotesRequestOne extends RefreshRequest<List<RecordModel>> {
 
     _log.debug('Request complete');
   }
-
-  @override
-  Future<void> persist({required data}) {
-    _log.debug('Persisting data: $data');
-
-    // TODO: Probably remove this method and do it all in the request method
-    print("Persisting data: $data");
-    return Future.value();
-  }
 }
 
 class ListNotesRequestTwo extends RefreshRequest<List<RecordModel>> {
@@ -239,14 +228,5 @@ class ListNotesRequestTwo extends RefreshRequest<List<RecordModel>> {
     _log.debug('Listed ${result.length} notes');
 
     _log.debug('Request complete');
-  }
-
-  @override
-  Future<void> persist({required data}) {
-    _log.debug('Persisting data: $data');
-
-    // TODO:
-    print("Persisting data: $data");
-    return Future.value();
   }
 }
