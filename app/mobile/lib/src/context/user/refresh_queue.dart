@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
@@ -16,7 +15,7 @@ part 'refresh_queue.g.dart';
 
 enum RequestStatus { pending, running, error }
 
-enum RequestError { auth, network, other }
+enum RequestError { auth, network, internal, other }
 
 typedef RefreshQueueStatus = ({
   RefreshRequest request,
@@ -59,17 +58,14 @@ class QueueProcessor extends _$QueueProcessor {
     ref.read(refreshQueueProvider.notifier).setStatus(
         requestType: request.runtimeType, status: RequestStatus.running);
 
-    // TODO: Provide a way to distinguish between a PocketBase request fail and
-    // some other failure such as a DB persistence error.
-
     try {
       await retry(
         () => request.request(
             pb: ref.read(userContextServiceProvider).pocketBase),
-        // TODO: Ensure this is handling the desired exceptions
         retryIf: (e) =>
-            // Pocketbase wraps exceptions like SocketException in ClientException
-            e is SocketException,
+            // Retry request-related exceptions. Pocketbase wraps exceptions
+            // like SocketException in ClientException.
+            e is ClientException,
         onRetry: (e) => _log.debug('Retrying request that threw: $e'),
         maxAttempts: 3,
       );
@@ -93,15 +89,15 @@ class QueueProcessor extends _$QueueProcessor {
             status: RequestStatus.error,
             error: RequestError.other);
       }
-
       return;
     } on Exception catch (e) {
-      // This path isn't expected. PocketBase wraps exceptions.
+      // This path isn't expected for request errors, as PocketBase wraps
+      // exceptions. It will likely be issues in this codebase.
       _log.error('Error processing request: $e');
       ref.read(refreshQueueProvider.notifier).setStatus(
           requestType: request.runtimeType,
           status: RequestStatus.error,
-          error: RequestError.other);
+          error: RequestError.internal);
       return;
     }
 
@@ -137,7 +133,6 @@ bool refreshQueueAuthErrored(RefreshQueueAuthErroredRef ref) {
       .any((r) => r.error == RequestError.auth);
 }
 
-// TODO: How to clear the queue when the user logs out
 @riverpod
 class RefreshQueue extends _$RefreshQueue {
   final _log = Logger(context: 'RefreshQueue');
@@ -224,7 +219,7 @@ class ListNotesRequestOne extends RefreshRequest<List<RecordModel>> {
   Future<void> persist({required data}) {
     _log.debug('Persisting data: $data');
 
-    // TODO:
+    // TODO: Probably remove this method and do it all in the request method
     print("Persisting data: $data");
     return Future.value();
   }
@@ -234,7 +229,7 @@ class ListNotesRequestTwo extends RefreshRequest<List<RecordModel>> {
   final _log = Logger(context: 'ListNotesRequestTwo');
 
   @override
-  Future<bool> request({required PocketBase pb}) async {
+  Future<void> request({required PocketBase pb}) async {
     _log.debug('Requesting list of notes');
 
     // wait 5 seconds
@@ -244,8 +239,6 @@ class ListNotesRequestTwo extends RefreshRequest<List<RecordModel>> {
     _log.debug('Listed ${result.length} notes');
 
     _log.debug('Request complete');
-
-    return true;
   }
 
   @override
