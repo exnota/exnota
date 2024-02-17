@@ -3,7 +3,7 @@ import 'package:exnota/src/account/user/repo/user_repo.dart';
 import 'package:exnota/src/account/user/user.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
 import 'package:exnota/src/context/environment/uri.dart';
-import 'package:exnota/src/context/user/refresh_queue.dart';
+import 'package:exnota/src/context/user/import_queue.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -33,7 +33,7 @@ class UserContextLoader extends ConsumerWidget {
       error: (error, _) => Directionality(
           textDirection: TextDirection.ltr, child: Text('Error: $error')),
       data: (userContext) {
-        return RefreshQueueObserver(child: child);
+        return ImportQueueProcessorWrapper(child: child);
       },
     );
   }
@@ -191,10 +191,10 @@ class _UserContextInternal extends _$UserContextInternal {
     _log.info('logout: Updating user context');
     state = AsyncData(userContext.copyWith(userAuth: userAuth, error: null));
 
-    // Clear refresh queue
-    _log.info('logout: Clearing refresh queue');
+    // Clear import queue
+    _log.info('logout: Clearing import queue');
     // ignore: unused_result
-    ref.refresh(refreshQueueProvider);
+    ref.refresh(importQueueProvider);
 
     _log.info('logout: Logging out complete');
   }

@@ -9,24 +9,22 @@ import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:retry/retry.dart';
 
-part 'refresh_queue.g.dart';
-
-// TODO: Improve names, including of file
+part 'import_queue.g.dart';
 
 enum RequestStatus { pending, running, error }
 
 enum RequestError { auth, network, internal, other }
 
-typedef RefreshQueueStatus = ({
-  RefreshRequest request,
+typedef ImportQueueStatus = ({
+  ImportRequest request,
   RequestStatus status,
   RequestError? error
 });
 
-class RefreshQueueObserver extends ConsumerWidget {
+class ImportQueueProcessorWrapper extends ConsumerWidget {
   final Widget child;
 
-  const RefreshQueueObserver({super.key, required this.child});
+  const ImportQueueProcessorWrapper({super.key, required this.child});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,10 +50,10 @@ class QueueProcessor extends _$QueueProcessor {
     // no-op
   }
 
-  Future<void> process(RefreshRequest request) async {
+  Future<void> process(ImportRequest request) async {
     _log.debug('Processing request');
 
-    ref.read(refreshQueueProvider.notifier).setStatus(
+    ref.read(importQueueProvider.notifier).setStatus(
         requestType: request.runtimeType, status: RequestStatus.running);
 
     try {
@@ -74,17 +72,17 @@ class QueueProcessor extends _$QueueProcessor {
       _log.warn('Error \'$error\' processing request: $e');
 
       if (error == PocketBaseError.auth) {
-        ref.read(refreshQueueProvider.notifier).setStatus(
+        ref.read(importQueueProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.auth);
       } else if (error == PocketBaseError.network) {
-        ref.read(refreshQueueProvider.notifier).setStatus(
+        ref.read(importQueueProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.network);
       } else {
-        ref.read(refreshQueueProvider.notifier).setStatus(
+        ref.read(importQueueProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.other);
@@ -94,7 +92,7 @@ class QueueProcessor extends _$QueueProcessor {
       // This path isn't expected for request errors, as PocketBase wraps
       // exceptions. It will likely be issues in this codebase.
       _log.error('Error processing request: $e');
-      ref.read(refreshQueueProvider.notifier).setStatus(
+      ref.read(importQueueProvider.notifier).setStatus(
           requestType: request.runtimeType,
           status: RequestStatus.error,
           error: RequestError.internal);
@@ -102,7 +100,7 @@ class QueueProcessor extends _$QueueProcessor {
     }
 
     _log.debug('Request complete, removing from queue');
-    ref.read(refreshQueueProvider.notifier).removeRequest(request.runtimeType);
+    ref.read(importQueueProvider.notifier).removeRequest(request.runtimeType);
   }
 }
 
@@ -110,8 +108,8 @@ class QueueProcessor extends _$QueueProcessor {
 /// - There are no requests in the queue
 /// - The first request is not pending (e.g. it's already running or errored)
 @riverpod
-RefreshQueueStatus? nextInQueue(NextInQueueRef ref) {
-  final queue = ref.watch(refreshQueueProvider);
+ImportQueueStatus? nextInQueue(NextInQueueRef ref) {
+  final queue = ref.watch(importQueueProvider);
   final first = queue.firstOrNull;
   if (first != null && first.status == RequestStatus.pending) {
     return queue.first;
@@ -120,30 +118,30 @@ RefreshQueueStatus? nextInQueue(NextInQueueRef ref) {
 }
 
 @riverpod
-bool refreshQueueErrored(RefreshQueueErroredRef ref) {
+bool importQueueErrored(ImportQueueErroredRef ref) {
   return ref
-      .watch(refreshQueueProvider)
+      .watch(importQueueProvider)
       .any((r) => r.status == RequestStatus.error);
 }
 
 @riverpod
-bool refreshQueueAuthErrored(RefreshQueueAuthErroredRef ref) {
+bool importQueueAuthErrored(ImportQueueAuthErroredRef ref) {
   return ref
-      .watch(refreshQueueProvider)
+      .watch(importQueueProvider)
       .any((r) => r.error == RequestError.auth);
 }
 
 @riverpod
-class RefreshQueue extends _$RefreshQueue {
-  final _log = Logger(context: 'RefreshQueue');
+class ImportQueue extends _$ImportQueue {
+  final _log = Logger(context: 'ImportQueue');
 
   @override
-  List<RefreshQueueStatus> build() {
+  List<ImportQueueStatus> build() {
     return [];
   }
 
   // TODO: Either remove this or de-dupe requests of the same type
-  void addMultipleRequests(List<RefreshRequest> requests) {
+  void addMultipleRequests(List<ImportRequest> requests) {
     _log.debug("Adding multiple requests: $requests");
     state = [
       ...state,
@@ -152,7 +150,7 @@ class RefreshQueue extends _$RefreshQueue {
     ];
   }
 
-  void addRequest(RefreshRequest request) {
+  void addRequest(ImportRequest request) {
     _log.debug("Adding request: $request");
     // Avoid duplicates: Check if a request of the same type is already in progress
     if (state.any((r) => r.request.runtimeType == request.runtimeType)) {
@@ -193,11 +191,11 @@ class RefreshQueue extends _$RefreshQueue {
   }
 }
 
-abstract class RefreshRequest<T> {
+abstract class ImportRequest<T> {
   Future<void> request({required PocketBase pb});
 }
 
-class ListNotesRequestOne extends RefreshRequest<List<RecordModel>> {
+class ListNotesRequestOne extends ImportRequest<List<RecordModel>> {
   final _log = Logger(context: 'ListNotesRequestOne');
 
   @override
@@ -214,7 +212,7 @@ class ListNotesRequestOne extends RefreshRequest<List<RecordModel>> {
   }
 }
 
-class ListNotesRequestTwo extends RefreshRequest<List<RecordModel>> {
+class ListNotesRequestTwo extends ImportRequest<List<RecordModel>> {
   final _log = Logger(context: 'ListNotesRequestTwo');
 
   @override
