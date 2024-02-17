@@ -1,4 +1,4 @@
-import 'package:exnota/src/context/user/user_context.dart';
+import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/note/block.dart';
 import 'package:exnota/src/note/repo/drift/block_repo.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';

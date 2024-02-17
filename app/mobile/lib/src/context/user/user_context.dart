@@ -71,13 +71,6 @@ class UserContextService extends _$UserContextService {
   }
 }
 
-@riverpod
-PocketBase pocketBase(PocketBaseRef ref) {
-  Logger(context: 'pocketBaseProvider').info('Building pocketBaseProvider');
-  final userContext = ref.read(userContextServiceProvider);
-  return userContext.pocketBase;
-}
-
 @Riverpod()
 class _UserContextInternal extends _$UserContextInternal {
   final Logger _log = Logger(context: '_UserContextInternal');
@@ -122,6 +115,8 @@ class _UserContextInternal extends _$UserContextInternal {
     var pb = userContext.pocketBase;
     late RecordAuth authResult;
     try {
+      // TODO: #36 If server is down, this will hang. Not sure PocketBase SDK
+      // supports timeouts either.
       authResult =
           await pb.collection('user').authWithOAuth2('google', (url) async {
         // or use something like flutter_custom_tabs to make the transitions between native and web content more seamless
@@ -195,5 +190,12 @@ class _UserContextInternal extends _$UserContextInternal {
 
     _log.info('logout: Updating user context');
     state = AsyncData(userContext.copyWith(userAuth: userAuth, error: null));
+
+    // Clear refresh queue
+    _log.info('logout: Clearing refresh queue');
+    // ignore: unused_result
+    ref.refresh(refreshQueueProvider);
+
+    _log.info('logout: Logging out complete');
   }
 }

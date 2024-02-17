@@ -1,6 +1,7 @@
 import 'package:exnota/src/context/app/route.dart';
 import 'package:exnota/src/context/os/connection.dart';
 import 'package:exnota/src/context/user/refresh_queue.dart';
+import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/data/sync/service/block_importer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -51,8 +52,9 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isOffline = ref.watch(isOfflineProvider);
+    // final isOffline = ref.watch(isOfflineProvider);
     final isRefreshQueueErrored = ref.watch(refreshQueueErroredProvider);
+    final isRefreshQeueAuthErrored = ref.watch(refreshQueueAuthErroredProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -85,25 +87,52 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
       ),
       body: Column(
         children: [
-          if (isOffline)
+          // TODO: #37 Consolidate this offline notice with the refresh queue errors
+          // if (isOffline)
+          //   Container(
+          //     decoration: BoxDecoration(
+          //       color: Theme.of(context).secondaryHeaderColor,
+          //     ),
+          //     child: const Row(
+          //       mainAxisAlignment: MainAxisAlignment.center,
+          //       children: [
+          //         Icon(Icons.cloud_off_outlined),
+          //         SizedBox(
+          //           width: 10,
+          //         ),
+          //         Text(
+          //           'Offline',
+          //         )
+          //       ],
+          //     ),
+          //   ),
+          if (isRefreshQeueAuthErrored)
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).secondaryHeaderColor,
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.cloud_off_outlined),
-                  SizedBox(
+                  const Icon(Icons.cloud_off_outlined),
+                  const SizedBox(
                     width: 10,
                   ),
-                  Text(
-                    'Offline',
-                  )
+                  const Text(
+                    'You need to sign in again.',
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  FilledButton.tonal(
+                      onPressed: () {
+                        ref.read(userContextServiceProvider.notifier).logout();
+                      },
+                      child: const Text('Sign in')),
                 ],
               ),
-            ),
-          if (isRefreshQueueErrored)
+            )
+          else if (isRefreshQueueErrored)
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).secondaryHeaderColor,
