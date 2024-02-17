@@ -59,7 +59,7 @@ class QueueProcessor extends _$QueueProcessor {
     try {
       await retry(
         () => request.request(
-            pb: ref.read(userContextServiceProvider).pocketBase),
+            pb: ref.read(userContextServiceProvider).pocketBase, ref: ref),
         retryIf: (e) =>
             // Retry request-related exceptions. Pocketbase wraps exceptions
             // like SocketException in ClientException.
@@ -189,17 +189,22 @@ class ImportQueue extends _$ImportQueue {
       return r;
     }).toList();
   }
+
+  void clear() {
+    _log.debug("Clearing queue");
+    ref.invalidateSelf();
+  }
 }
 
 abstract class ImportRequest<T> {
-  Future<void> request({required PocketBase pb});
+  Future<void> request({required PocketBase pb, required Ref ref});
 }
 
 class ListNotesRequestOne extends ImportRequest<List<RecordModel>> {
   final _log = Logger(context: 'ListNotesRequestOne');
 
   @override
-  Future<void> request({required PocketBase pb}) async {
+  Future<void> request({required PocketBase pb, required Ref ref}) async {
     _log.debug('Requesting list of notes');
 
     // wait 5 seconds
@@ -216,7 +221,7 @@ class ListNotesRequestTwo extends ImportRequest<List<RecordModel>> {
   final _log = Logger(context: 'ListNotesRequestTwo');
 
   @override
-  Future<void> request({required PocketBase pb}) async {
+  Future<void> request({required PocketBase pb, required Ref ref}) async {
     _log.debug('Requesting list of notes');
 
     // wait 5 seconds

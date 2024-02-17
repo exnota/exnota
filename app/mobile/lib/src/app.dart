@@ -1,3 +1,4 @@
+import 'package:exnota/src/account/user/screen/login.dart';
 import 'package:exnota/src/context/app/app_context.dart';
 import 'package:exnota/src/context/app/local_settings.dart';
 import 'package:exnota/src/context/os/os_context.dart';
@@ -37,27 +38,33 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     return OsContext(
       child: EnvironmentContextLoader(
-        child: UserContextLoader(
-          child: AppContextLoader(
-            child: Builder(builder: (context) {
-              final themeMode = ref.watch(themeModeServiceProvider);
-              final goRouter = ref.watch(routerServiceProvider);
+        child: UserContextLoader(childWhenActiveUser: AppContextLoader(
+          child: Builder(builder: (context) {
+            final themeMode = ref.watch(themeModeServiceProvider);
+            final goRouter = ref.watch(routerServiceProvider);
 
-              return WorkspaceContext(
-                child: materialApp(
-                  themeMode: themeMode,
-                  goRouter: goRouter,
-                ),
-              );
-            }),
-          ),
-        ),
+            return WorkspaceContext(
+              child: activeUserMaterialApp(
+                themeMode: themeMode,
+                goRouter: goRouter,
+              ),
+            );
+          }),
+        ), childWhenNoActiveUser: AppContextLoader(
+          child: Builder(builder: (context) {
+            final themeMode = ref.watch(themeModeServiceProvider);
+
+            return noActiveUserMaterialApp(
+              themeMode: themeMode,
+            );
+          }),
+        )),
       ),
     );
   }
 }
 
-MaterialApp materialApp(
+MaterialApp activeUserMaterialApp(
     {required ThemeMode themeMode, required GoRouter goRouter}) {
   return MaterialApp.router(
     // Providing a restorationScopeId allows the Navigator built by the
@@ -91,5 +98,40 @@ MaterialApp materialApp(
     darkTheme: ThemeData.dark(useMaterial3: true),
     themeMode: themeMode,
     routerConfig: goRouter,
+  );
+}
+
+MaterialApp noActiveUserMaterialApp({required ThemeMode themeMode}) {
+  return MaterialApp(
+    // Providing a restorationScopeId allows the Navigator built by the
+    // MaterialApp to restore the navigation stack when a user leaves and
+    // returns to the app after it has been killed while running in the
+    // background.
+    restorationScopeId: 'app',
+
+    // Provide the generated AppLocalizations to the MaterialApp. This
+    // allows descendant Widgets to display the correct translations
+    // depending on the user's locale.
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: const [
+      Locale('en', ''), // English, no country code
+    ],
+
+    // Use AppLocalizations to configure the correct application title
+    // depending on the user's locale.
+    //
+    // The appTitle is defined in .arb files found in the localization
+    // directory.
+    onGenerateTitle: (BuildContext context) =>
+        AppLocalizations.of(context)!.common_appTitle,
+    theme: ThemeData(useMaterial3: true),
+    darkTheme: ThemeData.dark(useMaterial3: true),
+    themeMode: themeMode,
+    home: const LoginScreen(),
   );
 }

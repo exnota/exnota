@@ -1,6 +1,17 @@
+import 'package:exnota/src/context/user/import_queue.dart';
+import 'package:exnota/src/context/user/user_context.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pocketbase/pocketbase.dart';
 
-class WorkspaceContext extends StatelessWidget {
+// TODO:
+// - once workspaces have been loaded
+// - start pulling/updating blocks from backend
+// - this does not need to block loading, because we can pull from database
+// - however we should probably indicate when the importing is taking place
+
+class WorkspaceContext extends ConsumerStatefulWidget {
   final Widget child;
 
   const WorkspaceContext({
@@ -9,8 +20,33 @@ class WorkspaceContext extends StatelessWidget {
   });
 
   @override
+  ConsumerState<WorkspaceContext> createState() => _WorkspaceContextState();
+}
+
+class _WorkspaceContextState extends ConsumerState<WorkspaceContext> {
+  // TODO: #40 Load based on workspaces (1-n), not users.
+  String? loadedUserId;
+  final Logger _log = Logger(context: '_WorkspaceContextState');
+
+  // TODO:
+  @override
   Widget build(BuildContext context) {
-    // Soon this will load the relevant workspaces that will be used to things
+    final activeUserId = ref.watch(activeUserIdProvider);
+    if (loadedUserId == null || loadedUserId != activeUserId) {
+      setState(() {
+        loadedUserId = activeUserId;
+      });
+      // TODO: remove log
+      _log.debug('Importing blocks for user: $activeUserId');
+
+      // Need to wrap in Future to avoid provider throwing an error that its
+      // state was modified during the widget's lifecycle.
+      Future(() {
+        ref.read(importQueueProvider.notifier).addRequest(ImportBlocks());
+      });
+    }
+
+    // TODO: Soon this will load the relevant workspaces that will be used to things
     // like:
     // - Determine which blocks will be fetched.
     // - Determines which destinations will be available for sending new blocks
@@ -30,6 +66,28 @@ class WorkspaceContext extends StatelessWidget {
     // working from. This will be done by setting a local_active_workspace
     // entry in the database. This will be used to determine which workspace to
     // pull entries from.
-    return child;
+    return widget.child;
+  }
+}
+
+class ImportBlocks extends ImportRequest<List<RecordModel>> {
+  final _log = Logger(context: 'ImportBlocks');
+
+  @override
+  Future<void> request({required PocketBase pb, required Ref ref}) async {
+    _log.debug('Importing blocks...');
+
+    final result = await pb.collection('block').getFullList(sort: '-created');
+    _log.debug('Fetched ${result.length} blocks');
+
+    // Don't use a transaction. If only one import fails, we don't want to
+    // block the rest.
+    // final repo = ref.read(blockRepoProvider);
+    for (final record in result) {
+      // TODO: Upsert
+      _log.debug('Upserting ${record.id}');
+    }
+
+    _log.debug('Importing blocks complete');
   }
 }

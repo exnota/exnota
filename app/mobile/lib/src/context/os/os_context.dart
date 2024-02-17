@@ -51,7 +51,6 @@ class _OsContextState extends ConsumerState<OsContext> {
   }
 
   Future<void> _refreshConnectionState() async {
-    // ignore: unused_result
-    await ref.refresh(connectionInternalProvider.future);
+    ref.read(connectionInternalProvider.notifier).refresh();
   }
 }

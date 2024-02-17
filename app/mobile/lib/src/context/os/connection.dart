@@ -47,4 +47,8 @@ class ConnectionInternal extends _$ConnectionInternal {
     }
     return ConnectionState.online;
   }
+
+  void refresh() {
+    ref.invalidateSelf();
+  }
 }

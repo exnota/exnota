@@ -42,47 +42,7 @@ class SettingsScreen extends ConsumerWidget {
                     showModalBottomSheet(
                       context: context,
                       builder: (context) {
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            RadioListTile(
-                              // TODO: Translation (and above/below)
-                              title: const Text('Light mode'),
-                              value: ThemeMode.light,
-                              groupValue: themeMode,
-                              onChanged: (newThemeMode) async {
-                                // Navigator.pop(context);
-                                await ref
-                                    .read(themeModeServiceProvider.notifier)
-                                    .setThemeMode(newThemeMode);
-                              },
-                            ),
-                            RadioListTile(
-                              title: const Text('Dark mode'),
-                              value: ThemeMode.dark,
-                              groupValue: themeMode,
-                              onChanged: (newThemeMode) async {
-                                // Navigator.pop(context);
-                                await ref
-                                    .read(themeModeServiceProvider.notifier)
-                                    .setThemeMode(newThemeMode);
-                              },
-                            ),
-                            RadioListTile(
-                              title: const Text('Use device settings'),
-                              subtitle: const Text(
-                                  'We\'ll use your device display theme'),
-                              value: ThemeMode.system,
-                              groupValue: themeMode,
-                              onChanged: (newThemeMode) async {
-                                // Navigator.pop(context);
-                                await ref
-                                    .read(themeModeServiceProvider.notifier)
-                                    .setThemeMode(newThemeMode);
-                              },
-                            ),
-                          ],
-                        );
+                        return const ThemeModeBottomSheet();
                       },
                     );
                   },
@@ -101,7 +61,7 @@ class SettingsScreen extends ConsumerWidget {
             ]),
             SettingsSection(title: const Text('Developer'), tiles: [
               SettingsTile(
-                title: const Text('Environment'),
+                title: const Text('Environment (changing here might be buggy)'),
                 description: Text(environment.toString()),
                 leading: const Icon(Icons.cloud_outlined),
                 descriptionInlineIos: true,
@@ -109,45 +69,7 @@ class SettingsScreen extends ConsumerWidget {
                   showModalBottomSheet(
                     context: context,
                     builder: (context) {
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          RadioListTile(
-                            title: const Text('Production'),
-                            value: Environment.prod,
-                            groupValue: environment,
-                            onChanged: (newEnvironment) async {
-                              final userContextNotifier =
-                                  ref.read(userContextServiceProvider.notifier);
-
-                              await ref
-                                  .read(environmentServiceProvider.notifier)
-                                  .setEnvironment(newEnvironment);
-                              // ref is no longer accessible here because
-                              // the entire app tree starts rebuilding when
-                              // the environment is changed.
-                              await userContextNotifier.logout();
-                            },
-                          ),
-                          RadioListTile(
-                            title: const Text('Local'),
-                            value: Environment.local,
-                            groupValue: environment,
-                            onChanged: (newEnvironment) async {
-                              final userContextNotifier =
-                                  ref.read(userContextServiceProvider.notifier);
-
-                              await ref
-                                  .read(environmentServiceProvider.notifier)
-                                  .setEnvironment(newEnvironment);
-                              // ref is no longer accessible here because
-                              // the entire app tree starts rebuilding when
-                              // the environment is changed.
-                              await userContextNotifier.logout();
-                            },
-                          ),
-                        ],
-                      );
+                      return const EnvironmentBottomSheet();
                     },
                   );
                 },
@@ -164,5 +86,122 @@ class SettingsScreen extends ConsumerWidget {
             ]),
           ],
         ));
+  }
+}
+
+class ThemeModeBottomSheet extends ConsumerWidget {
+  const ThemeModeBottomSheet({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeServiceProvider);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        RadioListTile(
+          // TODO: Translation (and above/below)
+          title: const Text('Light mode'),
+          value: ThemeMode.light,
+          groupValue: themeMode,
+          onChanged: (newThemeMode) async {
+            // Navigator.pop(context);
+            await ref
+                .read(themeModeServiceProvider.notifier)
+                .setThemeMode(newThemeMode);
+          },
+        ),
+        RadioListTile(
+          title: const Text('Dark mode'),
+          value: ThemeMode.dark,
+          groupValue: themeMode,
+          onChanged: (newThemeMode) async {
+            // Navigator.pop(context);
+            await ref
+                .read(themeModeServiceProvider.notifier)
+                .setThemeMode(newThemeMode);
+          },
+        ),
+        RadioListTile(
+          title: const Text('Use device settings'),
+          subtitle: const Text('We\'ll use your device display theme'),
+          value: ThemeMode.system,
+          groupValue: themeMode,
+          onChanged: (newThemeMode) async {
+            // Navigator.pop(context);
+            await ref
+                .read(themeModeServiceProvider.notifier)
+                .setThemeMode(newThemeMode);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class EnvironmentBottomSheet extends ConsumerWidget {
+  const EnvironmentBottomSheet({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final environment = ref.watch(environmentServiceProvider);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        RadioListTile(
+          title: const Text('Production'),
+          value: Environment.prod,
+          groupValue: environment,
+          onChanged: (newEnvironment) async {
+            // Note: There might be some race conditions here
+            // due to the setting of the environment and
+            // logging out being non-transactional. A
+            // re-render might happen between both and result
+            // in an invalid/buggy state.
+            //
+            // TODO: Changing the environment context should
+            // cause a re-render of the entire app. Maybe
+            // something can be changed in that context layer
+            // so that user auth is essentially reset when
+            // the environment changes.
+
+            final userContextNotifier =
+                ref.read(userContextServiceProvider.notifier);
+
+            await ref
+                .read(environmentServiceProvider.notifier)
+                .setEnvironment(newEnvironment);
+            // ref is no longer accessible here because
+            // the entire app tree starts rebuilding when
+            // the environment is changed.
+            await userContextNotifier.logout();
+          },
+        ),
+        RadioListTile(
+          title: const Text('Local'),
+          value: Environment.local,
+          groupValue: environment,
+          onChanged: (newEnvironment) async {
+            // Note: See above (in the production case)
+
+            final userContextNotifier =
+                ref.read(userContextServiceProvider.notifier);
+
+            await ref
+                .read(environmentServiceProvider.notifier)
+                .setEnvironment(newEnvironment);
+            // ref is no longer accessible here because
+            // the entire app tree starts rebuilding when
+            // the environment is changed.
+            await userContextNotifier.logout();
+          },
+        ),
+      ],
+    );
   }
 }
