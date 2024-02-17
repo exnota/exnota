@@ -1,6 +1,5 @@
 import 'package:exnota/src/context/app/route.dart';
-import 'package:exnota/src/context/os/connection.dart';
-import 'package:exnota/src/context/user/refresh_queue.dart';
+import 'package:exnota/src/context/user/import_queue.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/data/sync/service/block_importer.dart';
 import 'package:flutter/material.dart';
@@ -53,8 +52,8 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   @override
   Widget build(BuildContext context) {
     // final isOffline = ref.watch(isOfflineProvider);
-    final isRefreshQueueErrored = ref.watch(refreshQueueErroredProvider);
-    final isRefreshQeueAuthErrored = ref.watch(refreshQueueAuthErroredProvider);
+    final isImportQueueErrored = ref.watch(importQueueErroredProvider);
+    final isImportQeueAuthErrored = ref.watch(importQueueAuthErroredProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -76,7 +75,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
           FloatingActionButton(
             onPressed: () {
               // Add test requests
-              ref.read(refreshQueueProvider.notifier).addMultipleRequests([
+              ref.read(importQueueProvider.notifier).addMultipleRequests([
                 ListNotesRequestOne(),
                 ListNotesRequestTwo(),
               ]);
@@ -106,7 +105,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
           //       ],
           //     ),
           //   ),
-          if (isRefreshQeueAuthErrored)
+          if (isImportQeueAuthErrored)
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).secondaryHeaderColor,
@@ -132,7 +131,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                 ],
               ),
             )
-          else if (isRefreshQueueErrored)
+          else if (isImportQueueErrored)
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).secondaryHeaderColor,
@@ -152,7 +151,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                   ),
                   FilledButton.tonal(
                       onPressed: () {
-                        ref.read(refreshQueueProvider.notifier).retry();
+                        ref.read(importQueueProvider.notifier).retry();
                       },
                       child: const Text('Retry')),
                 ],
