@@ -8,7 +8,7 @@ part 'user_repo.g.dart';
 
 @riverpod
 UserRepo userRepo(UserRepoRef ref) {
-  final db = ref.read(databaseProvider);
+  final db = ref.watch(databaseProvider);
   return UserRepo(db);
 }
 

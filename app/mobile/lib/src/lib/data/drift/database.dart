@@ -25,7 +25,7 @@ AppDatabase database(DatabaseRef ref) {
 @riverpod
 Future<T> Function<T>(Future<T> Function(), {bool requireNew}) transaction(
     TransactionRef ref) {
-  final db = ref.read(databaseProvider);
+  final db = ref.watch(databaseProvider);
   return db.transaction;
 }
 
