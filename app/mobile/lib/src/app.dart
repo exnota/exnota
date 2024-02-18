@@ -38,27 +38,30 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     return OsContext(
       child: EnvironmentContextLoader(
-        child: UserContextLoader(childWhenActiveUser: AppContextLoader(
-          child: Builder(builder: (context) {
-            final themeMode = ref.watch(themeModeServiceProvider);
-            final goRouter = ref.watch(routerServiceProvider);
+        child: UserContextLoader(
+          childWhenActiveUser: AppContextLoader(
+            child: Builder(builder: (context) {
+              final themeMode = ref.watch(themeModeServiceProvider);
+              final goRouter = ref.watch(routerServiceProvider);
 
-            return WorkspaceContext(
-              child: activeUserMaterialApp(
+              return WorkspaceContext(
+                child: activeUserMaterialApp(
+                  themeMode: themeMode,
+                  goRouter: goRouter,
+                ),
+              );
+            }),
+          ),
+          childWhenNoActiveUser: AppContextLoader(
+            child: Builder(builder: (context) {
+              final themeMode = ref.watch(themeModeServiceProvider);
+
+              return noActiveUserMaterialApp(
                 themeMode: themeMode,
-                goRouter: goRouter,
-              ),
-            );
-          }),
-        ), childWhenNoActiveUser: AppContextLoader(
-          child: Builder(builder: (context) {
-            final themeMode = ref.watch(themeModeServiceProvider);
-
-            return noActiveUserMaterialApp(
-              themeMode: themeMode,
-            );
-          }),
-        )),
+              );
+            }),
+          ),
+        ),
       ),
     );
   }
