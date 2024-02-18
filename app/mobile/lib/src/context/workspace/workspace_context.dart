@@ -26,7 +26,7 @@ class WorkspaceContext extends ConsumerStatefulWidget {
 class _WorkspaceContextState extends ConsumerState<WorkspaceContext> {
   // TODO: #40 Load based on workspaces (1-n), not users.
   String? loadedUserId;
-  final Logger _log = Logger(context: '_WorkspaceContextState');
+  final Logger _log = Logger(context: 'WorkspaceContext');
 
   // TODO:
   @override

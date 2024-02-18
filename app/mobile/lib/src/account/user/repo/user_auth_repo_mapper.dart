@@ -1,5 +1,5 @@
 import 'package:exnota/src/account/user/user_auth.dart';
-import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/context/app/database.dart';
 
 class UserAuthRepoMapper {
   static UserAuthTableData toRepo(UserAuth user) {

@@ -29,7 +29,7 @@ final navigatorKey = GlobalKey<NavigatorState>();
 
 // Source: https://github.com/flutter/flutter/issues/112915
 // Another reference repo: https://github.com/lucavenir/go_router_riverpod/blob/master/example/lib/router/router.dart
-@riverpod
+@Riverpod(keepAlive: true)
 class RouterService extends _$RouterService {
   final Logger _log = Logger(context: 'RouterService');
 

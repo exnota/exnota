@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/context/app/database.dart';
 import 'package:exnota/src/note/block.dart';
 
 class BlockRepoMapper {

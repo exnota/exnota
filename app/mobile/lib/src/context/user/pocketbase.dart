@@ -7,7 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'pocketbase.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 PocketBase pocketBase(PocketBaseRef ref) {
   Logger(context: 'pocketBaseProvider').info('Building pocketBaseProvider');
   final userContext = ref.watch(userContextServiceProvider);

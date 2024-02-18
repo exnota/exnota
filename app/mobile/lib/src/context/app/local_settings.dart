@@ -9,7 +9,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'local_settings.g.dart';
 part 'local_settings.freezed.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ThemeModeService extends _$ThemeModeService {
   @override
   ThemeMode build() {

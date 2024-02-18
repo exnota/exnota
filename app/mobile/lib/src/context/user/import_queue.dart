@@ -41,7 +41,7 @@ class ImportQueueProcessorWrapper extends ConsumerWidget {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class QueueProcessor extends _$QueueProcessor {
   final _log = Logger(context: 'QueueProcessor');
 
@@ -107,7 +107,7 @@ class QueueProcessor extends _$QueueProcessor {
 /// Returns the next request that is ready for processing, or none if either:
 /// - There are no requests in the queue
 /// - The first request is not pending (e.g. it's already running or errored)
-@riverpod
+@Riverpod(keepAlive: true)
 ImportQueueStatus? nextInQueue(NextInQueueRef ref) {
   final queue = ref.watch(importQueueProvider);
   final first = queue.firstOrNull;
@@ -117,21 +117,21 @@ ImportQueueStatus? nextInQueue(NextInQueueRef ref) {
   return null;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 bool importQueueErrored(ImportQueueErroredRef ref) {
   return ref
       .watch(importQueueProvider)
       .any((r) => r.status == RequestStatus.error);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 bool importQueueAuthErrored(ImportQueueAuthErroredRef ref) {
   return ref
       .watch(importQueueProvider)
       .any((r) => r.error == RequestError.auth);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ImportQueue extends _$ImportQueue {
   final _log = Logger(context: 'ImportQueue');
 

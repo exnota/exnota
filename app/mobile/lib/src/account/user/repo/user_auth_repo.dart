@@ -1,13 +1,14 @@
 import 'package:drift/drift.dart';
 import 'package:exnota/src/account/user/repo/user_auth_repo_mapper.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
-import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/context/app/database.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_auth_repo.g.dart';
 
-@riverpod
+// Is depended upon by user context.
+@Riverpod(keepAlive: true)
 UserAuthRepo userAuthRepo(UserAuthRepoRef ref) {
   final db = ref.watch(databaseProvider);
   return UserAuthRepo(db);

@@ -1,4 +1,4 @@
-import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/context/app/database.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

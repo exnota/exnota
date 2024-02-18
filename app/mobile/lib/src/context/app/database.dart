@@ -22,7 +22,7 @@ AppDatabase database(DatabaseRef ref) {
   throw UnimplementedError();
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<T> Function<T>(Future<T> Function(), {bool requireNew}) transaction(
     TransactionRef ref) {
   final db = ref.watch(databaseProvider);

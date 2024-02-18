@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'uri.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class UriService extends _$UriService {
   final Logger _log = Logger(context: 'UriService');
 

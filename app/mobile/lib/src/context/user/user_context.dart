@@ -2,10 +2,10 @@ import 'package:exnota/src/account/user/repo/user_auth_repo.dart';
 import 'package:exnota/src/account/user/repo/user_repo.dart';
 import 'package:exnota/src/account/user/user.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
+import 'package:exnota/src/context/app/database.dart';
 import 'package:exnota/src/context/app/route.dart';
 import 'package:exnota/src/context/environment/uri.dart';
 import 'package:exnota/src/context/user/import_queue.dart';
-import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +60,7 @@ class UserContext with _$UserContext {
 }
 
 /// Assumes there's an active user. Will throw if not.
-@riverpod
+@Riverpod(keepAlive: true)
 String activeUserId(ActiveUserIdRef ref) {
   final userContext = ref.watch(userContextServiceProvider);
   return userContext.userAuth!.userId;
@@ -70,7 +70,7 @@ bool _hasActiveUser(UserContext userContext) {
   return userContext.userAuth?.active == true;
 }
 
-@Riverpod()
+@Riverpod(keepAlive: true)
 class UserContextService extends _$UserContextService {
   @override
   UserContext build() {
@@ -86,7 +86,7 @@ class UserContextService extends _$UserContextService {
   }
 }
 
-@Riverpod()
+@Riverpod(keepAlive: true)
 class _UserContextInternal extends _$UserContextInternal {
   final Logger _log = Logger(context: '_UserContextInternal');
 

@@ -35,7 +35,7 @@ class EnvironmentContextLoader extends ConsumerWidget {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class EnvironmentService extends _$EnvironmentService {
   @override
   Environment build() {

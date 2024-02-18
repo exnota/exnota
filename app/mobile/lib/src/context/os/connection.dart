@@ -5,13 +5,13 @@ part 'connection.g.dart';
 
 enum ConnectionState { online, offline }
 
-@riverpod
+@Riverpod(keepAlive: true)
 bool isOffline(IsOfflineRef ref) {
   return ref.watch(connectionInternalProvider).requireValue ==
       ConnectionState.offline;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 ConnectionState connection(ConnectionRef ref) {
   return ref.watch(connectionInternalProvider).requireValue;
 }
