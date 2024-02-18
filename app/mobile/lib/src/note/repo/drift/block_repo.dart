@@ -8,7 +8,7 @@ part 'block_repo.g.dart';
 
 @riverpod
 BlockRepo blockRepo(BlockRepoRef ref) {
-  final db = ref.read(databaseProvider);
+  final db = ref.watch(databaseProvider);
   return BlockRepo(db);
 }
 

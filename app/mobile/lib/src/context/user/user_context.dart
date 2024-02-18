@@ -39,7 +39,7 @@ class UserContextLoader extends ConsumerWidget {
       error: (error, _) => Directionality(
           textDirection: TextDirection.ltr, child: Text('Error: $error')),
       data: (userContext) {
-        switch (ref.watch(_hasActiveUserProvider)) {
+        switch (_hasActiveUser(userContext)) {
           case true:
             return ImportQueueProcessorWrapper(child: childWhenActiveUser);
           case false:
@@ -66,9 +66,7 @@ String activeUserId(ActiveUserIdRef ref) {
   return userContext.userAuth!.userId;
 }
 
-@riverpod
-bool _hasActiveUser(_HasActiveUserRef ref) {
-  final userContext = ref.watch(userContextServiceProvider);
+bool _hasActiveUser(UserContext userContext) {
   return userContext.userAuth?.active == true;
 }
 
@@ -96,10 +94,10 @@ class _UserContextInternal extends _$UserContextInternal {
   Future<UserContext> build() async {
     _log.info('build: Building user context service');
     final baseUrl = ref.watch(uriServiceProvider);
-    final transaction = ref.read(transactionProvider);
+    final transaction = ref.watch(transactionProvider);
+    final userAuthRepo = ref.watch(userAuthRepoProvider);
 
     return await transaction(() async {
-      final userAuthRepo = ref.read(userAuthRepoProvider);
       final userAuth = await userAuthRepo.getActive();
       if (userAuth == null) {
         _log.info('build: Creating user context with no user auth');
@@ -113,7 +111,7 @@ class _UserContextInternal extends _$UserContextInternal {
       if (token != null) {
         _log.info('build: Using found token');
         final user =
-            await ref.read(userRepoProvider).getOrThrow(id: userAuth.userId);
+            await ref.watch(userRepoProvider).getOrThrow(id: userAuth.userId);
         authStore.save(token, user.toRecord());
       }
 

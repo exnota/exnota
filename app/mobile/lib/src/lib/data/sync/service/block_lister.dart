@@ -16,7 +16,7 @@ class BlockLister extends _$BlockLister {
     // - returns { blocks: [], isLoading, hasMore = timestampNoMoreFound == null }
     // - TODO: how to calc isLoading, hasMore
     // - returns all blocks from DB
-    final repo = ref.read(blockRepoProvider);
+    final repo = ref.watch(blockRepoProvider);
     final blocks = await repo.list();
 
     final pb = ref.watch(pocketBaseProvider);

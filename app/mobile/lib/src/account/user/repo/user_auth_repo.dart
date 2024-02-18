@@ -9,7 +9,7 @@ part 'user_auth_repo.g.dart';
 
 @riverpod
 UserAuthRepo userAuthRepo(UserAuthRepoRef ref) {
-  final db = ref.read(databaseProvider);
+  final db = ref.watch(databaseProvider);
   return UserAuthRepo(db);
 }
 
