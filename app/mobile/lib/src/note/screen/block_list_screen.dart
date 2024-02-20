@@ -1,4 +1,4 @@
-import 'package:exnota/src/context/app/route.dart';
+import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/import_queue.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/data/sync/service/block_importer.dart';
