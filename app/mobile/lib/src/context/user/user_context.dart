@@ -2,7 +2,6 @@ import 'package:exnota/src/account/user/repo/user_auth_repo.dart';
 import 'package:exnota/src/account/user/repo/user_repo.dart';
 import 'package:exnota/src/account/user/user.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
-import 'package:exnota/src/context/app/route.dart';
 import 'package:exnota/src/context/environment/uri.dart';
 import 'package:exnota/src/context/user/import_queue.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
@@ -19,13 +18,9 @@ part 'user_context.g.dart';
 part 'user_context.freezed.dart';
 
 class UserContextLoader extends ConsumerWidget {
-  final Widget childWhenActiveUser;
-  final Widget childWhenNoActiveUser;
+  final Widget child;
 
-  const UserContextLoader(
-      {super.key,
-      required this.childWhenActiveUser,
-      required this.childWhenNoActiveUser});
+  const UserContextLoader({super.key, required this.child});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,14 +33,7 @@ class UserContextLoader extends ConsumerWidget {
           textDirection: TextDirection.ltr, child: CircularProgressIndicator()),
       error: (error, _) => Directionality(
           textDirection: TextDirection.ltr, child: Text('Error: $error')),
-      data: (userContext) {
-        switch (_hasActiveUser(userContext)) {
-          case true:
-            return ImportQueueProcessorWrapper(child: childWhenActiveUser);
-          case false:
-            return childWhenNoActiveUser;
-        }
-      },
+      data: (userContext) => child,
     );
   }
 }
@@ -64,6 +52,12 @@ class UserContext with _$UserContext {
 String activeUserId(ActiveUserIdRef ref) {
   final userContext = ref.watch(userContextServiceProvider);
   return userContext.userAuth!.userId;
+}
+
+@riverpod
+bool hasActiveUser(HasActiveUserRef ref) {
+  final userContext = ref.watch(userContextServiceProvider);
+  return _hasActiveUser(userContext);
 }
 
 bool _hasActiveUser(UserContext userContext) {
@@ -206,16 +200,16 @@ class _UserContextInternal extends _$UserContextInternal {
     _log.info('logout: Updating user context');
     state = AsyncData(userContext.copyWith(userAuth: userAuth, error: null));
 
+    // TODO: Find another way to do this. Import Queue is (transitively?)
+    // dependent on User Context, so to keep dependencies flowing in one
+    // direction, User Context should not be calling the Import Queue. Maybe
+    // the import queue can listen listen for when user context goes from
+    // active to inactive, then clear itself.
+    //
     // Clear import queue
     _log.info('logout: Clearing import queue');
     // ignore: unused_result
     ref.read(importQueueProvider.notifier).clear();
-
-    // Reset router to prevent navigation back to Settings screen, after user
-    // logs out on that screen.
-    _log.info('logout: Resetting router');
-    // ignore: unused_result
-    ref.read(routerServiceProvider.notifier).refresh();
 
     _log.info('logout: Logging out complete');
   }

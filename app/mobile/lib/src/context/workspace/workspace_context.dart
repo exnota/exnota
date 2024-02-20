@@ -28,23 +28,37 @@ class _WorkspaceContextState extends ConsumerState<WorkspaceContext> {
   String? loadedUserId;
   final Logger _log = Logger(context: '_WorkspaceContextState');
 
-  // TODO:
   @override
-  Widget build(BuildContext context) {
-    final activeUserId = ref.watch(activeUserIdProvider);
-    if (loadedUserId == null || loadedUserId != activeUserId) {
-      setState(() {
-        loadedUserId = activeUserId;
-      });
-      // TODO: remove log
-      _log.debug('Importing blocks for user: $activeUserId');
-
+  void initState() {
+    super.initState();
+    final hasActiveUser = ref.read(hasActiveUserProvider);
+    if (hasActiveUser) {
+      final userId = ref.read(activeUserIdProvider);
+      _log.debug('Importing blocks for user: $userId');
       // Need to wrap in Future to avoid provider throwing an error that its
       // state was modified during the widget's lifecycle.
       Future(() {
         ref.read(importQueueProvider.notifier).addRequest(ImportBlocks());
       });
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(hasActiveUserProvider, (didHaveActiveUser, nowHasActiveUser) {
+      if (didHaveActiveUser == null) {
+        // Ignore initial state
+        return;
+      }
+
+      // Handle non-active to active transition. The initial state should be
+      // handled in initState.
+      if (!didHaveActiveUser && nowHasActiveUser) {
+        final userId = ref.read(activeUserIdProvider);
+        _log.debug('Importing blocks for user: $userId');
+        ref.read(importQueueProvider.notifier).addRequest(ImportBlocks());
+      }
+    });
 
     // TODO: Soon this will load the relevant workspaces that will be used to things
     // like:
