@@ -61,13 +61,10 @@ class _MyAppState extends ConsumerState<MyApp> {
     return OsContextLoader(
       child: EnvironmentContextLoader(
         child: UserContextLoader(
-          child: AppContextLoader(
-            child: Builder(builder: (context) {
-              final themeMode = ref.watch(themeModeSettingProvider);
-              final goRouter = ref.watch(routerProvider);
-
-              return WorkspaceContextLoader(
-                child: MaterialApp.router(
+          child: WorkspaceContextLoader(
+            child: AppContextLoader(
+              builder: (context, themeMode, goRouter) {
+                return MaterialApp.router(
                   // Providing a restorationScopeId allows the Navigator built by the
                   // MaterialApp to restore the navigation stack when a user leaves and
                   // returns to the app after it has been killed while running in the
@@ -99,9 +96,9 @@ class _MyAppState extends ConsumerState<MyApp> {
                   darkTheme: ThemeData.dark(useMaterial3: true),
                   themeMode: themeMode,
                   routerConfig: goRouter,
-                ),
-              );
-            }),
+                );
+              },
+            ),
           ),
         ),
       ),
