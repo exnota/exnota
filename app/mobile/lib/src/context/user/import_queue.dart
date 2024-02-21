@@ -11,39 +11,107 @@ import 'package:retry/retry.dart';
 
 part 'import_queue.g.dart';
 
-enum RequestStatus { pending, running, error }
+abstract class ImportRequest<T> {
+  Future<void> request({required PocketBase pb, required Ref ref});
+}
 
-enum RequestError { auth, network, internal, other }
+// ----------------------------------------------------------------------------
+// Public providers, where state is assumed loaded.
+// ----------------------------------------------------------------------------
 
-typedef ImportQueueStatus = ({
-  ImportRequest request,
-  RequestStatus status,
-  RequestError? error
-});
-
-class ImportQueueProcessorWrapper extends ConsumerWidget {
-  final Widget child;
-
-  const ImportQueueProcessorWrapper({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nextInQueue = ref.watch(nextInQueueProvider);
-    if (nextInQueue != null) {
-      // Need to wrap in Future to avoid provider throwing an error that its
-      // state was modified during the widget's lifecycle.
-      Future(() {
-        ref.read(queueProcessorProvider.notifier).process(nextInQueue.request);
-      });
-    }
-
-    return child;
-  }
+@riverpod
+bool importQueueErrored(ImportQueueErroredRef ref) {
+  return ref
+      .watch(_importQueueInternalProvider)
+      .any((r) => r.status == RequestStatus.error);
 }
 
 @riverpod
-class QueueProcessor extends _$QueueProcessor {
-  final _log = Logger(context: 'QueueProcessor');
+bool importQueueAuthErrored(ImportQueueAuthErroredRef ref) {
+  return ref
+      .watch(_importQueueInternalProvider)
+      .any((r) => r.error == RequestError.auth);
+}
+
+@riverpod
+class ImportQueue extends _$ImportQueue {
+  @override
+  FutureOr<void> build() {
+    // no-op
+  }
+
+  void addRequest(ImportRequest request) {
+    ref.read(_importQueueInternalProvider.notifier).addRequest(request);
+  }
+
+  void addMultipleRequests(List<ImportRequest> requests) {
+    ref
+        .read(_importQueueInternalProvider.notifier)
+        .addMultipleRequests(requests);
+  }
+
+  void retry() {
+    ref.read(_importQueueInternalProvider.notifier).retry();
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Context loader widgets
+// ----------------------------------------------------------------------------
+
+/// Utility widget that watches for the next item in the import queue and
+/// triggers processing of it.
+class ImportQueueProcessor extends ConsumerStatefulWidget {
+  final Widget child;
+
+  const ImportQueueProcessor({super.key, required this.child});
+
+  @override
+  ConsumerState<ImportQueueProcessor> createState() =>
+      _ImportQueueProcessorState();
+}
+
+class _ImportQueueProcessorState extends ConsumerState<ImportQueueProcessor> {
+  final Logger _log = Logger(context: 'ImportQueueProcessor');
+
+  @override
+  void initState() {
+    _log.debug('Initializing');
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _log.debug('Disposing');
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _log.debug('Building');
+    // This rebuilds on each new request in the queue, but does not cause the
+    // child to rebuild.
+    final nextInQueue = ref.watch(_nextInQueueProvider);
+    if (nextInQueue != null) {
+      _log.debug(
+          'Processing next request in queue of type: ${nextInQueue.request.runtimeType}');
+      // Need to wrap in Future to avoid provider throwing an error that its
+      // state was modified during the widget's lifecycle.
+      Future(() {
+        ref
+            .read(_requestProcessorProvider.notifier)
+            .process(nextInQueue.request);
+      });
+    }
+
+    return widget.child;
+  }
+}
+
+/// Provides a method for processing a request.
+@riverpod
+class _RequestProcessor extends _$RequestProcessor {
+  final _log = Logger(context: 'RequestProcessor');
 
   @override
   void build() {
@@ -51,9 +119,9 @@ class QueueProcessor extends _$QueueProcessor {
   }
 
   Future<void> process(ImportRequest request) async {
-    _log.debug('Processing request');
+    _log.debug('Processing request of type: ${request.runtimeType}');
 
-    ref.read(importQueueProvider.notifier).setStatus(
+    ref.read(_importQueueInternalProvider.notifier).setStatus(
         requestType: request.runtimeType, status: RequestStatus.running);
 
     try {
@@ -72,17 +140,17 @@ class QueueProcessor extends _$QueueProcessor {
       _log.warn('Error \'$error\' processing request: $e');
 
       if (error == PocketBaseError.auth) {
-        ref.read(importQueueProvider.notifier).setStatus(
+        ref.read(_importQueueInternalProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.auth);
       } else if (error == PocketBaseError.network) {
-        ref.read(importQueueProvider.notifier).setStatus(
+        ref.read(_importQueueInternalProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.network);
       } else {
-        ref.read(importQueueProvider.notifier).setStatus(
+        ref.read(_importQueueInternalProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.other);
@@ -92,7 +160,7 @@ class QueueProcessor extends _$QueueProcessor {
       // This path isn't expected for request errors, as PocketBase wraps
       // exceptions. It will likely be issues in this codebase.
       _log.error('Error processing request: $e');
-      ref.read(importQueueProvider.notifier).setStatus(
+      ref.read(_importQueueInternalProvider.notifier).setStatus(
           requestType: request.runtimeType,
           status: RequestStatus.error,
           error: RequestError.internal);
@@ -100,16 +168,32 @@ class QueueProcessor extends _$QueueProcessor {
     }
 
     _log.debug('Request complete, removing from queue');
-    ref.read(importQueueProvider.notifier).removeRequest(request.runtimeType);
+    ref
+        .read(_importQueueInternalProvider.notifier)
+        .removeRequest(request.runtimeType);
   }
 }
+
+// ----------------------------------------------------------------------------
+// Private providers.
+// ----------------------------------------------------------------------------
+
+enum RequestStatus { pending, running, error }
+
+enum RequestError { auth, network, internal, other }
+
+typedef RequestAndStatus = ({
+  ImportRequest request,
+  RequestStatus status,
+  RequestError? error
+});
 
 /// Returns the next request that is ready for processing, or none if either:
 /// - There are no requests in the queue
 /// - The first request is not pending (e.g. it's already running or errored)
 @riverpod
-ImportQueueStatus? nextInQueue(NextInQueueRef ref) {
-  final queue = ref.watch(importQueueProvider);
+RequestAndStatus? _nextInQueue(_NextInQueueRef ref) {
+  final queue = ref.watch(_importQueueInternalProvider);
   final first = queue.firstOrNull;
   if (first != null && first.status == RequestStatus.pending) {
     return queue.first;
@@ -117,27 +201,34 @@ ImportQueueStatus? nextInQueue(NextInQueueRef ref) {
   return null;
 }
 
+/// The import request queue, with methods for updating it.
 @riverpod
-bool importQueueErrored(ImportQueueErroredRef ref) {
-  return ref
-      .watch(importQueueProvider)
-      .any((r) => r.status == RequestStatus.error);
-}
-
-@riverpod
-bool importQueueAuthErrored(ImportQueueAuthErroredRef ref) {
-  return ref
-      .watch(importQueueProvider)
-      .any((r) => r.error == RequestError.auth);
-}
-
-@riverpod
-class ImportQueue extends _$ImportQueue {
-  final _log = Logger(context: 'ImportQueue');
+class _ImportQueueInternal extends _$ImportQueueInternal {
+  final _log = Logger(context: 'ImportQueueInternal');
 
   @override
-  List<ImportQueueStatus> build() {
+  List<RequestAndStatus> build() {
+    _log.debug('Building import queue');
+    ref.listen(activeUserIdProvider, (oldUserId, newUserId) {
+      _log.debug('Active user changed, clearing queue');
+      ref.invalidateSelf();
+    });
     return [];
+  }
+
+  void addRequest(ImportRequest request) {
+    _log.debug("Adding request: $request");
+    // Avoid duplicates: Check if a request of the same type is already in progress
+    if (state.any((r) => r.request.runtimeType == request.runtimeType)) {
+      _log.debug(
+          "Skipping request of type ${request.runtimeType} which is already in queue.");
+      return;
+    }
+
+    state = [
+      ...state,
+      (request: request, status: RequestStatus.pending, error: null)
+    ];
   }
 
   // TODO: Either remove this or de-dupe requests of the same type
@@ -147,20 +238,6 @@ class ImportQueue extends _$ImportQueue {
       ...state,
       ...requests
           .map((r) => (request: r, status: RequestStatus.pending, error: null))
-    ];
-  }
-
-  void addRequest(ImportRequest request) {
-    _log.debug("Adding request: $request");
-    // Avoid duplicates: Check if a request of the same type is already in progress
-    if (state.any((r) => r.request.runtimeType == request.runtimeType)) {
-      print("Request of type ${request.runtimeType} is already in queue.");
-      return;
-    }
-
-    state = [
-      ...state,
-      (request: request, status: RequestStatus.pending, error: null)
     ];
   }
 
@@ -188,48 +265,5 @@ class ImportQueue extends _$ImportQueue {
       }
       return r;
     }).toList();
-  }
-
-  void clear() {
-    _log.debug("Clearing queue");
-    ref.invalidateSelf();
-  }
-}
-
-abstract class ImportRequest<T> {
-  Future<void> request({required PocketBase pb, required Ref ref});
-}
-
-class ListNotesRequestOne extends ImportRequest<List<RecordModel>> {
-  final _log = Logger(context: 'ListNotesRequestOne');
-
-  @override
-  Future<void> request({required PocketBase pb, required Ref ref}) async {
-    _log.debug('Requesting list of notes');
-
-    // wait 5 seconds
-    await Future.delayed(const Duration(seconds: 5));
-
-    final result = await pb.collection('block').getFullList(sort: '-created');
-    _log.debug('Listed ${result.length} notes');
-
-    _log.debug('Request complete');
-  }
-}
-
-class ListNotesRequestTwo extends ImportRequest<List<RecordModel>> {
-  final _log = Logger(context: 'ListNotesRequestTwo');
-
-  @override
-  Future<void> request({required PocketBase pb, required Ref ref}) async {
-    _log.debug('Requesting list of notes');
-
-    // wait 5 seconds
-    await Future.delayed(const Duration(seconds: 5));
-
-    final result = await pb.collection('block').getFullList(sort: '-created');
-    _log.debug('Listed ${result.length} notes');
-
-    _log.debug('Request complete');
   }
 }

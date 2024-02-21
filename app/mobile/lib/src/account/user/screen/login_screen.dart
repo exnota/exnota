@@ -32,7 +32,7 @@ class LoginScreenController extends _$LoginScreenController {
     _log.debug('Logging in with Google');
     state = state.copyWith(loggingIn: true);
     await ref.read(userContextServiceProvider.notifier).loginGoogle();
-    ref.read(routerServiceProvider.notifier).go(Screen.notes);
+    ref.read(routerProvider.notifier).go(Screen.notes);
     state = state.copyWith(loggingIn: false);
   }
 }

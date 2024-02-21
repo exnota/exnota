@@ -3,12 +3,10 @@ import 'package:exnota/src/account/user/repo/user_repo.dart';
 import 'package:exnota/src/account/user/user.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
 import 'package:exnota/src/context/environment/uri.dart';
-import 'package:exnota/src/context/user/import_queue.dart';
+import 'package:exnota/src/context/lib/provider.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:pocketbase/pocketbase.dart';
@@ -17,37 +15,10 @@ import 'package:url_launcher/url_launcher.dart';
 part 'user_context.g.dart';
 part 'user_context.freezed.dart';
 
-class UserContextLoader extends ConsumerWidget {
-  final Widget child;
+// ----------------------------------------------------------------------------
+// Public providers, where state is assumed loaded.
+// ----------------------------------------------------------------------------
 
-  const UserContextLoader({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final userContext = ref.watch(_userContextInternalProvider);
-
-    // Directionality is needed because any content rendered here will not be
-    // within a MaterialApp instance and throw an error.
-    return userContext.when(
-      loading: () => const Directionality(
-          textDirection: TextDirection.ltr, child: CircularProgressIndicator()),
-      error: (error, _) => Directionality(
-          textDirection: TextDirection.ltr, child: Text('Error: $error')),
-      data: (userContext) => child,
-    );
-  }
-}
-
-@freezed
-class UserContext with _$UserContext {
-  const factory UserContext({
-    required PocketBase pocketBase,
-    UserAuth? userAuth,
-    String? error,
-  }) = _UserContext;
-}
-
-/// Assumes there's an active user. Will throw if not.
 @riverpod
 String activeUserId(ActiveUserIdRef ref) {
   final userContext = ref.watch(userContextServiceProvider);
@@ -78,6 +49,46 @@ class UserContextService extends _$UserContextService {
   Future<void> logout() async {
     return await ref.read(_userContextInternalProvider.notifier).logout();
   }
+}
+
+// ----------------------------------------------------------------------------
+// Context loader providers
+// ----------------------------------------------------------------------------
+
+/// Returns the parent provider's loading status and won't refresh when the
+/// parents state value changes, so can be used as as part of a guard to ensure
+/// the parent provider is loaded.
+@riverpod
+ProviderLoadingStatus userContextLoadingStatus(
+    UserContextLoadingStatusRef ref) {
+  final userContext = ref.watch(_userContextInternalProvider);
+  return userContext.maybeWhen(
+    data: (_) => ProviderLoadingStatus.loaded,
+    error: (_, __) => ProviderLoadingStatus.error,
+    orElse: () => ProviderLoadingStatus.loading,
+  );
+}
+
+@riverpod
+String? userContextLoadingError(UserContextLoadingErrorRef ref) {
+  final userContext = ref.watch(_userContextInternalProvider);
+  return switch (userContext) {
+    AsyncError(:final error) => error.toString(),
+    _ => null,
+  };
+}
+
+// ----------------------------------------------------------------------------
+// Private providers.
+// ----------------------------------------------------------------------------
+
+@freezed
+class UserContext with _$UserContext {
+  const factory UserContext({
+    required PocketBase pocketBase,
+    UserAuth? userAuth,
+    String? error,
+  }) = _UserContext;
 }
 
 @Riverpod()
@@ -199,17 +210,6 @@ class _UserContextInternal extends _$UserContextInternal {
 
     _log.info('logout: Updating user context');
     state = AsyncData(userContext.copyWith(userAuth: userAuth, error: null));
-
-    // TODO: Find another way to do this. Import Queue is (transitively?)
-    // dependent on User Context, so to keep dependencies flowing in one
-    // direction, User Context should not be calling the Import Queue. Maybe
-    // the import queue can listen listen for when user context goes from
-    // active to inactive, then clear itself.
-    //
-    // Clear import queue
-    _log.info('logout: Clearing import queue');
-    // ignore: unused_result
-    ref.read(importQueueProvider.notifier).clear();
 
     _log.info('logout: Logging out complete');
   }
