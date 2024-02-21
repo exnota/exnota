@@ -7,12 +7,20 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'pocketbase.g.dart';
 
+// ----------------------------------------------------------------------------
+// Public providers, where state is assumed loaded.
+// ----------------------------------------------------------------------------
+
 @riverpod
 PocketBase pocketBase(PocketBaseRef ref) {
-  Logger(context: 'pocketBaseProvider').info('Building pocketBaseProvider');
+  Logger(context: 'pocketBaseProvider').info('Building');
   final userContext = ref.watch(userContextServiceProvider);
   return userContext.pocketBase;
 }
+
+// ----------------------------------------------------------------------------
+// Helpers
+// ----------------------------------------------------------------------------
 
 typedef PocketBaseException = ClientException;
 

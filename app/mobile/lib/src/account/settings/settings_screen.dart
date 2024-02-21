@@ -16,7 +16,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeServiceProvider);
+    final themeMode = ref.watch(themeModeSettingProvider);
     final environment = ref.watch(environmentServiceProvider);
 
     return Scaffold(
@@ -96,7 +96,7 @@ class ThemeModeBottomSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeServiceProvider);
+    final themeMode = ref.watch(themeModeSettingProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -109,7 +109,7 @@ class ThemeModeBottomSheet extends ConsumerWidget {
           onChanged: (newThemeMode) async {
             // Navigator.pop(context);
             await ref
-                .read(themeModeServiceProvider.notifier)
+                .read(themeModeSettingProvider.notifier)
                 .setThemeMode(newThemeMode);
           },
         ),
@@ -120,7 +120,7 @@ class ThemeModeBottomSheet extends ConsumerWidget {
           onChanged: (newThemeMode) async {
             // Navigator.pop(context);
             await ref
-                .read(themeModeServiceProvider.notifier)
+                .read(themeModeSettingProvider.notifier)
                 .setThemeMode(newThemeMode);
           },
         ),
@@ -132,7 +132,7 @@ class ThemeModeBottomSheet extends ConsumerWidget {
           onChanged: (newThemeMode) async {
             // Navigator.pop(context);
             await ref
-                .read(themeModeServiceProvider.notifier)
+                .read(themeModeSettingProvider.notifier)
                 .setThemeMode(newThemeMode);
           },
         ),

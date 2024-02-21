@@ -9,32 +9,107 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'router.g.dart';
 
-enum Screen {
-  notes,
-  settings,
-  login,
-}
+// ----------------------------------------------------------------------------
+// Public providers, where state is assumed loaded.
+// ----------------------------------------------------------------------------
 
-const routeNotes = '/notes';
-const routeSettings = '/settings';
-const routeLogin = '/login';
+/// GoRouter instance.
+///
+/// This should not be refreshed except in cases where its okay that the
+/// navigation location and history is lost, e.g. when the user logs out.
+///
+/// This took a while to get right, so here are some useful links:
+///
+/// - Official GoRouter example with deep link redirect support: https://docs.page/csells/go_router/redirection#example-redirection-and-query-parameters
+/// - Riverpod + GoRouter examples:
+///   - https://github.com/flutter/flutter/issues/112915
+///   - https://github.com/lucavenir/go_router_riverpod/blob/master/example/lib/router/router.dart
+///   - https://github.com/rrousselGit/riverpod/discussions/1357#discussioncomment-7214606
+@riverpod
+class Router extends _$Router {
+  final Logger _log = Logger(context: 'Router');
 
-String to(Screen route) {
-  switch (route) {
-    case Screen.notes:
-      return routeNotes;
-    case Screen.settings:
-      return routeSettings;
-    case Screen.login:
-      return routeLogin;
+  @override
+  GoRouter build() {
+    _log.debug('Building');
+    final initialHasActiveUser = ref.read(hasActiveUserProvider);
+    final loginStatus = RouterLoginStatus(active: initialHasActiveUser);
+    ref.listen(hasActiveUserProvider, (bool? oldActive, bool newActive) {
+      _log.debug('Updating login active state to: $newActive');
+      loginStatus.active = newActive;
+    });
+
+    final router = GoRouter(
+        initialLocation: _routeNotes,
+        navigatorKey: navigatorKey,
+        routes: [
+          GoRoute(
+            path: _routeNotes,
+            builder: (context, state) => const BlockListScreen(),
+          ),
+          GoRoute(
+            path: _routeSettings,
+            builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: _routeLogin,
+            builder: (context, state) => const LoginScreen(),
+          ),
+        ],
+        // Ensure the router is updated when login status changes.
+        refreshListenable: loginStatus,
+        debugLogDiagnostics: true,
+        redirect: (buildContext, state) async {
+          _log.debug('Redirecting location: ${state.matchedLocation}');
+
+          if (!loginStatus.active) {
+            return _routeLogin;
+          }
+
+          if (state.matchedLocation == '/') {
+            return _routeNotes;
+          }
+          return null;
+        });
+
+    ref.onDispose(() {
+      _log.debug('Disposing');
+      loginStatus.dispose();
+      router.dispose();
+    });
+
+    return router;
+  }
+
+  /// Navigates to the given screen. To be used when no BuildContext is
+  /// available.
+  ///
+  /// Recommended by https://codewithandrea.com/articles/flutter-navigate-without-context-gorouter-riverpod/
+  ///
+  /// Apparently an alternate approach is to use NavigatorKey. See https://stackoverflow.com/a/77241743 and https://stackoverflow.com/a/73892010
+  void go(Screen screen) {
+    _log.debug('Navigating to screen: $screen');
+    state.go(to(screen));
+  }
+
+  /// Pushes the given screen onto the stack. To be used when no BuildContext is
+  /// available.
+  ///
+  /// Recommended by https://codewithandrea.com/articles/flutter-navigate-without-context-gorouter-riverpod/
+  ///
+  /// Apparently an alternate approach is to use NavigatorKey. See https://stackoverflow.com/a/77241743 and https://stackoverflow.com/a/73892010
+  void push(Screen screen) {
+    _log.debug('Pushing screen: $screen');
+    state.push(to(screen));
   }
 }
 
-class LoginInfo extends ChangeNotifier {
+/// Login status notifier to pass to GoRouter instance.
+class RouterLoginStatus extends ChangeNotifier {
   bool _active = false;
   bool get active => _active;
 
-  LoginInfo({bool active = false}) : _active = active;
+  RouterLoginStatus({bool active = false}) : _active = active;
 
   set active(bool value) {
     _active = value;
@@ -45,71 +120,30 @@ class LoginInfo extends ChangeNotifier {
 // This is super important - otherwise, we would throw away the whole widget tree when the provider is updated.
 final navigatorKey = GlobalKey<NavigatorState>();
 
-// Here are some useful links, because I had some problems getting this working:
-//
-// Source: https://github.com/flutter/flutter/issues/112915
-// Another reference repo: https://github.com/lucavenir/go_router_riverpod/blob/master/example/lib/router/router.dart
-// GoRouter with Riverpod: https://github.com/rrousselGit/riverpod/discussions/1357#discussioncomment-7214606
-// Official example with deep link redirect support: https://docs.page/csells/go_router/redirection#example-redirection-and-query-parameters
-@riverpod
-class RouterService extends _$RouterService {
-  final Logger _log = Logger(context: 'RouterService');
+// ----------------------------------------------------------------------------
+// Public helpers
+// ----------------------------------------------------------------------------
 
-  @override
-  GoRouter build() {
-    final initialHasActiveUser = ref.read(hasActiveUserProvider);
-    final loginInfo = LoginInfo(active: initialHasActiveUser);
-    ref.listen(hasActiveUserProvider, (bool? oldActive, bool newActive) {
-      loginInfo.active = newActive;
-    });
+enum Screen {
+  notes,
+  settings,
+  login,
+}
 
-    _log.debug('Building router');
-    final router = GoRouter(
-        initialLocation: routeNotes,
-        navigatorKey: navigatorKey,
-        routes: [
-          GoRoute(
-            path: routeNotes,
-            builder: (context, state) => const BlockListScreen(),
-          ),
-          GoRoute(
-            path: routeSettings,
-            builder: (context, state) => const SettingsScreen(),
-          ),
-          GoRoute(
-            path: routeLogin,
-            builder: (context, state) => const LoginScreen(),
-          ),
-        ],
-        // Ensure the router is updated when login state changes.
-        refreshListenable: loginInfo,
-        debugLogDiagnostics: true,
-        redirect: (buildContext, state) async {
-          _log.debug('Redirecting location: ${state.matchedLocation}');
+const _routeNotes = '/notes';
+const _routeSettings = '/settings';
+const _routeLogin = '/login';
 
-          if (!loginInfo.active) {
-            return routeLogin;
-          }
-
-          if (state.matchedLocation == '/') {
-            return routeNotes;
-          }
-          return null;
-        });
-
-    ref.onDispose(() {
-      loginInfo.dispose();
-      router.dispose();
-    });
-
-    return router;
-  }
-
-  void go(Screen screen) {
-    state.go(to(screen));
-  }
-
-  void push(Screen screen) {
-    state.push(to(screen));
+/// BuildContext helper, for getting a route string.
+///
+/// E.g. `context.push(to(Screen.settings));`
+String to(Screen route) {
+  switch (route) {
+    case Screen.notes:
+      return _routeNotes;
+    case Screen.settings:
+      return _routeSettings;
+    case Screen.login:
+      return _routeLogin;
   }
 }

@@ -1,12 +1,13 @@
 import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/import_queue.dart';
 import 'package:exnota/src/context/user/user_context.dart';
-import 'package:exnota/src/lib/data/sync/service/block_importer.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exnota/src/note/service/block_lister.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pocketbase/pocketbase.dart';
 
 class BlockListScreen extends ConsumerStatefulWidget {
   const BlockListScreen({super.key});
@@ -16,36 +17,18 @@ class BlockListScreen extends ConsumerStatefulWidget {
 }
 
 class _BlockListScreenState extends ConsumerState<BlockListScreen> {
-  BlockImporter? _blockImporter;
+  final Logger _log = Logger(context: 'BlockListScreen');
 
   // init
   @override
   void initState() {
     super.initState();
-
-    // When implementing, I got an error reading from ref directly inside
-    // initState. Doing it within Future.delayed is a workaround.
-    //
-    // A better solution may be to perform this in build().
-    Future.delayed(Duration.zero, () async {
-      final blockImporter = ref.read(blockImporterProvider);
-      await blockImporter.subscribe();
-
-      // Check if mounted to avoid a race condition when logging out that
-      // results in this block being executed after the widget is disposed.
-      if (mounted) {
-        // Call setState because, even though we're inside initState, this is
-        // being delayed. Assuming that's appropriate.
-        setState(() {
-          _blockImporter = blockImporter;
-        });
-      }
-    });
+    _log.debug('Initializing');
   }
 
   @override
   void dispose() {
-    _blockImporter?.unsubscribe();
+    _log.debug('Disposing');
     super.dispose();
   }
 
@@ -191,5 +174,39 @@ class BlockList extends ConsumerWidget {
         );
       },
     );
+  }
+}
+
+class ListNotesRequestOne extends ImportRequest<List<RecordModel>> {
+  final _log = Logger(context: 'ListNotesRequestOne');
+
+  @override
+  Future<void> request({required PocketBase pb, required Ref ref}) async {
+    _log.debug('Requesting list of notes');
+
+    // wait 5 seconds
+    await Future.delayed(const Duration(seconds: 5));
+
+    final result = await pb.collection('block').getFullList(sort: '-created');
+    _log.debug('Listed ${result.length} notes');
+
+    _log.debug('Request complete');
+  }
+}
+
+class ListNotesRequestTwo extends ImportRequest<List<RecordModel>> {
+  final _log = Logger(context: 'ListNotesRequestTwo');
+
+  @override
+  Future<void> request({required PocketBase pb, required Ref ref}) async {
+    _log.debug('Requesting list of notes');
+
+    // wait 5 seconds
+    await Future.delayed(const Duration(seconds: 5));
+
+    final result = await pb.collection('block').getFullList(sort: '-created');
+    _log.debug('Listed ${result.length} notes');
+
+    _log.debug('Request complete');
   }
 }
