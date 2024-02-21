@@ -14,13 +14,23 @@ Best for: Providers returning a simple object with no side-effects.
 
 Example: See the database provider in `lib/src/lib/data/drift/database.dart`.
 
+Caveat: I don't think this works with class-based providers that have methods.
+
 ### 2. Use a wrapper component
 
 Best for: Providers that have side effects.
 
-Caveat: Must still use a `Future` return type on the provider, which returns an `AsyncValue` type that needs loading/error states handled.
+Example: See environment provider and context loader in `lib/src/context/environment`.
 
-Caveat workaround: Use `.requireValue` on the returned `AsyncValue` skip the loading/error states and get the value. This will throw if the data isn't correctly eagerly initialized.
+Futher information: [State context layers](architecture.md#state-context-layers).
+
+Caveat:
+
+- Must still use a `Future` return type on the provider, which returns an `AsyncValue` type that needs loading/error states handled.
+
+Workaround:
+
+- Use `.requireValue` on the returned `AsyncValue` skip the loading/error states and get the value. This will throw if the data isn't correctly eagerly initialized.
 
 ### Other: ProviderContainer
 
