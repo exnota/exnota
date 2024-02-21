@@ -1,39 +1,22 @@
 import 'dart:convert';
 
+import 'package:exnota/src/context/lib/provider.dart';
 import 'package:exnota/src/lib/data/secure/secure_storage.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'environment.g.dart';
 part 'environment.freezed.dart';
 
-class EnvironmentContextLoader extends ConsumerWidget {
-  const EnvironmentContextLoader({super.key, required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final environment = ref.watch(_environmentInternalProvider);
-
-    // Directionality is needed because any content rendered here will not be
-    // within a MaterialApp instance and throw an error.
-    return environment.when(
-      loading: () {
-        return const Directionality(
-            textDirection: TextDirection.ltr,
-            child: CircularProgressIndicator());
-      },
-      error: (error, _) => Directionality(
-          textDirection: TextDirection.ltr, child: Text('Error: $error')),
-      data: (userContext) {
-        return child;
-      },
-    );
-  }
+enum Environment {
+  local,
+  prod,
 }
+
+// ----------------------------------------------------------------------------
+// Public providers, where state is assumed loaded.
+// ----------------------------------------------------------------------------
 
 @riverpod
 class EnvironmentService extends _$EnvironmentService {
@@ -48,6 +31,28 @@ class EnvironmentService extends _$EnvironmentService {
         .setEnvironment(environment);
   }
 }
+
+// ----------------------------------------------------------------------------
+// Context loader providers
+// ----------------------------------------------------------------------------
+
+/// Returns the parent provider's loading status and won't refresh when the
+/// parents state value changes, so can be used as as part of a guard to ensure
+/// the parent provider is loaded.
+@riverpod
+ProviderLoadingStatus environmentLoadingStatus(
+    EnvironmentLoadingStatusRef ref) {
+  final userContext = ref.watch(_environmentInternalProvider);
+  return userContext.maybeWhen(
+    data: (_) => ProviderLoadingStatus.loaded,
+    error: (_, __) => ProviderLoadingStatus.error,
+    orElse: () => ProviderLoadingStatus.loading,
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Private providers.
+// ----------------------------------------------------------------------------
 
 @Riverpod(keepAlive: true)
 class _EnvironmentInternal extends _$EnvironmentInternal {
@@ -84,11 +89,6 @@ class _EnvironmentInternal extends _$EnvironmentInternal {
         value:
             jsonEncode(EnvironmentSettings(environment: environment).toJson()));
   }
-}
-
-enum Environment {
-  local,
-  prod,
 }
 
 @freezed

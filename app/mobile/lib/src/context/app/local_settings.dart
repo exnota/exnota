@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:exnota/src/context/lib/provider.dart';
 import 'package:exnota/src/lib/data/secure/secure_storage.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
@@ -9,29 +10,64 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'local_settings.g.dart';
 part 'local_settings.freezed.dart';
 
+// ----------------------------------------------------------------------------
+// Public providers, where state is assumed loaded.
+// ----------------------------------------------------------------------------
+
+/// Provides currently selected theme mode.
+///
+/// Can't be named ThemeMode due to collisions with the flutter material enum.
+/// Even with an import alias in this file, the generated file ends up with a
+/// collision and errors.
 @riverpod
-class ThemeModeService extends _$ThemeModeService {
+class ThemeModeSetting extends _$ThemeModeSetting {
   @override
   ThemeMode build() {
-    return ref.watch(localSettingsInternalProvider).requireValue.themeMode;
+    return ref.watch(_localSettingsInternalProvider).requireValue.themeMode;
   }
 
   Future<void> setThemeMode(ThemeMode? themeMode) async {
     return await ref
-        .read(localSettingsInternalProvider.notifier)
+        .read(_localSettingsInternalProvider.notifier)
         .setThemeMode(themeMode);
   }
 }
 
-// Important that changing this state does not cause a rebuild of the router.
-// Otherwise, changing theme mode results in the user losing their place.
+// ----------------------------------------------------------------------------
+// Context loader providers
+// ----------------------------------------------------------------------------
+
+/// Returns the parent provider's loading status and won't refresh when the
+/// parents state value changes, so can be used as as part of a guard to ensure
+/// the parent provider is loaded.
+@riverpod
+ProviderLoadingStatus localSettingsLoadingStatus(
+    LocalSettingsLoadingStatusRef ref) {
+  final userContext = ref.watch(_localSettingsInternalProvider);
+  return userContext.maybeWhen(
+    data: (_) => ProviderLoadingStatus.loaded,
+    error: (_, __) => ProviderLoadingStatus.error,
+    orElse: () => ProviderLoadingStatus.loading,
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Private providers.
+// ----------------------------------------------------------------------------
+
+/// Local app settings.
+///
+/// I.e. settings persisted only on the device, not to the server.
+///
+/// Important that changing this state does not cause a rebuild of the router.
+/// Otherwise, changing theme mode results in the user losing their place.
 @Riverpod(keepAlive: true)
-class LocalSettingsInternal extends _$LocalSettingsInternal {
+class _LocalSettingsInternal extends _$LocalSettingsInternal {
   final Logger _log = Logger(context: 'LocalSettingsInternal');
 
   @override
   Future<LocalSettings> build() async {
-    _log.info('build: Building local settings');
+    _log.info('Building');
     final storage = SecureStorage();
     final settingsJson =
         await storage.read(key: SecureStorageKey.localSettings);

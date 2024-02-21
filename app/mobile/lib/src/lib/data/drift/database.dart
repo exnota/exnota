@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:exnota/src/lib/data/secure/secure_storage.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/repo/drift/block_table.dart';
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 import 'dart:io';
@@ -93,13 +94,18 @@ bool _debugCheckHasCipher(Database database) {
   return database.select('PRAGMA cipher_version;').isNotEmpty;
 }
 
+// TODO: #45 Risk: If passphrase is deleted, non-synced data will be lost.
 Future<String> getPassphrase() async {
+  final log = Logger(context: 'DatabasePassphrase');
   final storage = SecureStorage();
   var passphrase = await storage.read(key: SecureStorageKey.databasePassphrase);
   if (passphrase == null) {
+    log.debug('Generating new passphrase');
     passphrase = DatabasePassphrase.generate();
     await storage.write(
         key: SecureStorageKey.databasePassphrase, value: passphrase);
+  } else {
+    log.debug('Using existing passphrase');
   }
   return passphrase;
 }
