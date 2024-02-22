@@ -25,6 +25,9 @@ part 'user_context.freezed.dart';
 @riverpod
 String activeUserIdOrThrow(ActiveUserIdOrThrowRef ref) {
   final userContext = ref.watch(userContextServiceProvider);
+  if (!_hasActiveUser(userContext)) {
+    throw StateError('No active user');
+  }
   return userContext.userAuth!.userId;
 }
 
@@ -35,7 +38,10 @@ String activeUserIdOrThrow(ActiveUserIdOrThrowRef ref) {
 @riverpod
 String? activeUserId(ActiveUserIdRef ref) {
   final userContext = ref.watch(userContextServiceProvider);
-  return userContext.userAuth?.userId;
+  if (!_hasActiveUser(userContext)) {
+    return null;
+  }
+  return userContext.userAuth!.userId;
 }
 
 @riverpod
