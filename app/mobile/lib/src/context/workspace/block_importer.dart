@@ -54,7 +54,7 @@ class _BlockImporterState extends ConsumerState<BlockImporter> {
     // Import blocks when the active user changes.
     ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) {
       _log.debug(
-          'Active user ID changed from $oldActiveUserId to $newActiveUserId');
+          'Detected active user ID change from $oldActiveUserId to $newActiveUserId');
       // When a user logs in, import blocks.
       if (oldActiveUserId == null && newActiveUserId != null) {
         _log.debug('Adding request');
