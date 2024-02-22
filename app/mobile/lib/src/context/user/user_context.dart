@@ -19,10 +19,23 @@ part 'user_context.freezed.dart';
 // Public providers, where state is assumed loaded.
 // ----------------------------------------------------------------------------
 
+/// Returns user ID or throws if no active user.
+///
+/// Intended for screens that should not be reachable without an active user.
 @riverpod
-String activeUserId(ActiveUserIdRef ref) {
+String activeUserIdOrThrow(ActiveUserIdOrThrowRef ref) {
   final userContext = ref.watch(userContextServiceProvider);
   return userContext.userAuth!.userId;
+}
+
+/// Returns ID of active user or null if no active user.
+///
+/// Intended for contexts or screens where there may be no active user (e.g.
+/// login screen).
+@riverpod
+String? activeUserId(ActiveUserIdRef ref) {
+  final userContext = ref.watch(userContextServiceProvider);
+  return userContext.userAuth?.userId;
 }
 
 @riverpod
@@ -93,7 +106,7 @@ class UserContext with _$UserContext {
 
 @Riverpod()
 class _UserContextInternal extends _$UserContextInternal {
-  final Logger _log = Logger(context: '_UserContextInternal');
+  final Logger _log = Logger(context: 'UserContextInternal');
 
   @override
   Future<UserContext> build() async {

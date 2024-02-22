@@ -29,10 +29,9 @@ class _BlockImporterState extends ConsumerState<BlockImporter> {
     super.initState();
     _log.debug('Initializing');
     // TODO: #40 Load based on workspaces (1-n), not users.
-    final hasActiveUser = ref.read(hasActiveUserProvider);
-    if (hasActiveUser) {
-      final userId = ref.read(activeUserIdProvider);
-      _log.debug('Importing blocks for user: $userId');
+    final activeUserId = ref.read(activeUserIdProvider);
+    if (activeUserId != null) {
+      _log.debug('Importing blocks for user: $activeUserId');
       // Need to wrap in Future to avoid provider throwing an error that its
       // state was modified during the widget's lifecycle.
       Future(() {
@@ -51,24 +50,19 @@ class _BlockImporterState extends ConsumerState<BlockImporter> {
 
   @override
   Widget build(BuildContext context) {
+    _log.debug('Building');
     // Import blocks when the active user changes.
-    ref.listen(hasActiveUserProvider, (didHaveActiveUser, nowHasActiveUser) {
-      if (didHaveActiveUser == null) {
-        // Initial import handled in initState
-        _log.debug('Skipping import on initial load within ref.listen');
-        return;
-      }
-
-      // Handle non-active to active transition.
-      if (!didHaveActiveUser && nowHasActiveUser) {
-        final userId = ref.read(activeUserIdProvider);
-        _log.debug('Importing blocks for user: $userId');
+    ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) {
+      _log.debug(
+          'Active user ID changed from $oldActiveUserId to $newActiveUserId');
+      // When a user logs in, import blocks.
+      if (oldActiveUserId == null && newActiveUserId != null) {
+        _log.debug('Adding request');
         ref
             .read(importQueueProvider.notifier)
             .addRequest(ImportBlocksRequest());
       } else {
-        _log.debug(
-            'Skipping import where active user goes from $didHaveActiveUser to $nowHasActiveUser');
+        _log.debug('Skip adding request');
       }
     });
 
@@ -97,7 +91,7 @@ class _BlockImporterState extends ConsumerState<BlockImporter> {
 }
 
 class ImportBlocksRequest extends ImportRequest<List<RecordModel>> {
-  final _log = Logger(context: 'ImportBlocks');
+  final _log = Logger(context: 'ImportBlocksRequest');
 
   @override
   Future<void> request({required PocketBase pb, required Ref ref}) async {

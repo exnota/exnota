@@ -15,7 +15,7 @@ UserAuthRepo userAuthRepo(UserAuthRepoRef ref) {
 
 class UserAuthRepo {
   final AppDatabase db;
-  final Logger logger = Logger();
+  final Logger _log = Logger(context: 'UserAuthRepo');
 
   UserAuthRepo(this.db);
 
@@ -32,7 +32,7 @@ class UserAuthRepo {
   }
 
   Future<void> upsertAndSetOthersInactive(UserAuth userAuth) async {
-    logger.info('Upserting user auth and setting others inactive');
+    _log.info('Upserting user auth and setting others inactive');
     final repo = UserAuthRepoMapper.toRepo(userAuth);
 
     await db.transaction(() async {
@@ -45,7 +45,7 @@ class UserAuthRepo {
   }
 
   Future<UserAuth> logoutActive({required DateTime updated}) async {
-    logger.info('Logging out active user');
+    _log.info('Logging out active user');
     return await db.transaction(() async {
       final active = await (db.select(db.userAuthTable)
             ..where((tbl) => tbl.active.equals(true)))
@@ -62,7 +62,7 @@ class UserAuthRepo {
           updated: Value(updated),
         ));
       } catch (e) {
-        logger.error('Error logging out active user');
+        _log.error('Error logging out active user');
       }
 
       return await (db.select(db.userAuthTable)

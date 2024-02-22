@@ -210,6 +210,11 @@ class _ImportQueueInternal extends _$ImportQueueInternal {
   List<RequestAndStatus> build() {
     _log.debug('Building import queue');
     ref.listen(activeUserIdProvider, (oldUserId, newUserId) {
+      // Clear import queue any time the active user changes, including from no
+      // active user to an active user, and vice versa.
+      //
+      // Assumes that this listener will be called before any new requests for
+      // the new user are added to the queue (e.g. in block_importer.dart).
       _log.debug('Active user changed, clearing queue');
       ref.invalidateSelf();
     });
