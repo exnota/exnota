@@ -128,28 +128,38 @@ class _RequestProcessor extends _$RequestProcessor {
       await retry(
         () => request.request(
             pb: ref.read(userContextServiceProvider).pocketBase, ref: ref),
-        retryIf: (e) =>
-            // Retry request-related exceptions. Pocketbase wraps exceptions
-            // like SocketException in ClientException.
-            e is ClientException,
+        retryIf: (e) {
+          if (e is! ClientException) {
+            _log.debug('Skipping retry of unexpected error: $e');
+            return false;
+          }
+          if (!ref.read(hasActiveUserProvider)) {
+            _log.debug('Skipping retry due to no active user');
+            return false;
+          }
+          return true;
+        },
         onRetry: (e) => _log.debug('Retrying request that threw: $e'),
-        maxAttempts: 3,
+        maxAttempts: 5,
       );
     } on PocketBaseException catch (e) {
       final error = getPocketBaseError(e);
-      _log.warn('Error \'$error\' processing request: $e');
+      _log.debug('Error \'$error\' processing request: $e');
 
       if (error == PocketBaseError.auth) {
+        _log.debug('Setting status to auth error');
         ref.read(_importQueueInternalProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.auth);
       } else if (error == PocketBaseError.network) {
+        _log.debug('Setting status to network error');
         ref.read(_importQueueInternalProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.network);
       } else {
+        _log.debug('Setting status to other error');
         ref.read(_importQueueInternalProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
@@ -254,26 +264,41 @@ class _ImportQueueInternal extends _$ImportQueueInternal {
 
   void removeRequest(Type requestType) {
     _log.debug("Removing request: $requestType");
-    state = state.where((r) => r.request.runtimeType != requestType).toList();
+    final newState =
+        state.where((r) => r.request.runtimeType != requestType).toList();
+
+    final oldCount = state.length;
+    final newCount = newState.length;
+    _log.debug("Removing ${oldCount - newCount} requests");
+
+    state = newState;
   }
 
   void retry() {
     _log.debug("Retrying all errored requests");
-    state = state
-        .map((r) =>
-            (request: r.request, status: RequestStatus.pending, error: null))
-        .toList();
+    state = state.map((r) {
+      if (r.status == RequestStatus.pending) {
+        return r;
+      }
+      _log.debug(
+          "Retrying request ${r.request.runtimeType} which had status: ${r.status}");
+      return (request: r.request, status: RequestStatus.pending, error: null);
+    }).toList();
   }
 
   void setStatus(
       {required Type requestType,
       required RequestStatus status,
       RequestError? error}) {
-    _log.debug("Setting status for request: $requestType to $status");
+    _log.debug(
+        "Setting status for request $requestType to $status with error $error");
+    _log.debug("Checking ${state.length} requests");
     state = state.map((r) {
       if (r.request.runtimeType == requestType) {
+        _log.debug("Matching request found");
         return (request: r.request, status: status, error: error);
       }
+      _log.debug("Non-matching request found");
       return r;
     }).toList();
   }

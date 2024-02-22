@@ -13,10 +13,10 @@ part 'login_screen.freezed.dart';
 
 // freezed model with one property called 'loggingIn' (boolean)
 @freezed
-class LoginScreenState with _$LoginScreenState {
-  const factory LoginScreenState({
+class LoginState with _$LoginState {
+  const factory LoginState({
     @Default(false) bool loggingIn,
-  }) = _LoginScreenState;
+  }) = _LoginState;
 }
 
 @riverpod
@@ -24,8 +24,8 @@ class LoginScreenController extends _$LoginScreenController {
   final _log = Logger(context: 'LoginScreenController');
 
   @override
-  LoginScreenState build() {
-    return const LoginScreenState();
+  LoginState build() {
+    return const LoginState();
   }
 
   Future<void> loginGoogle() async {
@@ -37,11 +37,31 @@ class LoginScreenController extends _$LoginScreenController {
   }
 }
 
-class LoginScreen extends ConsumerWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _log = Logger(context: 'LoginScreen');
+
+  @override
+  void initState() {
+    super.initState();
+    _log.debug('Initializing');
+  }
+
+  @override
+  void dispose() {
+    _log.debug('Disposing');
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _log.debug('Building');
     final environment = ref.watch(environmentServiceProvider);
     final loginScreenState = ref.watch(loginScreenControllerProvider);
 
