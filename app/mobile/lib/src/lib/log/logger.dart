@@ -52,7 +52,8 @@ class Logger {
 
   // Don't attach PII or any personal information as we may in future
   // send this data to a third-party crash reporting service.
-  void error(String message, {dynamic nonPrivateData, Error? error}) {
+  void error(String message,
+      {dynamic nonPrivateData, Error? error, Object? exception}) {
     logger.e(
         {"message": _message(message), "data": _loggableData(nonPrivateData)},
         error: error);

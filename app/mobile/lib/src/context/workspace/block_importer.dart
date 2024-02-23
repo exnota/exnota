@@ -1,6 +1,7 @@
 import 'package:exnota/src/context/user/import_queue.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
+import 'package:exnota/src/note/block.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
@@ -104,8 +105,13 @@ class ImportBlocksRequest extends ImportRequest<List<RecordModel>> {
     // block the rest.
     // final repo = ref.read(blockRepoProvider);
     for (final record in result) {
-      // TODO: Upsert
-      _log.debug('Upserting block ${record.id}');
+      try {
+        // TODO: Upsert
+        _log.debug('Upserting block ${record.id}');
+        final block = Block.fromRecord(record);
+      } catch (e) {
+        _log.error('Error importing block ${record.id}', exception: e);
+      }
     }
 
     _log.debug('Importing blocks complete');
