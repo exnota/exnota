@@ -20,6 +20,22 @@ class BlockRepoMapper {
     );
   }
 
+  static BlockTableData toRepo(Block block) {
+    return BlockTableData(
+      id: block.id,
+      title: block.title,
+      type: _typeToRepo(block.type),
+      externalUrl: block.externalUrl,
+      file: block.file,
+      audio: _toAudioRepo(block.audio),
+      user: block.userId,
+      userCreated: block.userCreated,
+      created: block.created,
+      updated: block.updated,
+      archived: block.archived,
+    );
+  }
+
   static BlockType _typeFromRepo(String type) {
     switch (type) {
       case 'audio':
@@ -28,6 +44,17 @@ class BlockRepoMapper {
         return BlockType.text;
       default:
         return BlockType.unknown;
+    }
+  }
+
+  static String _typeToRepo(BlockType type) {
+    switch (type) {
+      case BlockType.audio:
+        return 'audio';
+      case BlockType.text:
+        return 'text';
+      case BlockType.unknown:
+        return 'unknown';
     }
   }
 
@@ -43,5 +70,13 @@ class BlockRepoMapper {
     } else {
       return const Audio(transcription: null);
     }
+  }
+
+  static String? _toAudioRepo(Audio? audio) {
+    if (audio == null) {
+      return null;
+    }
+
+    return jsonEncode({'transcription': audio.transcription});
   }
 }

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/block.dart';
 import 'package:exnota/src/note/repo/drift/block_repo_mapper.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -14,10 +15,12 @@ BlockRepo blockRepo(BlockRepoRef ref) {
 
 class BlockRepo {
   final AppDatabase db;
+  final _log = Logger(context: 'BlockRepo');
 
   BlockRepo(this.db);
 
   Stream<List<Block>> listWatch({required String userId}) {
+    _log.debug('listWatch starting for user $userId');
     final query = db.select(db.blockTable)
       ..where((tbl) => tbl.user.equals(userId));
     query.orderBy([(row) => OrderingTerm.desc(row.userCreated)]);
@@ -25,7 +28,27 @@ class BlockRepo {
   }
 
   Future<List<Block>> list() async {
+    _log.debug('list starting');
     final query = db.select(db.blockTable);
     return await query.map(BlockRepoMapper.fromRepo).get();
+  }
+
+  Future<void> upsert(Block block) async {
+    _log.debug('Upsert: Starting for block ${block.id}');
+    await db.transaction(() async {
+      final query = db.select(db.blockTable)
+        ..where((tbl) => tbl.id.equals(block.id));
+      final existing =
+          await query.map(BlockRepoMapper.fromRepo).getSingleOrNull();
+      if (existing != null) {
+        _log.debug('Upsert: Updating block ${block.id}');
+      } else {
+        _log.debug('Upsert: Inserting block ${block.id}');
+      }
+
+      await db
+          .into(db.blockTable)
+          .insertOnConflictUpdate(BlockRepoMapper.toRepo(block));
+    });
   }
 }
