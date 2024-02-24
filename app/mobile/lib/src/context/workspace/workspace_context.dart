@@ -1,4 +1,4 @@
-import 'package:exnota/src/context/workspace/block_importer.dart';
+import 'package:exnota/src/context/workspace/block_import_fetcher.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +34,6 @@ class _WorkspaceContextLoaderState
 
   @override
   Widget build(BuildContext context) {
-    return BlockImporter(child: widget.child);
+    return BlockImportFetcher(child: widget.child);
   }
 }
