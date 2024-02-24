@@ -15,4 +15,16 @@ A list of paths and edge cases to test in the future.
 
 - On auth error, provides a way for user to log out and log back in.
   - On success, continues with all expected data updated.
--
+
+## Import
+
+- On login, fetches the latest notes
+- On app fresh start, fetches the latest notes
+- Automatically receives note updates and new notes
+  - When note list screen is open
+  - When any other screen is open
+  - When app is 'paused' briefly, then 'resumed'
+    - Change app or press home button, then go back to Exnota.
+  - When app is 'paused' for > 1 minute, then 'resumed'
+    - As above, but wait 1 minute or longer before going to Exnota.
+    - Why: Testing in the iOS simulator (for iPhone 7/iOS 15.5), a pause for less than ~1 min doesn't actually interfere with the normal automatic note updates. However, more than that does seem to pause them, so when the app is resumed we have code that does a full fetch of the latest notes.
