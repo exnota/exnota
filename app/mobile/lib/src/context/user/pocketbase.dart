@@ -13,8 +13,12 @@ part 'pocketbase.g.dart';
 
 @riverpod
 PocketBase pocketBase(PocketBaseRef ref) {
-  Logger(context: 'pocketBaseProvider').info('Building');
+  final log = Logger(context: 'pocketBaseProvider');
+  log.debug('Building');
   final userContext = ref.watch(userContextServiceProvider);
+  ref.onDispose(() {
+    log.debug('Disposing');
+  });
   return userContext.pocketBase;
 }
 

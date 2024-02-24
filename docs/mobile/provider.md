@@ -1,5 +1,10 @@
 # Provider
 
+## Tips
+
+* Watch a provider without rebuilding on change `ref.watch(provider.select(() {}))`
+  * Can be used to keep one alive during a widget's lifecycle.
+
 ## Eager initialization of async providers
 
 There are two approaches. Both work for async providers. [Official docs](https://riverpod.dev/docs/essentials/eager_initialization).
@@ -8,9 +13,9 @@ There are two approaches. Both work for async providers. [Official docs](https:/
 
 Best for: Providers returning a simple object with no side-effects.
 
-- Create an unimplemented provider.
-- Create an init method that creates the object.
-- In `main.go`, call init method and use the value to override the unimplemented provider.
+* Create an unimplemented provider.
+* Create an init method that creates the object.
+* In `main.go`, call init method and use the value to override the unimplemented provider.
 
 Example: See the database provider in `lib/src/lib/data/drift/database.dart`.
 
@@ -26,11 +31,11 @@ Futher information: [State context layers](architecture.md#state-context-layers)
 
 Caveat:
 
-- Must still use a `Future` return type on the provider, which returns an `AsyncValue` type that needs loading/error states handled.
+* Must still use a `Future` return type on the provider, which returns an `AsyncValue` type that needs loading/error states handled.
 
 Workaround:
 
-- Use `.requireValue` on the returned `AsyncValue` skip the loading/error states and get the value. This will throw if the data isn't correctly eagerly initialized.
+* Use `.requireValue` on the returned `AsyncValue` skip the loading/error states and get the value. This will throw if the data isn't correctly eagerly initialized.
 
 ### Other: ProviderContainer
 
