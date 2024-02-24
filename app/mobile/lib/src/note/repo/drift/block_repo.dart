@@ -27,12 +27,6 @@ class BlockRepo {
     return query.map(BlockRepoMapper.fromRepo).watch();
   }
 
-  Future<List<Block>> list() async {
-    _log.debug('list starting');
-    final query = db.select(db.blockTable);
-    return await query.map(BlockRepoMapper.fromRepo).get();
-  }
-
   Future<void> upsert(Block block) async {
     _log.debug('Upsert: Starting for block ${block.id}');
     await db.transaction(() async {
