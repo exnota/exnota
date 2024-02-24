@@ -1,5 +1,6 @@
 import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/import_queue.dart';
+import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
@@ -185,9 +186,10 @@ class ListNotesRequestOne extends ImportRequest<List<RecordModel>> {
     _log.debug('Requesting list of notes');
 
     // wait 5 seconds
-    await Future.delayed(const Duration(seconds: 5));
+    await Future.delayed(const Duration(seconds: 10));
 
-    final result = await pb.collection('block').getFullList(sort: '-created');
+    final result =
+        await pb.collection(collectionBlock).getFullList(sort: '-created');
     _log.debug('Listed ${result.length} notes');
 
     _log.debug('Request complete');
@@ -202,9 +204,10 @@ class ListNotesRequestTwo extends ImportRequest<List<RecordModel>> {
     _log.debug('Requesting list of notes');
 
     // wait 5 seconds
-    await Future.delayed(const Duration(seconds: 5));
+    await Future.delayed(const Duration(seconds: 10));
 
-    final result = await pb.collection('block').getFullList(sort: '-created');
+    final result =
+        await pb.collection(collectionBlock).getFullList(sort: '-created');
     _log.debug('Listed ${result.length} notes');
 
     _log.debug('Request complete');
