@@ -1,4 +1,5 @@
 import 'package:exnota/src/context/user/import_queue.dart';
+import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/block.dart';
@@ -11,20 +12,20 @@ import 'package:pocketbase/pocketbase.dart';
 ///
 /// TODO: Loads workspace information
 /// TODO: Imports blocks for workspaces
-class BlockImporter extends ConsumerStatefulWidget {
+class BlockImportFetcher extends ConsumerStatefulWidget {
   final Widget child;
 
-  const BlockImporter({
+  const BlockImportFetcher({
     super.key,
     required this.child,
   });
 
   @override
-  ConsumerState<BlockImporter> createState() => _BlockImporterState();
+  ConsumerState<BlockImportFetcher> createState() => _BlockImportFetcherState();
 }
 
-class _BlockImporterState extends ConsumerState<BlockImporter> {
-  final Logger _log = Logger(context: 'BlockImporter');
+class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
+  final Logger _log = Logger(context: 'BlockImportFetcher');
 
   @override
   void initState() {
@@ -53,7 +54,8 @@ class _BlockImporterState extends ConsumerState<BlockImporter> {
   @override
   Widget build(BuildContext context) {
     _log.debug('Building');
-    // Import blocks when the active user changes.
+
+    // Import all blocks when the active user changes.
     ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) {
       _log.debug(
           'Detected active user ID change from $oldActiveUserId to $newActiveUserId');
