@@ -26,14 +26,26 @@ class BlockImportFetcher extends ConsumerStatefulWidget {
 class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
   final Logger _log = Logger(context: 'BlockImportFetcher');
 
+  late final AppLifecycleListener _appLifecycleListener;
+
   @override
   void initState() {
     super.initState();
     _log.debug('Initializing');
+
+    _appLifecycleListener = AppLifecycleListener(
+      onResume: () {
+        _log.debug('App resumed. Adding block import request.');
+        ref
+            .read(importQueueProvider.notifier)
+            .addRequest(ImportBlocksRequest());
+      },
+    );
+
     // TODO: #40 Load based on workspaces (1-n), not users.
     final activeUserId = ref.read(activeUserIdProvider);
     if (activeUserId != null) {
-      _log.debug('Importing blocks for user: $activeUserId');
+      _log.debug('Adding block import request for user: $activeUserId');
       // Need to wrap in Future to avoid provider throwing an error that its
       // state was modified during the widget's lifecycle.
       Future(() {
@@ -47,6 +59,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
   @override
   void dispose() {
     _log.debug('Disposing');
+    _appLifecycleListener.dispose();
     super.dispose();
   }
 
@@ -60,7 +73,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
           'Detected active user ID change from $oldActiveUserId to $newActiveUserId');
       // When a user logs in, import blocks.
       if (oldActiveUserId == null && newActiveUserId != null) {
-        _log.debug('Adding request');
+        _log.debug('Adding block import request');
         ref
             .read(importQueueProvider.notifier)
             .addRequest(ImportBlocksRequest());
@@ -69,7 +82,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
           oldActiveUserId != newActiveUserId) {
         _log.warn('User change not handled');
       } else {
-        _log.debug('Skip adding request');
+        _log.debug('Skip adding block import request');
       }
     });
 
