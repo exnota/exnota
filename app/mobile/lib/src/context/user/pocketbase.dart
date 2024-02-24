@@ -19,7 +19,7 @@ PocketBase pocketBase(PocketBaseRef ref) {
 }
 
 // ----------------------------------------------------------------------------
-// Helpers
+// Helpers - errors
 // ----------------------------------------------------------------------------
 
 typedef PocketBaseException = ClientException;
@@ -44,3 +44,9 @@ PocketBaseError getPocketBaseError(PocketBaseException e) {
 
   return PocketBaseError.other;
 }
+
+// ----------------------------------------------------------------------------
+// Helpers - others
+// ----------------------------------------------------------------------------
+
+const collectionBlock = 'block';

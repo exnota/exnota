@@ -1,9 +1,8 @@
 import 'package:exnota/src/context/user/import_queue.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
+import 'package:exnota/src/context/workspace/block_importer.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/block.dart';
-import 'package:exnota/src/note/repo/drift/block_repo.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
@@ -65,6 +64,10 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
         ref
             .read(importQueueProvider.notifier)
             .addRequest(ImportBlocksRequest());
+      } else if (oldActiveUserId != null &&
+          newActiveUserId != null &&
+          oldActiveUserId != newActiveUserId) {
+        _log.warn('User change not handled');
       } else {
         _log.debug('Skip adding request');
       }
@@ -101,22 +104,11 @@ class ImportBlocksRequest extends ImportRequest<List<RecordModel>> {
   Future<void> request({required PocketBase pb, required Ref ref}) async {
     _log.debug('Importing blocks...');
 
-    final result = await pb.collection('block').getFullList(sort: '-created');
+    final result =
+        await pb.collection(collectionBlock).getFullList(sort: '-created');
     _log.debug('Fetched ${result.length} blocks');
 
-    // Don't use a transaction. We don't want one failed import to block the
-    // rest.
-    final repo = ref.read(blockRepoProvider);
-    for (final record in result) {
-      try {
-        _log.debug('Mapping block record ${record.id}');
-        final block = Block.fromRecord(record);
-        _log.debug('Upserting block ${block.id}');
-        await repo.upsert(block);
-      } catch (e) {
-        _log.error('Error importing block ${record.id}', exception: e);
-      }
-    }
+    await ref.read(blockImporterProvider.notifier).importAll(result);
 
     _log.debug('Importing blocks complete');
   }

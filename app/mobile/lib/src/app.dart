@@ -1,10 +1,8 @@
 import 'package:exnota/src/context/app/app_context_loader.dart';
-import 'package:exnota/src/context/app/local_settings.dart';
 import 'package:exnota/src/context/os/os_context_loader.dart';
 import 'package:exnota/src/context/environment/environment_context_loader.dart';
-import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/user_context_loader.dart';
-import 'package:exnota/src/context/workspace/workspace_context.dart';
+import 'package:exnota/src/context/workspace/workspace_context_loader.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
