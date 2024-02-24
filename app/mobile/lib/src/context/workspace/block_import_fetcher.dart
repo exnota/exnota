@@ -35,10 +35,16 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
 
     _appLifecycleListener = AppLifecycleListener(
       onResume: () {
-        _log.debug('App resumed. Adding block import request.');
-        ref
-            .read(importQueueProvider.notifier)
-            .addRequest(ImportBlocksRequest());
+        _log.debug('App resume detected');
+        final activeUserId = ref.read(activeUserIdProvider);
+        if (activeUserId != null) {
+          _log.debug('Adding block import request for user: $activeUserId');
+          ref
+              .read(importQueueProvider.notifier)
+              .addRequest(ImportBlocksRequest());
+        } else {
+          _log.debug('No active user, skipping block import request');
+        }
       },
     );
 
@@ -53,6 +59,8 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
             .read(importQueueProvider.notifier)
             .addRequest(ImportBlocksRequest());
       });
+    } else {
+      _log.debug('No active user, skipping block import request');
     }
   }
 
