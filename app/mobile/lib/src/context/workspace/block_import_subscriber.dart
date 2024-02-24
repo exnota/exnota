@@ -40,7 +40,14 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
   @override
   void dispose() {
     _log.debug('Disposing');
-    _unsubscribe();
+
+    // Can't unsubscribe here because `ref` is not available:  https://github.com/rrousselGit/riverpod/issues/2538
+    //
+    // Doesn't seem to be an issue in practice because this widget is only
+    // disposed when the environment changes, which also disposes the
+    // PocketBase provider and, I assume, subscriptions are cleaned up by
+    // PocketBase internally, or garbage collected.
+
     super.dispose();
   }
 
@@ -49,16 +56,16 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
     _log.debug('Building');
 
     // Import all blocks when the active user changes.
-    ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) {
+    ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) async {
       _log.debug(
           'Detected active user ID change from $oldActiveUserId to $newActiveUserId');
       // When a user logs in, import blocks.
       if (oldActiveUserId == null && newActiveUserId != null) {
         _log.debug('Subscribing to blocks for user: $newActiveUserId');
-        _subscribe();
+        await _subscribe();
       } else if (oldActiveUserId != null && newActiveUserId == null) {
         _log.debug('Unsubscribing from blocks for user: $oldActiveUserId');
-        _unsubscribe();
+        await _unsubscribe();
       } else if (oldActiveUserId != newActiveUserId) {
         _log.warn('User change not handled');
       } else {
@@ -69,19 +76,19 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
     return widget.child;
   }
 
-  void _subscribe() {
+  Future<void> _subscribe() async {
     _log.debug('Subscribing');
     final pb = ref.read(pocketBaseProvider);
-    pb.collection(collectionBlock).subscribe("*", (e) async {
+    await pb.collection(collectionBlock).subscribe("*", (e) async {
       _log.debug(
           'Received \'${e.action}\' action for block record ${e.record?.id}');
       await ref.read(blockImporterProvider.notifier).import(e.record);
     });
   }
 
-  void _unsubscribe() {
-    _log.debug('Unsubscribing');
+  Future<void> _unsubscribe() async {
+    _log.debug('unsubscribe: Unsubscribing');
     final pb = ref.read(pocketBaseProvider);
-    pb.collection(collectionBlock).unsubscribe();
+    await pb.collection(collectionBlock).unsubscribe();
   }
 }
