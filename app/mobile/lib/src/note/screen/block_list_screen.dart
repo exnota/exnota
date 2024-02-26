@@ -35,7 +35,6 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final isOffline = ref.watch(isOfflineProvider);
     final isImportQueueErrored = ref.watch(importQueueErroredProvider);
     final isImportQeueAuthErrored = ref.watch(importQueueAuthErroredProvider);
 
