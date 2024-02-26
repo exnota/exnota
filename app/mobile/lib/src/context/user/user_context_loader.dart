@@ -1,5 +1,4 @@
 import 'package:exnota/src/context/lib/provider.dart';
-import 'package:exnota/src/context/user/import_queue.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
@@ -13,9 +12,7 @@ class UserContextLoader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return _UserContextLoader(
-        // Import queue requires the user context to be loaded
-        child: ImportQueueProcessor(child: child));
+    return _UserContextLoader(child: child);
   }
 }
 

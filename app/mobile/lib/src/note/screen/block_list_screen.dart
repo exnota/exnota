@@ -1,5 +1,5 @@
 import 'package:exnota/src/context/app/router.dart';
-import 'package:exnota/src/context/user/import_queue.dart';
+import 'package:exnota/src/context/sync/import_queue.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
