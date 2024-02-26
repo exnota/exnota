@@ -1,5 +1,4 @@
 import 'package:exnota/src/context/app/app_context_loader.dart';
-import 'package:exnota/src/context/os/os_context_loader.dart';
 import 'package:exnota/src/context/environment/environment_context_loader.dart';
 import 'package:exnota/src/context/user/user_context_loader.dart';
 import 'package:exnota/src/context/workspace/workspace_context_loader.dart';
@@ -56,47 +55,45 @@ class _MyAppState extends ConsumerState<MyApp> {
     // - Outer context widgets and providers should ensure any async and
     //   blocking state has been initialized before rendering their children,
     //   and provide synchronous access to that state.
-    return OsContextLoader(
-      child: EnvironmentContextLoader(
-        child: UserContextLoader(
-          child: WorkspaceContextLoader(
-            child: AppContextLoader(
-              builder: (context, themeMode, goRouter) {
-                return MaterialApp.router(
-                  // Providing a restorationScopeId allows the Navigator built by the
-                  // MaterialApp to restore the navigation stack when a user leaves and
-                  // returns to the app after it has been killed while running in the
-                  // background.
-                  restorationScopeId: 'app',
+    return EnvironmentContextLoader(
+      child: UserContextLoader(
+        child: WorkspaceContextLoader(
+          child: AppContextLoader(
+            builder: (context, themeMode, goRouter) {
+              return MaterialApp.router(
+                // Providing a restorationScopeId allows the Navigator built by the
+                // MaterialApp to restore the navigation stack when a user leaves and
+                // returns to the app after it has been killed while running in the
+                // background.
+                restorationScopeId: 'app',
 
-                  // Provide the generated AppLocalizations to the MaterialApp. This
-                  // allows descendant Widgets to display the correct translations
-                  // depending on the user's locale.
-                  localizationsDelegates: const [
-                    AppLocalizations.delegate,
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                  ],
-                  supportedLocales: const [
-                    Locale('en', ''), // English, no country code
-                  ],
+                // Provide the generated AppLocalizations to the MaterialApp. This
+                // allows descendant Widgets to display the correct translations
+                // depending on the user's locale.
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: const [
+                  Locale('en', ''), // English, no country code
+                ],
 
-                  // Use AppLocalizations to configure the correct application title
-                  // depending on the user's locale.
-                  //
-                  // The appTitle is defined in .arb files found in the localization
-                  // directory.
-                  onGenerateTitle: (BuildContext context) =>
-                      AppLocalizations.of(context)!.common_appTitle,
+                // Use AppLocalizations to configure the correct application title
+                // depending on the user's locale.
+                //
+                // The appTitle is defined in .arb files found in the localization
+                // directory.
+                onGenerateTitle: (BuildContext context) =>
+                    AppLocalizations.of(context)!.common_appTitle,
 
-                  theme: ThemeData(useMaterial3: true),
-                  darkTheme: ThemeData.dark(useMaterial3: true),
-                  themeMode: themeMode,
-                  routerConfig: goRouter,
-                );
-              },
-            ),
+                theme: ThemeData(useMaterial3: true),
+                darkTheme: ThemeData.dark(useMaterial3: true),
+                themeMode: themeMode,
+                routerConfig: goRouter,
+              );
+            },
           ),
         ),
       ),
