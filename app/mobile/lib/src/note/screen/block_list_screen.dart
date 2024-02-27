@@ -1,4 +1,5 @@
 import 'package:exnota/src/context/app/router.dart';
+import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/import_queue.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
@@ -57,13 +58,14 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
         children: [
           FloatingActionButton(
             onPressed: () {
-              // Add test requests
-              ref.read(importQueueProvider.notifier).addMultipleRequests([
-                ListNotesRequestOne(),
-                ListNotesRequestTwo(),
-              ]);
+              ref.read(connectionStatusProvider.notifier).setOffline();
+              // // Add test requests
+              // ref.read(importQueueProvider.notifier).addMultipleRequests([
+              //   ListNotesRequestOne(),
+              //   ListNotesRequestTwo(),
+              // ]);
             },
-            child: const Icon(Icons.add),
+            child: const Icon(Icons.cloud_off),
           ),
         ],
       ),

@@ -3,10 +3,10 @@ import 'package:exnota/src/context/environment/environment.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'uri.g.dart';
+part 'base_url.g.dart';
 
 @riverpod
-class UriService extends _$UriService {
+class BaseUrl extends _$BaseUrl {
   final Logger _log = Logger(context: 'UriService');
 
   @override

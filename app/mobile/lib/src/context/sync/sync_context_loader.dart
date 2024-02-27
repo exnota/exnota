@@ -1,3 +1,4 @@
+import 'package:exnota/src/context/sync/connection_listener.dart';
 import 'package:exnota/src/context/sync/import_queue.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
@@ -30,6 +31,10 @@ class _SyncContextLoaderState extends ConsumerState<SyncContextLoader> {
   @override
   Widget build(BuildContext context) {
     _log.debug('Building');
-    return ImportQueueProcessor(child: widget.child);
+    return ConnectionListener(
+      child: ImportQueueProcessor(
+        child: widget.child,
+      ),
+    );
   }
 }

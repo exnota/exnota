@@ -15,11 +15,22 @@ part 'pocketbase.g.dart';
 PocketBase pocketBase(PocketBaseRef ref) {
   final log = Logger(context: 'pocketBaseProvider');
   log.debug('Building');
-  final userContext = ref.watch(userContextServiceProvider);
   ref.onDispose(() {
     log.debug('Disposing');
   });
+  final userContext = ref.watch(userContextServiceProvider);
   return userContext.pocketBase;
+}
+
+@riverpod
+Uri url(UrlRef ref, String path) {
+  final log = Logger(context: 'urlProvider');
+  log.debug('Building');
+  ref.onDispose(() {
+    log.debug('Disposing');
+  });
+  final pb = ref.watch(pocketBaseProvider);
+  return pb.buildUrl(path);
 }
 
 // ----------------------------------------------------------------------------
