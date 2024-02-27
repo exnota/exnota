@@ -1,11 +1,11 @@
 import 'package:exnota/src/context/device/device_info.dart';
 import 'package:exnota/src/context/environment/environment.dart';
-import 'package:exnota/src/context/environment/uri.dart';
+import 'package:exnota/src/context/environment/base_url.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'uri_test.g.dart';
+part 'base_url_test.g.dart';
 
 ProviderContainer createContainer({
   ProviderContainer? parent,
@@ -70,7 +70,7 @@ void main() {
           container.read(environmentServiceProvider);
 
           expect(
-            container.read(uriServiceProvider),
+            container.read(baseUrlProvider),
             equals(Uri.http('localhost:8080')),
           );
         });
@@ -92,7 +92,7 @@ void main() {
           container.read(environmentServiceProvider);
 
           expect(
-            container.read(uriServiceProvider),
+            container.read(baseUrlProvider),
             equals(Uri.http('10.0.2.2:8080')),
           );
         });
@@ -114,7 +114,7 @@ void main() {
           container.read(environmentServiceProvider);
 
           expect(
-            container.read(uriServiceProvider),
+            container.read(baseUrlProvider),
             equals(Uri.http('127.0.0.1:8080')),
           );
         });
@@ -137,7 +137,7 @@ void main() {
         container.read(environmentServiceProvider);
 
         expect(
-          container.read(uriServiceProvider),
+          container.read(baseUrlProvider),
           equals(Uri.https('exnota.matt.to')),
         );
       });

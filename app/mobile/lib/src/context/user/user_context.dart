@@ -2,7 +2,7 @@ import 'package:exnota/src/account/user/repo/user_auth_repo.dart';
 import 'package:exnota/src/account/user/repo/user_repo.dart';
 import 'package:exnota/src/account/user/user.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
-import 'package:exnota/src/context/environment/uri.dart';
+import 'package:exnota/src/context/environment/base_url.dart';
 import 'package:exnota/src/context/lib/provider.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
@@ -117,7 +117,7 @@ class _UserContextInternal extends _$UserContextInternal {
   @override
   Future<UserContext> build() async {
     _log.info('build: Building user context service');
-    final baseUrl = ref.watch(uriServiceProvider);
+    final baseUrl = ref.watch(baseUrlProvider);
     final transaction = ref.watch(transactionProvider);
     final userAuthRepo = ref.watch(userAuthRepoProvider);
 
