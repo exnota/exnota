@@ -62,6 +62,7 @@ class HealthCheckRetry {
       if (response.statusCode == 200) {
         _log.debug('Success');
         onSuccess();
+        stop();
         return;
       } else {
         _log.debug('Request failed with status: ${response.statusCode}.');
