@@ -5,13 +5,16 @@ import 'package:exnota/src/lib/log/logger.dart';
 import 'package:http/http.dart' as http;
 
 class HealthCheckRetry {
-  final _log = Logger(context: 'HealthCheckRetry');
+  late final Logger _log;
 
   /// Http client to use for requests to the healthcheck endpoint.
   ///
   /// Passed in to allow for mocking in tests.
   final http.Client client;
   final Uri uri;
+
+  /// Used to identify the healthcheck in logs.
+  final String label;
 
   /// Maximum delay in seconds between retries
   final int? maxDelay;
@@ -33,10 +36,13 @@ class HealthCheckRetry {
   HealthCheckRetry(
       {required this.client,
       required this.uri,
+      required this.label,
       this.maxDelay,
       this.maxDuration,
       required this.onSuccess,
-      this.onExpire});
+      this.onExpire}) {
+    _log = Logger(context: 'HealthCheckRetry($label)');
+  }
 
   void start() {
     _log.debug('Starting');
@@ -52,11 +58,11 @@ class HealthCheckRetry {
   }
 
   void stop() {
-    _log.debug('Stopping');
     if (!_running) {
-      _log.debug('Not running');
+      _log.debug('Already stopped');
       return;
     }
+    _log.debug('Stopping');
     _running = false;
     _timer?.cancel();
   }
@@ -68,14 +74,18 @@ class HealthCheckRetry {
       var response = await client.get(uri).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         _log.debug('Success');
-        onSuccess();
         stop();
+        onSuccess();
         return;
       } else {
         _log.debug('Request failed with status: ${response.statusCode}.');
       }
+    } on TimeoutException {
+      _log.debug('Request timed out');
+    } on Exception catch (e) {
+      _log.debug('Request failed with exception ${e.runtimeType}');
     } catch (e) {
-      _log.debug('Request failed with error: $e');
+      _log.debug('Request failed with unknown exception: $e');
     }
 
     if (!_running) {

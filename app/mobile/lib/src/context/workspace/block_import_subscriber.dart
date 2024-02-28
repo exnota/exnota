@@ -1,3 +1,4 @@
+import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/context/workspace/block_importer.dart';
@@ -55,7 +56,7 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
   Widget build(BuildContext context) {
     _log.debug('Building');
 
-    // Import all blocks when the active user changes.
+    // Subscribe/unsubscribe to block changes when the user logs in/out.
     ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) async {
       _log.debug(
           'Detected active user ID change from $oldActiveUserId to $newActiveUserId');
@@ -73,13 +74,40 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
       }
     });
 
+    // Stop/resume subscription when connection status changes.
+    //
+    // PocketBase's realtime subscription will not error or provide any
+    // indication when it loses connection to the server, AND it will not
+    // recover when the server is back (if it's down longer than 10sec or so).
+    // So we need to listen to the connection status and resubscribe when it's
+    // back online.
+    ref.listen(connectionStatusProvider, (oldStatus, newStatus) async {
+      _log.debug(
+          'Detected connection status change from $oldStatus to $newStatus');
+      switch (newStatus) {
+        case ConnStatus.offline:
+        case ConnStatus.unauthenticated:
+          _log.debug('Unsubscribing due to connection change.');
+          await _unsubscribe();
+          break;
+        case ConnStatus.online:
+          _log.debug('Subscribing due to connection change.');
+          await _subscribe();
+          break;
+        case ConnStatus.userRetry:
+          _log.debug('No change to subscription due to connection change.');
+          break;
+      }
+    });
+
     return widget.child;
   }
 
   Future<void> _subscribe() async {
     _log.debug('Subscribing');
     final pb = ref.read(pocketBaseProvider);
-    await pb.collection(collectionBlock).subscribe("*", (e) async {
+
+    await pb.collection(collectionBlock).subscribe('*', (e) async {
       _log.debug(
           'Received \'${e.action}\' action for block record ${e.record?.id}');
       await ref.read(blockImporterProvider.notifier).import(e.record);
@@ -87,7 +115,7 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
   }
 
   Future<void> _unsubscribe() async {
-    _log.debug('unsubscribe: Unsubscribing');
+    _log.debug('Unsubscribing');
     final pb = ref.read(pocketBaseProvider);
     await pb.collection(collectionBlock).unsubscribe();
   }

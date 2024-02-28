@@ -35,9 +35,9 @@ class BlockRepo {
       final existing =
           await query.map(BlockRepoMapper.fromRepo).getSingleOrNull();
       if (existing != null) {
-        _log.debug('Upsert: Updating block ${block.id}');
+        _log.debug('Upsert: Updating existing block ${block.id}');
       } else {
-        _log.debug('Upsert: Inserting block ${block.id}');
+        _log.debug('Upsert: Inserting new block ${block.id}');
       }
 
       await db
