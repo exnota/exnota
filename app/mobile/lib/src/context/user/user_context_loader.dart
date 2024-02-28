@@ -19,7 +19,7 @@ class UserContextLoader extends ConsumerWidget {
 class _UserContextLoader extends ConsumerStatefulWidget {
   final Widget child;
 
-  const _UserContextLoader({super.key, required this.child});
+  const _UserContextLoader({required this.child});
 
   @override
   ConsumerState<_UserContextLoader> createState() => _UserContextLoaderState();
