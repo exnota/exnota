@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:clock/clock.dart';
+import 'package:exnota/src/context/sync/health_check.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:http/http.dart' as http;
 
@@ -69,23 +70,11 @@ class HealthCheckRetry {
 
   Future<void> _ping() async {
     // Ping endpoint
-    try {
-      _log.debug('Pinging');
-      var response = await client.get(uri).timeout(const Duration(seconds: 5));
-      if (response.statusCode == 200) {
-        _log.debug('Success');
-        stop();
-        onSuccess();
-        return;
-      } else {
-        _log.debug('Request failed with status: ${response.statusCode}.');
-      }
-    } on TimeoutException {
-      _log.debug('Request timed out');
-    } on Exception catch (e) {
-      _log.debug('Request failed with exception ${e.runtimeType}');
-    } catch (e) {
-      _log.debug('Request failed with unknown exception: $e');
+    final success = await HealthCheck.ping(uri, client);
+    if (success) {
+      _log.debug('Calling onSuccess');
+      onSuccess();
+      return;
     }
 
     if (!_running) {
