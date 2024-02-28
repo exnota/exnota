@@ -56,93 +56,91 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
 
   void _handleConnectionStatusChange(
       ConnStatus? prevStatus, ConnStatus nextStatus) {
-    if (nextStatus == ConnStatus.offline) {
-      _log.debug('Handling transition to offline');
+    switch (nextStatus) {
+      case ConnStatus.offline:
+        _log.debug('Handling transition to offline');
 
-      _log.debug('Cleaning up');
-      _healthCheckRetry?.stop();
-      _serverConnection?.close();
+        _log.debug('Cleaning up');
+        _healthCheckRetry?.stop();
+        _serverConnection?.close();
 
-      _log.debug('Starting healthcheck retry');
-      setState(() {
-        _healthCheckRetry = HealthCheckRetry(
-          client: http.Client(),
-          uri: ref.read(urlProvider('/api/health')),
-          maxDelay: 60,
-          onSuccess: () {
-            ref.read(connectionStatusProvider.notifier).setOnline();
-          },
-        );
-      });
-      _healthCheckRetry?.start();
-      return;
-    }
+        _log.debug('Starting healthcheck retry');
+        setState(() {
+          _healthCheckRetry = HealthCheckRetry(
+            client: http.Client(),
+            uri: ref.read(urlProvider('/api/health')),
+            maxDelay: 60,
+            onSuccess: () {
+              ref.read(connectionStatusProvider.notifier).setOnline();
+            },
+          );
+        });
+        _healthCheckRetry?.start();
+        break;
 
-    if (nextStatus == ConnStatus.online) {
-      _log.debug('Handling transition to online');
+      case ConnStatus.online:
+        _log.debug('Handling transition to online');
 
-      _log.debug('Cleaning up');
-      _healthCheckRetry?.stop();
+        _log.debug('Cleaning up');
+        _healthCheckRetry?.stop();
+        _serverConnection?.close();
 
-      _log.debug('Starting server connection');
-      var errorCount = 0;
-      setState(() {
-        // Create a blank/empty subscription to the server-side event stream of
-        // PocketBase. This uses an internal class from the pocketbase package
-        // because the official API doesn't expose an onError callback: it just
-        // silently fails when the connection is lost.
-        //
-        // Source: https://github.com/pocketbase/pocketbase/discussions/1957#discussioncomment-5177865
-        _serverConnection = SseClient(
-          ref.read(urlProvider('/api/realtime')).toString(),
-          onError: (err) {
-            _log.debug('Server connection error with error object: $err');
+        _log.debug('Starting server connection');
+        var errorCount = 0;
+        setState(() {
+          // Create a blank/empty subscription to the server-side event stream of
+          // PocketBase. This uses an internal class from the pocketbase package
+          // because the official API doesn't expose an onError callback: it just
+          // silently fails when the connection is lost.
+          //
+          // Source: https://github.com/pocketbase/pocketbase/discussions/1957#discussioncomment-5177865
+          _serverConnection = SseClient(
+            ref.read(urlProvider('/api/realtime')).toString(),
+            onError: (err) {
+              _log.debug('Server connection error with error object: $err');
 
-            // onError can be called multiple times in quick succession. To
-            // minimise unexpected race conditions, call setOffline only once.
-            errorCount++;
-            if (errorCount == 1) {
+              // onError can be called multiple times in quick succession. To
+              // minimise unexpected race conditions, call setOffline only once.
+              errorCount++;
+              if (errorCount == 1) {
+                ref.read(connectionStatusProvider.notifier).setOffline();
+              }
+            },
+          );
+        });
+        break;
+
+      case ConnStatus.userRetry:
+        _log.debug('Handling transition to userRetry');
+
+        _log.debug('Cleaning up');
+        _healthCheckRetry?.stop();
+        _serverConnection?.close();
+
+        _log.debug('Starting healthcheck retry');
+        setState(() {
+          _healthCheckRetry = HealthCheckRetry(
+            client: http.Client(),
+            uri: ref.read(urlProvider('/api/health')),
+            maxDuration: 10,
+            onSuccess: () {
+              ref.read(connectionStatusProvider.notifier).setOnline();
+            },
+            onExpire: () {
               ref.read(connectionStatusProvider.notifier).setOffline();
-            }
-          },
-        );
-      });
-      return;
-    }
+            },
+          );
+        });
+        _healthCheckRetry?.start();
+        break;
 
-    if (nextStatus == ConnStatus.userRetry) {
-      _log.debug('Handling transition to userRetry');
+      case ConnStatus.unauthenticated:
+        _log.debug('Handling transition to unauthenticated');
 
-      _log.debug('Cleaning up');
-      _healthCheckRetry?.stop();
-      _serverConnection?.close();
-
-      _log.debug('Starting healthcheck retry');
-      setState(() {
-        _healthCheckRetry = HealthCheckRetry(
-          client: http.Client(),
-          uri: ref.read(urlProvider('/api/health')),
-          maxDuration: 10,
-          onSuccess: () {
-            ref.read(connectionStatusProvider.notifier).setOnline();
-          },
-          onExpire: () {
-            ref.read(connectionStatusProvider.notifier).setOffline();
-          },
-        );
-      });
-      _healthCheckRetry?.start();
-      return;
-    }
-
-    // TODO: Replace the conditional blocks with a switch statement
-    if (nextStatus == ConnStatus.unauthenticated) {
-      _log.debug('Handling transition to unauthenticated');
-
-      // TODO: Keep all transitions cleanup consistent
-      _log.debug('Cleaning up');
-      _healthCheckRetry?.stop();
-      _serverConnection?.close();
+        _log.debug('Cleaning up');
+        _healthCheckRetry?.stop();
+        _serverConnection?.close();
+        break;
     }
   }
 }
