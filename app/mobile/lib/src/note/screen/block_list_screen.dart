@@ -36,6 +36,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final connStatus = ref.watch(connectionStatusProvider);
     final isImportQueueErrored = ref.watch(importQueueErroredProvider);
     final isImportQeueAuthErrored = ref.watch(importQueueAuthErroredProvider);
 
@@ -56,6 +57,12 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
       ),
       floatingActionButton: ButtonBar(
         children: [
+          FloatingActionButton(
+            onPressed: () {
+              ref.read(connectionStatusProvider.notifier).setUserRetry();
+            },
+            child: const Icon(Icons.restart_alt),
+          ),
           FloatingActionButton(
             onPressed: () {
               ref.read(connectionStatusProvider.notifier).setOffline();
@@ -139,6 +146,42 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                         ref.read(importQueueProvider.notifier).retry();
                       },
                       child: const Text('Retry')),
+                ],
+              ),
+            )
+          else if (connStatus == ConnStatus.offline)
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).secondaryHeaderColor,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.cloud_off_outlined),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    'Offline',
+                  )
+                ],
+              ),
+            )
+          else if (connStatus == ConnStatus.userRetry)
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).secondaryHeaderColor,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    'Retrying',
+                  )
                 ],
               ),
             ),
