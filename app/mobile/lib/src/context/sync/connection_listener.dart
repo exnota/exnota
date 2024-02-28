@@ -102,7 +102,15 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
 
               // onError can be called multiple times in quick succession. To
               // minimise unexpected race conditions, call setOffline only once.
+              // Though so far I have only seen this with an invalid URL being
+              // used.
+              //
+              // Usually, when the local server goes down, it calls onError
+              // twice:
+              // - The first with a ClientException object
+              // - The second with null
               errorCount++;
+              _log.debug('Error count: $errorCount');
               if (errorCount == 1) {
                 ref.read(connectionStatusProvider.notifier).setOffline();
               }

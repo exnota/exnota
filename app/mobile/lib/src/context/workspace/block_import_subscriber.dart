@@ -25,6 +25,7 @@ class BlockImportSubscriber extends ConsumerStatefulWidget {
 
 class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
   final Logger _log = Logger(context: 'BlockImportSubscriber');
+  Future<void> Function()? _unsub;
 
   @override
   void initState() {
@@ -107,16 +108,22 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
     _log.debug('Subscribing');
     final pb = ref.read(pocketBaseProvider);
 
-    await pb.collection(collectionBlock).subscribe('*', (e) async {
+    final unsub =
+        await pb.collection(collectionBlock).subscribe('*', (e) async {
       _log.debug(
           'Received \'${e.action}\' action for block record ${e.record?.id}');
       await ref.read(blockImporterProvider.notifier).import(e.record);
+    });
+    setState(() {
+      _unsub = unsub;
     });
   }
 
   Future<void> _unsubscribe() async {
     _log.debug('Unsubscribing');
-    final pb = ref.read(pocketBaseProvider);
-    await pb.collection(collectionBlock).unsubscribe();
+    await _unsub!();
+    setState(() {
+      _unsub = null;
+    });
   }
 }
