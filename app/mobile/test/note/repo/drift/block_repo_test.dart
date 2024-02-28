@@ -58,7 +58,7 @@ void main() {
               () async {
             final repo = BlockRepo(db);
             final stream = repo.listWatch(userId: 'user 1');
-            expectLater(
+            await expectLater(
                 stream,
                 emitsInOrder([
                   predicate<List<Block>>((blocks) {

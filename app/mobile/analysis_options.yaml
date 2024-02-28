@@ -7,6 +7,9 @@
 
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
+#
+# This package is built on top of Dart's recommended.yaml set of lints from
+# package:lints.
 include: package:flutter_lints/flutter.yaml
 
 linter:
@@ -21,8 +24,10 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    - unawaited_futures
+    - avoid_as
+    # - prefer_single_quotes
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 
 # Riverpod linting
 analyzer:
