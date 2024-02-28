@@ -22,7 +22,7 @@ class ConnectionListener extends ConsumerStatefulWidget {
 class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
   final _log = Logger(context: 'ConnectionListener');
   HealthCheckRetry? _healthCheckRetry;
-  SseClient? _sseClient;
+  SseClient? _serverConnection;
 
   @override
   void initState() {
@@ -38,7 +38,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
   void dispose() {
     _log.debug('Disposing');
     _healthCheckRetry?.stop();
-    _sseClient?.close();
+    _serverConnection?.close();
     super.dispose();
   }
 
@@ -61,7 +61,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
 
       _log.debug('Cleaning up');
       _healthCheckRetry?.stop();
-      _sseClient?.close();
+      _serverConnection?.close();
 
       _log.debug('Starting healthcheck retry');
       setState(() {
@@ -84,14 +84,19 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
       _log.debug('Cleaning up');
       _healthCheckRetry?.stop();
 
-      _log.debug('Starting blank subscription');
+      _log.debug('Starting server connection');
       var errorCount = 0;
       setState(() {
-        // Example from https://github.com/pocketbase/pocketbase/discussions/1957#discussioncomment-5177865
-        _sseClient = SseClient(
+        // Create a blank/empty subscription to the server-side event stream of
+        // PocketBase. This uses an internal class from the pocketbase package
+        // because the official API doesn't expose an onError callback: it just
+        // silently fails when the connection is lost.
+        //
+        // Source: https://github.com/pocketbase/pocketbase/discussions/1957#discussioncomment-5177865
+        _serverConnection = SseClient(
           ref.read(urlProvider('/api/realtime')).toString(),
           onError: (err) {
-            _log.debug('Blank subscription error with error object: $err');
+            _log.debug('Server connection error with error object: $err');
 
             // onError can be called multiple times in quick succession. To
             // minimise unexpected race conditions, call setOffline only once.
@@ -102,6 +107,33 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
           },
         );
       });
+      return;
+    }
+
+    if (nextStatus == ConnStatus.userRetry) {
+      _log.debug('Handling transition to userRetry');
+
+      _log.debug('Cleaning up');
+      _healthCheckRetry?.stop();
+      _serverConnection?.close();
+
+      _log.debug('Starting healthcheck retry');
+      setState(() {
+        _healthCheckRetry = HealthCheckRetry(
+          client: http.Client(),
+          uri: ref.read(urlProvider('/api/health')),
+          maxDuration: 10,
+          onSuccess: () {
+            ref.read(connectionStatusProvider.notifier).setOnline();
+          },
+          onExpire: () {
+            ref.read(connectionStatusProvider.notifier).setOffline();
+          },
+        );
+      });
+      _healthCheckRetry?.start();
+
+      return;
     }
   }
 }

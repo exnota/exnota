@@ -7,6 +7,9 @@ import 'package:http/http.dart' as http;
 class HealthCheckRetry {
   final _log = Logger(context: 'HealthCheckRetry');
 
+  /// Http client to use for requests to the healthcheck endpoint.
+  ///
+  /// Passed in to allow for mocking in tests.
   final http.Client client;
   final Uri uri;
 
@@ -50,6 +53,10 @@ class HealthCheckRetry {
 
   void stop() {
     _log.debug('Stopping');
+    if (!_running) {
+      _log.debug('Not running');
+      return;
+    }
     _running = false;
     _timer?.cancel();
   }
@@ -91,7 +98,7 @@ class HealthCheckRetry {
     final thisMaxDuration = maxDuration;
     if (thisMaxDuration != null &&
         secondsElapsed + _prevDelay > thisMaxDuration) {
-      _log.debug('Max duration is or will be reached');
+      _log.debug('Max duration has or will be reached');
       final thisOnExpire = onExpire;
       if (thisOnExpire != null) {
         _log.debug('Calling onExpire');
