@@ -29,6 +29,7 @@ void main() {
 
             final retry = HealthCheckRetry(
                 client: client,
+                label: 'test',
                 onSuccess: onSuccess,
                 uri: Uri.parse('http://localhost:8080/healthcheck'));
             retry.start();
@@ -63,6 +64,7 @@ void main() {
 
             final retry = HealthCheckRetry(
                 client: client,
+                label: 'test',
                 onSuccess: onSuccess,
                 uri: Uri.parse('http://localhost:8080/healthcheck'),
                 maxDelay: 5);
@@ -96,6 +98,7 @@ void main() {
 
             final retry = HealthCheckRetry(
                 client: client,
+                label: 'test',
                 onSuccess: onSuccess,
                 onExpire: onExpire,
                 uri: Uri.parse('http://localhost:8080/healthcheck'),
@@ -132,6 +135,7 @@ void main() {
 
             final retry = HealthCheckRetry(
                 client: client,
+                label: 'test',
                 onSuccess: onSuccess,
                 uri: Uri.parse('http://localhost:8080/healthcheck'),
                 maxDuration: 10);
@@ -164,6 +168,7 @@ void main() {
 
             final retry = HealthCheckRetry(
                 client: client,
+                label: 'test',
                 onSuccess: onSuccess,
                 onExpire: onExpire,
                 uri: Uri.parse('http://localhost:8080/healthcheck'),
@@ -208,6 +213,7 @@ void main() {
 
             final retry = HealthCheckRetry(
                 client: client,
+                label: 'test',
                 onSuccess: onSuccess,
                 uri: Uri.parse('http://localhost:8080/healthcheck'));
             retry.start();
@@ -243,6 +249,7 @@ void main() {
 
           final retry = HealthCheckRetry(
               client: client,
+              label: 'test',
               onSuccess: onSuccess,
               uri: Uri.parse('http://localhost:8080/healthcheck'));
           retry.start();
@@ -275,6 +282,7 @@ void main() {
 
           final retry = HealthCheckRetry(
               client: client,
+              label: 'test',
               onSuccess: onSuccess,
               uri: Uri.parse('http://localhost:8080/healthcheck'));
           retry.start();
@@ -307,6 +315,7 @@ void main() {
 
           final retry = HealthCheckRetry(
               client: client,
+              label: 'test',
               onSuccess: onSuccess,
               maxDuration: 12,
               uri: Uri.parse('http://localhost:8080/healthcheck'));
@@ -343,6 +352,7 @@ void main() {
 
           final retry = HealthCheckRetry(
               client: client,
+              label: 'test',
               onSuccess: onSuccess,
               onExpire: onExpire,
               maxDuration: 10,
@@ -378,6 +388,7 @@ void main() {
 
                 final retry = HealthCheckRetry(
                     client: client,
+                    label: 'test',
                     onSuccess: onSuccess,
                     onExpire: onExpire,
                     uri: Uri.parse('http://localhost:8080/healthcheck'));
@@ -409,6 +420,7 @@ void main() {
 
                 final retry = HealthCheckRetry(
                     client: client,
+                    label: 'test',
                     onSuccess: onSuccess,
                     uri: Uri.parse('http://localhost:8080/healthcheck'));
                 retry.start();
@@ -447,6 +459,7 @@ void main() {
 
                 final retry = HealthCheckRetry(
                     client: client,
+                    label: 'test',
                     onSuccess: onSuccess,
                     uri: Uri.parse('http://localhost:8080/healthcheck'));
                 retry.start();
@@ -479,6 +492,7 @@ void main() {
 
               final retry = HealthCheckRetry(
                   client: client,
+                  label: 'test',
                   onSuccess: onSuccess,
                   uri: Uri.parse('http://localhost:8080/healthcheck'));
               retry.stop();
@@ -499,6 +513,7 @@ void main() {
 
               final retry = HealthCheckRetry(
                   client: client,
+                  label: 'test',
                   onSuccess: onSuccess,
                   uri: Uri.parse('http://localhost:8080/healthcheck'));
               retry.start();
@@ -534,6 +549,7 @@ void main() {
 
               final retry = HealthCheckRetry(
                   client: client,
+                  label: 'test',
                   onSuccess: onSuccess,
                   uri: Uri.parse('http://localhost:8080/healthcheck'));
               retry.start();

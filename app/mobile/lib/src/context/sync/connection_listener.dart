@@ -64,11 +64,12 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
         _healthCheckRetry?.stop();
         _serverConnection?.close();
 
-        _log.debug('Starting healthcheck retry');
+        _log.debug('Starting healthcheck retry for offline status');
         setState(() {
           _healthCheckRetry = HealthCheckRetry(
             client: http.Client(),
             uri: ref.read(urlProvider('/api/health')),
+            label: 'offline',
             maxDelay: 60,
             onSuccess: () {
               ref.read(connectionStatusProvider.notifier).setOnline();
@@ -117,11 +118,12 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
         _healthCheckRetry?.stop();
         _serverConnection?.close();
 
-        _log.debug('Starting healthcheck retry');
+        _log.debug('Starting healthcheck retry for userRetry status');
         setState(() {
           _healthCheckRetry = HealthCheckRetry(
             client: http.Client(),
             uri: ref.read(urlProvider('/api/health')),
+            label: 'userRetry',
             maxDuration: 10,
             onSuccess: () {
               ref.read(connectionStatusProvider.notifier).setOnline();
