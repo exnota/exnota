@@ -30,21 +30,21 @@ void main() {
           final block1 = BlockTableData(
               id: 'block1',
               type: 'audio',
-              user: "user 1",
+              user: 'user 1',
               userCreated: DateTime.utc(1809, DateTime.february, 11),
               created: DateTime.utc(1809, DateTime.february, 12),
               updated: now);
           final block2 = BlockTableData(
               id: 'block2',
               type: 'audio',
-              user: "user 1",
+              user: 'user 1',
               userCreated: DateTime.utc(1879, DateTime.march, 13),
               created: DateTime.utc(1879, DateTime.march, 14),
               updated: now);
           final block3 = BlockTableData(
               id: 'block3',
               type: 'audio',
-              user: "user 2",
+              user: 'user 2',
               userCreated: DateTime.utc(1879, DateTime.march, 13),
               created: DateTime.utc(1879, DateTime.march, 14),
               updated: now);

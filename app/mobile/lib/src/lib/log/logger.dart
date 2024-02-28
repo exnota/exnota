@@ -30,24 +30,24 @@ class Logger {
   void info(String message, [dynamic data]) {
     // Use toString() to avoid needing to support .toJson() on all objects,
     // without which NoSuchMethodError will be thrown.
-    logger.i({"message": _message(message), "data": _loggableData(data)});
+    logger.i({'message': _message(message), 'data': _loggableData(data)});
   }
 
   void debug(String message, [dynamic data]) {
     // Use toString() to avoid needing to support .toJson() on all objects,
     // without which NoSuchMethodError will be thrown.
-    logger.d({"message": _message(message), "data": _loggableData(data)});
+    logger.d({'message': _message(message), 'data': _loggableData(data)});
   }
 
   // Don't attach PII or any personal information as we may in future
   // send this data to a third-party crash reporting service.
   void warn(String message, {dynamic nonPrivateData, Object? error}) {
     logger.w(
-        {"message": _message(message), "data": _loggableData(nonPrivateData)},
+        {'message': _message(message), 'data': _loggableData(nonPrivateData)},
         error: error);
     report(
         description: 'Warn: ${_message(message)}',
-        nonPrivateData: {"data": nonPrivateData, "error": error});
+        nonPrivateData: {'data': nonPrivateData, 'error': error});
   }
 
   // Don't attach PII or any personal information as we may in future
@@ -55,11 +55,11 @@ class Logger {
   void error(String message,
       {dynamic nonPrivateData, Error? error, Object? exception}) {
     logger.e(
-        {"message": _message(message), "data": _loggableData(nonPrivateData)},
+        {'message': _message(message), 'data': _loggableData(nonPrivateData)},
         error: error);
     report(
         description: 'Error: ${_message(message)}',
-        nonPrivateData: {"data": nonPrivateData, "error": error});
+        nonPrivateData: {'data': nonPrivateData, 'error': error});
   }
 
   String _message(String message) {
@@ -125,8 +125,8 @@ class CustomSimplePrinter extends LogPrinter {
 
   String _stringifyMessage(dynamic message) {
     final finalMessage = message is Function ? message() : message;
-    if (finalMessage is Map && finalMessage["message"] != null) {
-      final data = finalMessage["data"];
+    if (finalMessage is Map && finalMessage['message'] != null) {
+      final data = finalMessage['data'];
       if (data != null) {
         return '${finalMessage["message"]} ${jsonEncode(data)}';
       }

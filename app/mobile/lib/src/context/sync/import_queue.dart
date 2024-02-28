@@ -231,18 +231,18 @@ class _ImportQueueInternal extends _$ImportQueueInternal {
         _log.debug('User no longer active, clearing queue');
         ref.invalidateSelf();
       } else {
-        _log.debug("Not clearing queue");
+        _log.debug('Not clearing queue');
       }
     });
     return [];
   }
 
   void addRequest(ImportRequest request) {
-    _log.debug("Adding request: $request");
+    _log.debug('Adding request: $request');
     // Avoid duplicates: Check if a request of the same type is already in progress
     if (state.any((r) => r.request.runtimeType == request.runtimeType)) {
       _log.debug(
-          "Skipping request of type ${request.runtimeType} which is already in queue.");
+          'Skipping request of type ${request.runtimeType} which is already in queue.');
       return;
     }
 
@@ -254,7 +254,7 @@ class _ImportQueueInternal extends _$ImportQueueInternal {
 
   // TODO: Either remove this or de-dupe requests of the same type
   void addMultipleRequests(List<ImportRequest> requests) {
-    _log.debug("Adding multiple requests: $requests");
+    _log.debug('Adding multiple requests: $requests');
     state = [
       ...state,
       ...requests
@@ -263,25 +263,25 @@ class _ImportQueueInternal extends _$ImportQueueInternal {
   }
 
   void removeRequest(Type requestType) {
-    _log.debug("Removing request: $requestType");
+    _log.debug('Removing request: $requestType');
     final newState =
         state.where((r) => r.request.runtimeType != requestType).toList();
 
     final oldCount = state.length;
     final newCount = newState.length;
-    _log.debug("Removing ${oldCount - newCount} requests");
+    _log.debug('Removing ${oldCount - newCount} requests');
 
     state = newState;
   }
 
   void retry() {
-    _log.debug("Retrying all errored requests");
+    _log.debug('Retrying all errored requests');
     state = state.map((r) {
       if (r.status == RequestStatus.pending) {
         return r;
       }
       _log.debug(
-          "Retrying request ${r.request.runtimeType} which had status: ${r.status}");
+          'Retrying request ${r.request.runtimeType} which had status: ${r.status}');
       return (request: r.request, status: RequestStatus.pending, error: null);
     }).toList();
   }
@@ -291,14 +291,14 @@ class _ImportQueueInternal extends _$ImportQueueInternal {
       required RequestStatus status,
       RequestError? error}) {
     _log.debug(
-        "Setting status for request $requestType to $status with error $error");
-    _log.debug("Checking ${state.length} requests");
+        'Setting status for request $requestType to $status with error $error');
+    _log.debug('Checking ${state.length} requests');
     state = state.map((r) {
       if (r.request.runtimeType == requestType) {
-        _log.debug("Matching request found");
+        _log.debug('Matching request found');
         return (request: r.request, status: status, error: error);
       }
-      _log.debug("Non-matching request found");
+      _log.debug('Non-matching request found');
       return r;
     }).toList();
   }

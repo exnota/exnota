@@ -12,7 +12,7 @@ String generateIdLegacy() {
   return nanoid(
       length: 14,
       alphabet:
-          "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+          '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
 }
 
 @riverpod
@@ -24,5 +24,5 @@ String generateId() {
   return nanoid(
       length: 15,
       alphabet:
-          "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+          '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
 }
