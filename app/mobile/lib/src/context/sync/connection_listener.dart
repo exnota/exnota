@@ -132,8 +132,17 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
         );
       });
       _healthCheckRetry?.start();
-
       return;
+    }
+
+    // TODO: Replace the conditional blocks with a switch statement
+    if (nextStatus == ConnStatus.unauthenticated) {
+      _log.debug('Handling transition to unauthenticated');
+
+      // TODO: Keep all transitions cleanup consistent
+      _log.debug('Cleaning up');
+      _healthCheckRetry?.stop();
+      _serverConnection?.close();
     }
   }
 }
