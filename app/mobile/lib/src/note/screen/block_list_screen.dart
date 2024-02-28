@@ -65,6 +65,12 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
           ),
           FloatingActionButton(
             onPressed: () {
+              ref.read(connectionStatusProvider.notifier).setUnauthenticated();
+            },
+            child: const Icon(Icons.logout),
+          ),
+          FloatingActionButton(
+            onPressed: () {
               ref.read(connectionStatusProvider.notifier).setOffline();
               // // Add test requests
               // ref.read(importQueueProvider.notifier).addMultipleRequests([
@@ -154,16 +160,27 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
               decoration: BoxDecoration(
                 color: Theme.of(context).secondaryHeaderColor,
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.cloud_off_outlined),
-                  SizedBox(
+                  const Icon(Icons.cloud_off_outlined),
+                  const SizedBox(
                     width: 10,
                   ),
-                  Text(
+                  const Text(
                     'Offline',
-                  )
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  FilledButton.tonal(
+                    onPressed: () {
+                      ref
+                          .read(connectionStatusProvider.notifier)
+                          .setUserRetry();
+                    },
+                    child: const Text('Retry'),
+                  ),
                 ],
               ),
             )
@@ -182,6 +199,31 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                   Text(
                     'Retrying',
                   )
+                ],
+              ),
+            )
+          else if (connStatus == ConnStatus.unauthenticated)
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).secondaryHeaderColor,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  const Text(
+                    'You have been logged out.',
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  FilledButton.tonal(
+                      onPressed: () {
+                        // TODO:
+                      },
+                      child: const Text('Login')),
                 ],
               ),
             ),
