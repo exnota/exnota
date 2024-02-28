@@ -33,6 +33,6 @@ class User with _$User {
           'email': email,
           'verified': verified,
         },
-        collectionName: "user");
+        collectionName: 'user');
   }
 }

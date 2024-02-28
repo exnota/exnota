@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 // ignore: implementation_imports
-import "package:pocketbase/src/sse/sse_client.dart";
+import 'package:pocketbase/src/sse/sse_client.dart';
 
 class ConnectionListener extends ConsumerStatefulWidget {
   final Widget child;

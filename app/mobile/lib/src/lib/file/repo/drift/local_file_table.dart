@@ -20,7 +20,7 @@ class LocalFileTable extends Table {
 
 @JsonEnum(alwaysCreate: true, valueField: 'dbName')
 enum EntityTypeRepo {
-  block(dbName: "block");
+  block(dbName: 'block');
 
   const EntityTypeRepo({required this.dbName});
 

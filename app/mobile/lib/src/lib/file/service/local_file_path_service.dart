@@ -48,7 +48,7 @@ class LocalPathGenerator {
       {required String blockId, required String extension}) async {
     final path = p.joinAll([_notesAudioPath, 'block-$blockId.$extension']);
     if (await File(path).exists()) {
-      throw Exception("File already exists");
+      throw Exception('File already exists');
     }
     return path;
   }

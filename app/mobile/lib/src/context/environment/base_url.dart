@@ -28,7 +28,7 @@ class BaseUrl extends _$BaseUrl {
           } else {
             _log.info('Detected emulator');
             // Android simulator needs 10.0.2.2 to access localhost
-            return Uri.http("10.0.2.2:8080");
+            return Uri.http('10.0.2.2:8080');
           }
         } else {
           _log.info('Detected iOS device');
