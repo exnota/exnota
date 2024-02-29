@@ -1,6 +1,5 @@
 import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/connectivity_checker.dart';
-import 'package:exnota/src/context/sync/health_check_retry.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
@@ -18,8 +17,6 @@ class ConnectionListener extends ConsumerStatefulWidget {
 
 class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
   final _log = Logger(context: 'ConnectionListener');
-  // TODO: Remove this when other version is tested
-  HealthCheckRetry? _healthCheckRetry;
   ConnectivityChecker? _connectivityChecker;
 
   @override
@@ -35,7 +32,6 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
   @override
   void dispose() {
     _log.debug('Disposing');
-    _healthCheckRetry?.stop();
     _connectivityChecker?.stop();
     super.dispose();
   }
@@ -59,29 +55,28 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
         _log.debug('Handling transition to offline');
 
         _log.debug('Cleaning up');
-        _healthCheckRetry?.stop();
         _connectivityChecker?.stop();
 
-        _log.debug('Starting healthcheck retry for offline status');
+        _log.debug('Starting connectivity check');
         setState(() {
-          _healthCheckRetry = HealthCheckRetry(
-            client: http.Client(),
+          _connectivityChecker = ConnectivityChecker(
+            strategy: CheckerStrategy.unlimitedRetry(
+              maxInterval: 60,
+              onOnline: () {
+                ref.read(connectionStatusProvider.notifier).setOnline();
+              },
+            ),
             uri: ref.read(urlProvider('/api/health')),
-            label: 'offline',
-            maxDelay: 60,
-            onSuccess: () {
-              ref.read(connectionStatusProvider.notifier).setOnline();
-            },
+            client: http.Client(),
           );
         });
-        _healthCheckRetry?.start();
+        _connectivityChecker?.start();
         break;
 
       case ConnStatus.online:
         _log.debug('Handling transition to online');
 
         _log.debug('Cleaning up');
-        _healthCheckRetry?.stop();
         _connectivityChecker?.stop();
 
         _log.debug('Starting server connection');
@@ -109,7 +104,6 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
         _log.debug('Handling transition to userRetry');
 
         _log.debug('Cleaning up');
-        _healthCheckRetry?.stop();
         _connectivityChecker?.stop();
 
         _log.debug('Starting healthcheck retry for userRetry status');
@@ -135,7 +129,6 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
         _log.debug('Handling transition to unauthenticated');
 
         _log.debug('Cleaning up');
-        _healthCheckRetry?.stop();
         _connectivityChecker?.stop();
         break;
     }

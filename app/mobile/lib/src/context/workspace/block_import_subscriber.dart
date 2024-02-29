@@ -124,6 +124,14 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
 
     try {
       _log.debug('Subscribe: Subscribing to block changes');
+      // There's no real error handling for PocketBase subscriptions.
+      //
+      // The subscribe() call will hang if the server isn't available. That's
+      // why we check connection status above.
+      //
+      // No error is thrown if the connection becomes available either, and it
+      // doesn't always recover. That's why we refresh it when the connection
+      // status changes.
       final unsub =
           await pb.collection(collectionBlock).subscribe('*', (e) async {
         _log.debug(
