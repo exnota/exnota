@@ -114,20 +114,21 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
 
         _log.debug('Starting healthcheck retry for userRetry status');
         setState(() {
-          _healthCheckRetry = HealthCheckRetry(
-            client: http.Client(),
+          _connectivityChecker = ConnectivityChecker(
+            strategy: CheckerStrategy.durationRetry(
+              maxDuration: 11, // Two 5s timeouts + 1s buffer = 2 attempts
+              onOnline: () {
+                ref.read(connectionStatusProvider.notifier).setOnline();
+              },
+              onExpire: () {
+                ref.read(connectionStatusProvider.notifier).setOffline();
+              },
+            ),
             uri: ref.read(urlProvider('/api/health')),
-            label: 'userRetry',
-            maxDuration: 10,
-            onSuccess: () {
-              ref.read(connectionStatusProvider.notifier).setOnline();
-            },
-            onExpire: () {
-              ref.read(connectionStatusProvider.notifier).setOffline();
-            },
+            client: http.Client(),
           );
         });
-        _healthCheckRetry?.start();
+        _connectivityChecker?.start();
         break;
 
       case ConnStatus.unauthenticated:

@@ -38,6 +38,10 @@ class CheckerStrategy with _$CheckerStrategy {
   const factory CheckerStrategy.durationRetry({
     /// The maximum duration in seconds to attempt retries before giving up and
     /// calling onExpire.
+    ///
+    /// The duration is measured from the start of the first attempt until the
+    /// projected start time (current time + next interval) of the next
+    /// attempt.
     required int maxDuration,
 
     /// Called when the connection is detected to be online.
