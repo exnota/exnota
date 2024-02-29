@@ -86,6 +86,15 @@ class ConnectivityChecker {
     _log = Logger(context: 'ConnectivityChecker.${strategy.runtimeType}');
   }
 
+  /// Returns a future of the status of the last connection attempt.
+  ///
+  /// `null` if the first connection attempt has not yet completed.
+  ///
+  /// This is an alternative to using the callbacks in the strategy.
+  ///
+  /// When or whether the future completes will depends on the strategy. E.g. a
+  /// detect offline strategy may never complete if the connection is never
+  /// detected to be offline.
   Future<ConnectivityCheckerStatus?> start() async {
     _log.debug('Starting');
     if (_completer != null) {
