@@ -1,4 +1,4 @@
-import 'package:exnota/src/context/sync/health_check.dart';
+import 'package:exnota/src/context/sync/connectivity_checker.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -139,9 +139,20 @@ class _ConnectionStatusInternal extends _$ConnectionStatusInternal {
     }
 
     _log.debug('getNonDefaultStatus: Checking status');
-    final success = await HealthCheck.ping(
-        ref.read(urlProvider('/api/health')), http.Client());
-    if (success) {
+    final checker = ConnectivityChecker(
+      strategy: CheckerStrategy.fixedRetry(
+          maxAttempts: 2,
+          onOnline: () {
+            // Use future instead
+          },
+          onExpire: () {
+            // Use future instead
+          }),
+      uri: ref.read(urlProvider('/api/health')),
+      client: http.Client(),
+    );
+    final result = await checker.start();
+    if (result == ConnectivityCheckerStatus.online) {
       setOnline();
     } else {
       setOffline();
