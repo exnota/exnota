@@ -1,14 +1,11 @@
-// stateful consumer widget ConnectionListener with usual logs
-
 import 'package:exnota/src/context/sync/connection_status.dart';
+import 'package:exnota/src/context/sync/connectivity_checker.dart';
 import 'package:exnota/src/context/sync/health_check_retry.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-// ignore: implementation_imports
-import 'package:pocketbase/src/sse/sse_client.dart';
 
 class ConnectionListener extends ConsumerStatefulWidget {
   final Widget child;
@@ -21,8 +18,9 @@ class ConnectionListener extends ConsumerStatefulWidget {
 
 class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
   final _log = Logger(context: 'ConnectionListener');
+  // TODO: Remove this when other version is tested
   HealthCheckRetry? _healthCheckRetry;
-  SseClient? _serverConnection;
+  ConnectivityChecker? _connectivityChecker;
 
   @override
   void initState() {
@@ -38,7 +36,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
   void dispose() {
     _log.debug('Disposing');
     _healthCheckRetry?.stop();
-    _serverConnection?.close();
+    _connectivityChecker?.stop();
     super.dispose();
   }
 
@@ -62,7 +60,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
 
         _log.debug('Cleaning up');
         _healthCheckRetry?.stop();
-        _serverConnection?.close();
+        _connectivityChecker?.stop();
 
         _log.debug('Starting healthcheck retry for offline status');
         setState(() {
@@ -84,39 +82,27 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
 
         _log.debug('Cleaning up');
         _healthCheckRetry?.stop();
-        _serverConnection?.close();
+        _connectivityChecker?.stop();
 
         _log.debug('Starting server connection');
-        var errorCount = 0;
         setState(() {
-          // Create a blank/empty subscription to the server-side event stream of
+          // Create a blank/emptubscription to the server-side event stream of
           // PocketBase. This uses an internal class from the pocketbase package
           // because the official API doesn't expose an onError callback: it just
           // silently fails when the connection is lost.
           //
           // Source: https://github.com/pocketbase/pocketbase/discussions/1957#discussioncomment-5177865
-          _serverConnection = SseClient(
-            ref.read(urlProvider('/api/realtime')).toString(),
-            onError: (err) {
-              _log.debug('Server connection error with error object: $err');
-
-              // onError can be called multiple times in quick succession. To
-              // minimise unexpected race conditions, call setOffline only once.
-              // Though so far I have only seen this with an invalid URL being
-              // used.
-              //
-              // Usually, when the local server goes down, it calls onError
-              // twice:
-              // - The first with a ClientException object
-              // - The second with null
-              errorCount++;
-              _log.debug('Error count: $errorCount');
-              if (errorCount == 1) {
-                ref.read(connectionStatusProvider.notifier).setOffline();
-              }
-            },
-          );
+          _connectivityChecker = ConnectivityChecker(
+              strategy: CheckerStrategy.detectOffline(
+                interval: 20,
+                onOffline: () {
+                  ref.read(connectionStatusProvider.notifier).setOffline();
+                },
+              ),
+              uri: ref.read(urlProvider('/api/health')),
+              client: http.Client());
         });
+        _connectivityChecker?.start();
         break;
 
       case ConnStatus.userRetry:
@@ -124,7 +110,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
 
         _log.debug('Cleaning up');
         _healthCheckRetry?.stop();
-        _serverConnection?.close();
+        _connectivityChecker?.stop();
 
         _log.debug('Starting healthcheck retry for userRetry status');
         setState(() {
@@ -149,7 +135,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
 
         _log.debug('Cleaning up');
         _healthCheckRetry?.stop();
-        _serverConnection?.close();
+        _connectivityChecker?.stop();
         break;
     }
   }
