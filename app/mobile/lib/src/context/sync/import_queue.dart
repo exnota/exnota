@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -89,20 +90,41 @@ class _ImportQueueProcessorState extends ConsumerState<ImportQueueProcessor> {
   @override
   Widget build(BuildContext context) {
     _log.debug('Building');
-    // This rebuilds on each new request in the queue, but does not cause the
-    // child to rebuild.
+
+    // Watching the queue will rebuild this widget on each new request in the
+    // queue, but does not cause the child widget to rebuild.
     final nextInQueue = ref.watch(_nextInQueueProvider);
+    final connStatus = ref.watch(connectionStatusProvider);
+
     if (nextInQueue != null) {
-      _log.debug(
-          'Processing next request in queue of type: ${nextInQueue.request.runtimeType}');
-      // Need to wrap in Future to avoid provider throwing an error that its
-      // state was modified during the widget's lifecycle.
-      Future(() {
-        ref
-            .read(_requestProcessorProvider.notifier)
-            .process(nextInQueue.request);
-      });
+      _log.debug('Next in queue: ${nextInQueue.request.runtimeType}');
+      switch (connStatus) {
+        case ConnStatus.offline:
+        case ConnStatus.userRetry:
+        case ConnStatus.unauthenticated:
+          _log.debug(
+              'Ignoring next in queue due to connection status $connStatus');
+          break;
+        case ConnStatus.online:
+          _log.debug('Processing next in queue');
+          // Need to wrap in Future to avoid provider throwing an error that its
+          // state was modified during the widget's lifecycle.
+          Future(() {
+            ref
+                .read(_requestProcessorProvider.notifier)
+                .process(nextInQueue.request);
+          });
+          break;
+      }
     }
+
+    // When returing online, clear error statuses of requests in queue
+    ref.listen(connectionStatusProvider, (oldStatus, newStatus) {
+      if (oldStatus != ConnStatus.online && newStatus == ConnStatus.online) {
+        _log.debug('Clearing error statuses of requests in queue');
+        ref.read(_importQueueInternalProvider.notifier).retry();
+      }
+    });
 
     return widget.child;
   }
@@ -165,6 +187,15 @@ class _RequestProcessor extends _$RequestProcessor {
             status: RequestStatus.error,
             error: RequestError.other);
       }
+      return;
+    } on TimeoutException catch (e) {
+      // A TimeoutException can be thrown if the ImportRequest instance, for
+      // example, adds a .timeout() to a PocketBase request.
+      _log.debug('Timeout processing request: $e');
+      ref.read(_importQueueInternalProvider.notifier).setStatus(
+          requestType: request.runtimeType,
+          status: RequestStatus.error,
+          error: RequestError.network);
       return;
     } on Exception catch (e) {
       // This path isn't expected for request errors, as PocketBase wraps
