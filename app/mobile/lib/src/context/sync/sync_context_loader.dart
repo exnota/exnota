@@ -1,5 +1,5 @@
 import 'package:exnota/src/context/sync/connection_listener.dart';
-import 'package:exnota/src/context/sync/import_queue.dart';
+import 'package:exnota/src/context/sync/import_request_queue.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
