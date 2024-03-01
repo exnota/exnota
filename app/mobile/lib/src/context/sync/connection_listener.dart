@@ -1,6 +1,7 @@
 import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/connectivity_checker.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
+import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +27,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
 
     final connStatus = ref.read(connectionStatusProvider);
     _log.debug('Initial connection status: $connStatus');
-    _handleConnectionStatusChange(null, connStatus);
+    _handleConnectionStatusChange(nextStatus: connStatus);
   }
 
   @override
@@ -41,15 +42,45 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
     _log.debug('Building');
 
     ref.listen(connectionStatusProvider, (prevStatus, nextStatus) {
-      _log.debug('Connection status changed: $prevStatus -> $nextStatus');
-      _handleConnectionStatusChange(prevStatus, nextStatus);
+      _log.debug(
+          'ConnectionStatus listener: Changed from $prevStatus -> $nextStatus');
+      _handleConnectionStatusChange(nextStatus: nextStatus);
+    });
+
+    ref.listen(activeUserIdProvider, (prevUserId, nextUserId) {
+      _log.debug(
+          'ActiveUserId listener: Changed from $prevUserId -> $nextUserId');
+
+      // Logout
+      if (nextUserId == null) {
+        _log.debug('ActiveUserId listener: Stopping any connectivity checker');
+        _connectivityChecker?.stop();
+        return;
+      }
+
+      // Login
+      if (prevUserId == null) {
+        final status = ref.read(connectionStatusProvider);
+        if (status == ConnStatus.unauthenticated) {
+          // User is likely online after logging in, so reset to that. This will
+          // trigger the listener to re-create the checker.
+          _log.debug(
+              'ActiveUserId listener: Resetting connection status to online');
+          ref.read(connectionStatusProvider.notifier).setOnline();
+        } else {
+          // Re-create the checker as it was stopped on logout.
+          _log.debug(
+              'ActiveUserId listener: Triggering creation of connectivity checkers.');
+          _handleConnectionStatusChange(nextStatus: status);
+        }
+        return;
+      }
     });
 
     return widget.child;
   }
 
-  void _handleConnectionStatusChange(
-      ConnStatus? prevStatus, ConnStatus nextStatus) {
+  void _handleConnectionStatusChange({required ConnStatus nextStatus}) {
     switch (nextStatus) {
       case ConnStatus.offline:
         _log.debug('Handling transition to offline');
