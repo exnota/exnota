@@ -1,3 +1,4 @@
+import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/import_queue.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
@@ -78,19 +79,31 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
     // Import all blocks when the active user changes.
     ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) {
       _log.debug(
-          'Detected active user ID change from $oldActiveUserId to $newActiveUserId');
+          'ActiveUserId listener: Detected change from $oldActiveUserId to $newActiveUserId');
       // When a user logs in, import blocks.
       if (oldActiveUserId == null && newActiveUserId != null) {
-        _log.debug('Adding block import request');
+        _log.debug('ActiveUserId listener: Queuing block import');
         ref
             .read(importQueueProvider.notifier)
             .addRequest(ImportBlocksRequest());
       } else if (oldActiveUserId != null &&
           newActiveUserId != null &&
           oldActiveUserId != newActiveUserId) {
-        _log.warn('User change not handled');
+        _log.warn('ActiveUserId listener: User change not handled');
       } else {
-        _log.debug('Skip adding block import request');
+        _log.debug('ActiveUserId listener: Skip block import');
+      }
+    });
+
+    // Import all blocks when back online
+    ref.listen(connectionStatusProvider, (oldStatus, newStatus) {
+      _log.debug(
+          'Status listener: Detected change from $oldStatus to $newStatus');
+      if (oldStatus != ConnStatus.online && newStatus == ConnStatus.online) {
+        _log.debug('Status listener: Queuing block import');
+        ref
+            .read(importQueueProvider.notifier)
+            .addRequest(ImportBlocksRequest());
       }
     });
 
