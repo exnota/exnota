@@ -138,8 +138,12 @@ class ImportBlocksRequest extends ImportRequest<List<RecordModel>> {
   Future<void> request({required PocketBase pb, required Ref ref}) async {
     _log.debug('Importing blocks...');
 
-    final result =
-        await pb.collection(collectionBlock).getFullList(sort: '-created');
+    final result = await pb
+        .collection(collectionBlock)
+        .getFullList(sort: '-created')
+        // Timeout added because otherwise, if the server goes down, this hangs
+        // forever I believe.
+        .timeout(const Duration(seconds: 20));
     _log.debug('Fetched ${result.length} blocks');
 
     await ref.read(blockImporterProvider.notifier).importAll(result);

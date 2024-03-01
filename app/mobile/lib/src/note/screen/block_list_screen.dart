@@ -57,28 +57,29 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
       ),
       floatingActionButton: ButtonBar(
         children: [
-          FloatingActionButton(
-            onPressed: () {
-              ref.read(connectionStatusProvider.notifier).setUserRetry();
-            },
-            child: const Icon(Icons.restart_alt),
-          ),
-          FloatingActionButton(
-            onPressed: () {
-              ref.read(connectionStatusProvider.notifier).setUnauthenticated();
-            },
-            child: const Icon(Icons.logout),
-          ),
+          // FloatingActionButton(
+          //   onPressed: () {
+          //     ref.read(connectionStatusProvider.notifier).setUserRetry();
+          //   },
+          //   child: const Icon(Icons.restart_alt),
+          // ),
+          // FloatingActionButton(
+          //   onPressed: () {
+          //     ref.read(connectionStatusProvider.notifier).setUnauthenticated();
+          //   },
+          //   child: const Icon(Icons.logout),
+          // ),
           FloatingActionButton(
             onPressed: () {
               ref.read(connectionStatusProvider.notifier).setOffline();
-              // // Add test requests
-              // ref.read(importQueueProvider.notifier).addMultipleRequests([
-              //   ListNotesRequestOne(),
-              //   ListNotesRequestTwo(),
-              // ]);
+              // Add test requests
+              ref.read(importQueueProvider.notifier).addMultipleRequests([
+                ListNotesRequestOne(),
+                ListNotesRequestTwo(),
+              ]);
             },
-            child: const Icon(Icons.cloud_off),
+            child: const Icon(Icons.add),
+            // child: const Icon(Icons.cloud_off),
           ),
         ],
       ),
