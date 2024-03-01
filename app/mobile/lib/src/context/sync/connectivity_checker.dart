@@ -74,6 +74,9 @@ class ConnectivityChecker {
   final Uri uri;
   final CheckerStrategy strategy;
 
+  /// An identifier for logging.
+  final String label;
+
   Completer<ConnectivityCheckerStatus?>? _completer;
   ConnectivityCheckerStatus? _lastStatus;
   DateTime? _started;
@@ -86,8 +89,9 @@ class ConnectivityChecker {
     required this.strategy,
     required this.uri,
     required this.client,
+    required this.label,
   }) {
-    _log = Logger(context: 'ConnectivityChecker.${strategy.runtimeType}');
+    _log = Logger(context: 'ConnectivityChecker.$label');
   }
 
   /// Returns a future of the status of the last connection attempt.
@@ -149,6 +153,8 @@ class ConnectivityChecker {
           return;
         }
 
+        _log.debug(
+            'Scheduling next ping in ${offlineStrategy.interval} seconds');
         _timer = Timer(Duration(seconds: offlineStrategy.interval), _ping);
         break;
 

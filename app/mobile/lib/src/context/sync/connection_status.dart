@@ -141,15 +141,17 @@ class _ConnectionStatusInternal extends _$ConnectionStatusInternal {
     _log.debug('getNonDefaultStatus: Checking status');
     final checker = ConnectivityChecker(
       strategy: CheckerStrategy.fixedRetry(
-          maxAttempts: 2,
-          onOnline: () {
-            // Use future instead
-          },
-          onExpire: () {
-            // Use future instead
-          }),
+        maxAttempts: 2,
+        onOnline: () {
+          // Use future instead
+        },
+        onExpire: () {
+          // Use future instead
+        },
+      ),
       uri: ref.read(urlProvider('/api/health')),
       client: http.Client(),
+      label: 'getNonDefaultStatus',
     );
     final result = await checker.start();
     if (result == ConnectivityCheckerStatus.online) {
