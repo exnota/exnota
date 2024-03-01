@@ -68,6 +68,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
             ),
             uri: ref.read(urlProvider('/api/health')),
             client: http.Client(),
+            label: 'offline',
           );
         });
         _connectivityChecker?.start();
@@ -95,7 +96,8 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
                 },
               ),
               uri: ref.read(urlProvider('/api/health')),
-              client: http.Client());
+              client: http.Client(),
+              label: 'online');
         });
         _connectivityChecker?.start();
         break;
@@ -120,6 +122,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
             ),
             uri: ref.read(urlProvider('/api/health')),
             client: http.Client(),
+            label: 'userRetry',
           );
         });
         _connectivityChecker?.start();
