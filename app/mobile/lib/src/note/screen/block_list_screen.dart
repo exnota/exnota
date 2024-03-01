@@ -72,8 +72,9 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
           // ),
           FloatingActionButton(
             onPressed: () {
-              ref.read(connectionStatusProvider.notifier).setOffline();
+              // ref.read(connectionStatusProvider.notifier).setOffline();
               // Add test requests
+              ref.read(pocketBaseProvider).authStore.clear();
               ref
                   .read(importRequestQueueProvider.notifier)
                   .addMultipleRequests([
@@ -276,10 +277,12 @@ class ListNotesRequestOne extends ImportRequest<List<RecordModel>> {
     _log.debug('Requesting list of notes');
 
     // wait 5 seconds
-    await Future.delayed(const Duration(seconds: 10));
+    await Future.delayed(const Duration(seconds: 5));
 
-    final result =
-        await pb.collection(collectionBlock).getFullList(sort: '-created');
+    final result = await pb
+        .collection(collectionBlock)
+        .getFullList(sort: '-created')
+        .timeout(const Duration(seconds: 5));
     _log.debug('Listed ${result.length} notes');
 
     _log.debug('Request complete');
@@ -294,10 +297,12 @@ class ListNotesRequestTwo extends ImportRequest<List<RecordModel>> {
     _log.debug('Requesting list of notes');
 
     // wait 5 seconds
-    await Future.delayed(const Duration(seconds: 10));
+    await Future.delayed(const Duration(seconds: 5));
 
-    final result =
-        await pb.collection(collectionBlock).getFullList(sort: '-created');
+    final result = await pb
+        .collection(collectionBlock)
+        .getFullList(sort: '-created')
+        .timeout(const Duration(seconds: 5));
     _log.debug('Listed ${result.length} notes');
 
     _log.debug('Request complete');
