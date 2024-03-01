@@ -12,47 +12,47 @@ import 'package:retry/retry.dart';
 
 part 'import_queue.g.dart';
 
-abstract class ImportRequest<T> {
-  Future<void> request({required PocketBase pb, required Ref ref});
-}
-
 // ----------------------------------------------------------------------------
 // Public providers, where state is assumed loaded.
 // ----------------------------------------------------------------------------
 
 @riverpod
-bool importQueueErrored(ImportQueueErroredRef ref) {
+bool importRequestQueueErrored(ImportRequestQueueErroredRef ref) {
   return ref
-      .watch(_importQueueInternalProvider)
+      .watch(_importRequestQueueInternalProvider)
       .any((r) => r.status == RequestStatus.error);
 }
 
 @riverpod
-bool importQueueAuthErrored(ImportQueueAuthErroredRef ref) {
+bool importRequestQueueAuthErrored(ImportRequestQueueAuthErroredRef ref) {
   return ref
-      .watch(_importQueueInternalProvider)
+      .watch(_importRequestQueueInternalProvider)
       .any((r) => r.error == RequestError.auth);
 }
 
+abstract class ImportRequest<T> {
+  Future<void> request({required PocketBase pb, required Ref ref});
+}
+
 @riverpod
-class ImportQueue extends _$ImportQueue {
+class ImportRequestQueue extends _$ImportRequestQueue {
   @override
   FutureOr<void> build() {
     // no-op
   }
 
   void addRequest(ImportRequest request) {
-    ref.read(_importQueueInternalProvider.notifier).addRequest(request);
+    ref.read(_importRequestQueueInternalProvider.notifier).addRequest(request);
   }
 
   void addMultipleRequests(List<ImportRequest> requests) {
     ref
-        .read(_importQueueInternalProvider.notifier)
+        .read(_importRequestQueueInternalProvider.notifier)
         .addMultipleRequests(requests);
   }
 
   void retry() {
-    ref.read(_importQueueInternalProvider.notifier).retry();
+    ref.read(_importRequestQueueInternalProvider.notifier).retry();
   }
 }
 
@@ -62,18 +62,19 @@ class ImportQueue extends _$ImportQueue {
 
 /// Utility widget that watches for the next item in the import queue and
 /// triggers processing of it.
-class ImportQueueProcessor extends ConsumerStatefulWidget {
+class ImportRequestQueueProcessor extends ConsumerStatefulWidget {
   final Widget child;
 
-  const ImportQueueProcessor({super.key, required this.child});
+  const ImportRequestQueueProcessor({super.key, required this.child});
 
   @override
-  ConsumerState<ImportQueueProcessor> createState() =>
-      _ImportQueueProcessorState();
+  ConsumerState<ImportRequestQueueProcessor> createState() =>
+      _ImportRequestQueueProcessorState();
 }
 
-class _ImportQueueProcessorState extends ConsumerState<ImportQueueProcessor> {
-  final Logger _log = Logger(context: 'ImportQueueProcessor');
+class _ImportRequestQueueProcessorState
+    extends ConsumerState<ImportRequestQueueProcessor> {
+  final Logger _log = Logger(context: 'ImportRequestQueueProcessor');
 
   @override
   void initState() {
@@ -111,7 +112,7 @@ class _ImportQueueProcessorState extends ConsumerState<ImportQueueProcessor> {
           // state was modified during the widget's lifecycle.
           Future(() {
             ref
-                .read(_requestProcessorProvider.notifier)
+                .read(_importRequestProcessorProvider.notifier)
                 .process(nextInQueue.request);
           });
           break;
@@ -122,7 +123,7 @@ class _ImportQueueProcessorState extends ConsumerState<ImportQueueProcessor> {
     ref.listen(connectionStatusProvider, (oldStatus, newStatus) {
       if (oldStatus != ConnStatus.online && newStatus == ConnStatus.online) {
         _log.debug('Clearing error statuses of requests in queue');
-        ref.read(_importQueueInternalProvider.notifier).retry();
+        ref.read(_importRequestQueueInternalProvider.notifier).retry();
       }
     });
 
@@ -130,93 +131,8 @@ class _ImportQueueProcessorState extends ConsumerState<ImportQueueProcessor> {
   }
 }
 
-/// Provides a method for processing a request.
-@riverpod
-class _RequestProcessor extends _$RequestProcessor {
-  final _log = Logger(context: 'RequestProcessor');
-
-  @override
-  void build() {
-    // no-op
-  }
-
-  Future<void> process(ImportRequest request) async {
-    _log.debug('Processing request of type: ${request.runtimeType}');
-
-    ref.read(_importQueueInternalProvider.notifier).setStatus(
-        requestType: request.runtimeType, status: RequestStatus.running);
-
-    try {
-      await retry(
-        () => request.request(
-            pb: ref.read(userContextServiceProvider).pocketBase, ref: ref),
-        retryIf: (e) {
-          if (e is! ClientException) {
-            _log.debug('Skipping retry of unexpected error: $e');
-            return false;
-          }
-          if (!ref.read(hasActiveUserProvider)) {
-            _log.debug('Skipping retry due to no active user');
-            return false;
-          }
-          return true;
-        },
-        onRetry: (e) => _log.debug('Retrying request that threw: $e'),
-        maxAttempts: 5,
-      );
-    } on PocketBaseException catch (e) {
-      final error = getPocketBaseError(e);
-      _log.debug('Error \'$error\' processing request: $e');
-
-      if (error == PocketBaseError.auth) {
-        _log.debug('Setting status to auth error');
-        ref.read(_importQueueInternalProvider.notifier).setStatus(
-            requestType: request.runtimeType,
-            status: RequestStatus.error,
-            error: RequestError.auth);
-      } else if (error == PocketBaseError.network) {
-        _log.debug('Setting status to network error');
-        ref.read(_importQueueInternalProvider.notifier).setStatus(
-            requestType: request.runtimeType,
-            status: RequestStatus.error,
-            error: RequestError.network);
-      } else {
-        _log.debug('Setting status to other error');
-        ref.read(_importQueueInternalProvider.notifier).setStatus(
-            requestType: request.runtimeType,
-            status: RequestStatus.error,
-            error: RequestError.other);
-      }
-      return;
-    } on TimeoutException catch (e) {
-      // A TimeoutException can be thrown if the ImportRequest instance, for
-      // example, adds a .timeout() to a PocketBase request.
-      _log.debug('Timeout processing request: $e');
-      ref.read(_importQueueInternalProvider.notifier).setStatus(
-          requestType: request.runtimeType,
-          status: RequestStatus.error,
-          error: RequestError.network);
-      return;
-    } on Exception catch (e) {
-      // This path isn't expected for request errors, as PocketBase wraps
-      // exceptions. It will likely be issues in this codebase.
-      _log.error('Error processing request: $e');
-      ref.read(_importQueueInternalProvider.notifier).setStatus(
-          requestType: request.runtimeType,
-          status: RequestStatus.error,
-          error: RequestError.internal);
-      return;
-    }
-
-    _log.debug('Request complete, removing from queue');
-    ref
-        .read(_importQueueInternalProvider.notifier)
-        .removeRequest(request.runtimeType);
-  }
-}
-
 // ----------------------------------------------------------------------------
-// Private providers.
+// Private providers - queue.
 // ----------------------------------------------------------------------------
 
 enum RequestStatus { pending, running, error }
@@ -234,7 +150,7 @@ typedef RequestAndStatus = ({
 /// - The first request is not pending (e.g. it's already running or errored)
 @riverpod
 RequestAndStatus? _nextInQueue(_NextInQueueRef ref) {
-  final queue = ref.watch(_importQueueInternalProvider);
+  final queue = ref.watch(_importRequestQueueInternalProvider);
   final first = queue.firstOrNull;
   if (first != null && first.status == RequestStatus.pending) {
     return queue.first;
@@ -244,8 +160,8 @@ RequestAndStatus? _nextInQueue(_NextInQueueRef ref) {
 
 /// The import request queue, with methods for updating it.
 @riverpod
-class _ImportQueueInternal extends _$ImportQueueInternal {
-  final _log = Logger(context: 'ImportQueueInternal');
+class _ImportRequestQueueInternal extends _$ImportRequestQueueInternal {
+  final _log = Logger(context: 'ImportRequestQueueInternal');
 
   @override
   List<RequestAndStatus> build() {
@@ -332,5 +248,94 @@ class _ImportQueueInternal extends _$ImportQueueInternal {
       _log.debug('Non-matching request found');
       return r;
     }).toList();
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Private providers - individual request processor.
+// ----------------------------------------------------------------------------
+
+/// Provides a method for processing a request.
+@riverpod
+class _ImportRequestProcessor extends _$ImportRequestProcessor {
+  final _log = Logger(context: 'ImportRequestProcessor');
+
+  @override
+  void build() {
+    // no-op
+  }
+
+  Future<void> process(ImportRequest request) async {
+    _log.debug('Processing request of type: ${request.runtimeType}');
+
+    ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
+        requestType: request.runtimeType, status: RequestStatus.running);
+
+    try {
+      await retry(
+        () => request.request(
+            pb: ref.read(userContextServiceProvider).pocketBase, ref: ref),
+        retryIf: (e) {
+          if (e is! ClientException) {
+            _log.debug('Skipping retry of unexpected error: $e');
+            return false;
+          }
+          if (!ref.read(hasActiveUserProvider)) {
+            _log.debug('Skipping retry due to no active user');
+            return false;
+          }
+          return true;
+        },
+        onRetry: (e) => _log.debug('Retrying request that threw: $e'),
+        maxAttempts: 5,
+      );
+    } on PocketBaseException catch (e) {
+      final error = getPocketBaseError(e);
+      _log.debug('Error \'$error\' processing request: $e');
+
+      if (error == PocketBaseError.auth) {
+        _log.debug('Setting status to auth error');
+        ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
+            requestType: request.runtimeType,
+            status: RequestStatus.error,
+            error: RequestError.auth);
+      } else if (error == PocketBaseError.network) {
+        _log.debug('Setting status to network error');
+        ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
+            requestType: request.runtimeType,
+            status: RequestStatus.error,
+            error: RequestError.network);
+      } else {
+        _log.debug('Setting status to other error');
+        ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
+            requestType: request.runtimeType,
+            status: RequestStatus.error,
+            error: RequestError.other);
+      }
+      return;
+    } on TimeoutException catch (e) {
+      // A TimeoutException can be thrown if the ImportRequest instance, for
+      // example, adds a .timeout() to a PocketBase request.
+      _log.debug('Timeout processing request: $e');
+      ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
+          requestType: request.runtimeType,
+          status: RequestStatus.error,
+          error: RequestError.network);
+      return;
+    } on Exception catch (e) {
+      // This path isn't expected for request errors, as PocketBase wraps
+      // exceptions. It will likely be issues in this codebase.
+      _log.error('Error processing request: $e');
+      ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
+          requestType: request.runtimeType,
+          status: RequestStatus.error,
+          error: RequestError.internal);
+      return;
+    }
+
+    _log.debug('Request complete, removing from queue');
+    ref
+        .read(_importRequestQueueInternalProvider.notifier)
+        .removeRequest(request.runtimeType);
   }
 }

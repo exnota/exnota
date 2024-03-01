@@ -37,8 +37,9 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   @override
   Widget build(BuildContext context) {
     final connStatus = ref.watch(connectionStatusProvider);
-    final isImportQueueErrored = ref.watch(importQueueErroredProvider);
-    final isImportQeueAuthErrored = ref.watch(importQueueAuthErroredProvider);
+    final isImportQueueErrored = ref.watch(importRequestQueueErroredProvider);
+    final isImportQeueAuthErrored =
+        ref.watch(importRequestQueueAuthErroredProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -73,7 +74,9 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
             onPressed: () {
               ref.read(connectionStatusProvider.notifier).setOffline();
               // Add test requests
-              ref.read(importQueueProvider.notifier).addMultipleRequests([
+              ref
+                  .read(importRequestQueueProvider.notifier)
+                  .addMultipleRequests([
                 ListNotesRequestOne(),
                 ListNotesRequestTwo(),
               ]);
@@ -150,7 +153,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                   ),
                   FilledButton.tonal(
                       onPressed: () {
-                        ref.read(importQueueProvider.notifier).retry();
+                        ref.read(importRequestQueueProvider.notifier).retry();
                       },
                       child: const Text('Retry')),
                 ],

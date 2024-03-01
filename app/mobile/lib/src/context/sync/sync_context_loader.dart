@@ -32,7 +32,7 @@ class _SyncContextLoaderState extends ConsumerState<SyncContextLoader> {
   Widget build(BuildContext context) {
     _log.debug('Building');
     return ConnectionListener(
-      child: ImportQueueProcessor(
+      child: ImportRequestQueueProcessor(
         child: widget.child,
       ),
     );

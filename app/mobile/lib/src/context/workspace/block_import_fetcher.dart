@@ -41,7 +41,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
         if (activeUserId != null) {
           _log.debug('Adding block import request for user: $activeUserId');
           ref
-              .read(importQueueProvider.notifier)
+              .read(importRequestQueueProvider.notifier)
               .addRequest(ImportBlocksRequest());
         } else {
           _log.debug('No active user, skipping block import request');
@@ -57,7 +57,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
       // state was modified during the widget's lifecycle.
       Future(() {
         ref
-            .read(importQueueProvider.notifier)
+            .read(importRequestQueueProvider.notifier)
             .addRequest(ImportBlocksRequest());
       });
     } else {
@@ -84,7 +84,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
       if (oldActiveUserId == null && newActiveUserId != null) {
         _log.debug('ActiveUserId listener: Queuing block import');
         ref
-            .read(importQueueProvider.notifier)
+            .read(importRequestQueueProvider.notifier)
             .addRequest(ImportBlocksRequest());
       } else if (oldActiveUserId != null &&
           newActiveUserId != null &&
@@ -102,7 +102,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
       if (oldStatus != ConnStatus.online && newStatus == ConnStatus.online) {
         _log.debug('Status listener: Queuing block import');
         ref
-            .read(importQueueProvider.notifier)
+            .read(importRequestQueueProvider.notifier)
             .addRequest(ImportBlocksRequest());
       }
     });
