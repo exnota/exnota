@@ -10,7 +10,7 @@ import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:retry/retry.dart';
 
-part 'import_queue.g.dart';
+part 'import_request_queue.g.dart';
 
 // ----------------------------------------------------------------------------
 // Public providers, where state is assumed loaded.
