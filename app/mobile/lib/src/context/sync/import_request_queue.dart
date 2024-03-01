@@ -199,7 +199,8 @@ class _ImportRequestQueueInternal extends _$ImportRequestQueueInternal {
     ];
   }
 
-  // TODO: Either remove this or de-dupe requests of the same type
+  // TODO: Either remove this or de-dupe requests of the same type. It was
+  // added for ease of testing the queue.
   void addMultipleRequests(List<ImportRequest> requests) {
     _log.debug('Adding multiple requests: $requests');
     state = [
@@ -216,7 +217,7 @@ class _ImportRequestQueueInternal extends _$ImportRequestQueueInternal {
 
     final oldCount = state.length;
     final newCount = newState.length;
-    _log.debug('Removing ${oldCount - newCount} requests');
+    _log.debug('Removing request: Removed ${oldCount - newCount} requests');
 
     state = newState;
   }
@@ -238,14 +239,14 @@ class _ImportRequestQueueInternal extends _$ImportRequestQueueInternal {
       required RequestStatus status,
       RequestError? error}) {
     _log.debug(
-        'Setting status for request $requestType to $status with error $error');
-    _log.debug('Checking ${state.length} requests');
+        'Setting status: Setting request $requestType to $status (error: $error)');
+    _log.debug('Setting status: Checking ${state.length} requests');
     state = state.map((r) {
       if (r.request.runtimeType == requestType) {
-        _log.debug('Matching request found');
+        _log.debug('Setting status: Matching request found');
         return (request: r.request, status: status, error: error);
       }
-      _log.debug('Non-matching request found');
+      _log.debug('Setting status: Non-matching request found');
       return r;
     }).toList();
   }
@@ -276,7 +277,7 @@ class _ImportRequestProcessor extends _$ImportRequestProcessor {
         () => request.request(
             pb: ref.read(userContextServiceProvider).pocketBase, ref: ref),
         retryIf: (e) {
-          if (e is! ClientException) {
+          if (e is! PocketBaseException && e is! TimeoutException) {
             _log.debug('Skipping retry of unexpected error: $e');
             return false;
           }
@@ -287,24 +288,27 @@ class _ImportRequestProcessor extends _$ImportRequestProcessor {
           return true;
         },
         onRetry: (e) => _log.debug('Retrying request that threw: $e'),
-        maxAttempts: 5,
+        maxAttempts: 3,
       );
     } on PocketBaseException catch (e) {
       final error = getPocketBaseError(e);
-      _log.debug('Error \'$error\' processing request: $e');
+      _log.debug('PocketBase error \'$error\' processing request: $e');
 
       if (error == PocketBaseError.auth) {
-        _log.debug('Setting status to auth error');
+        _log.debug(
+            'Setting status to auth error and connection unauthenticated');
         ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.auth);
+        ref.read(connectionStatusProvider.notifier).setUnauthenticated();
       } else if (error == PocketBaseError.network) {
-        _log.debug('Setting status to network error');
+        _log.debug('Setting status to network error and connection offline');
         ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
             requestType: request.runtimeType,
             status: RequestStatus.error,
             error: RequestError.network);
+        ref.read(connectionStatusProvider.notifier).setOffline();
       } else {
         _log.debug('Setting status to other error');
         ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
@@ -317,10 +321,13 @@ class _ImportRequestProcessor extends _$ImportRequestProcessor {
       // A TimeoutException can be thrown if the ImportRequest instance, for
       // example, adds a .timeout() to a PocketBase request.
       _log.debug('Timeout processing request: $e');
+      _log.debug(
+          'Setting request status to network error and connection offline');
       ref.read(_importRequestQueueInternalProvider.notifier).setStatus(
           requestType: request.runtimeType,
           status: RequestStatus.error,
           error: RequestError.network);
+      ref.read(connectionStatusProvider.notifier).setOffline();
       return;
     } on Exception catch (e) {
       // This path isn't expected for request errors, as PocketBase wraps
