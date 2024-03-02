@@ -17,17 +17,19 @@ part 'import_request_queue.g.dart';
 // ----------------------------------------------------------------------------
 
 @riverpod
-bool importRequestQueueErrored(ImportRequestQueueErroredRef ref) {
-  return ref
-      .watch(_importRequestQueueInternalProvider)
-      .any((r) => r.status == RequestStatus.error);
-}
-
-@riverpod
-bool importRequestQueueAuthErrored(ImportRequestQueueAuthErroredRef ref) {
-  return ref
-      .watch(_importRequestQueueInternalProvider)
-      .any((r) => r.error == RequestError.auth);
+bool importRequestQueueUnexpectedError(
+    ImportRequestQueueUnexpectedErrorRef ref) {
+  return ref.watch(_importRequestQueueInternalProvider).any((r) {
+    switch (r.error) {
+      case RequestError.internal:
+      case RequestError.other:
+        return true;
+      case RequestError.auth:
+      case RequestError.network:
+      case null:
+        return false;
+    }
+  });
 }
 
 abstract class ImportRequest<T> {
