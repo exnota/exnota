@@ -37,9 +37,8 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   @override
   Widget build(BuildContext context) {
     final connStatus = ref.watch(connectionStatusProvider);
-    final isImportQueueErrored = ref.watch(importRequestQueueErroredProvider);
-    final isImportQeueAuthErrored =
-        ref.watch(importRequestQueueAuthErroredProvider);
+    final hasUnexpectedError =
+        ref.watch(importRequestQueueUnexpectedErrorProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -64,51 +63,32 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
           //   },
           //   child: const Icon(Icons.restart_alt),
           // ),
-          // FloatingActionButton(
-          //   onPressed: () {
-          //     ref.read(connectionStatusProvider.notifier).setUnauthenticated();
-          //   },
-          //   child: const Icon(Icons.logout),
-          // ),
           FloatingActionButton(
             onPressed: () {
-              // ref.read(connectionStatusProvider.notifier).setOffline();
-              // Add test requests
-              ref.read(pocketBaseProvider).authStore.clear();
-              ref
-                  .read(importRequestQueueProvider.notifier)
-                  .addMultipleRequests([
-                ListNotesRequestOne(),
-                ListNotesRequestTwo(),
-              ]);
+              ref.read(connectionStatusProvider.notifier).setUnauthenticated();
             },
-            child: const Icon(Icons.add),
-            // child: const Icon(Icons.cloud_off),
+            child: const Icon(Icons.logout),
           ),
+          // FloatingActionButton(
+          //   onPressed: () {
+          //     // ref.read(connectionStatusProvider.notifier).setOffline();
+          //     // Add test requests
+          //     // ref.read(pocketBaseProvider).authStore.clear();
+          //     ref
+          //         .read(importRequestQueueProvider.notifier)
+          //         .addMultipleRequests([
+          //       ListNotesRequestOne(),
+          //       ListNotesRequestTwo(),
+          //     ]);
+          //   },
+          //   child: const Icon(Icons.add),
+          //   // child: const Icon(Icons.cloud_off),
+          // ),
         ],
       ),
       body: Column(
         children: [
-          // TODO: #37 Consolidate this offline notice with the refresh queue errors
-          // if (isOffline)
-          //   Container(
-          //     decoration: BoxDecoration(
-          //       color: Theme.of(context).secondaryHeaderColor,
-          //     ),
-          //     child: const Row(
-          //       mainAxisAlignment: MainAxisAlignment.center,
-          //       children: [
-          //         Icon(Icons.cloud_off_outlined),
-          //         SizedBox(
-          //           width: 10,
-          //         ),
-          //         Text(
-          //           'Offline',
-          //         )
-          //       ],
-          //     ),
-          //   ),
-          if (isImportQeueAuthErrored)
+          if (connStatus == ConnStatus.unauthenticated)
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).secondaryHeaderColor,
@@ -134,7 +114,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                 ],
               ),
             )
-          else if (isImportQueueErrored)
+          else if (hasUnexpectedError)
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).secondaryHeaderColor,
@@ -204,31 +184,6 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                   Text(
                     'Retrying',
                   )
-                ],
-              ),
-            )
-          else if (connStatus == ConnStatus.unauthenticated)
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).secondaryHeaderColor,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  const Text(
-                    'You have been logged out.',
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  FilledButton.tonal(
-                      onPressed: () {
-                        // TODO:
-                      },
-                      child: const Text('Login')),
                 ],
               ),
             ),

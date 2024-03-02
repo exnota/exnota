@@ -109,7 +109,12 @@ class ConnectivityChecker {
       _log.warn('Already started');
       return _completer!.future;
     }
-    _completer = Completer<ConnectivityCheckerStatus>();
+    // The type must be optional. It won't show a compile time error but will
+    // throw a runtime error when passed `null`.
+    //
+    // I.e. use this `Completer<ConnectivityCheckerStatus?>();` NOT
+    // `Completer<ConnectivityCheckerStatus>();`
+    _completer = Completer<ConnectivityCheckerStatus?>();
     _started = clock.now();
 
     unawaited(_ping());
@@ -133,7 +138,8 @@ class ConnectivityChecker {
 
   Future<void> _ping() async {
     // Ping endpoint
-    final online = await HealthCheck.ping(uri, client);
+    final online =
+        await HealthCheck.ping(uri: uri, client: client, label: label);
     _lastStatus = online
         ? ConnectivityCheckerStatus.online
         : ConnectivityCheckerStatus.offline;

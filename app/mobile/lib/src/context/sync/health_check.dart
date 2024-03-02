@@ -7,8 +7,11 @@ class HealthCheck {
   /// succeeds.
   ///
   /// Catches exceptions.
-  static Future<bool> ping(Uri uri, http.Client client) async {
-    final log = Logger(context: 'HealthCheck');
+  static Future<bool> ping(
+      {required Uri uri,
+      required http.Client client,
+      required String label}) async {
+    final log = Logger(context: 'HealthCheck.$label');
     log.debug('Pinging $uri');
     try {
       // After implementing this I realised there's also `pb.health.check();` in
