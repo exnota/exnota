@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '920680379230',
     projectId: 'exnota-app',
     storageBucket: 'exnota-app.appspot.com',
-    iosBundleId: 'com.exnota.app',
+    iosBundleId: 'com.exnota.mobile',
   );
 }
