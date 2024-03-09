@@ -38,7 +38,7 @@ Bottom right panel seems to have the live log feed.
 1. Settings > General > Device Management/VPN & Device Management, and select to trust
 2. Then try building in Xcode again.
 
-#### "codesign wants to access key chain..." error
+#### "codesign wants to access keychain (key chain)..." error
 
 - Enter your computer's user password and select `Always allow`!
 - `Always allow` is important, otherwise it will keep asking, which makes it
