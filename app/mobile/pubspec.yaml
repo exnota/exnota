@@ -32,7 +32,9 @@ dependencies:
       ref: ea69c5ec00e5c7a18b8d87d22999ad5c4ddf71ca
   http_parser: ^4.0.2
   drift_db_viewer: ^2.0.0
-  logger: ^2.0.2+1
+  # Had to downgrade this to support flutter_sound and drift_db_viewer.
+  logger: ^1.4.0
+  # logger: ^2.0.2+1
   json_annotation: ^4.8.1
   nanoid2: ^2.0.1
   collection: ^1.17.2
@@ -53,6 +55,9 @@ dependencies:
   fake_async: ^1.3.1
   clock: ^1.1.1
   audio_service: ^0.18.12
+  audio_session: ^0.1.18
+  # flutter_sound: ^9.4.6
+  flutter_sound: ^9.2.13
 
 dev_dependencies:
   flutter_test:

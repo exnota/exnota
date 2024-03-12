@@ -49,7 +49,7 @@ android {
 
     defaultConfig {
         applicationId "com.exnota.app"
-        // version 21 required for audio_waveforms
+        // version 21 required for audio_waveforms, flutter_sound
         // version 18 required for flutter_secure_storage
         minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion

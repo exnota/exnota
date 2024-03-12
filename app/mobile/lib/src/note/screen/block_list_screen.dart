@@ -3,13 +3,16 @@ import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/import_request_queue.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
+import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exnota/src/note/service/block_lister.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pocketbase/pocketbase.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class BlockListScreen extends ConsumerStatefulWidget {
   const BlockListScreen({super.key});
@@ -20,6 +23,8 @@ class BlockListScreen extends ConsumerStatefulWidget {
 
 class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   final Logger _log = Logger(context: 'BlockListScreen');
+  FlutterSoundRecorder? recorder;
+  bool recording = false;
 
   // init
   @override
@@ -31,6 +36,8 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   @override
   void dispose() {
     _log.debug('Disposing');
+    recorder?.stopRecorder();
+    recorder?.closeRecorder();
     super.dispose();
   }
 
@@ -63,11 +70,72 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
           //   },
           //   child: const Icon(Icons.restart_alt),
           // ),
+          // FloatingActionButton(
+          //   onPressed: () {
+          //     ref.read(connectionStatusProvider.notifier).setUnauthenticated();
+          //   },
+          //   child: const Icon(Icons.logout),
+          // ),
           FloatingActionButton(
-            onPressed: () {
-              ref.read(connectionStatusProvider.notifier).setUnauthenticated();
+            onPressed: () async {
+              final micPermission = await Permission.microphone.request();
+              if (micPermission.isGranted) {
+                _log.debug('Mic permission granted');
+              } else {
+                _log.error('Mic permission denied');
+                return;
+              }
+              setState(() {
+                recorder = FlutterSoundRecorder();
+              });
+              if (recorder == null) {
+                // TODO: Show some error?
+                return;
+              }
+
+              // I assume this is opening a session, which is hopefully what
+              // audio_session is properly configuring in main.dart.
+              _log.debug('Opening recorder');
+              await recorder?.openRecorder();
+              setState(() {
+                recording = true;
+              });
+
+              _log.debug('Getting file path');
+              // generate random id for file
+              final random = DateTime.now().millisecondsSinceEpoch.toString();
+              final path = await ref
+                  .read(localFilePathServiceProvider)
+                  .generateAudioBlockFilePath(
+                      blockId: 'test-$random', extension: 'wav');
+
+              _log.debug('Starting recorder');
+              await recorder?.startRecorder(
+                  toFile: path, codec: Codec.pcm16WAV);
+              // setState(() {
+              //   recording = false;
+              // });
             },
-            child: const Icon(Icons.logout),
+            child: const Icon(Icons.mic_outlined),
+          ),
+          FloatingActionButton(
+            onPressed: () async {
+              _log.debug('Stopping recorder');
+              // setState(() {
+              //   recording = false;
+              // });
+              final result = await recorder?.stopRecorder();
+              _log.debug('Recorder stopped, recording at: $result');
+              setState(() {
+                recording = false;
+              });
+
+              // I assume this is closing a session, which is hopefully what
+              // audio_session is properly configuring in main.dart.
+              _log.debug('Closing recorder');
+              await recorder?.closeRecorder();
+            },
+            child: const Icon(Icons.mic_external_off),
           ),
           // FloatingActionButton(
           //   onPressed: () {
