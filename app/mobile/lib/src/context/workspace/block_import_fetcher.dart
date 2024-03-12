@@ -1,5 +1,6 @@
 import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/import_request_queue.dart';
+import 'package:exnota/src/context/sync/network.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/context/workspace/block_importer.dart';
@@ -143,7 +144,7 @@ class ImportBlocksRequest extends ImportRequest<List<RecordModel>> {
         .getFullList(sort: '-created')
         // Timeout added because otherwise, if the server goes down, this hangs
         // forever I believe.
-        .timeout(const Duration(seconds: 20));
+        .timeout(defaultTimeout);
     _log.debug('Fetched ${result.length} blocks');
 
     await ref.read(blockImporterProvider.notifier).importAll(result);

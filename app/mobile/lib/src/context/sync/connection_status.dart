@@ -93,7 +93,7 @@ class _ConnectionStatusInternal extends _$ConnectionStatusInternal {
   }
 
   void setOnline() {
-    _log.debug('Setting online');
+    _log.debug('🟢 Setting online');
     state = const _ConnDetails(
       status: ConnStatus.online,
       isDefault: false,
@@ -101,7 +101,7 @@ class _ConnectionStatusInternal extends _$ConnectionStatusInternal {
   }
 
   void setOffline() {
-    _log.debug('Setting offline');
+    _log.debug('🔴 Setting offline');
     state = const _ConnDetails(
       status: ConnStatus.offline,
       isDefault: false,
@@ -113,7 +113,7 @@ class _ConnectionStatusInternal extends _$ConnectionStatusInternal {
       _log.warn('Already online. Skipping setUserRetry');
       return;
     }
-    _log.debug('Setting userRetry');
+    _log.debug('🔁 Setting userRetry');
     state = const _ConnDetails(
       status: ConnStatus.userRetry,
       isDefault: false,
@@ -121,7 +121,7 @@ class _ConnectionStatusInternal extends _$ConnectionStatusInternal {
   }
 
   void setUnauthenticated() {
-    _log.debug('Setting unauthenticated');
+    _log.debug('🟠 Setting unauthenticated');
     state = const _ConnDetails(
       status: ConnStatus.unauthenticated,
       isDefault: false,

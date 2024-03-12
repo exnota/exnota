@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:exnota/src/context/sync/connection_status.dart';
+import 'package:exnota/src/context/sync/network.dart';
+import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/context/workspace/block_importer.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pocketbase/pocketbase.dart';
 
 /// Asynchronously imports blocks on load or user change.
 ///
@@ -26,6 +31,7 @@ class BlockImportSubscriber extends ConsumerStatefulWidget {
 class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
   final Logger _log = Logger(context: 'BlockImportSubscriber');
   Future<void> Function()? _unsub;
+  BlockImportSubscribeRequest? _connectRequest;
 
   @override
   void initState() {
@@ -106,7 +112,6 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
 
   Future<void> _subscribe() async {
     _log.debug('Subscribe: Start');
-    final pb = ref.read(pocketBaseProvider);
 
     // The pb.collection(..).subscribe() call will hang if it can't reach the
     // server. At this point, the connection status may not have been checked
@@ -122,37 +127,34 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
       return;
     }
 
-    try {
-      _log.debug('Subscribe: Subscribing to block changes');
-      // There's no real error handling for PocketBase subscriptions.
-      //
-      // The subscribe() call will hang if the server isn't available. That's
-      // why we check connection status above.
-      //
-      // No error is thrown if the connection becomes available either, and it
-      // doesn't always recover. That's why we refresh it when the connection
-      // status changes.
-      final unsub =
-          await pb.collection(collectionBlock).subscribe('*', (e) async {
-        _log.debug(
-            'Subscribe: Received \'${e.action}\' action for block record ${e.record?.id}');
-        await ref.read(blockImporterProvider.notifier).import(e.record);
-      });
-      setState(() {
-        _unsub = unsub;
-      });
-      _log.debug('Subscribe: Done');
-      return;
-    } on Exception catch (e) {
-      // Log a warning because I have not seen this scenario take place and
-      // may want to improve error handling if it does occur.
-      _log.warn('Subscribe: Failed with exception: $e', error: e);
-      return;
-    }
+    _log.debug('Subscribe: Stopping retrying any existing connection request');
+    _connectRequest?.setStopRetrying();
+    setState(() {
+      _connectRequest = BlockImportSubscribeRequest();
+    });
+
+    _log.debug('Subscribe: Submitting request to subscribe');
+    await ref.read(requestHandlerProvider.notifier).submit(
+          request: _connectRequest!,
+          onSuccess: (result) => {
+            setState(() {
+              _unsub = result;
+            }),
+          },
+          onError: (err) {
+            _log.debug('Subscribe: Failed with error: $err');
+          },
+        );
   }
 
   Future<void> _unsubscribe() async {
     _log.debug('Unsubscribe: Start');
+
+    _log.debug(
+        'Unsubscribe: Stopping retrying any existing connection request');
+    _connectRequest?.setStopRetrying();
+
+    _log.debug('Unsubscribe: Unsubscribe from any existing subscription');
     // _unsub can be null if the initial subscribe is skipped due to being
     // offline (or perhaps if there was an error).
     await _unsub?.call();
@@ -160,5 +162,70 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
       _unsub = null;
     });
     _log.debug('Unsubscribe: Done');
+  }
+}
+
+class BlockImportSubscribeRequest
+    extends HandledRequest<Future<void> Function()> {
+  final Logger _log = Logger(context: 'BlockImportSubscribeRequest');
+  bool _stopRetrying = false;
+
+  @override
+  bool get stopRetrying => _stopRetrying;
+
+  void setStopRetrying() {
+    _log.debug('Setting stop retrying.');
+    _stopRetrying = true;
+  }
+
+  @override
+  Future<Future<void> Function()> request(
+      {required PocketBase pb, required Ref ref}) async {
+    // Unsubscribe to clean up any hanging previous connection attempts.
+    //
+    // If a subscribe() attempt hangs because, for example, the server is down,
+    // RequestHandler will timeout and retry. However, internally to PocketBase
+    // the request still seems to be hung.
+    //
+    // Then when RequestHandler retries, if the previous subscription is not
+    // cleared, it will return immediately with the future from the first
+    // attempt, which is still hung. So it will seem to have completed and
+    // subscribed, but will not be.
+    //
+    // Unsubscribing first resolves this issue and PocketBase makes a new
+    // connection attempt.
+    //
+    // This may have consequences in the future if we subscribe to the same
+    // collection and topic in multiple places. Currently how we subscribe I
+    // can't see a way to unsubscribe with a key or some identifier.
+    //
+    // Two options may be:
+    // i. Create a service to handle subs/unsubs that reconnects all for the
+    //    same topic.
+    // 2. Try using pb.realtime for sub/unsub instead, because that allows
+    //    unsubscribing by listener function.
+    _log.debug('Clearing previous subscribe attempts');
+    await pb.collection(collectionBlock).unsubscribe('*');
+
+    _log.debug('Subscribing to block changes');
+
+    // There's no real error handling for PocketBase subscriptions.
+    //
+    // The subscribe() call will hang if the server isn't available. That's
+    // why we check connection status period to subscribing, to minimize the
+    // chance of this happening.
+    //
+    // No error is thrown if the connection becomes available either, and it
+    // doesn't always recover. That's why we refresh it when the connection
+    // status changes and run this through RequestHandler to retry.
+    // TODO: #40 Pass in the user ID
+    final result =
+        await pb.collection(collectionBlock).subscribe('*', (e) async {
+      _log.debug(
+          'Received \'${e.action}\' action for block record ${e.record?.id}');
+      await ref.read(blockImporterProvider.notifier).import(e.record);
+    });
+    _log.debug('Subscribed to block changes');
+    return result;
   }
 }
