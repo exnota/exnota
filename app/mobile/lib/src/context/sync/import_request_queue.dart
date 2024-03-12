@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:exnota/src/context/sync/connection_status.dart';
+import 'package:exnota/src/context/sync/network.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -290,9 +291,14 @@ class _ImportRequestProcessor extends _$ImportRequestProcessor {
           return true;
         },
         onRetry: (e) => _log.debug('Retrying request that threw: $e'),
-        maxAttempts: 3,
+        maxAttempts: defaultRetries,
       );
-    } on PocketBaseException catch (e) {
+    }
+    // !!!!!
+    // Any changes to error handling logic should (probably) be duplicated in
+    // PocketBaseRequest
+    // !!!!!
+    on PocketBaseException catch (e) {
       final error = getPocketBaseError(e);
       _log.debug('PocketBase error \'$error\' processing request: $e');
 
