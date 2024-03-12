@@ -62,5 +62,9 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record a note to transcribe and send to Notion.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 </dict>
 </plist>
