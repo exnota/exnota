@@ -2,6 +2,7 @@ import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/environment/environment.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
+import 'package:exnota/widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,6 +67,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final loginScreenState = ref.watch(loginScreenControllerProvider);
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // TODO:
+          widgetToggle();
+        },
+        child: const Icon(Icons.record_voice_over),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

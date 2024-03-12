@@ -10,22 +10,24 @@ import SwiftUI
 
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), emoji: "😀")
+        SimpleEntry(date: Date(), emoji: "😀", status: true)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), emoji: "😀")
+        let prefs = UserDefaults(suiteName: "group.exnotarecord")
+        let entry = SimpleEntry(date: Date(), emoji: "😀", status: prefs?.bool(forKey: "status") ?? false)
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
         var entries: [SimpleEntry] = []
+        let prefs = UserDefaults(suiteName: "group.exnotarecord")
 
         // Generate a timeline consisting of five entries an hour apart, starting from the current date.
         let currentDate = Date()
         for hourOffset in 0 ..< 5 {
             let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, emoji: "😀")
+            let entry = SimpleEntry(date: entryDate, emoji: "😀", status: prefs?.bool(forKey: "status") ?? false)
             entries.append(entry)
         }
 
@@ -37,6 +39,7 @@ struct Provider: TimelineProvider {
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let emoji: String
+    let status: Bool
 }
 
 struct RecordWidgetEntryView : View {
@@ -44,6 +47,9 @@ struct RecordWidgetEntryView : View {
 
     var body: some View {
         VStack {
+            Text("Recording:")
+            Text(entry.status ? "On" : "Off")
+
             Text("Time:")
             Text(entry.date, style: .time)
 
@@ -75,6 +81,6 @@ struct RecordWidget: Widget {
 #Preview(as: .systemSmall) {
     RecordWidget()
 } timeline: {
-    SimpleEntry(date: .now, emoji: "😀")
-    SimpleEntry(date: .now, emoji: "🤩")
+    SimpleEntry(date: .now, emoji: "😀", status: true)
+    SimpleEntry(date: .now, emoji: "🤩", status: true)
 }
