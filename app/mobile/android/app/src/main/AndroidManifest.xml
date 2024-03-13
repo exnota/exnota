@@ -7,7 +7,6 @@
         android:label="Exnota"
         android:name="${applicationName}"
         android:icon="@mipmap/exnota_icon">
-            <!-- android:name="com.ryanheise.audioservice.AudioServiceActivity" -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -42,20 +41,6 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- The audio_service example had `tools:ignore="Instantiatable"` but I needed to remove that for it to build -->
-        <!-- <service android:name="com.ryanheise.audioservice.AudioService" android:foregroundServiceType="mediaPlayback" android:exported="true">
-            <intent-filter>
-                <action android:name="android.media.browse.MediaBrowserService" />
-            </intent-filter>
-        </service> -->
-
-        <!-- The audio_service example had `tools:ignore="Instantiatable"` but I needed to remove that for it to build -->
-        <!-- <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
-        </receiver>  -->
     </application>
     <queries>
         <intent>

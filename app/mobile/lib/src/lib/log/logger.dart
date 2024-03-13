@@ -43,8 +43,8 @@ class Logger {
   // send this data to a third-party crash reporting service.
   void warn(String message, {dynamic nonPrivateData, Object? error}) {
     logger.w(
-      {'message': _message(message), 'data': _loggableData(nonPrivateData)},
-    );
+        {'message': _message(message), 'data': _loggableData(nonPrivateData)},
+        error: error);
     report(
         description: 'Warn: ${_message(message)}',
         nonPrivateData: {'data': nonPrivateData, 'error': error});
@@ -55,8 +55,8 @@ class Logger {
   void error(String message,
       {dynamic nonPrivateData, Error? error, Object? exception}) {
     logger.e(
-      {'message': _message(message), 'data': _loggableData(nonPrivateData)},
-    );
+        {'message': _message(message), 'data': _loggableData(nonPrivateData)},
+        error: error);
     report(
         description: 'Error: ${_message(message)}',
         nonPrivateData: {'data': nonPrivateData, 'error': error});
@@ -81,21 +81,21 @@ class CustomSimplePrinter extends LogPrinter {
   final DateFormat _format = DateFormat('H:m:s');
 
   static final levelPrefixes = {
-    // Level.trace: '[T]',
+    Level.trace: '[T]',
     Level.debug: '[D]',
     Level.info: '[I]',
     Level.warning: '[W]',
     Level.error: '[E]',
-    // Level.fatal: '[FATAL]',
+    Level.fatal: '[FATAL]',
   };
 
   static final levelColors = {
-    // Level.trace: AnsiColor.fg(AnsiColor.grey(0.5)),
-    Level.debug: AnsiColor.none(),
-    Level.info: AnsiColor.fg(12),
-    Level.warning: AnsiColor.fg(208),
-    Level.error: AnsiColor.fg(196),
-    // Level.fatal: const AnsiColor.fg(199),
+    Level.trace: AnsiColor.fg(AnsiColor.grey(0.5)),
+    Level.debug: const AnsiColor.none(),
+    Level.info: const AnsiColor.fg(12),
+    Level.warning: const AnsiColor.fg(208),
+    Level.error: const AnsiColor.fg(196),
+    Level.fatal: const AnsiColor.fg(199),
   };
 
   final bool printTime;
