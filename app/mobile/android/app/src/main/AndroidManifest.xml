@@ -7,8 +7,9 @@
         android:label="Exnota"
         android:name="${applicationName}"
         android:icon="@mipmap/exnota_icon">
+            <!-- android:name="com.ryanheise.audioservice.AudioServiceActivity" -->
         <activity
-            android:name="com.ryanheise.audioservice.AudioServiceActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
@@ -42,19 +43,19 @@
             android:value="2" />
 
         <!-- The audio_service example had `tools:ignore="Instantiatable"` but I needed to remove that for it to build -->
-        <service android:name="com.ryanheise.audioservice.AudioService" android:foregroundServiceType="mediaPlayback" android:exported="true">
+        <!-- <service android:name="com.ryanheise.audioservice.AudioService" android:foregroundServiceType="mediaPlayback" android:exported="true">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
-        </service>
+        </service> -->
 
         <!-- The audio_service example had `tools:ignore="Instantiatable"` but I needed to remove that for it to build -->
-        <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+        <!-- <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
-        </receiver> 
+        </receiver>  -->
     </application>
     <queries>
         <intent>

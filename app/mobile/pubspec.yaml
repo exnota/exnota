@@ -34,8 +34,8 @@ dependencies:
   http_parser: ^4.0.2
   drift_db_viewer: ^2.0.0
   # Had to downgrade this to support flutter_sound and drift_db_viewer.
-  logger: ^1.4.0
-  # logger: ^2.0.2+1
+  # logger: ^1.4.0
+  logger: ^2.0.2
   json_annotation: ^4.8.1
   nanoid2: ^2.0.1
   collection: ^1.17.2
@@ -48,17 +48,17 @@ dependencies:
   device_info_plus: ^9.1.1
   pocketbase: ^0.18.0
   sqlcipher_flutter_libs: ^0.6.0
-  sqlite3: ^2.3.0
+  sqlite3: ^2.4.0
   flutter_secure_storage: ^9.0.0
   flutter_settings_ui: ^3.0.0
   go_router: ^13.2.0
   retry: ^3.1.2
   fake_async: ^1.3.1
   clock: ^1.1.1
-  audio_service: ^0.18.12
+  # audio_service: ^0.18.12
   audio_session: ^0.1.18
-  # flutter_sound: ^9.4.6
-  flutter_sound: ^9.2.13
+  flutter_sound: ^9.4.6
+  # flutter_sound: ^9.2.13
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +72,16 @@ dev_dependencies:
   custom_lint: ^0.5.3
   riverpod_lint: ^2.3.0
   mockito: ^5.4.4
+
+dependency_overrides:
+  # TODO: Remove this when no longer needed
+  #
+  # This resolves the following dependency resolution error:
+  # > Because no versions of sqlite3 match >2.4.0 <3.0.0 and sqlite3 2.4.0 depends on js ^0.6.4, sqlite3 ^2.4.0 requires js ^0.6.4.
+  # > And because flutter_sound >=9.4.6 depends on flutter_sound_web 9.4.6 which depends on js ^0.7.1, sqlite3 ^2.4.0 is incompatible with flutter_sound
+  # >   >=9.4.6.
+  # > So, because exnota depends on both sqlite3 ^2.4.0 and flutter_sound ^9.4.6, version solving failed.
+  js: ^0.7.1
 
 flutter:
   uses-material-design: true

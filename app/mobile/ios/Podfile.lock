@@ -1,8 +1,6 @@
 PODS:
   - app_links (0.0.1):
     - Flutter
-  - audio_service (0.0.1):
-    - Flutter
   - audio_session (0.0.1):
     - Flutter
   - audio_waveforms (0.0.1):
@@ -81,9 +79,6 @@ PODS:
   - PromisesObjC (2.3.1)
   - PromisesSwift (2.3.1):
     - PromisesObjC (= 2.3.1)
-  - sqflite (0.0.3):
-    - Flutter
-    - FlutterMacOS
   - SQLCipher (4.5.6):
     - SQLCipher/standard (= 4.5.6)
   - SQLCipher/common (4.5.6)
@@ -97,7 +92,6 @@ PODS:
 
 DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
-  - audio_service (from `.symlinks/plugins/audio_service/ios`)
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - audio_waveforms (from `.symlinks/plugins/audio_waveforms/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
@@ -108,7 +102,6 @@ DEPENDENCIES:
   - flutter_sound (from `.symlinks/plugins/flutter_sound/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
-  - sqflite (from `.symlinks/plugins/sqflite/darwin`)
   - sqlcipher_flutter_libs (from `.symlinks/plugins/sqlcipher_flutter_libs/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
@@ -132,8 +125,6 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   app_links:
     :path: ".symlinks/plugins/app_links/ios"
-  audio_service:
-    :path: ".symlinks/plugins/audio_service/ios"
   audio_session:
     :path: ".symlinks/plugins/audio_session/ios"
   audio_waveforms:
@@ -154,8 +145,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
-  sqflite:
-    :path: ".symlinks/plugins/sqflite/darwin"
   sqlcipher_flutter_libs:
     :path: ".symlinks/plugins/sqlcipher_flutter_libs/ios"
   url_launcher_ios:
@@ -163,7 +152,6 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   app_links: 5ef33d0d295a89d9d16bb81b0e3b0d5f70d6c875
-  audio_service: f509d65da41b9521a61f1c404dd58651f265a567
   audio_session: 4f3e461722055d21515cf3261b64c973c062f345
   audio_waveforms: cd736909ebc6b6a164eb74701d8c705ce3241e1c
   device_info_plus: c6fb39579d0f423935b0c9ce7ee2f44b71b9fce6
@@ -176,7 +164,7 @@ SPEC CHECKSUMS:
   FirebaseCrashlytics: 86d5bce01f42fa1db265f87ff1d591f04db610ec
   FirebaseInstallations: 033d199474164db20c8350736842a94fe717b960
   FirebaseSessions: e5f4caa188dc8bc6142abc974355be75b042215e
-  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_secure_storage: 23fc622d89d073675f2eaa109381aefbcf5a49be
   flutter_sound: c60effa2a350fb977885f0db2fbc4c1ad5160900
   flutter_sound_core: 26c10e5832e76aaacfae252d8925232281c486ae
@@ -187,7 +175,6 @@ SPEC CHECKSUMS:
   permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
   PromisesObjC: c50d2056b5253dadbd6c2bea79b0674bd5a52fa4
   PromisesSwift: 28dca69a9c40779916ac2d6985a0192a5cb4a265
-  sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
   SQLCipher: 838309284f29953a28ad2e81d87d55ea6b7c74fd
   sqlcipher_flutter_libs: 4fe3b0fd930942b8e4fe31c68a029e0a1e467169
   url_launcher_ios: 08a3dfac5fb39e8759aeb0abbd5d9480f30fc8b4
