@@ -56,6 +56,11 @@ Content-Type: application/json
 
 {{user_id}}
 --boundary
+Content-Disposition: form-data; name="userCreated"
+Content-Type: application/json
+
+2024-03-14T01:13:54Z
+--boundary
 Content-Disposition: form-data; name="file"; filename="jfk.wav"
 Content-Type: audio/wav
 
