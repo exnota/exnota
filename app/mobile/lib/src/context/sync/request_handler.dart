@@ -45,7 +45,7 @@ class RequestHandler extends _$RequestHandler {
       final result = await retry<T>(
         () => request
             .request(
-              pb: ref.read(userContextServiceProvider).pocketBase,
+              pb: ref.read(userContextServiceSyncProvider).pocketBase,
               ref: ref,
             )
             .timeout(request.timeout),
@@ -60,7 +60,7 @@ class RequestHandler extends _$RequestHandler {
                 '(${request.runtimeType}) Skipping retry of unexpected error: $e');
             return false;
           }
-          if (!ref.read(hasActiveUserProvider)) {
+          if (!ref.read(hasActiveUserSyncProvider)) {
             _log.debug(
                 '(${request.runtimeType}) Skipping retry due to no active user');
             return false;

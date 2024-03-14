@@ -1,35 +1,39 @@
 import 'dart:io';
 
 import 'package:exnota/src/context/user/user_context.dart';
-import 'package:exnota/src/lib/log/logger.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'pocketbase.g.dart';
 
 // ----------------------------------------------------------------------------
-// Public providers, where state is assumed loaded.
+// Sync providers that assume dependent states have been loaded
 // ----------------------------------------------------------------------------
 
 @riverpod
-PocketBase pocketBase(PocketBaseRef ref) {
-  final log = Logger(context: 'pocketBaseProvider');
-  log.debug('Building');
-  ref.onDispose(() {
-    log.debug('Disposing');
-  });
-  final userContext = ref.watch(userContextServiceProvider);
+PocketBase pocketBaseSync(PocketBaseSyncRef ref) {
+  return ref.watch(userContextServiceSyncProvider).pocketBase;
+}
+
+@riverpod
+Uri urlSync(UrlSyncRef ref, String path) {
+  final pb = ref.watch(pocketBaseSyncProvider);
+  return pb.buildUrl(path);
+}
+
+// ----------------------------------------------------------------------------
+// Async providers
+// ----------------------------------------------------------------------------
+
+@riverpod
+Future<PocketBase> pocketBase(PocketBaseRef ref) async {
+  final userContext = await ref.watch(userContextServiceProvider.future);
   return userContext.pocketBase;
 }
 
 @riverpod
-Uri url(UrlRef ref, String path) {
-  final log = Logger(context: 'urlProvider');
-  log.debug('Building');
-  ref.onDispose(() {
-    log.debug('Disposing');
-  });
-  final pb = ref.watch(pocketBaseProvider);
+Future<Uri> url(UrlRef ref, String path) async {
+  final pb = await ref.watch(pocketBaseProvider.future);
   return pb.buildUrl(path);
 }
 

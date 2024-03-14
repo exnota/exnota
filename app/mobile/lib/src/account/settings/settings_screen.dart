@@ -17,7 +17,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeSettingProvider);
-    final environment = ref.watch(environmentServiceProvider);
+    final environment = ref.watch(environmentServiceSyncProvider);
 
     return Scaffold(
         appBar: AppBar(
@@ -55,7 +55,7 @@ class SettingsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.exit_to_app),
                   onPressed: (BuildContext context) async {
                     await ref
-                        .read(userContextServiceProvider.notifier)
+                        .read(userContextServiceSyncProvider.notifier)
                         .logout();
                   })
             ]),
@@ -148,7 +148,7 @@ class EnvironmentBottomSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final environment = ref.watch(environmentServiceProvider);
+    final environment = ref.watch(environmentServiceSyncProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -171,10 +171,10 @@ class EnvironmentBottomSheet extends ConsumerWidget {
             // the environment changes.
 
             final userContextNotifier =
-                ref.read(userContextServiceProvider.notifier);
+                ref.read(userContextServiceSyncProvider.notifier);
 
             await ref
-                .read(environmentServiceProvider.notifier)
+                .read(environmentServiceSyncProvider.notifier)
                 .setEnvironment(newEnvironment);
             // ref is no longer accessible here because
             // the entire app tree starts rebuilding when
@@ -190,10 +190,10 @@ class EnvironmentBottomSheet extends ConsumerWidget {
             // Note: See above (in the production case)
 
             final userContextNotifier =
-                ref.read(userContextServiceProvider.notifier);
+                ref.read(userContextServiceSyncProvider.notifier);
 
             await ref
-                .read(environmentServiceProvider.notifier)
+                .read(environmentServiceSyncProvider.notifier)
                 .setEnvironment(newEnvironment);
             // ref is no longer accessible here because
             // the entire app tree starts rebuilding when

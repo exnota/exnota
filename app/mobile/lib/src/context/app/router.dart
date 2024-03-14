@@ -32,9 +32,9 @@ class Router extends _$Router {
   @override
   GoRouter build() {
     _log.debug('Building');
-    final initialHasActiveUser = ref.read(hasActiveUserProvider);
+    final initialHasActiveUser = ref.read(hasActiveUserSyncProvider);
     final loginStatus = RouterLoginStatus(active: initialHasActiveUser);
-    ref.listen(hasActiveUserProvider, (bool? oldActive, bool newActive) {
+    ref.listen(hasActiveUserSyncProvider, (bool? oldActive, bool newActive) {
       _log.debug('Updating login active state to: $newActive');
       loginStatus.active = newActive;
     });

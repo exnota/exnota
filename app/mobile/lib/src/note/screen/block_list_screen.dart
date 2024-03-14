@@ -143,7 +143,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                       FilledButton.tonal(
                           onPressed: () {
                             ref
-                                .read(userContextServiceProvider.notifier)
+                                .read(userContextServiceSyncProvider.notifier)
                                 .logout();
                           },
                           child: const Text('Sign in')),

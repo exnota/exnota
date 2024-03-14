@@ -47,7 +47,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
       _handleConnectionStatusChange(nextStatus: nextStatus);
     });
 
-    ref.listen(activeUserIdProvider, (prevUserId, nextUserId) {
+    ref.listen(activeUserIdSyncProvider, (prevUserId, nextUserId) {
       _log.debug(
           'ActiveUserId listener: Changed from $prevUserId -> $nextUserId');
 
@@ -97,7 +97,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
                 ref.read(connectionStatusProvider.notifier).setOnline();
               },
             ),
-            uri: ref.read(urlProvider('/api/health')),
+            uri: ref.read(urlSyncProvider('/api/health')),
             client: http.Client(),
             label: 'offline',
           );
@@ -126,7 +126,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
                   ref.read(connectionStatusProvider.notifier).setOffline();
                 },
               ),
-              uri: ref.read(urlProvider('/api/health')),
+              uri: ref.read(urlSyncProvider('/api/health')),
               client: http.Client(),
               label: 'online');
         });
@@ -151,7 +151,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
                 ref.read(connectionStatusProvider.notifier).setOffline();
               },
             ),
-            uri: ref.read(urlProvider('/api/health')),
+            uri: ref.read(urlSyncProvider('/api/health')),
             client: http.Client(),
             label: 'userRetry',
           );

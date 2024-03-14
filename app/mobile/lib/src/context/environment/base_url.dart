@@ -7,12 +7,12 @@ part 'base_url.g.dart';
 
 @riverpod
 class BaseUrl extends _$BaseUrl {
-  final Logger _log = Logger(context: 'UriService');
+  final Logger _log = Logger(context: 'BaseUrl');
 
   @override
-  Uri build() {
+  Future<Uri> build() async {
     _log.info('Building');
-    final environment = ref.watch(environmentServiceProvider);
+    final environment = await ref.watch(environmentServiceProvider.future);
     final deviceInfo = ref.watch(deviceInfoServiceProvider);
 
     switch (environment) {

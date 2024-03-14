@@ -31,7 +31,7 @@ class LoginScreenController extends _$LoginScreenController {
   Future<void> loginGoogle() async {
     _log.debug('Logging in with Google');
     state = state.copyWith(loggingIn: true);
-    await ref.read(userContextServiceProvider.notifier).loginGoogle();
+    await ref.read(userContextServiceSyncProvider.notifier).loginGoogle();
     ref.read(routerProvider.notifier).go(Screen.notes);
     state = state.copyWith(loggingIn: false);
   }
@@ -62,7 +62,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     _log.debug('Building');
-    final environment = ref.watch(environmentServiceProvider);
+    final environment = ref.watch(environmentServiceSyncProvider);
     final loginScreenState = ref.watch(loginScreenControllerProvider);
 
     return Scaffold(
@@ -106,7 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           initialSelection: environment,
                           onSelected: (newEnvironment) {
                             ref
-                                .read(environmentServiceProvider.notifier)
+                                .read(environmentServiceSyncProvider.notifier)
                                 .setEnvironment(newEnvironment);
                           },
                           dropdownMenuEntries: [

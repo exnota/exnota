@@ -149,7 +149,7 @@ class _ConnectionStatusInternal extends _$ConnectionStatusInternal {
           // Use future instead
         },
       ),
-      uri: ref.read(urlProvider('/api/health')),
+      uri: ref.read(urlSyncProvider('/api/health')),
       client: http.Client(),
       label: 'getNonDefaultStatus',
     );

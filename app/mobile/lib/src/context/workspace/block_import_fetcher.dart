@@ -38,7 +38,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
     _appLifecycleListener = AppLifecycleListener(
       onResume: () {
         _log.debug('App resume detected');
-        final activeUserId = ref.read(activeUserIdProvider);
+        final activeUserId = ref.read(activeUserIdSyncProvider);
         if (activeUserId != null) {
           _log.debug('Adding block import request for user: $activeUserId');
           ref
@@ -51,7 +51,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
     );
 
     // TODO: #40 Load based on workspaces (1-n), not users.
-    final activeUserId = ref.read(activeUserIdProvider);
+    final activeUserId = ref.read(activeUserIdSyncProvider);
     if (activeUserId != null) {
       _log.debug('Adding block import request for user: $activeUserId');
       // Need to wrap in Future to avoid provider throwing an error that its
@@ -78,7 +78,7 @@ class _BlockImportFetcherState extends ConsumerState<BlockImportFetcher> {
     _log.debug('Building');
 
     // Import all blocks when the active user changes.
-    ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) {
+    ref.listen(activeUserIdSyncProvider, (oldActiveUserId, newActiveUserId) {
       _log.debug(
           'ActiveUserId listener: Detected change from $oldActiveUserId to $newActiveUserId');
       // When a user logs in, import blocks.

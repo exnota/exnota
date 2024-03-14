@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:exnota/src/context/lib/provider.dart';
 import 'package:exnota/src/lib/data/secure/secure_storage.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -15,19 +14,19 @@ enum Environment {
 }
 
 // ----------------------------------------------------------------------------
-// Public providers, where state is assumed loaded.
+// Sync providers that assume dependent states have been loaded
 // ----------------------------------------------------------------------------
 
 @riverpod
-class EnvironmentService extends _$EnvironmentService {
+class EnvironmentServiceSync extends _$EnvironmentServiceSync {
   @override
   Environment build() {
-    return ref.watch(_environmentInternalProvider).requireValue;
+    return ref.watch(environmentServiceProvider).requireValue;
   }
 
   Future<void> setEnvironment(Environment? environment) async {
     return await ref
-        .read(_environmentInternalProvider.notifier)
+        .read(environmentServiceProvider.notifier)
         .setEnvironment(environment);
   }
 }
@@ -39,24 +38,24 @@ class EnvironmentService extends _$EnvironmentService {
 /// Returns the parent provider's loading status and won't refresh when the
 /// parents state value changes, so can be used as as part of a guard to ensure
 /// the parent provider is loaded.
-@riverpod
-ProviderLoadingStatus environmentLoadingStatus(
-    EnvironmentLoadingStatusRef ref) {
-  final userContext = ref.watch(_environmentInternalProvider);
-  return userContext.maybeWhen(
-    data: (_) => ProviderLoadingStatus.loaded,
-    error: (_, __) => ProviderLoadingStatus.error,
-    orElse: () => ProviderLoadingStatus.loading,
-  );
-}
+// @riverpod
+// ProviderLoadingStatus environmentLoadingStatus(
+//     EnvironmentLoadingStatusRef ref) {
+//   final userContext = ref.watch(environmentServiceProvider);
+//   return userContext.maybeWhen(
+//     data: (_) => ProviderLoadingStatus.loaded,
+//     error: (_, __) => ProviderLoadingStatus.error,
+//     orElse: () => ProviderLoadingStatus.loading,
+//   );
+// }
 
 // ----------------------------------------------------------------------------
-// Private providers.
+// Async providers
 // ----------------------------------------------------------------------------
 
 @Riverpod(keepAlive: true)
-class _EnvironmentInternal extends _$EnvironmentInternal {
-  final Logger _log = Logger(context: 'EnvironmentContext');
+class EnvironmentService extends _$EnvironmentService {
+  final Logger _log = Logger(context: 'EnvironmentService');
 
   @override
   Future<Environment> build() async {
