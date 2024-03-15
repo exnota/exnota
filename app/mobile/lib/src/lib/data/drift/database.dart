@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:exnota/src/lib/data/secure/secure_storage.dart';
+import 'package:exnota/src/lib/file/repo/drift/local_file_table.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/repo/drift/block_table.dart';
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
@@ -38,8 +39,8 @@ AppDatabase initDatabase({required LocalPathGenerator files}) {
 @DriftDatabase(tables: [
   // IntegrationNotionSettings,
   // SyncCommandTable,
-  // LocalFileTable,
   BlockTable,
+  LocalFileTable,
   UserAuthTable,
   UserTable,
 ])
