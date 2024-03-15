@@ -7,8 +7,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'local_file_path_service.g.dart';
 
+// These paths should make some sense to users in case they browse them either
+// causually or when trying to recover data.
 final subdirDatabasePath = ['exnota', 'database'];
-final subdirNotesAudioPath = ['exnota', 'notes', 'audio'];
+final subdirBlockAudioPath = ['exnota', 'notes', 'audio'];
 
 @Riverpod(keepAlive: true)
 LocalPathGenerator localFilePathService(LocalFilePathServiceRef ref) {
@@ -22,31 +24,32 @@ Future<LocalPathGenerator> initLocalFilePathGenerator() async {
   final databasePath =
       await Directory(p.joinAll([documentsDir.path, ...subdirDatabasePath]))
           .create(recursive: true);
-  final notesAudioPath =
-      await Directory(p.joinAll([documentsDir.path, ...subdirNotesAudioPath]))
+  final blockAudioPath =
+      await Directory(p.joinAll([documentsDir.path, ...subdirBlockAudioPath]))
           .create(recursive: true);
 
   return LocalPathGenerator._(
-      databasePath: databasePath.path, notesAudioPath: notesAudioPath.path);
+      databasePath: databasePath.path, blockAudioPath: blockAudioPath.path);
 }
 
 @immutable
 class LocalPathGenerator {
   final String _databasePath;
-  final String _notesAudioPath;
+  final String _blockAudioPath;
 
   const LocalPathGenerator._(
-      {required String databasePath, required String notesAudioPath})
+      {required String databasePath, required String blockAudioPath})
       : _databasePath = databasePath,
-        _notesAudioPath = notesAudioPath;
+        _blockAudioPath = blockAudioPath;
 
   String getDatabaseFilePath({required String filename}) {
     return p.joinAll([_databasePath, filename]);
   }
 
   Future<String> generateAudioBlockFilePath(
-      {required String blockId, required String extension}) async {
-    final path = p.joinAll([_notesAudioPath, 'block-$blockId.$extension']);
+      {required String localFileId, required String extension}) async {
+    final path =
+        p.joinAll([_blockAudioPath, 'recording-$localFileId.$extension']);
     if (await File(path).exists()) {
       throw Exception('File already exists');
     }

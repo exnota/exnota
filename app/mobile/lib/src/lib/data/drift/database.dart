@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:exnota/src/context/device/local_file_path_service.dart';
 import 'package:exnota/src/lib/data/secure/secure_storage.dart';
 import 'package:exnota/src/lib/file/repo/drift/local_file_table.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -11,7 +12,6 @@ import 'package:exnota/src/account/user/repo/user_auth_table.dart';
 import 'package:exnota/src/account/user/repo/user_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/open.dart';
 import 'package:sqlite3/sqlite3.dart';

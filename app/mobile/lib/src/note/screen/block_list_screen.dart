@@ -4,7 +4,6 @@ import 'package:exnota/src/context/sync/import_request_queue.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/audio/audio_recorder.dart';
-import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -28,9 +27,16 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   @override
   void initState() {
     super.initState();
-    _audioRecorder =
-        AudioRecorder(pathGenerator: ref.read(localFilePathServiceProvider));
     _log.debug('Initializing');
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _log.debug('didChangeDependencies');
+    // Can't call this in initState because context is not available yet.
+    _audioRecorder =
+        AudioRecorder(container: ProviderScope.containerOf(context));
   }
 
   @override

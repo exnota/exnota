@@ -1,6 +1,7 @@
-import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
+import 'package:exnota/src/context/device/local_file_path_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -16,11 +17,11 @@ class AudioRecorder with ChangeNotifier {
   static final AudioRecorder _instance = AudioRecorder._internal();
   static final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
 
-  late LocalPathGenerator _localPathGenerator;
+  late ProviderContainer _container;
   PermissionStatus? _permissionStatus;
 
-  factory AudioRecorder({required LocalPathGenerator pathGenerator}) {
-    _instance._localPathGenerator = pathGenerator;
+  factory AudioRecorder({required ProviderContainer container}) {
+    _instance._container = container;
     return _instance;
   }
 
@@ -59,8 +60,10 @@ class AudioRecorder with ChangeNotifier {
   Future<void> startRecording() async {
     _log.debug('startRecording: Start');
     final random = DateTime.now().millisecondsSinceEpoch.toString();
-    final path = await _localPathGenerator.generateAudioBlockFilePath(
-        blockId: 'test-$random', extension: 'wav');
+    final path = await _container
+        .read(localFilePathServiceProvider)
+        .generateAudioBlockFilePath(
+            localFileId: 'test-$random', extension: 'wav');
 
     _log.debug('startRecording: Opening recorder');
     await _recorder.openRecorder();

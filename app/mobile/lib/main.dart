@@ -2,9 +2,9 @@ import 'dart:isolate';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:exnota/src/context/device/device_info.dart';
+import 'package:exnota/src/context/device/local_file_path_service.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/lib/file/service/local_file_path_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/lib/log/report.dart';
 import 'package:flutter/material.dart';
