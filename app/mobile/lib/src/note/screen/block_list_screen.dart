@@ -85,7 +85,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
               //   },
               //   child: const Icon(Icons.logout),
               // ),
-              if (!_audioRecorder!.isRecording())
+              if (!_audioRecorder!.recording)
                 FloatingActionButton(
                   onPressed: () async {
                     final permission =
@@ -101,7 +101,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
                   },
                   child: const Icon(Icons.mic),
                 ),
-              if (_audioRecorder!.isRecording())
+              if (_audioRecorder!.recording)
                 FloatingActionButton(
                   backgroundColor: Colors.red,
                   onPressed: () async {

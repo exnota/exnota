@@ -67,21 +67,17 @@ class LocalFileRepoMapper {
     }
   }
 
-  static String? entityTypeToRepo(EntityType? type) {
+  static String entityTypeToRepo(EntityType type) {
     switch (type) {
       case EntityType.block:
         return 'block';
-      case null:
-        return null;
     }
   }
 
-  static EntityType? entityTypeFromRepo(String? type) {
+  static EntityType entityTypeFromRepo(String type) {
     switch (type) {
       case 'block':
         return EntityType.block;
-      case null:
-        return null;
       default:
         _log.error('Unknown entity type: $type');
         throw Exception('Unknown entity type: $type');

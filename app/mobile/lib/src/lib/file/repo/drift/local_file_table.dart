@@ -8,7 +8,7 @@ class LocalFileTable extends Table {
   TextColumn get fileType => text()();
   TextColumn get status => text()();
   TextColumn get path => text().unique()();
-  TextColumn get entityType => text().nullable()();
+  TextColumn get entityType => text()();
   TextColumn get entityId => text().nullable()();
   DateTimeColumn get created => dateTime()();
 

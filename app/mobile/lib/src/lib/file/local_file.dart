@@ -9,7 +9,7 @@ class LocalFile with _$LocalFile {
     required FileType fileType,
     required Status status,
     required String path,
-    EntityType? entityType,
+    required EntityType entityType,
     String? entityId,
     required DateTime created,
   }) = _LocalFile;
