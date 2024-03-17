@@ -47,7 +47,30 @@ Android 13:
 
 ### Simulators
 
-Android quirks
+#### Getting files
+
+Android:
+
+- Android Studio > View > Tool Windows > Device File Explorer
+
+- Use `run-as` inside the simulator to avoid a permission denied error:
+
+   ```bash
+   # Explore files
+   adb shell
+   emu64a:/ $ run-as com.exnota.app ls /data/user/0/com.exnota.app/app_flutter/exnota/notes/audio/                                                   
+   block-test-1710293021774.wav  block-test-1710293196714.wav  block-test-1710293294715.wav  block-test-1710293894276.wav
+   emu64a:/ $ 
+
+   # Copy a file from simulator to host
+   adb shell "run-as com.exnota.app cat /data/user/0/com.exnota.app/app_flutter/exnota/notes/audio/block-test-1710293294715.wav" > file.wav
+   ```
+
+iOS:
+
+- Should be able to open them directly on host system (i.e. your Mac). Path will be something like `/Users/matt/Library/Developer/CoreSimulator/Devices/...`
+
+#### Android quirks
 
 - To enable microphone:
    1. Open the simulator
@@ -55,7 +78,7 @@ Android quirks
    3. Microphone > Enable 'Virtual microphone uses host audio input'
 - Instead of `localhost` use `10.0.2.2`
 
-iOS quirks
+#### iOS quirks
 
 - Copy/paste doesn't seem to work with older iOS versions.
 

@@ -38,7 +38,7 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
     super.initState();
     _log.debug('Initializing');
     // TODO: #40 Load based on workspaces (1-n), not users.
-    final activeUserId = ref.read(activeUserIdProvider);
+    final activeUserId = ref.read(activeUserIdSyncProvider);
     if (activeUserId != null) {
       _log.debug('Will subscribe to blocks for user: $activeUserId');
       _subscribe();
@@ -64,7 +64,8 @@ class _BlockImportSubscriberState extends ConsumerState<BlockImportSubscriber> {
     _log.debug('Building');
 
     // Subscribe/unsubscribe to block changes when the user logs in/out.
-    ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) async {
+    ref.listen(activeUserIdSyncProvider,
+        (oldActiveUserId, newActiveUserId) async {
       _log.debug(
           'Detected active user ID change from $oldActiveUserId to $newActiveUserId');
       // When a user logs in, import blocks.

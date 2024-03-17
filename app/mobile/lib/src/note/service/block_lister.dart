@@ -60,7 +60,7 @@ Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
   //   }
   // });
 
-  final userId = ref.watch(activeUserIdOrThrowProvider);
+  final userId = ref.watch(activeUserIdOrThrowSyncProvider);
   final blockRepo = ref.watch(blockRepoProvider);
   final blocks = blockRepo.listWatch(userId: userId).map((blocks) {
     return blocks.map((block) {

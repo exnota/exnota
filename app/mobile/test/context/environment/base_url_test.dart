@@ -25,7 +25,7 @@ ProviderContainer createContainer({
 
 @riverpod
 class MockLocalEnvironmentService extends _$MockLocalEnvironmentService
-    implements EnvironmentService {
+    implements EnvironmentServiceSync {
   @override
   Environment build() {
     return Environment.local;
@@ -37,7 +37,7 @@ class MockLocalEnvironmentService extends _$MockLocalEnvironmentService
 
 @riverpod
 class MockProdEnvironmentService extends _$MockProdEnvironmentService
-    implements EnvironmentService {
+    implements EnvironmentServiceSync {
   @override
   Environment build() {
     return Environment.prod;
@@ -54,7 +54,7 @@ void main() {
         test('it returns the correct uri', () async {
           // DO NOT share ProviderContainers between tests.
           final container = createContainer(overrides: [
-            environmentServiceProvider
+            environmentServiceSyncProvider
                 .overrideWith(() => MockLocalEnvironmentService()),
             deviceInfoServiceProvider.overrideWith((DeviceInfoServiceRef ref) {
               const deviceInfo = DeviceInfo(
@@ -64,10 +64,10 @@ void main() {
           ]);
 
           // Eagerly load settings the uri service can use requireValue on it.
-          container.read(environmentServiceProvider);
+          container.read(environmentServiceSyncProvider);
 
           // Eagerly load settings the uri service can use requireValue on it.
-          container.read(environmentServiceProvider);
+          container.read(environmentServiceSyncProvider);
 
           expect(
             container.read(baseUrlProvider),
@@ -79,7 +79,7 @@ void main() {
         test('it returns the correct uri', () async {
           // DO NOT share ProviderContainers between tests.
           final container = createContainer(overrides: [
-            environmentServiceProvider
+            environmentServiceSyncProvider
                 .overrideWith(() => MockLocalEnvironmentService()),
             deviceInfoServiceProvider.overrideWith((DeviceInfoServiceRef ref) {
               const deviceInfo = DeviceInfo(
@@ -89,7 +89,7 @@ void main() {
           ]);
 
           // Eagerly load settings the uri service can use requireValue on it.
-          container.read(environmentServiceProvider);
+          container.read(environmentServiceSyncProvider);
 
           expect(
             container.read(baseUrlProvider),
@@ -101,7 +101,7 @@ void main() {
         test('it returns the correct uri', () async {
           // DO NOT share ProviderContainers between tests.
           final container = createContainer(overrides: [
-            environmentServiceProvider
+            environmentServiceSyncProvider
                 .overrideWith(() => MockLocalEnvironmentService()),
             deviceInfoServiceProvider.overrideWith((DeviceInfoServiceRef ref) {
               const deviceInfo = DeviceInfo(
@@ -111,7 +111,7 @@ void main() {
           ]);
 
           // Eagerly load settings the uri service can use requireValue on it.
-          container.read(environmentServiceProvider);
+          container.read(environmentServiceSyncProvider);
 
           expect(
             container.read(baseUrlProvider),
@@ -124,7 +124,7 @@ void main() {
       test('it returns the correct uri', () async {
         // DO NOT share ProviderContainers between tests.
         final container = createContainer(overrides: [
-          environmentServiceProvider
+          environmentServiceSyncProvider
               .overrideWith(() => MockProdEnvironmentService()),
           deviceInfoServiceProvider.overrideWith((DeviceInfoServiceRef ref) {
             const deviceInfo = DeviceInfo(
@@ -134,7 +134,7 @@ void main() {
         ]);
 
         // Eagerly load settings the uri service can use requireValue on it.
-        container.read(environmentServiceProvider);
+        container.read(environmentServiceSyncProvider);
 
         expect(
           container.read(baseUrlProvider),

@@ -169,7 +169,7 @@ class _ImportRequestQueueInternal extends _$ImportRequestQueueInternal {
   @override
   List<RequestAndStatus> build() {
     _log.debug('Building import queue');
-    ref.listen(activeUserIdProvider, (oldActiveUserId, newActiveUserId) {
+    ref.listen(activeUserIdSyncProvider, (oldActiveUserId, newActiveUserId) {
       // Clear import queue on logout.
       //
       // Don't clear on login (no active user to active user) because we'll get
@@ -278,13 +278,13 @@ class _ImportRequestProcessor extends _$ImportRequestProcessor {
     try {
       await retry(
         () => request.request(
-            pb: ref.read(userContextServiceProvider).pocketBase, ref: ref),
+            pb: ref.read(userContextServiceSyncProvider).pocketBase, ref: ref),
         retryIf: (e) {
           if (e is! PocketBaseException && e is! TimeoutException) {
             _log.debug('Skipping retry of unexpected error: $e');
             return false;
           }
-          if (!ref.read(hasActiveUserProvider)) {
+          if (!ref.read(hasActiveUserSyncProvider)) {
             _log.debug('Skipping retry due to no active user');
             return false;
           }

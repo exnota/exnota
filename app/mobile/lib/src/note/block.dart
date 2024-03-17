@@ -25,6 +25,19 @@ class Block with _$Block {
 
   const Block._();
 
+  factory Block.createAudio({
+    required String id,
+    required String userId,
+    required DateTime userCreated,
+  }) {
+    return Block(
+      id: id,
+      type: BlockType.audio,
+      userId: userId,
+      userCreated: userCreated,
+    );
+  }
+
   factory Block.fromRecord(RecordModel model) {
     final BlockType type;
     switch (model.data['type']) {

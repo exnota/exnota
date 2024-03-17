@@ -35,7 +35,7 @@
 //   @override
 //   Widget build(BuildContext context) {
 //     final notionConnected = ref.watch(notionConnectedServiceProvider);
-//     final environment = ref.watch(environmentServiceProvider);
+//     final environment = ref.watch(environmentServiceSyncProvider);
 //     String title;
 //     switch (environment) {
 //       case Environment.prod:

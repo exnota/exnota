@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:exnota/src/account/user/repo/user_auth_repo.dart';
 import 'package:exnota/src/account/user/repo/user_repo.dart';
 import 'package:exnota/src/account/user/user.dart';
@@ -16,15 +18,15 @@ part 'user_context.g.dart';
 part 'user_context.freezed.dart';
 
 // ----------------------------------------------------------------------------
-// Public providers, where state is assumed loaded.
+// Sync providers that assume dependent states have been loaded
 // ----------------------------------------------------------------------------
 
 /// Returns user ID or throws if no active user.
 ///
 /// Intended for screens that should not be reachable without an active user.
 @riverpod
-String activeUserIdOrThrow(ActiveUserIdOrThrowRef ref) {
-  final userContext = ref.watch(userContextServiceProvider);
+String activeUserIdOrThrowSync(ActiveUserIdOrThrowSyncRef ref) {
+  final userContext = ref.watch(userContextServiceSyncProvider);
   if (!_hasActiveUser(userContext)) {
     throw StateError('No active user');
   }
@@ -36,8 +38,8 @@ String activeUserIdOrThrow(ActiveUserIdOrThrowRef ref) {
 /// Intended for contexts or screens where there may be no active user (e.g.
 /// login screen).
 @riverpod
-String? activeUserId(ActiveUserIdRef ref) {
-  final userContext = ref.watch(userContextServiceProvider);
+String? activeUserIdSync(ActiveUserIdSyncRef ref) {
+  final userContext = ref.watch(userContextServiceSyncProvider);
   if (!_hasActiveUser(userContext)) {
     return null;
   }
@@ -45,8 +47,8 @@ String? activeUserId(ActiveUserIdRef ref) {
 }
 
 @riverpod
-bool hasActiveUser(HasActiveUserRef ref) {
-  final userContext = ref.watch(userContextServiceProvider);
+bool hasActiveUserSync(HasActiveUserSyncRef ref) {
+  final userContext = ref.watch(userContextServiceSyncProvider);
   return _hasActiveUser(userContext);
 }
 
@@ -55,18 +57,18 @@ bool _hasActiveUser(UserContext userContext) {
 }
 
 @Riverpod()
-class UserContextService extends _$UserContextService {
+class UserContextServiceSync extends _$UserContextServiceSync {
   @override
   UserContext build() {
-    return ref.watch(_userContextInternalProvider).requireValue;
+    return ref.watch(userContextServiceProvider).requireValue;
   }
 
   Future<void> loginGoogle() async {
-    return await ref.read(_userContextInternalProvider.notifier).loginGoogle();
+    return await ref.read(userContextServiceProvider.notifier).loginGoogle();
   }
 
   Future<void> logout() async {
-    return await ref.read(_userContextInternalProvider.notifier).logout();
+    return await ref.read(userContextServiceProvider.notifier).logout();
   }
 }
 
@@ -80,7 +82,7 @@ class UserContextService extends _$UserContextService {
 @riverpod
 ProviderLoadingStatus userContextLoadingStatus(
     UserContextLoadingStatusRef ref) {
-  final userContext = ref.watch(_userContextInternalProvider);
+  final userContext = ref.watch(userContextServiceProvider);
   return userContext.maybeWhen(
     data: (_) => ProviderLoadingStatus.loaded,
     error: (_, __) => ProviderLoadingStatus.error,
@@ -90,7 +92,7 @@ ProviderLoadingStatus userContextLoadingStatus(
 
 @riverpod
 String? userContextLoadingError(UserContextLoadingErrorRef ref) {
-  final userContext = ref.watch(_userContextInternalProvider);
+  final userContext = ref.watch(userContextServiceProvider);
   return switch (userContext) {
     AsyncError(:final error) => error.toString(),
     _ => null,
@@ -98,8 +100,23 @@ String? userContextLoadingError(UserContextLoadingErrorRef ref) {
 }
 
 // ----------------------------------------------------------------------------
-// Private providers.
+// Async providers
 // ----------------------------------------------------------------------------
+
+@riverpod
+Future<bool> hasActiveUser(HasActiveUserRef ref) async {
+  final userContext = await ref.watch(userContextServiceProvider.future);
+  return _hasActiveUser(userContext);
+}
+
+@riverpod
+Future<String?> activeUserId(ActiveUserIdRef ref) async {
+  final userContext = await ref.watch(userContextServiceProvider.future);
+  if (!_hasActiveUser(userContext)) {
+    return null;
+  }
+  return userContext.userAuth!.userId;
+}
 
 @freezed
 class UserContext with _$UserContext {
@@ -111,13 +128,13 @@ class UserContext with _$UserContext {
 }
 
 @Riverpod()
-class _UserContextInternal extends _$UserContextInternal {
-  final Logger _log = Logger(context: 'UserContextInternal');
+class UserContextService extends _$UserContextService {
+  final Logger _log = Logger(context: 'UserContextService');
 
   @override
   Future<UserContext> build() async {
     _log.info('build: Building user context service');
-    final baseUrl = ref.watch(baseUrlProvider);
+    final baseUrl = await ref.watch(baseUrlProvider.future);
     final transaction = ref.watch(transactionProvider);
     final userAuthRepo = ref.watch(userAuthRepoProvider);
 
@@ -140,6 +157,7 @@ class _UserContextInternal extends _$UserContextInternal {
       }
 
       _log.info('build: Creating user context with user auth');
+      Isolate.current.hashCode == Isolate.current.debugName;
       return UserContext(
         pocketBase: PocketBase(baseUrl.toString(), authStore: authStore),
         userAuth: userAuth,

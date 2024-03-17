@@ -1,41 +1,86 @@
-// import 'package:exnota/src/lib/data/drift/database.dart';
-// import 'package:exnota/src/lib/file/local_file.dart';
-// import 'package:exnota/src/lib/file/repo/drift/local_file_table.dart';
+import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:exnota/src/lib/file/local_file.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 
-// class LocalFileRepoMapper {
-//   static LocalFileTableData toRepo(LocalFile file) {
-//     return LocalFileTableData(
-//       id: file.id,
-//       entityType: typeToRepo(file.entityType),
-//       entityId: file.entityId,
-//       path: file.path,
-//       createdAt: file.createdAt,
-//       syncedAt: file.syncedAt,
-//     );
-//   }
+class LocalFileRepoMapper {
+  static final _log = Logger(context: 'LocalFileRepoMapper');
 
-//   static LocalFile fromRepo(LocalFileTableData file) {
-//     return LocalFile(
-//       id: file.id,
-//       entityType: typeFromRepo(file.entityType),
-//       entityId: file.entityId,
-//       path: file.path,
-//       createdAt: file.createdAt,
-//       syncedAt: file.syncedAt,
-//     );
-//   }
+  static LocalFileTableData toRepo(LocalFile file) {
+    return LocalFileTableData(
+      id: file.id,
+      fileType: fileTypeToRepo(file.fileType),
+      status: statusToRepo(file.status),
+      path: file.path,
+      entityType: entityTypeToRepo(file.entityType),
+      entityId: file.entityId,
+      created: file.created,
+    );
+  }
 
-//   static EntityTypeRepo typeToRepo(EntityType type) {
-//     switch (type) {
-//       case EntityType.block:
-//         return EntityTypeRepo.block;
-//     }
-//   }
+  static LocalFile fromRepo(LocalFileTableData file) {
+    return LocalFile(
+      id: file.id,
+      fileType: fileTypeFromRepo(file.fileType),
+      status: statusFromRepo(file.status),
+      path: file.path,
+      entityType: entityTypeFromRepo(file.entityType),
+      entityId: file.entityId,
+      created: file.created,
+    );
+  }
 
-//   static EntityType typeFromRepo(EntityTypeRepo type) {
-//     switch (type) {
-//       case EntityTypeRepo.block:
-//         return EntityType.block;
-//     }
-//   }
-// }
+  static String statusToRepo(Status status) {
+    switch (status) {
+      case Status.recording:
+        return 'recording';
+      case Status.saved:
+        return 'saved';
+    }
+  }
+
+  static Status statusFromRepo(String status) {
+    switch (status) {
+      case 'recording':
+        return Status.recording;
+      case 'saved':
+        return Status.saved;
+      default:
+        _log.error('Unknown status: $status');
+        throw Exception('Unknown status: $status');
+    }
+  }
+
+  static String fileTypeToRepo(FileType type) {
+    switch (type) {
+      case FileType.audioRecording:
+        return 'audioRecording';
+    }
+  }
+
+  static FileType fileTypeFromRepo(String type) {
+    switch (type) {
+      case 'audioRecording':
+        return FileType.audioRecording;
+      default:
+        _log.error('Unknown file type: $type');
+        throw Exception('Unknown file type: $type');
+    }
+  }
+
+  static String entityTypeToRepo(EntityType type) {
+    switch (type) {
+      case EntityType.block:
+        return 'block';
+    }
+  }
+
+  static EntityType entityTypeFromRepo(String type) {
+    switch (type) {
+      case 'block':
+        return EntityType.block;
+      default:
+        _log.error('Unknown entity type: $type');
+        throw Exception('Unknown entity type: $type');
+    }
+  }
+}

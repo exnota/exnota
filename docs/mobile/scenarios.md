@@ -2,6 +2,14 @@
 
 A list of paths and edge cases to test in the future.
 
+## Recording
+
+- Widget and in-app recording are in sync.
+  - You can't start a new recording from one if the other is in progress.
+  - You can see that one is in progress from the other.
+- Can recover if accidentally denied
+  - iOS and Android
+
 ## Fetching data
 
 ### Network error
