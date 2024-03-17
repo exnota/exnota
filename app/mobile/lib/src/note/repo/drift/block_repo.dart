@@ -45,4 +45,9 @@ class BlockRepo {
           .insertOnConflictUpdate(BlockRepoMapper.toRepo(block));
     });
   }
+
+  Future<Block?> fetchById(String id) async {
+    final query = db.select(db.blockTable)..where((tbl) => tbl.id.equals(id));
+    return await query.map(BlockRepoMapper.fromRepo).getSingleOrNull();
+  }
 }

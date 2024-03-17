@@ -103,6 +103,21 @@ String? userContextLoadingError(UserContextLoadingErrorRef ref) {
 // Async providers
 // ----------------------------------------------------------------------------
 
+@riverpod
+Future<bool> hasActiveUser(HasActiveUserRef ref) async {
+  final userContext = await ref.watch(userContextServiceProvider.future);
+  return _hasActiveUser(userContext);
+}
+
+@riverpod
+Future<String?> activeUserId(ActiveUserIdRef ref) async {
+  final userContext = await ref.watch(userContextServiceProvider.future);
+  if (!_hasActiveUser(userContext)) {
+    return null;
+  }
+  return userContext.userAuth!.userId;
+}
+
 @freezed
 class UserContext with _$UserContext {
   const factory UserContext({

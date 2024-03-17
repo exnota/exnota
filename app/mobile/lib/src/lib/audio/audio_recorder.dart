@@ -69,12 +69,12 @@ class AudioRecorder with ChangeNotifier {
     return AudioRecorderPermission.unknown;
   }
 
-  Future<void> startRecording() async {
+  Future<LocalFile?> startRecording() async {
     _log.debug('startRecording: Start');
 
     if (_recordingState != null) {
       _log.debug('startRecording: Already recording');
-      return;
+      return null;
     }
     _recordingState = const RecordingState();
     // Notify [recording] has changed
@@ -98,6 +98,8 @@ class AudioRecorder with ChangeNotifier {
     await _recorder.startRecorder(
         toFile: localFile.path, codec: Codec.pcm16WAV);
     _log.debug('startRecording: Started recording.');
+
+    return localFile;
   }
 
   Future<void> stopRecording() async {

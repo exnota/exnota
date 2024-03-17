@@ -45,4 +45,16 @@ class LocalFileMutator {
       await localFileRepo.update(file: updated);
     });
   }
+
+  Future<void> addEntityId(
+      {required String id, required String entityId}) async {
+    final db = _container.read(databaseProvider);
+    final transaction = _container.read(transactionProvider);
+    await transaction(() async {
+      final localFileRepo = LocalFileRepo(db);
+      final existing = await localFileRepo.getByIdOrThrow(id: id);
+      final updated = existing.copyWith(entityId: entityId);
+      await localFileRepo.update(file: updated);
+    });
+  }
 }

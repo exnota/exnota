@@ -3,13 +3,14 @@ import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/import_request_queue.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
-import 'package:exnota/src/lib/audio/audio_recorder.dart';
+import 'package:exnota/src/lib/audio/audio_block_recorder.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exnota/src/note/service/block_lister.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 class BlockListScreen extends ConsumerStatefulWidget {
@@ -21,7 +22,7 @@ class BlockListScreen extends ConsumerStatefulWidget {
 
 class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   final Logger _log = Logger(context: 'BlockListScreen');
-  AudioRecorder? _audioRecorder;
+  AudioBlockRecorder? _recorder;
 
   // init
   @override
@@ -35,8 +36,8 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
     super.didChangeDependencies();
     _log.debug('didChangeDependencies');
     // Can't call this in initState because context is not available yet.
-    _audioRecorder =
-        AudioRecorder(container: ProviderScope.containerOf(context));
+    _recorder =
+        AudioBlockRecorder(container: ProviderScope.containerOf(context));
   }
 
   @override
@@ -54,7 +55,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
         ref.watch(importRequestQueueUnexpectedErrorProvider);
 
     return ListenableBuilder(
-      listenable: _audioRecorder!,
+      listenable: _recorder!,
       builder: (context, widget) {
         return Scaffold(
           appBar: AppBar(
@@ -85,27 +86,18 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
               //   },
               //   child: const Icon(Icons.logout),
               // ),
-              if (!_audioRecorder!.recording)
+              if (!_recorder!.recording)
                 FloatingActionButton(
                   onPressed: () async {
-                    final permission =
-                        await _audioRecorder!.requestPermissionIfNeeded();
-                    // TODO: Add some notice that appears when _audioRecorder.getPermissionStatus() is denied
-
-                    if (permission != AudioRecorderPermission.granted) {
-                      _log.debug('Permission not granted: $permission');
-                      return;
-                    }
-
-                    await _audioRecorder!.startRecording();
+                    await _recorder!.record();
                   },
                   child: const Icon(Icons.mic),
                 ),
-              if (_audioRecorder!.recording)
+              if (_recorder!.recording)
                 FloatingActionButton(
                   backgroundColor: Colors.red,
                   onPressed: () async {
-                    await _audioRecorder!.stopRecording();
+                    await _recorder!.stop();
                   },
                   child: const Icon(Icons.stop),
                 ),
@@ -260,7 +252,8 @@ class BlockList extends ConsumerWidget {
             itemBuilder: (context, index) {
               final block = data[index].block;
               return ListTile(
-                title: Text(block.title ?? ''),
+                title: Text(block.title ??
+                    'Syncing... (created ${DateFormat('yyyy-MM-dd H:m:s').format(block.userCreated)})'),
               );
             },
           ),
