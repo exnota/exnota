@@ -64,8 +64,15 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
   Future<Block> syncUpdate({required ProviderContainer container}) async {
     _log.debug('syncUpdate: Start');
     // TODO:
+    await Future.delayed(const Duration(seconds: 5));
+
     _log.debug('syncUpdate: End');
-    throw UnimplementedError();
+    // TODO: Update this to return the block from the server
+    return Future.value(Block.createAudio(
+      id: entityId,
+      userId: userId,
+      userCreated: data.userCreated,
+    ));
   }
 
   // Factories
