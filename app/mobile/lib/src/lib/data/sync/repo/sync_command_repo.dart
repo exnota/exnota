@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo_mapper.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
@@ -149,23 +150,17 @@ class SyncCommandRepo {
     });
   }
 
-  /// Watches for commands for the current active user (by checking the user_auth table's `active` column).
-  ///
-  /// If there is a running command, it will be returned if it's older than [runningTimeout]. If it's younger, then it's assumed to still be running and null is returned.
-  ///
-  /// If there is no running command, any with 'waiting' status will be returned.
-  Stream<List<SyncCommand>> watchNextForActiveUser(
-      {required Duration runningTimeout}) {
-    // TODO: Check running first, as above.
-
+  /// Watches for waiting commands for the current active user (by checking the
+  /// user_auth table's `active` column).
+  Stream<List<SyncCommand>> watchWaitingForActiveUser() {
     final queryNextWaiting = db.select(db.syncCommandTable).join([
       innerJoin(db.userAuthTable,
           db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
           useColumns: false)
     ])
-      ..where(db.userAuthTable.active.equals(true))
-      ..where(db.syncCommandTable.status.equals(
-          SyncCommandRepoMapper.statusToData(SyncCommandStatus.waiting)))
+      ..where(db.userAuthTable.active.equals(true) &
+          db.syncCommandTable.status.equals(
+              SyncCommandRepoMapper.statusToData(SyncCommandStatus.waiting)))
       ..orderBy([
         OrderingTerm(
             expression: db.syncCommandTable.createdAt, mode: OrderingMode.asc)
@@ -176,6 +171,31 @@ class SyncCommandRepo {
             row.readTable(db.syncCommandTable));
       }).toList();
     });
+    return result;
+  }
+
+  Future<SyncCommand?> fetchTimedOutForActiveUser(
+      {required Duration timeout}) async {
+    final now = Clock().now();
+    final query = db.select(db.syncCommandTable).join([
+      innerJoin(db.userAuthTable,
+          db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
+          useColumns: false)
+    ])
+      ..where(db.userAuthTable.active.equals(true) &
+          db.syncCommandTable.status.equals(
+              SyncCommandRepoMapper.statusToData(SyncCommandStatus.running)) &
+          db.syncCommandTable.startedAt
+              .isSmallerThanValue(now.subtract(timeout)))
+      ..orderBy([
+        OrderingTerm(
+            expression: db.syncCommandTable.updatedAt, mode: OrderingMode.desc)
+      ])
+      ..limit(1);
+    final result = await query.map<SyncCommand>((command) {
+      return SyncCommandRepoMapper.fromData(
+          command.readTable(db.syncCommandTable));
+    }).getSingleOrNull();
     return result;
   }
 }
