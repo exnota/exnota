@@ -41,6 +41,7 @@ class SyncCommandMutator {
     });
   }
 
+  /// Fetches waiting and timed-out commands for the active user.
   Future<SyncCommand?> fetchNextForActiveUser(
       {required Duration runningTimeout}) async {
     final db = _container.read(databaseProvider);
@@ -59,11 +60,19 @@ class SyncCommandMutator {
     });
   }
 
-  Stream<List<SyncCommand>> watchNextForActiveUser(
-      {required Duration runningTimeout}) {
+  /// Returns stream for all waiting commands for the active user.
+  Stream<List<SyncCommand>> watchWaitingForActiveUser() {
     final db = _container.read(databaseProvider);
     final repo = SyncCommandRepo(db);
-    return repo.watchNextForActiveUser(runningTimeout: runningTimeout);
+    return repo.watchWaitingForActiveUser();
+  }
+
+  /// Returns timed-out commands for the active user.
+  Future<SyncCommand?> fetchTimedOutForActiveUser(
+      {required Duration timeout}) async {
+    final db = _container.read(databaseProvider);
+    final repo = SyncCommandRepo(db);
+    return repo.fetchTimedOutForActiveUser(timeout: timeout);
   }
 
   Future<void> setRunning({required String id}) async {
