@@ -10,7 +10,9 @@ class SyncCommandTable extends Table {
   TextColumn get rootEntityId => text()();
   TextColumn get userId => text()();
   TextColumn get status => text()();
+  TextColumn get result => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get startedAt => dateTime().nullable()();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get data => text()();
 

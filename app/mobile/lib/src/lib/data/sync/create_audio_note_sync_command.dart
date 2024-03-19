@@ -31,7 +31,9 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
       required String rootEntityId,
       required String userId,
       required SyncCommandStatus status,
+      required String? result,
       required DateTime createdAt,
+      required DateTime? startedAt,
       required DateTime updatedAt,
       required this.data})
       : super(
@@ -40,7 +42,9 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
             rootEntityId: rootEntityId,
             userId: userId,
             status: status,
+            result: result,
             createdAt: createdAt,
+            startedAt: startedAt,
             updatedAt: updatedAt);
 
   @override
@@ -86,7 +90,9 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
       rootEntityId: blockId,
       userId: userId,
       status: SyncCommandStatus.waiting,
+      result: null,
       createdAt: now,
+      startedAt: null,
       updatedAt: now,
       data: data,
     );
@@ -99,7 +105,9 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
       required String userId,
       required CreateAudioBlockData data,
       required SyncCommandStatus status,
+      required String? result,
       required DateTime createdAt,
+      required DateTime? startedAt,
       required DateTime updatedAt}) {
     return CreateAudioBlockSyncCommand._(
       id: id,
@@ -107,7 +115,9 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
       rootEntityId: rootEntityId,
       userId: userId,
       status: status,
+      result: result,
       createdAt: createdAt,
+      startedAt: startedAt,
       updatedAt: updatedAt,
       data: data,
     );

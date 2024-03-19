@@ -7,7 +7,9 @@ abstract class SyncCommand<T> {
   final String rootEntityId;
   final String userId;
   final SyncCommandStatus status;
+  final String? result;
   final DateTime createdAt;
+  final DateTime? startedAt;
   final DateTime updatedAt;
 
   SyncCommand(
@@ -16,7 +18,9 @@ abstract class SyncCommand<T> {
       required this.rootEntityId,
       required this.userId,
       required this.status,
+      required this.result,
       required this.createdAt,
+      required this.startedAt,
       required this.updatedAt});
 
   Future<T> syncUpdate({required ProviderContainer container});

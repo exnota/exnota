@@ -1,3 +1,5 @@
+import 'package:exnota/src/account/user/repo/user_auth_repo.dart';
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
@@ -39,15 +41,54 @@ class SyncCommandMutator {
     });
   }
 
-  // Future<void> setStatus(int id, SyncCommandStatus status) async {
-  //   final db = _container.read(databaseProvider);
-  //   final transaction = _container.read(transactionProvider);
-  //   final now = _container.read(clockProvider).now();
-  //   await transaction(() async {
-  //     final syncCommandRepo = SyncCommandRepo(db);
-  //     await syncCommandRepo.setStatus(id: id, status: status, updatedAt: now);
-  //   });
-  // }
+  Future<SyncCommand?> fetchNextForActiveUser(
+      {required Duration runningTimeout}) async {
+    final db = _container.read(databaseProvider);
+    final transaction = _container.read(transactionProvider);
+
+    return transaction(() async {
+      final userAuthRepo = UserAuthRepo(db);
+      final activeUser = await userAuthRepo.getActive();
+      if (activeUser == null) {
+        return null;
+      }
+
+      final syncCommandRepo = SyncCommandRepo(db);
+      return await syncCommandRepo.fetchNextForUser(
+          userId: activeUser.id, runningTimeout: runningTimeout);
+    });
+  }
+
+  Future<void> setRunning({required String id}) async {
+    final db = _container.read(databaseProvider);
+    final transaction = _container.read(transactionProvider);
+    final now = _container.read(clockProvider).now();
+    await transaction(() async {
+      final syncCommandRepo = SyncCommandRepo(db);
+      await syncCommandRepo.setRunning(id: id, timestamp: now);
+    });
+  }
+
+  Future<void> setErrored(
+      {required String id, required SyncCommandError error}) async {
+    final db = _container.read(databaseProvider);
+    final transaction = _container.read(transactionProvider);
+    final now = _container.read(clockProvider).now();
+    await transaction(() async {
+      final syncCommandRepo = SyncCommandRepo(db);
+      await syncCommandRepo.setErrored(id: id, error: error, timestamp: now);
+    });
+  }
+
+  Future<void> setComplete({required String id}) async {
+    final db = _container.read(databaseProvider);
+    final transaction = _container.read(transactionProvider);
+    final now = _container.read(clockProvider).now();
+    await transaction(() async {
+      final syncCommandRepo = SyncCommandRepo(db);
+      await syncCommandRepo.setComplete(id: id, timestamp: now);
+    });
+  }
 
   // Future<void> setComplete(int id) async {
   //   final db = _container.read(databaseProvider);

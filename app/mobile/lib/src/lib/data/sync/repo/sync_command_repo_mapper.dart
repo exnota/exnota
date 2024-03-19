@@ -20,8 +20,10 @@ class SyncCommandRepoMapper {
             rootEntityId: command.rootEntityId,
             userId: command.userId,
             status: statusToData(command.status),
+            result: command.result,
             data: data,
             createdAt: command.createdAt,
+            startedAt: command.startedAt,
             updatedAt: command.updatedAt);
       default:
         throw Exception('Unknown command type: ${command.runtimeType}');
@@ -40,7 +42,9 @@ class SyncCommandRepoMapper {
             rootEntityId: commandData.rootEntityId,
             userId: commandData.userId,
             status: statusFromData(commandData.status),
+            result: commandData.result,
             createdAt: commandData.createdAt,
+            startedAt: commandData.startedAt,
             updatedAt: commandData.updatedAt,
             data: data);
       default:

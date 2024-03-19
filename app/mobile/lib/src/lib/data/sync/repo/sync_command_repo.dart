@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo_mapper.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
@@ -57,15 +58,93 @@ class SyncCommandRepo {
     await db.into(db.syncCommandTable).insert(toInsert);
   }
 
-  // update status of command
-  // Future<void> setStatus(
-  //     {required int id,
-  //     required SyncCommandStatus status,
-  //     required DateTime updatedAt}) async {
-  //   final query = db.update(db.syncCommandTable)
-  //     ..where((tbl) => tbl.id.equals(id));
-  //   await query.write(SyncCommandTableCompanion(
-  //       status: Value(SyncCommandRepoMapper.statusToData(status)),
-  //       updatedAt: Value(updatedAt)));
-  // }
+  Future<void> setRunning(
+      {required String id, required DateTime timestamp}) async {
+    final query = db.update(db.syncCommandTable)
+      ..where((tbl) => tbl.id.equals(id));
+    final companion = SyncCommandTableCompanion(
+        status: Value(
+            SyncCommandRepoMapper.statusToData(SyncCommandStatus.running)),
+        updatedAt: Value(timestamp),
+        startedAt: Value(timestamp),
+        result: const Value(null));
+    await query.write(companion);
+  }
+
+  Future<void> setErrored(
+      {required String id,
+      required SyncCommandError error,
+      required DateTime timestamp}) async {
+    final query = db.update(db.syncCommandTable)
+      ..where((tbl) => tbl.id.equals(id));
+    final companion = SyncCommandTableCompanion(
+        status:
+            Value(SyncCommandRepoMapper.statusToData(SyncCommandStatus.error)),
+        updatedAt: Value(timestamp),
+        result: Value(error.toString()));
+    await query.write(companion);
+  }
+
+  Future<void> setComplete(
+      {required String id, required DateTime timestamp}) async {
+    final query = db.update(db.syncCommandTable)
+      ..where((tbl) => tbl.id.equals(id));
+    final companion = SyncCommandTableCompanion(
+        status: Value(
+            SyncCommandRepoMapper.statusToData(SyncCommandStatus.complete)),
+        updatedAt: Value(timestamp),
+        result: const Value('Success'));
+    await query.write(companion);
+  }
+
+  /// Returns the oldest waiting job for the user.
+  ///
+  /// If there's a running job, it's returned if it's older than
+  /// [runningTimeout]. If it's younger, then it's assumed to still be running
+  /// and null is returned.
+  ///
+  /// It's the caller's responsibility to make sure the user ID is for the
+  /// active user.
+  Future<SyncCommand?> fetchNextForUser(
+      {required String userId, required Duration runningTimeout}) async {
+    return await db.transaction(() async {
+      // Check for oldest running job
+      final queryOldestRunning = db.select(db.syncCommandTable)
+        ..where((t) => t.userId.equals(userId))
+        ..where((t) => t.status.equals(
+            SyncCommandRepoMapper.statusToData(SyncCommandStatus.running)))
+        ..orderBy([
+          (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc)
+        ])
+        ..limit(1);
+      final oldestRunning = await queryOldestRunning
+          .map<SyncCommand>(SyncCommandRepoMapper.fromData)
+          .getSingleOrNull();
+
+      // If oldest running is more than [runningTimeout] old, then return it so
+      // it can be restarted.
+      if (oldestRunning != null) {
+        final now = DateTime.now();
+        if (oldestRunning.startedAt!.add(runningTimeout).isBefore(now)) {
+          return oldestRunning;
+        } else {
+          // Assume it's still running
+          return null;
+        }
+      }
+
+      // Return next waiting
+      final queryNextWaiting = db.select(db.syncCommandTable)
+        ..where((t) => t.userId.equals(userId))
+        ..where((t) => t.status.equals(
+            SyncCommandRepoMapper.statusToData(SyncCommandStatus.waiting)))
+        ..orderBy([
+          (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc)
+        ])
+        ..limit(1);
+      return queryNextWaiting
+          .map<SyncCommand>(SyncCommandRepoMapper.fromData)
+          .getSingleOrNull();
+    });
+  }
 }
