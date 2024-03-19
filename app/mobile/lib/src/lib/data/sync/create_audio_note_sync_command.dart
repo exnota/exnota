@@ -2,6 +2,7 @@ import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/block.dart';
+import 'package:exnota/src/note/repo/drift/block_repo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -57,7 +58,7 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
 
     final block = Block.createAudio(
       id: entityId,
-      userId: userId,
+      userId: data.userId,
       userCreated: data.userCreated,
     );
     _log.debug('localUpdate: End');
@@ -67,16 +68,17 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
   @override
   Future<Block> syncUpdate({required ProviderContainer container}) async {
     _log.debug('syncUpdate: Start');
-    // TODO:
+
+    // TODO: Update this to return the block from the server. Below is just for testing.
     await Future.delayed(const Duration(seconds: 5));
+    final blockRepo = container.read(blockRepoProvider);
+    final existing = await blockRepo.fetchById(entityId);
+    final updated = existing!.copyWith(
+      title: 'Updated title',
+    );
 
     _log.debug('syncUpdate: End');
-    // TODO: Update this to return the block from the server
-    return Future.value(Block.createAudio(
-      id: entityId,
-      userId: userId,
-      userCreated: data.userCreated,
-    ));
+    return updated;
   }
 
   // Factories
