@@ -48,14 +48,14 @@ class SyncCommandMutator {
 
     return transaction(() async {
       final userAuthRepo = UserAuthRepo(db);
-      final activeUser = await userAuthRepo.getActive();
-      if (activeUser == null) {
+      final activeUserAuth = await userAuthRepo.getActive();
+      if (activeUserAuth == null) {
         return null;
       }
 
       final syncCommandRepo = SyncCommandRepo(db);
       return await syncCommandRepo.fetchNextForUser(
-          userId: activeUser.id, runningTimeout: runningTimeout);
+          userId: activeUserAuth.userId, runningTimeout: runningTimeout);
     });
   }
 

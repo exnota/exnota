@@ -142,9 +142,10 @@ class SyncCommandRepo {
           (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc)
         ])
         ..limit(1);
-      return queryNextWaiting
+      final result = await queryNextWaiting
           .map<SyncCommand>(SyncCommandRepoMapper.fromData)
           .getSingleOrNull();
+      return result;
     });
   }
 }

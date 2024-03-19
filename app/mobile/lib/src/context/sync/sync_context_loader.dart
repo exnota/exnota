@@ -1,5 +1,6 @@
 import 'package:exnota/src/context/sync/connection_listener.dart';
 import 'package:exnota/src/context/sync/import_request_queue.dart';
+import 'package:exnota/src/context/sync/sync_command_handler.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,7 +34,9 @@ class _SyncContextLoaderState extends ConsumerState<SyncContextLoader> {
     _log.debug('Building');
     return ConnectionListener(
       child: ImportRequestQueueProcessor(
-        child: widget.child,
+        child: SyncCommandHandler(
+          child: widget.child,
+        ),
       ),
     );
   }

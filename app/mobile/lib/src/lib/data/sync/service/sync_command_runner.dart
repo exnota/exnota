@@ -12,7 +12,7 @@ part 'sync_command_runner.freezed.dart';
 /// be retried (maybe the OS killed the app).
 const runningJobTimeout = Duration(minutes: 5);
 
-@riverpod
+@Riverpod(keepAlive: true)
 SyncCommandRunner syncCommandRunner(SyncCommandRunnerRef ref) {
   return SyncCommandRunner(ref.container);
 }
