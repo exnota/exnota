@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -21,7 +23,7 @@ SyncCommandRunner syncCommandRunner(SyncCommandRunnerRef ref) {
 class RunnerState with _$RunnerState {
   factory RunnerState({
     required bool running,
-    Stream? activeUserJobs,
+    StreamSubscription? jobsSubscription,
   }) = _RunnerState;
 }
 
@@ -29,7 +31,7 @@ class SyncCommandRunner {
   static final Logger _log = Logger(context: 'SyncCommandRunner');
 
   final ProviderContainer _container;
-  late RunnerState _state = RunnerState(running: false, activeUserJobs: null);
+  late RunnerState _state = RunnerState(running: false, jobsSubscription: null);
 
   SyncCommandRunner(this._container);
 
@@ -40,76 +42,86 @@ class SyncCommandRunner {
       return;
     }
 
-    // TODO: Need to clear activeUserJobs?
-    _state = RunnerState(running: true, activeUserJobs: null);
-
-    // TODO: Throw while loop around this instead of recursion??
-    await _processNextCommand();
+    await _processWaitingCommands();
   }
 
-  Future<void> _processNextCommand() async {
-    _log.debug('Process next command: Start');
+  Future<void> _processWaitingCommands() async {
+    _log.debug('Process waiting commands: Start');
+    _state = RunnerState(running: true, jobsSubscription: null);
 
     final mutator = SyncCommandMutator(container: _container);
-    final nextCommand =
-        await mutator.fetchNextForActiveUser(runningTimeout: runningJobTimeout);
 
-    if (nextCommand == null) {
-      _log.debug('Process next command: No command found');
-      // TODO: Any special handling?
-      return;
+    while (true) {
+      final nextCommand = await mutator.fetchNextForActiveUser(
+          runningTimeout: runningJobTimeout);
+
+      if (nextCommand == null) {
+        _log.debug('Process waiting commands: No command found');
+        break;
+      }
+
+      await _processNextCommand(command: nextCommand);
     }
-    _log.debug('Process next command: Found command', {
-      'id': nextCommand.id,
-      'entityId': nextCommand.entityId,
-      'rootEntityId': nextCommand.rootEntityId,
-      'status': nextCommand.status,
-      'result': nextCommand.result,
-      'createdAt': nextCommand.createdAt,
-      'startedAt': nextCommand.startedAt,
+
+    final stream =
+        mutator.watchNextForActiveUser(runningTimeout: runningJobTimeout);
+
+    _log.debug('Process waiting commands: Watching for new commands');
+    final subscription = stream.listen((event) {
+      if (event.isEmpty) {
+        return;
+      }
+      _log.debug('Process waiting commands: New command found');
+      _state.jobsSubscription?.cancel();
+
+      // Ignore the commands found in this listener and start processing again,
+      // which will fetch the new commands.
+      _processWaitingCommands();
+    });
+    _state = RunnerState(running: true, jobsSubscription: subscription);
+  }
+
+  Future<void> _processNextCommand({required SyncCommand command}) async {
+    _log.debug('Process next command: Processing command:', {
+      'id': command.id,
+      'entityId': command.entityId,
+      'rootEntityId': command.rootEntityId,
+      'status': command.status,
+      'result': command.result,
+      'createdAt': command.createdAt,
+      'startedAt': command.startedAt,
     });
 
     // Set running. Will also reset startedAt if job timed out.
-    await mutator.setRunning(id: nextCommand.id);
+    final mutator = SyncCommandMutator(container: _container);
+    await mutator.setRunning(id: command.id);
 
     try {
       // TODO: Based on type, get return from this and update local entities
       _log.debug('Process next command: Executing command', {
-        'command': nextCommand.runtimeType,
+        'command': command.runtimeType,
       });
-      await nextCommand.syncUpdate(container: _container);
+      await command.syncUpdate(container: _container);
       _log.debug('Process next command: Command executed', {
-        'command': nextCommand.runtimeType,
+        'command': command.runtimeType,
       });
     } catch (e) {
       // TODO: Improve specific error type handling.
       _log.debug('Error executing command', {
-        'command': nextCommand.runtimeType,
+        'command': command.runtimeType,
         'error': e,
       });
       await mutator.setErrored(
-          id: nextCommand.id, error: SyncCommandError(e.toString()));
-      _state = RunnerState(running: false, activeUserJobs: null);
+          id: command.id, error: SyncCommandError(e.toString()));
       return;
     }
 
-    await mutator.setComplete(id: nextCommand.id);
-    _state = RunnerState(running: false, activeUserJobs: null);
-
-    await _processNextCommand();
-
-    // - catch and persist errors
-    // - sends request/update local entities
-    // TODO: vii: repeat on success OR error (if error, don't retry the same job (for now... can add later))
-
-    // TODO: If returned job is running, it's because it's older than x minutes
-    // and we need to restart it
-
-    // TODO: When setting to running, set 'startedAt' to now
+    await mutator.setComplete(id: command.id);
   }
 
   void stop() {
     _log.debug('Stop: Start');
-    // TODO:
+    _state.jobsSubscription?.cancel();
+    _state = RunnerState(running: false, jobsSubscription: null);
   }
 }
