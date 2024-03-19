@@ -21,6 +21,8 @@ class UserAuthRepo {
 
   Future<UserAuth?> getActive() async {
     final query = db.select(db.userAuthTable);
+    // Note: If changing the logic on what an active user means, also update the
+    // relevant sync command repo methods in sync_command_repo.dart.
     query.where((tbl) => tbl.active.equals(true));
     return await query.map(UserAuthRepoMapper.fromRepo).getSingleOrNull();
   }

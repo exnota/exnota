@@ -148,4 +148,34 @@ class SyncCommandRepo {
       return result;
     });
   }
+
+  /// Watches for commands for the current active user (by checking the user_auth table's `active` column).
+  ///
+  /// If there is a running command, it will be returned if it's older than [runningTimeout]. If it's younger, then it's assumed to still be running and null is returned.
+  ///
+  /// If there is no running command, any with 'waiting' status will be returned.
+  Stream<List<SyncCommand>> watchNextForActiveUser(
+      {required Duration runningTimeout}) {
+    // TODO: Check running first, as above.
+
+    final queryNextWaiting = db.select(db.syncCommandTable).join([
+      innerJoin(db.userAuthTable,
+          db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
+          useColumns: false)
+    ])
+      ..where(db.userAuthTable.active.equals(true))
+      ..where(db.syncCommandTable.status.equals(
+          SyncCommandRepoMapper.statusToData(SyncCommandStatus.waiting)))
+      ..orderBy([
+        OrderingTerm(
+            expression: db.syncCommandTable.createdAt, mode: OrderingMode.asc)
+      ]);
+    final result = queryNextWaiting.watch().map((rows) {
+      return rows.map((row) {
+        return SyncCommandRepoMapper.fromData(
+            row.readTable(db.syncCommandTable));
+      }).toList();
+    });
+    return result;
+  }
 }

@@ -59,6 +59,13 @@ class SyncCommandMutator {
     });
   }
 
+  Stream<List<SyncCommand>> watchNextForActiveUser(
+      {required Duration runningTimeout}) {
+    final db = _container.read(databaseProvider);
+    final repo = SyncCommandRepo(db);
+    return repo.watchNextForActiveUser(runningTimeout: runningTimeout);
+  }
+
   Future<void> setRunning({required String id}) async {
     final db = _container.read(databaseProvider);
     final transaction = _container.read(transactionProvider);
