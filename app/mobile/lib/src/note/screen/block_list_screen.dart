@@ -262,6 +262,25 @@ class BlockList extends ConsumerWidget {
             itemBuilder: (context, index) {
               final block = data[index].block;
               return ListTile(
+                key: ValueKey(block.id),
+                leading: switch (data[index].status) {
+                  BlockStatus.waiting => const Icon(Icons.hourglass_empty),
+                  BlockStatus.syncing || BlockStatus.transcribing => SizedBox(
+                      height: 20.0, // This is the default size of an Icon
+                      width: 20.0, // This is the default size of an Icon
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: IconTheme.of(context).color,
+                      ),
+                    ),
+                  // TODO: This should also be a progress indicator once export
+                  // to notion is implemented.
+                  BlockStatus.synced ||
+                  BlockStatus.exported =>
+                    const Icon(Icons.check),
+                  BlockStatus.error => const Icon(Icons.error),
+                  BlockStatus.unknown => const Icon(Icons.question_mark),
+                },
                 title: Text(_title(block)),
               );
             },

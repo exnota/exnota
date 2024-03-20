@@ -24,19 +24,20 @@ class SyncCommandRepo {
   //   return all.map(SyncCommandRepoMapper.fromData).toList();
   // }
 
-  // Stream<List<SyncCommand>> fetchAllStream({SyncCommandStatus? status}) {
-  //   if (status != null) {
-  //     final query = db.select(db.syncCommandTable)
-  //       ..where((t) =>
-  //           t.status.equalsValue(SyncCommandRepoMapper.statusToData(status)));
+  Stream<List<SyncCommand>> fetchAllStream() {
+    final query = db.select(db.syncCommandTable).join(
+      [
+        innerJoin(db.userAuthTable,
+            db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
+            useColumns: false)
+      ],
+    )..where(db.userAuthTable.active.equals(true));
 
-  //     return query.map<SyncCommand>(SyncCommandRepoMapper.fromData).watch();
-  //   }
-  //   return db
-  //       .select(db.syncCommandTable)
-  //       .map<SyncCommand>(SyncCommandRepoMapper.fromData)
-  //       .watch();
-  // }
+    return query.map<SyncCommand>((command) {
+      return SyncCommandRepoMapper.fromData(
+          command.readTable(db.syncCommandTable));
+    }).watch();
+  }
 
   // Future<SyncCommand> fetchById(int id) async {
   //   final query = db.select(db.syncCommandTable)..where((t) => t.id.equals(id));
