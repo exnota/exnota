@@ -63,13 +63,17 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
       throw Exception('Unexpected current value');
     }
 
-    final block = Block.createAudio(
+    final block = _blockFromData();
+    _log.debug('localUpdate: End');
+    return Future.value(block);
+  }
+
+  Block _blockFromData() {
+    return Block.createAudio(
       id: entityId,
       userId: data.userId,
       userCreated: data.userCreated,
     );
-    _log.debug('localUpdate: End');
-    return Future.value(block);
   }
 
   @override
@@ -77,7 +81,7 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
     _log.debug('syncUpdate: Start');
 
     final submitComletor = Completer<Block>();
-    final created = await localUpdate(current: null);
+    final created = _blockFromData();
     final recording = await container
         .read(getLocalFileByIdOrThrowProvider(data.localFileId).future);
 

@@ -3,8 +3,11 @@ import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo_mapper.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
+import 'package:exnota/src/lib/log/logger.dart';
 
 class SyncCommandRepo {
+  static final _log = Logger(context: 'SyncCommandRepo');
+
   final AppDatabase db;
 
   SyncCommandRepo(this.db);
@@ -176,5 +179,48 @@ class SyncCommandRepo {
           command.readTable(db.syncCommandTable));
     }).getSingleOrNull();
     return result;
+  }
+
+  /// Retry all errored for the active user.
+  Future<void> retryAllErrored() async {
+    _log.debug('retryAllErrored: Start');
+    await db.transaction(() async {
+      final now = Clock().now();
+
+      // Get errored jobs
+      final erroredJobs = db.select(db.syncCommandTable).join(
+        [
+          innerJoin(db.userAuthTable,
+              db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
+              useColumns: false)
+        ],
+      )
+        ..where(db.userAuthTable.active.equals(true) &
+            db.syncCommandTable.status.equals(
+                SyncCommandRepoMapper.statusToData(SyncCommandStatus.error)))
+        ..orderBy([
+          OrderingTerm(
+              expression: db.syncCommandTable.createdAt, mode: OrderingMode.asc)
+        ]);
+      final erroredJobIds = await erroredJobs.map((row) {
+        return row.readTable(db.syncCommandTable).id;
+      }).get();
+      _log.debug(
+          'retryAllErrored: Found ${erroredJobIds.length} errored jobs.');
+
+      // Reset errored jobs
+      final query = db.update(db.syncCommandTable)
+        ..where((tbl) => tbl.id.isIn(erroredJobIds));
+      final companion = SyncCommandTableCompanion(
+        status: Value(
+            SyncCommandRepoMapper.statusToData(SyncCommandStatus.waiting)),
+        updatedAt: Value(now),
+        result: const Value(null),
+        startedAt: const Value(null),
+      );
+      await query.write(companion);
+      _log.debug('retryAllErrored: Updated ${erroredJobIds.length} jobs.');
+    });
+    _log.debug('retryAllErrored: End');
   }
 }

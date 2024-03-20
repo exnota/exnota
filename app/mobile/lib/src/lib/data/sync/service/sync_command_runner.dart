@@ -34,6 +34,8 @@ SyncCommandRunner syncCommandRunner(SyncCommandRunnerRef ref) {
 
 @freezed
 class RunnerState with _$RunnerState {
+  static final Logger _log = Logger(context: 'RunnerState');
+
   // Needed to support methods on the class.
   const RunnerState._();
 
@@ -44,6 +46,7 @@ class RunnerState with _$RunnerState {
   }) = _RunnerState;
 
   void cancelListeners() {
+    _log.debug('Canceling listeners');
     waitingSubscription?.cancel();
     timedOutTimer?.cancel();
   }
@@ -60,6 +63,12 @@ class SyncCommandRunner {
 
   SyncCommandRunner(this._container);
 
+  /// Clears error status of jobs, then processes all jobs, oldest first, that:
+  /// - have 'waiting' status
+  /// - have 'running' status but have timed out
+  ///
+  /// If there is a 'running' job that has not timed out, it waits for it before
+  /// processing the next job.
   void start() async {
     _log.debug('Start: Start');
     if (_state.running) {
@@ -67,7 +76,16 @@ class SyncCommandRunner {
       return;
     }
 
+    await _retryErroredJobs();
+
     await _processCommands();
+  }
+
+  Future<void> _retryErroredJobs() async {
+    _log.debug('retryErroredJobs: Start');
+    final mutator = SyncCommandMutator(container: _container);
+    await mutator.retryAllErrored();
+    _log.debug('retryErroredJobs: End');
   }
 
   Future<void> _processCommands() async {
@@ -93,6 +111,9 @@ class SyncCommandRunner {
         );
         break;
       }
+      _log.debug('processCommands: Next command is ${nextCommand.runtimeType}'
+          ' (id: ${nextCommand.id}) with status ${nextCommand.status} and'
+          ' startedAt ${nextCommand.startedAt}');
 
       // If there's a running command that hasn't timed out, set a timer to wait
       // for it.
@@ -100,6 +121,7 @@ class SyncCommandRunner {
         final now = _container.read(clockProvider).now();
         final timeout = nextCommand.startedAt!.add(commandTimeout);
         if (now.isBefore(timeout)) {
+          _log.debug('processCommands: Setting timer for running command');
           _state = _state.copyWith(
             timedOutTimer: _timedOutTimer(),
           );
@@ -110,6 +132,8 @@ class SyncCommandRunner {
       // Process timed-out or waiting commands
       await _processNext(command: nextCommand);
     }
+
+    _log.debug('processCommands: End');
   }
 
   /// Returns [Timer] that periodically for newly timed-out commands
@@ -147,15 +171,7 @@ class SyncCommandRunner {
   }
 
   Future<void> _processNext({required SyncCommand command}) async {
-    _log.debug('processNext: Processing command:', {
-      'id': command.id,
-      'entityId': command.entityId,
-      'rootEntityId': command.rootEntityId,
-      'status': command.status,
-      'result': command.result,
-      'createdAt': command.createdAt,
-      'startedAt': command.startedAt,
-    });
+    _log.debug('processNext: Start (id: ${command.id})');
 
     // Set running. Will also reset startedAt if job timed out.
     final mutator = SyncCommandMutator(container: _container);
@@ -163,10 +179,9 @@ class SyncCommandRunner {
 
     try {
       // TODO: Based on type, get return from this and update local entities
-      _log.debug('processNext: Executing command', {
-        'command': command.runtimeType,
-      });
+      _log.debug('processNext: Starting syncUpdate');
       final updated = await command.syncUpdate(container: _container);
+      _log.debug('processNext: syncUpdate complete');
 
       switch (command) {
         // Put all Block commands in same case. Ideally we'd group by the
@@ -174,15 +189,13 @@ class SyncCommandRunner {
         // that.
         case CreateAudioBlockSyncCommand():
           final blockRepo = _container.read(blockRepoProvider);
+          _log.debug('processNext: Upserting block (id: ${updated.id})');
           await blockRepo.upsert(updated);
+          _log.debug('processNext: Upsert complete');
           break;
         default:
           throw Exception('Unhandled command type');
       }
-
-      _log.debug('processNext: Command executed', {
-        'command': command.runtimeType,
-      });
     } catch (e) {
       // TODO: Improve specific error type handling.
       _log.debug('Error executing command', {
@@ -195,6 +208,7 @@ class SyncCommandRunner {
     }
 
     await mutator.setComplete(id: command.id);
+    _log.debug('processNext: End (id: ${command.id})');
   }
 
   void stop() {
