@@ -15,7 +15,14 @@ part 'sync_command_runner.freezed.dart';
 
 /// How long to wait before considering a job to have been killed mid-processing
 /// and should be retried (maybe the OS killed the app).
-const timeoutDuration = Duration(minutes: 5);
+const commandTimeout = Duration(minutes: 5);
+
+/// How long each command should wait for a response from the server before
+/// timing out.
+///
+/// This should be less than [commandTimeout] so that jobs where the request
+/// is taking too long can be distinguished from those that the OS killed.
+final commandRequestTimeout = commandTimeout - const Duration(minutes: 1);
 
 /// How frequently to check for timed-out jobs.
 const timeoutCheckInterval = Duration(minutes: 1);
@@ -91,7 +98,7 @@ class SyncCommandRunner {
       // for it.
       if (nextCommand.status == SyncCommandStatus.running) {
         final now = _container.read(clockProvider).now();
-        final timeout = nextCommand.startedAt!.add(timeoutDuration);
+        final timeout = nextCommand.startedAt!.add(commandTimeout);
         if (now.isBefore(timeout)) {
           _state = _state.copyWith(
             timedOutTimer: _timedOutTimer(),
@@ -111,7 +118,7 @@ class SyncCommandRunner {
     return Timer.periodic(timeoutCheckInterval, (timer) async {
       _log.debug('processCommands: Checking for timed-out commands');
       final timedoutCommand =
-          await mutator.fetchTimedOut(timeout: timeoutDuration);
+          await mutator.fetchTimedOut(timeout: commandTimeout);
       if (timedoutCommand != null) {
         _log.debug('processCommands: Timed-out command found');
 

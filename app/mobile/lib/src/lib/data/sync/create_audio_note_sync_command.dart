@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_runner.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/file/service/local_file_fetcher.dart';
@@ -151,7 +152,7 @@ class CreateAudioRequest extends HandledRequest<Block> {
   CreateAudioRequest({required this.created, required this.recording});
 
   @override
-  Duration get timeout => const Duration(minutes: 3);
+  Duration get timeout => commandRequestTimeout;
 
   @override
   Future<Block> request({required PocketBase pb, required Ref ref}) async {
