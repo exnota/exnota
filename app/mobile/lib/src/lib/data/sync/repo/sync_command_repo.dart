@@ -98,66 +98,44 @@ class SyncCommandRepo {
     await query.write(companion);
   }
 
-  /// Returns the oldest waiting job for the user.
-  ///
-  /// If there's a running job, it's returned if it's older than
-  /// [runningTimeout]. If it's younger, then it's assumed to still be running
-  /// and null is returned.
-  ///
-  /// It's the caller's responsibility to make sure the user ID is for the
-  /// active user.
-  Future<SyncCommand?> fetchNextForUser(
-      {required String userId, required Duration runningTimeout}) async {
-    return await db.transaction(() async {
-      // Check for oldest running job
-      final queryOldestRunning = db.select(db.syncCommandTable)
-        ..where((t) => t.userId.equals(userId))
-        ..where((t) => t.status.equals(
-            SyncCommandRepoMapper.statusToData(SyncCommandStatus.running)))
-        ..orderBy([
-          (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc)
-        ])
-        ..limit(1);
-      final oldestRunning = await queryOldestRunning
-          .map<SyncCommand>(SyncCommandRepoMapper.fromData)
-          .getSingleOrNull();
+  /// Returns the oldest running or waiting command for the active user.
+  Future<SyncCommand?> fetchRunningOrWaiting() async {
+    final query = db.select(db.syncCommandTable).join(
+      [
+        innerJoin(db.userAuthTable,
+            db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
+            useColumns: false)
+      ],
+    )
+      ..where(db.userAuthTable.active.equals(true) &
+          (db.syncCommandTable.status.equals(SyncCommandRepoMapper.statusToData(
+                  SyncCommandStatus.waiting)) |
+              db.syncCommandTable.status.equals(
+                  SyncCommandRepoMapper.statusToData(
+                      SyncCommandStatus.running))))
+      ..limit(1)
+      ..orderBy([
+        OrderingTerm(
+            expression: db.syncCommandTable.createdAt, mode: OrderingMode.asc)
+      ]);
 
-      // If oldest running is more than [runningTimeout] old, then return it so
-      // it can be restarted.
-      if (oldestRunning != null) {
-        final now = DateTime.now();
-        if (oldestRunning.startedAt!.add(runningTimeout).isBefore(now)) {
-          return oldestRunning;
-        } else {
-          // Assume it's still running
-          return null;
-        }
-      }
-
-      // Return next waiting
-      final queryNextWaiting = db.select(db.syncCommandTable)
-        ..where((t) => t.userId.equals(userId))
-        ..where((t) => t.status.equals(
-            SyncCommandRepoMapper.statusToData(SyncCommandStatus.waiting)))
-        ..orderBy([
-          (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc)
-        ])
-        ..limit(1);
-      final result = await queryNextWaiting
-          .map<SyncCommand>(SyncCommandRepoMapper.fromData)
-          .getSingleOrNull();
-      return result;
-    });
+    final result = await query.map<SyncCommand>((command) {
+      return SyncCommandRepoMapper.fromData(
+          command.readTable(db.syncCommandTable));
+    }).getSingleOrNull();
+    return result;
   }
 
   /// Watches for waiting commands for the current active user (by checking the
   /// user_auth table's `active` column).
-  Stream<List<SyncCommand>> watchWaitingForActiveUser() {
-    final queryNextWaiting = db.select(db.syncCommandTable).join([
-      innerJoin(db.userAuthTable,
-          db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
-          useColumns: false)
-    ])
+  Stream<List<SyncCommand>> watchWaiting() {
+    final queryNextWaiting = db.select(db.syncCommandTable).join(
+      [
+        innerJoin(db.userAuthTable,
+            db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
+            useColumns: false)
+      ],
+    )
       ..where(db.userAuthTable.active.equals(true) &
           db.syncCommandTable.status.equals(
               SyncCommandRepoMapper.statusToData(SyncCommandStatus.waiting)))
@@ -174,14 +152,15 @@ class SyncCommandRepo {
     return result;
   }
 
-  Future<SyncCommand?> fetchTimedOutForActiveUser(
-      {required Duration timeout}) async {
+  Future<SyncCommand?> fetchTimedOut({required Duration timeout}) async {
     final now = Clock().now();
-    final query = db.select(db.syncCommandTable).join([
-      innerJoin(db.userAuthTable,
-          db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
-          useColumns: false)
-    ])
+    final query = db.select(db.syncCommandTable).join(
+      [
+        innerJoin(db.userAuthTable,
+            db.userAuthTable.userId.equalsExp(db.syncCommandTable.userId),
+            useColumns: false)
+      ],
+    )
       ..where(db.userAuthTable.active.equals(true) &
           db.syncCommandTable.status.equals(
               SyncCommandRepoMapper.statusToData(SyncCommandStatus.running)) &
@@ -189,7 +168,7 @@ class SyncCommandRepo {
               .isSmallerThanValue(now.subtract(timeout)))
       ..orderBy([
         OrderingTerm(
-            expression: db.syncCommandTable.updatedAt, mode: OrderingMode.desc)
+            expression: db.syncCommandTable.createdAt, mode: OrderingMode.asc)
       ])
       ..limit(1);
     final result = await query.map<SyncCommand>((command) {

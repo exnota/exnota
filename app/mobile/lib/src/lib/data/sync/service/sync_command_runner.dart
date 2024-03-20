@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
@@ -64,30 +65,68 @@ class SyncCommandRunner {
 
   Future<void> _processCommands() async {
     _log.debug('processCommands: Start');
+
+    // Cleanup state
+    _state.cancelListeners();
     _state = RunnerState(
       running: true,
       waitingSubscription: null,
       timedOutTimer: null,
     );
 
-    // Process all waiting commands and timed-out commands
+    // Loop through all running and waiting commands
     final mutator = SyncCommandMutator(container: _container);
-    while (true) {
-      final nextCommand =
-          await mutator.fetchNextForActiveUser(runningTimeout: timeoutDuration);
+    while (_state.running) {
+      final nextCommand = await mutator.fetchRunningOrWaiting();
 
       if (nextCommand == null) {
         _log.debug('processCommands: No command found');
+        _state = _state.copyWith(
+          waitingSubscription: _waitingSubscription(),
+        );
         break;
       }
 
+      // If there's a running command that hasn't timed out, set a timer to wait
+      // for it.
+      if (nextCommand.status == SyncCommandStatus.running) {
+        final now = _container.read(clockProvider).now();
+        final timeout = nextCommand.startedAt!.add(timeoutDuration);
+        if (now.isBefore(timeout)) {
+          _state = _state.copyWith(
+            timedOutTimer: _timedOutTimer(),
+          );
+          break;
+        }
+      }
+
+      // Process timed-out or waiting commands
       await _processNext(command: nextCommand);
     }
+  }
 
-    // Listen for new waiting commands
+  /// Returns [Timer] that periodically for newly timed-out commands
+  Timer _timedOutTimer() {
+    final mutator = SyncCommandMutator(container: _container);
+    return Timer.periodic(timeoutCheckInterval, (timer) async {
+      _log.debug('processCommands: Checking for timed-out commands');
+      final timedoutCommand =
+          await mutator.fetchTimedOut(timeout: timeoutDuration);
+      if (timedoutCommand != null) {
+        _log.debug('processCommands: Timed-out command found');
+
+        // Ignore the command passed as an argument here and instead recursively
+        // call this function to start the process again.
+        await _processCommands();
+      }
+    });
+  }
+
+  StreamSubscription<List<SyncCommand<dynamic>>> _waitingSubscription() {
     _log.debug('processCommands: Watching for new commands');
-    final stream = mutator.watchWaitingForActiveUser();
-    final subscription = stream.listen((commands) {
+    final mutator = SyncCommandMutator(container: _container);
+    final stream = mutator.watchWaiting();
+    return stream.listen((commands) {
       if (commands.isEmpty) {
         return;
       }
@@ -98,23 +137,6 @@ class SyncCommandRunner {
       // call this function to start the process again.
       _processCommands();
     });
-    _state = _state.copyWith(waitingSubscription: subscription);
-
-    // Periodically for newly timed-out commands
-    final timer = Timer.periodic(timeoutCheckInterval, (timer) async {
-      _log.debug('processCommands: Checking for timed-out commands');
-      final timedoutCommand =
-          await mutator.fetchTimedOutForActiveUser(timeout: timeoutDuration);
-      if (timedoutCommand != null) {
-        _log.debug('processCommands: Timed-out command found');
-        _state.cancelListeners();
-
-        // Ignore the command passed as an argument here and instead recursively
-        // call this function to start the process again.
-        await _processCommands();
-      }
-    });
-    _state = _state.copyWith(timedOutTimer: timer);
   }
 
   Future<void> _processNext({required SyncCommand command}) async {
