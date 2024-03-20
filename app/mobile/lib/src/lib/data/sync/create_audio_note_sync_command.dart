@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -5,6 +8,7 @@ import 'package:exnota/src/note/block.dart';
 import 'package:exnota/src/note/repo/drift/block_repo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:pocketbase/pocketbase.dart';
 
 part 'create_audio_note_sync_command.freezed.dart';
 part 'create_audio_note_sync_command.g.dart';
@@ -69,16 +73,22 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
   Future<Block> syncUpdate({required ProviderContainer container}) async {
     _log.debug('syncUpdate: Start');
 
-    // TODO: Update this to return the block from the server. Below is just for testing.
-    await Future.delayed(const Duration(seconds: 5));
-    final blockRepo = container.read(blockRepoProvider);
-    final existing = await blockRepo.fetchById(entityId);
-    final updated = existing!.copyWith(
-      title: 'Updated title',
-    );
+    final submitComletor = Completer<Block>();
+    final request = CreateAudioRequest(entityId: entityId);
+    await container.read(requestHandlerProvider.notifier).submit(
+          request: request,
+          onSuccess: (result) {
+            _log.debug('syncUpdate: Success');
+            submitComletor.complete(result);
+          },
+          onError: (err) {
+            _log.debug('syncUpdate: Failed with error: $err');
+            submitComletor.completeError(err);
+          },
+        );
 
     _log.debug('syncUpdate: End');
-    return updated;
+    return submitComletor.future;
   }
 
   // Factories
@@ -123,5 +133,27 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
       updatedAt: updatedAt,
       data: data,
     );
+  }
+}
+
+class CreateAudioRequest extends HandledRequest<Block> {
+  static final Logger _log = Logger(context: 'CreateAudioRequest');
+
+  final String entityId;
+
+  CreateAudioRequest({required this.entityId});
+
+  @override
+  Future<Block> request({required PocketBase pb, required Ref ref}) async {
+    _log.debug('Request: Start');
+    final result = await pb.collection('block').getList();
+    _log.debug('Request: Result length: ${result.items.length}');
+    final blockRepo = ref.read(blockRepoProvider);
+    final existing = await blockRepo.fetchById(entityId);
+    final updated = existing!.copyWith(
+      title: 'Updated title',
+    );
+    _log.debug('Request: End');
+    return updated;
   }
 }

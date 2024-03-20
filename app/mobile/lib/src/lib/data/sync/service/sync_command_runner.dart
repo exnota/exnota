@@ -17,7 +17,7 @@ part 'sync_command_runner.freezed.dart';
 const timeoutDuration = Duration(minutes: 5);
 
 /// How frequently to check for timed-out jobs.
-const timeoutCheckInterval = Duration(seconds: 10);
+const timeoutCheckInterval = Duration(minutes: 1);
 
 @Riverpod(keepAlive: true)
 SyncCommandRunner syncCommandRunner(SyncCommandRunnerRef ref) {

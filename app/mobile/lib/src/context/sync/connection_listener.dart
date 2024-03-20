@@ -121,7 +121,7 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
           // Source: https://github.com/pocketbase/pocketbase/discussions/1957#discussioncomment-5177865
           _connectivityChecker = ConnectivityChecker(
               strategy: CheckerStrategy.detectOffline(
-                interval: 20,
+                interval: 60,
                 onOffline: () {
                   ref.read(connectionStatusProvider.notifier).setOffline();
                 },
