@@ -92,6 +92,13 @@ class SyncCommandMutator {
     });
   }
 
+  /// Calls retryAllErrored in the sync command repo
+  Future<void> retryAllErrored() async {
+    final db = _container.read(databaseProvider);
+    final syncCommandRepo = SyncCommandRepo(db);
+    await syncCommandRepo.retryAllErrored();
+  }
+
   // Future<void> setComplete(int id) async {
   //   final db = _container.read(databaseProvider);
   //   final transaction = _container.read(transactionProvider);
