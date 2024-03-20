@@ -23,7 +23,7 @@ RUN make main stream
 # ------------------------------
 # Using golang as the base to simplify the prod/dev stage split. Have assumed the
 # overhead is inconsequential.
-FROM golang:1.21.6-bullseye AS base
+FROM golang:1.22.1-bullseye AS base
 
 RUN apt-get update \
     # Transcription dependencies
