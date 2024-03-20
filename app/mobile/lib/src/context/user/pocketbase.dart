@@ -50,7 +50,7 @@ PocketBaseError getPocketBaseError(PocketBaseException e) {
     return PocketBaseError.auth;
   }
 
-  if (e.originalError.cause.runtimeType == SocketException) {
+  if (e.originalError?.cause.runtimeType == SocketException) {
     // TODO: #38 Distinguish server being down from network being down
     // Server being down:
     // - originalError.cause = SocketException

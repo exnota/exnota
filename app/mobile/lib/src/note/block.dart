@@ -71,6 +71,37 @@ class Block with _$Block {
       archived: DateTime.tryParse(model.data['archived']),
     );
   }
+
+  Map<String, dynamic> toCreateRequestBody() {
+    Map<String, dynamic> body = {
+      'id': id,
+    };
+
+    if (title != null) {
+      body['title'] = title;
+    }
+
+    switch (type) {
+      case BlockType.audio:
+        body['type'] = 'audio';
+        break;
+      case BlockType.text:
+        body['type'] = 'text';
+        break;
+      case BlockType.unknown:
+        throw Exception('Unknown block type');
+    }
+
+    // Ignore externalUrl, file, audio. They won't be initialized locally.
+    body['user'] = userId;
+    body['userCreated'] = userCreated.toIso8601String();
+    // Ignore created, updated. They will be set by the server.
+    if (archived != null) {
+      body['archived'] = archived!.toIso8601String();
+    }
+
+    return body;
+  }
 }
 
 enum BlockType { audio, text, unknown }
