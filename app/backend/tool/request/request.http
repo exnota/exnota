@@ -67,6 +67,17 @@ Content-Type: audio/wav
 < jfk.wav
 --boundary--
 
+### Auth with password
+###
+### Use token from response for auth_token variable.
+POST {{baseUrl}}/collections/user/auth-with-password HTTP/1.1
+content-type: application/json
+
+{
+	"identity": "{{username}}",
+	"password": "{{password}}"
+}
+
 ### ----------------------------------------------------
 ### Notion API
 ### ----------------------------------------------------

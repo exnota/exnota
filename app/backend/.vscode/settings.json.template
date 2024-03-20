@@ -1,10 +1,6 @@
 {
   "rest-client.environmentVariables": {
     "$shared": {
-      "user_id": "",
-      "auth_token": "",
-      "block_collection_id": "",
-      "block_job_collection_id": "",
       // If these match environment variables of the same name, then additional
       // test data will be exported
       "notionAccessToken": "",
@@ -16,10 +12,22 @@
       "openAiKey": ""
     },
     "local": {
-      "baseUrl": "http://0.0.0.0:8080/api"
+      "baseUrl": "http://0.0.0.0:8080/api",
+      "user_id": "",
+      "username": "",
+      "password": "",
+      "auth_token": "",
+      "block_collection_id": "",
+      "block_job_collection_id": ""
     },
     "production": {
-      "baseUrl": "https://exnota.matt.fyi/api"
+      "baseUrl": "https://exnota.matt.to/api",
+      "user_id": "",
+      "username": "",
+      "password": "",
+      "auth_token": "",
+      "block_collection_id": "lrffu3q1yweoljo",
+      "block_job_collection_id": "cml7ayp8msc7q1w"
     }
   }
 }
