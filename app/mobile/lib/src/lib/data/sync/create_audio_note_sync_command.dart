@@ -151,6 +151,9 @@ class CreateAudioRequest extends HandledRequest<Block> {
   CreateAudioRequest({required this.created, required this.recording});
 
   @override
+  Duration get timeout => const Duration(minutes: 3);
+
+  @override
   Future<Block> request({required PocketBase pb, required Ref ref}) async {
     _log.debug('Request: Start');
     _log.debug('Request: Creating multipart file');

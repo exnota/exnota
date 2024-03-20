@@ -5,6 +5,7 @@ import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/audio/audio_block_recorder.dart';
 import 'package:exnota/src/lib/log/logger.dart';
+import 'package:exnota/src/note/block.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -261,14 +262,25 @@ class BlockList extends ConsumerWidget {
             itemBuilder: (context, index) {
               final block = data[index].block;
               return ListTile(
-                title: Text(block.title ??
-                    'Syncing... (created ${DateFormat('yyyy-MM-dd H:m:s').format(block.userCreated)})'),
+                title: Text(_title(block)),
               );
             },
           ),
         );
       },
     );
+  }
+
+  String _title(Block block) {
+    if (block.title?.isNotEmpty ?? false) {
+      return block.title!;
+    }
+
+    if (block.audio?.transcription?.isNotEmpty ?? false) {
+      return block.audio!.transcription!.join(' ');
+    }
+
+    return 'Syncing... (created ${DateFormat('yyyy-MM-dd H:m:s').format(block.userCreated)})';
   }
 }
 

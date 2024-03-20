@@ -1,4 +1,3 @@
-import 'package:exnota/src/account/user/repo/user_auth_repo.dart';
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
@@ -42,37 +41,24 @@ class SyncCommandMutator {
   }
 
   /// Fetches waiting and timed-out commands for the active user.
-  Future<SyncCommand?> fetchNextForActiveUser(
-      {required Duration runningTimeout}) async {
+  Future<SyncCommand?> fetchRunningOrWaiting() async {
     final db = _container.read(databaseProvider);
-    final transaction = _container.read(transactionProvider);
-
-    return transaction(() async {
-      final userAuthRepo = UserAuthRepo(db);
-      final activeUserAuth = await userAuthRepo.getActive();
-      if (activeUserAuth == null) {
-        return null;
-      }
-
-      final syncCommandRepo = SyncCommandRepo(db);
-      return await syncCommandRepo.fetchNextForUser(
-          userId: activeUserAuth.userId, runningTimeout: runningTimeout);
-    });
+    final syncCommandRepo = SyncCommandRepo(db);
+    return await syncCommandRepo.fetchRunningOrWaiting();
   }
 
   /// Returns stream for all waiting commands for the active user.
-  Stream<List<SyncCommand>> watchWaitingForActiveUser() {
+  Stream<List<SyncCommand>> watchWaiting() {
     final db = _container.read(databaseProvider);
     final repo = SyncCommandRepo(db);
-    return repo.watchWaitingForActiveUser();
+    return repo.watchWaiting();
   }
 
   /// Returns timed-out commands for the active user.
-  Future<SyncCommand?> fetchTimedOutForActiveUser(
-      {required Duration timeout}) async {
+  Future<SyncCommand?> fetchTimedOut({required Duration timeout}) async {
     final db = _container.read(databaseProvider);
     final repo = SyncCommandRepo(db);
-    return repo.fetchTimedOutForActiveUser(timeout: timeout);
+    return repo.fetchTimedOut(timeout: timeout);
   }
 
   Future<void> setRunning({required String id}) async {

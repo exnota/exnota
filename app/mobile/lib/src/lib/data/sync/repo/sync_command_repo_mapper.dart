@@ -9,7 +9,6 @@ class SyncCommandRepoMapper {
   static final _log = Logger(context: 'SyncCommandRepoMapper');
 
   static SyncCommandTableData toRepo(SyncCommand command) {
-    _log.debug('toData: $command');
     switch (command) {
       case CreateAudioBlockSyncCommand():
         final data = jsonEncode(command.data.toJson());
@@ -31,7 +30,6 @@ class SyncCommandRepoMapper {
   }
 
   static SyncCommand fromData(SyncCommandTableData commandData) {
-    _log.debug('fromData: $commandData');
     switch (commandData.type) {
       case 'createAudioBlock':
         final data =
