@@ -1,20 +1,27 @@
 # Deploy (prod)
 
-- [Steps](#steps)
+- [How-to](#how-to)
+  - [Steps](#steps)
+  - [Troubleshooting](#troubleshooting)
 - [Maintenance](#maintenance)
   - [Specific actions](#specific-actions)
   - [How to execute Dokku commands](#how-to-execute-dokku-commands)
 - [Initial setup](#initial-setup)
   - [SSH](#ssh)
   - [Dokku](#dokku)
+- [Hetzner SSH](#hetzner-ssh)
+  - [Terminal](#terminal)
+  - [CLI](#cli)
 - [Archive](#archive)
   - [Manual Hetzner deploy](#manual-hetzner-deploy)
 
-## Steps
+## How-to
+
+### Steps
 
 Don't run inside dev container!
 
-1. Setup
+1. Setup (first time deploying from a device)
    - Ensure you have configured [SSH](#ssh)
    - Add Dokku remote to git repo
 
@@ -31,6 +38,21 @@ Don't run inside dev container!
 
     # Or: Deploy branch <branch-name>
     git push dokku <branch-name>:main
+    ```
+
+### Troubleshooting
+
+#### Error: At least one invalid signature was encountered
+
+Apparently caused by insufficient space according to this [SO post](https://stackoverflow.com/questions/62473932/at-least-one-invalid-signature-was-encountered) (which has more options for freeing space in addition to below).
+
+Fix:
+
+1. SSH to Hetzner server.
+2. Run
+
+    ```bash
+    docker builder prune
     ```
 
 ## Maintenance
@@ -129,6 +151,21 @@ There is an [official client](https://dokku.com/docs/deployment/remote-commands/
 
     dokku docker-options:add exnota0 deploy "-v /var/lib/dokku/data/storage/exnota0/pb_data:/pb/pb_data"
     ```
+
+## Hetzner SSH
+
+### Terminal
+
+```bash
+% ssh root@195.201.33.178
+Enter passphrase for key '/Users/matt/.ssh/id_ed25519_hetzner2':
+```
+
+### CLI
+
+Have not logged in using CLI successfully yet. Maybe because of this ([link](https://docs.hetzner.com/cloud/servers/getting-started/vnc-console/)):
+
+> If your server was created with an SSH key, or if you no longer have the password, you can request a new root password:
 
 ## Archive
 
