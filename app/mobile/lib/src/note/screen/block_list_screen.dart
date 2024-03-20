@@ -4,8 +4,6 @@ import 'package:exnota/src/context/sync/import_request_queue.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/audio/audio_block_recorder.dart';
-import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
-import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';

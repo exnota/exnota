@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
+import 'package:exnota/src/lib/file/local_file.dart';
+import 'package:exnota/src/lib/file/service/local_file_fetcher.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/note/block.dart';
-import 'package:exnota/src/note/repo/drift/block_repo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pocketbase/pocketbase.dart';
+import 'package:http/http.dart' as http;
 
 part 'create_audio_note_sync_command.freezed.dart';
 part 'create_audio_note_sync_command.g.dart';
@@ -74,7 +76,11 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
     _log.debug('syncUpdate: Start');
 
     final submitComletor = Completer<Block>();
-    final request = CreateAudioRequest(entityId: entityId);
+    final created = await localUpdate(current: null);
+    final recording = await container
+        .read(getLocalFileByIdOrThrowProvider(data.localFileId).future);
+
+    final request = CreateAudioRequest(created: created, recording: recording);
     await container.read(requestHandlerProvider.notifier).submit(
           request: request,
           onSuccess: (result) {
@@ -139,21 +145,30 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
 class CreateAudioRequest extends HandledRequest<Block> {
   static final Logger _log = Logger(context: 'CreateAudioRequest');
 
-  final String entityId;
+  final Block created;
+  final LocalFile recording;
 
-  CreateAudioRequest({required this.entityId});
+  CreateAudioRequest({required this.created, required this.recording});
 
   @override
   Future<Block> request({required PocketBase pb, required Ref ref}) async {
     _log.debug('Request: Start');
-    final result = await pb.collection('block').getList();
-    _log.debug('Request: Result length: ${result.items.length}');
-    final blockRepo = ref.read(blockRepoProvider);
-    final existing = await blockRepo.fetchById(entityId);
-    final updated = existing!.copyWith(
-      title: 'Updated title',
+    _log.debug('Request: Creating multipart file');
+    final multipartFile = await http.MultipartFile.fromPath(
+      'file', // the name of the file field
+      recording.path,
     );
+
+    _log.debug('Request: Sending request to server');
+    final responseRecord = await pb.collection('block').create(
+      body: created.toCreateRequestBody(),
+      files: [multipartFile],
+    );
+
+    _log.debug('Request: Parsing response');
+    final response = Block.fromRecord(responseRecord);
+
     _log.debug('Request: End');
-    return updated;
+    return response;
   }
 }
