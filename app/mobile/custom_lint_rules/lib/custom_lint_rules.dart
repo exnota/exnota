@@ -11,6 +11,7 @@ class _ExampleLinter extends PluginBase {
   List<LintRule> getLintRules(CustomLintConfigs configs) => [
         ExnotaUseClockNowRule(),
         ExnotaUseCustomClock(),
+        ExnotaUseCustomLogger(),
       ];
 }
 
@@ -42,8 +43,7 @@ class ExnotaUseCustomClock extends DartLintRule {
 
   static const _code = LintCode(
     name: 'exnota_use_custom_clock',
-    problemMessage:
-        'Use custom lib/clock.dart instead of clock/clock from pub.dev',
+    problemMessage: 'Use custom lib/clock.dart instead of `clock` from pub.dev',
   );
 
   @override
@@ -55,6 +55,31 @@ class ExnotaUseCustomClock extends DartLintRule {
     // Some examples of adding quick fixes: https://github.com/invertase/dart_custom_lint/blob/main/packages/custom_lint/example/example_lint/lib/custom_lint_example_lint.dart
     context.registry.addImportDirective((node) {
       if (node.uri.stringValue == 'package:clock/clock.dart') {
+        reporter.reportErrorForNode(code, node);
+      }
+    });
+  }
+}
+
+class ExnotaUseCustomLogger extends DartLintRule {
+  ExnotaUseCustomLogger() : super(code: _code);
+
+  static const _code = LintCode(
+    name: 'exnota_use_custom_logger',
+    problemMessage:
+        'Use custom lib/log/logger.dart instead of `logger` from pub.dev',
+  );
+
+  @override
+  void run(
+    CustomLintResolver resolver,
+    ErrorReporter reporter,
+    CustomLintContext context,
+  ) {
+    // Some examples of adding quick fixes: https://github.com/invertase/dart_custom_lint/blob/main/packages/custom_lint/example/example_lint/lib/custom_lint_example_lint.dart
+    context.registry.addImportDirective((node) {
+      if (node.uri.stringValue == 'package:logger/logger.dart' ||
+          node.uri.stringValue == 'package:logger/web.dart') {
         reporter.reportErrorForNode(code, node);
       }
     });

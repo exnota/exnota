@@ -1,3 +1,4 @@
+// ignore_for_file: exnota_use_custom_logger
 import 'dart:convert';
 
 import 'package:exnota/src/lib/log/report.dart';
