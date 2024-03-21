@@ -1,0 +1,10 @@
+# pubspec.yaml
+name: custom_lint_rules
+environment:
+  sdk: ">=3.3.1 <4.0.0"
+
+dependencies:
+  # we will use an analyzer for inspecting Dart files
+  analyzer:
+  # custom_lint_builder will give us tools for writing lints
+  custom_lint_builder:
