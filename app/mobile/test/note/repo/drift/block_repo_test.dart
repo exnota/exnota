@@ -1,3 +1,4 @@
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/note/block.dart';
 import 'package:exnota/src/note/repo/drift/block_repo.dart';
@@ -26,7 +27,7 @@ void main() {
       group('given three blocks, where two are for user 1', () {
         late DateTime now;
         setUp(() async {
-          now = DateTime.now();
+          now = Clock().now();
           final block1 = BlockTableData(
               id: 'block1',
               type: 'audio',
@@ -96,7 +97,7 @@ void main() {
     // group('create', () {
     //   test('persists the given block', () async {
     //     final repo = BlockRepo(db);
-    //     final now = DateTime.now();
+    //     final now = Clock().now();
     //     final input = Block(
     //         id: 'block id',
     //         type: BlockType.audio,

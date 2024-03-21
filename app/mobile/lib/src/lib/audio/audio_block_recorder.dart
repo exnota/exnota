@@ -1,6 +1,7 @@
 // singleton
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/audio/audio_recorder.dart';
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/file/service/local_file_mutator.dart';
@@ -102,7 +103,7 @@ class AudioBlockRecorder with ChangeNotifier {
 
     _state = AudioBlockRecorderState(
       recording: true,
-      recordingStarted: DateTime.now(),
+      recordingStarted: Clock().now(),
       userId: activeUserId,
       localFileId: localFile.id,
       error: null,

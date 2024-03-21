@@ -28,7 +28,7 @@
 //       group('given two files', () {
 //         late DateTime now;
 //         setUp(() async {
-//           now = DateTime.now();
+//           now = Clock().now();
 //           final file1 = LocalFileTableData(
 //               id: 'file1',
 //               entityType: EntityTypeRepo.block,
@@ -95,7 +95,7 @@
 //               entityType: EntityTypeRepo.block,
 //               entityId: 'block2',
 //               path: 'block2 path',
-//               createdAt: DateTime.now(),
+//               createdAt: Clock().now(),
 //               syncedAt: null);
 //           await db.into(db.localFileTable).insert(file1);
 //           await db.into(db.localFileTable).insert(file2);
@@ -129,7 +129,7 @@
 //                 entityType: EntityTypeRepo.block,
 //                 entityId: 'block2',
 //                 path: 'block3 path',
-//                 createdAt: DateTime.now(),
+//                 createdAt: Clock().now(),
 //                 syncedAt: null);
 //             db.into(db.localFileTable).insert(file3);
 //           });
@@ -185,7 +185,7 @@
 //                 entityType: EntityType.block,
 //                 entityId: 'block2',
 //                 path: 'block1 path',
-//                 createdAt: DateTime.now(),
+//                 createdAt: Clock().now(),
 //                 syncedAt: null);
 //             expect(() => repo.create(file: file2),
 //                 throwsA(isA<SqliteException>()));

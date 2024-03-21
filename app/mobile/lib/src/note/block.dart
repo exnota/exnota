@@ -94,16 +94,10 @@ class Block with _$Block {
 
     // Ignore externalUrl, file, audio. They won't be initialized locally.
     body['user'] = userId;
-
-    // DateTimes must be set to UTC because toIso8601String will exclude
-    // the timezone for anything non-UTC. Then PocketBase converts to UTC.
-    //
-    // An alternative would be to add the timezone, but using toUtc() seems
-    // simpler, and should be fine to not persist the timezone.
-    body['userCreated'] = userCreated.toUtc().toIso8601String();
+    body['userCreated'] = userCreated.toIso8601String();
     // Ignore created, updated. They will be set by the server.
     if (archived != null) {
-      body['archived'] = archived!.toUtc().toIso8601String();
+      body['archived'] = archived!.toIso8601String();
     }
 
     return body;
