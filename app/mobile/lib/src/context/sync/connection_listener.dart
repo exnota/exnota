@@ -25,9 +25,17 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
     super.initState();
     _log.debug('Initializing');
 
-    final connStatus = ref.read(connectionStatusProvider);
-    _log.debug('Initial connection status: $connStatus');
-    _handleConnectionStatusChange(nextStatus: connStatus);
+    // Don't listen to connection when logged out. Added this in attempt to fix
+    // unexpected unauthenticated errors happening, but there's no need to be
+    // listening when logged out anyway.
+    if (ref.read(hasActiveUserLoadedProvider)) {
+      final connStatus = ref.read(connectionStatusProvider);
+      _log.debug('Init: Initial connection status: $connStatus');
+      _handleConnectionStatusChange(nextStatus: connStatus);
+    } else {
+      _log.debug(
+          'Init: No active user loaded, not starting connection listener');
+    }
   }
 
   @override
@@ -44,7 +52,12 @@ class _ConnectionListenerState extends ConsumerState<ConnectionListener> {
     ref.listen(connectionStatusProvider, (prevStatus, nextStatus) {
       _log.debug(
           'ConnectionStatus listener: Changed from $prevStatus -> $nextStatus');
-      _handleConnectionStatusChange(nextStatus: nextStatus);
+      if (ref.read(hasActiveUserLoadedProvider)) {
+        _handleConnectionStatusChange(nextStatus: nextStatus);
+      } else {
+        _log.debug(
+            'ConnectionStatus listener: No active user loaded, not starting connection listener');
+      }
     });
 
     ref.listen(activeUserIdSyncProvider, (prevUserId, nextUserId) {

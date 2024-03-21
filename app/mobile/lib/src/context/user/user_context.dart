@@ -21,6 +21,21 @@ part 'user_context.freezed.dart';
 // Sync providers that assume dependent states have been loaded
 // ----------------------------------------------------------------------------
 
+/// Returns [true] if an active user has been loaded in the root provider, or
+/// if the root provider is refreshing/errored and the last value was [true].
+@riverpod
+bool hasActiveUserLoaded(HasActiveUserLoadedRef ref) {
+  // Need to get the active user from the root provider to avoid an
+  // intermediary provider resetting its own state even when the user has
+  // not changed. Not 100% sure how this was happening but I guess it's related
+  // to an intermediary provider watching a ".future" from the root.
+  final userContextData = ref.watch(userContextServiceProvider).value;
+  if (userContextData == null) {
+    return false;
+  }
+  return _hasActiveUser(userContextData);
+}
+
 /// Returns user ID or throws if no active user.
 ///
 /// Intended for screens that should not be reachable without an active user.
