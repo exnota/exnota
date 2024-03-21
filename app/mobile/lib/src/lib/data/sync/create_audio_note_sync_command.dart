@@ -80,7 +80,7 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
   Future<Block> syncUpdate({required ProviderContainer container}) async {
     _log.debug('syncUpdate: Start');
 
-    final submitComletor = Completer<Block>();
+    final submitCompletor = Completer<Block>();
     final created = _blockFromData();
     final recording = await container
         .read(getLocalFileByIdOrThrowProvider(data.localFileId).future);
@@ -88,18 +88,78 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
     final request = CreateAudioRequest(created: created, recording: recording);
     await container.read(requestHandlerProvider.notifier).submit(
           request: request,
-          onSuccess: (result) {
+          onSuccess: (createResponse) {
             _log.debug('syncUpdate: Success');
-            submitComletor.complete(result);
+            submitCompletor.complete(createResponse);
           },
-          onError: (err) {
-            _log.debug('syncUpdate: Failed with error: $err');
-            submitComletor.completeError(err);
+          onError: (createErr) {
+            _log.debug('syncUpdate: Failed with error: $createErr');
+            // Check if was block already created.
+            //
+            // It's possible that the block was created on the backend but we
+            // encountered an error between then and completing the command. So
+            // the command is retried but fails because the block already
+            // exists on the backend. This could happen, for example, if we
+            // time out the future for the command's request but it continues
+            // in the background and completes. Currently I don't think there's
+            // a way to properly cancel a request using PocketBase, and possibly
+            // not with dart either. Instead we just time out the future which
+            // stops waiting for a response.
+            //
+            // We want to be careful when assuming that the block was
+            // successfully created because if we're wrong and mark the command
+            // complete, the user will think their data has been exported when
+            // it hasn't.
+            //
+            // First: Check for the expected error: `validation_invalid_id`.
+            // This can be thrown if the ID is already in use OR it's not a
+            // valid ID. So this isn't a sufficient chec by itself.
+            //
+            // Second: Try fetching the block from the backend and verifying
+            // that userCreated matches the local value.
+            //
+            // If both of those are true, we can assume the block was
+            // successfully created and can mark the command as complete.
+            if (createErr is ClientException &&
+                createErr.response['data']?['id']?['code'] ==
+                    'validation_invalid_id') {
+              _verifyBlockCreated(
+                container: container,
+                onSuccess: (verifyResponse) {
+                  // Server persists to milliseconds (3 decimals) while DateTime
+                  // seems to create new instances with 5 decimals
+                  // (microseconds?).
+                  if (verifyResponse.userCreated.millisecondsSinceEpoch ==
+                      created.userCreated.millisecondsSinceEpoch) {
+                    submitCompletor.complete(verifyResponse);
+                  } else {
+                    submitCompletor.completeError(createErr);
+                  }
+                },
+                onError: (verifyErr) {
+                  submitCompletor.completeError(verifyErr);
+                },
+              );
+              return;
+            }
+            submitCompletor.completeError(createErr);
           },
         );
 
     _log.debug('syncUpdate: End');
-    return submitComletor.future;
+    return submitCompletor.future;
+  }
+
+  void _verifyBlockCreated(
+      {required ProviderContainer container,
+      required Function(Block) onSuccess,
+      required Function(Object) onError}) async {
+    final request = VerifyCreatedRequest(created: _blockFromData());
+    await container.read(requestHandlerProvider.notifier).submit(
+          request: request,
+          onSuccess: onSuccess,
+          onError: onError,
+        );
   }
 
   // Factories
@@ -178,5 +238,29 @@ class CreateAudioRequest extends HandledRequest<Block> {
 
     _log.debug('Request: End');
     return response;
+  }
+}
+
+class VerifyCreatedRequest extends HandledRequest<Block> {
+  static final Logger _log = Logger(context: 'VerifyCreatedRequest');
+
+  final Block created;
+
+  VerifyCreatedRequest({required this.created});
+
+  @override
+  Duration get timeout => commandRequestTimeout;
+
+  @override
+  Future<Block> request({required PocketBase pb, required Ref ref}) async {
+    _log.debug('Request: Start');
+    _log.debug('Request: Sending request to server');
+    final remoteRecord = await pb.collection('block').getOne(created.id);
+
+    _log.debug('Request: Parsing response');
+    final remoteBlock = Block.fromRecord(remoteRecord);
+
+    _log.debug('Request: End');
+    return remoteBlock;
   }
 }

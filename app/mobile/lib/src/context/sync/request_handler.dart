@@ -96,7 +96,8 @@ class RequestHandler extends _$RequestHandler {
     } on TimeoutException catch (e) {
       // A TimeoutException can be thrown if the ImportRequest instance, for
       // example, adds a .timeout() to a PocketBase request.
-      _log.debug('(${request.runtimeType}) Timeout processing request');
+      _log.debug(
+          '(${request.runtimeType}) Timeout processing request (${request.timeout})');
       _log.debug('(${request.runtimeType}) Setting connection offline');
       ref.read(connectionStatusProvider.notifier).setOffline();
       _log.debug('(${request.runtimeType}) Calling onError');
