@@ -161,7 +161,7 @@ class SyncCommandMutator {
   //     }
   //     for (final command in all) {
   //       logger.info('Retrying command ${command.id}', {
-  //         'previousUpdatedAt': command.updatedAt.toUtc().toIso8601String(),
+  //         'previousUpdatedAt': command.updatedAt.toIso8601String(),
   //       });
   //       await repo.setStatus(
   //           id: command.id.idOrThrow,

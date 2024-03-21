@@ -1,3 +1,4 @@
+import 'package:exnota/src/lib/clock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'user_auth.freezed.dart';
@@ -27,14 +28,15 @@ class UserAuth with _$UserAuth {
     required bool valid,
     String? token,
   }) {
+    final now = Clock().now();
     return UserAuth(
       id: id,
       userId: userId,
       active: active,
       valid: valid,
       token: token,
-      created: DateTime.now(),
-      updated: DateTime.now(),
+      created: now,
+      updated: now,
     );
   }
 }

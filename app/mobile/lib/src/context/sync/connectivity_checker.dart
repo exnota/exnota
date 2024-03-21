@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:clock/clock.dart';
 import 'package:exnota/src/context/sync/health_check.dart';
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:http/http.dart' as http;
@@ -115,7 +115,7 @@ class ConnectivityChecker {
     // I.e. use this `Completer<ConnectivityCheckerStatus?>();` NOT
     // `Completer<ConnectivityCheckerStatus>();`
     _completer = Completer<ConnectivityCheckerStatus?>();
-    _started = clock.now();
+    _started = Clock().now();
 
     unawaited(_ping());
     return _completer!.future;
@@ -200,7 +200,7 @@ class ConnectivityChecker {
         var nextInterval = _backoffInterval == 0 ? 1 : _backoffInterval * 2;
 
         // Expire if max duration reached
-        final secondsElapsed = clock.now().difference(_started!).inSeconds;
+        final secondsElapsed = Clock().now().difference(_started!).inSeconds;
         if (secondsElapsed + nextInterval > retryStrategy.maxDuration) {
           _log.debug('Max duration has or will be reached. Calling onExpire');
           retryStrategy.onExpire();

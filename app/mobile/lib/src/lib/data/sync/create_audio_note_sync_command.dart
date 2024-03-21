@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:exnota/src/context/sync/request_handler.dart';
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_runner.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
@@ -165,7 +166,7 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
   // Factories
   factory CreateAudioBlockSyncCommand.createWaiting(
       {required String userId, required CreateAudioBlockData data}) {
-    final now = DateTime.now();
+    final now = Clock().now();
     final blockId = generateId();
     return CreateAudioBlockSyncCommand._(
       id: generateId(),

@@ -1,4 +1,5 @@
 import 'package:exnota/src/context/device/local_file_path_service.dart';
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/file/repo/drift/local_file_repo.dart';
@@ -22,7 +23,7 @@ class LocalFileMutator {
         status: status,
         path: path,
         entityType: EntityType.block,
-        created: DateTime.now());
+        created: Clock().now());
 
     final db = _container.read(databaseProvider);
     final transaction = _container.read(transactionProvider);

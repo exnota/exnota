@@ -6,6 +6,7 @@ import 'package:exnota/src/account/user/user.dart';
 import 'package:exnota/src/account/user/user_auth.dart';
 import 'package:exnota/src/context/environment/base_url.dart';
 import 'package:exnota/src/context/lib/provider.dart';
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -253,7 +254,7 @@ class UserContextService extends _$UserContextService {
 
   Future<void> logout() async {
     _log.info('logout: Logging out');
-    final now = DateTime.now();
+    final now = Clock().now();
     final userAuthRepo = ref.read(userAuthRepoProvider);
     final userAuth = await userAuthRepo.logoutActive(updated: now);
 

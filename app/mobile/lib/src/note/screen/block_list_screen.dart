@@ -80,7 +80,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
               //     final cmd = CreateAudioBlockSyncCommand.createRunning(
               //       data: CreateAudioBlockData(
               //           userId: ref.read(activeUserIdSyncProvider)!,
-              //           userCreated: DateTime.now(),
+              //           userCreated: Clock().now(),
               //           localFileId: 'local-file-id'),
               //       userId: ref.read(activeUserIdSyncProvider)!,
               //     );
