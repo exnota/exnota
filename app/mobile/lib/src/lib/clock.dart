@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+// ignore: exnota_use_custom_clock
 import 'package:clock/clock.dart' as clk;
 
 part 'clock.g.dart';

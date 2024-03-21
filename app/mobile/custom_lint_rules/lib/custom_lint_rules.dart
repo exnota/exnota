@@ -9,15 +9,16 @@ class _ExampleLinter extends PluginBase {
   /// We list all the custom warnings/infos/errors
   @override
   List<LintRule> getLintRules(CustomLintConfigs configs) => [
-        ExnotaUseClockRule(),
+        ExnotaUseClockNowRule(),
+        ExnotaUseCustomClock(),
       ];
 }
 
-class ExnotaUseClockRule extends DartLintRule {
-  ExnotaUseClockRule() : super(code: _code);
+class ExnotaUseClockNowRule extends DartLintRule {
+  ExnotaUseClockNowRule() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'exnota_use_clock',
+    name: 'exnota_use_clock_now',
     problemMessage: 'Use Clock().now() instead of DateTime.now()',
   );
 
@@ -27,12 +28,33 @@ class ExnotaUseClockRule extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    // This doesn't prevent the user using the `clock` pub.dev package instead
-    // of the local clock.dart wrapper. That could be a different rule, perhaps.
-    //
     // Some examples of adding quick fixes: https://github.com/invertase/dart_custom_lint/blob/main/packages/custom_lint/example/example_lint/lib/custom_lint_example_lint.dart
     context.registry.addConstructorName((node) {
       if (node.name?.name == 'now' && node.type.toString() == 'DateTime') {
+        reporter.reportErrorForNode(code, node);
+      }
+    });
+  }
+}
+
+class ExnotaUseCustomClock extends DartLintRule {
+  ExnotaUseCustomClock() : super(code: _code);
+
+  static const _code = LintCode(
+    name: 'exnota_use_custom_clock',
+    problemMessage:
+        'Use custom lib/clock.dart instead of clock/clock from pub.dev',
+  );
+
+  @override
+  void run(
+    CustomLintResolver resolver,
+    ErrorReporter reporter,
+    CustomLintContext context,
+  ) {
+    // Some examples of adding quick fixes: https://github.com/invertase/dart_custom_lint/blob/main/packages/custom_lint/example/example_lint/lib/custom_lint_example_lint.dart
+    context.registry.addImportDirective((node) {
+      if (node.uri.stringValue == 'package:clock/clock.dart') {
         reporter.reportErrorForNode(code, node);
       }
     });
