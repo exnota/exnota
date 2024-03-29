@@ -19,14 +19,21 @@ func NewIntegrationRequestHooks(app core.App) IntegrationRequestHooks {
 }
 
 func (h *integrationRequestHooks) Apply() {
-	// on create, unmarshall config and return an error if there is no code
 	h.app.OnRecordBeforeCreateRequest(integ.CollectionIntegration).Add(func(e *core.RecordCreateEvent) error {
 		integrationRecord, err := NewIntegration(e.Record)
 		if err != nil {
 			return err
 		}
 
-		config, err := integrationRecord.Config()
+		var notionIntegration NotionIntegration
+		switch i := integrationRecord.(type) {
+		case NotionIntegration:
+			notionIntegration = i
+		default:
+			return apis.NewBadRequestError("Invalid integration type", nil)
+		}
+
+		config, err := notionIntegration.Config()
 		if err != nil {
 			return err
 		}
@@ -38,4 +45,5 @@ func (h *integrationRequestHooks) Apply() {
 
 		return nil
 	})
+
 }
