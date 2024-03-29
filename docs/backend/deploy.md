@@ -4,7 +4,8 @@
   - [Steps](#steps)
   - [Troubleshooting](#troubleshooting)
 - [Maintenance](#maintenance)
-  - [Specific actions](#specific-actions)
+  - [Environment variables](#environment-variables)
+  - [Checking logs](#checking-logs)
   - [How to execute Dokku commands](#how-to-execute-dokku-commands)
 - [Initial setup](#initial-setup)
   - [SSH](#ssh)
@@ -57,9 +58,16 @@ Fix:
 
 ## Maintenance
 
-### Specific actions
+### Environment variables
 
-Logs
+See https://dokku.com/docs/configuration/environment-variables/
+
+```bash
+ssh -t dokku@195.201.33.178 config:get exnota0 VARIABLE_NAME
+ssh -t dokku@195.201.33.178 config:get exnota0 VARIABLE_NAME=VALUE
+```
+
+### Checking logs
 
 ```bash
 ssh -t dokku@195.201.33.178 logs exnota0 -t
