@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"exnota.com/backend/api"
-	integration_data_hooks "exnota.com/backend/integration/data"
+	integ_api "exnota.com/backend/integration/api"
+	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/job"
 	_ "exnota.com/backend/migrations"
 	"exnota.com/backend/record"
@@ -100,9 +101,10 @@ func bindAppHooks(app core.App, skipWorkers *bool) {
 	setGlobalDeleteRules(app)
 
 	// API rules
-	integration_data_hooks.NewModelHooks(app).Apply()
+	integ_data.NewModelHooks(app).Apply()
 
 	// Data rules
+	integ_api.NewIntegrationRequestHooks(app).Apply()
 
 	// Old rules, need extracting/refactoring
 	setBlockInvariants(app)
