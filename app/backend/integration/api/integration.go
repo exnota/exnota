@@ -40,18 +40,18 @@ type notionIntegration struct {
 }
 
 type notionIntegrationConfig struct {
-	auth notionIntegrationAuthConfig
+	Auth NotionIntegrationAuthConfig `json:"auth,omitempty"`
 }
 
-type notionIntegrationAuthConfig struct {
-	Code                 *string
-	AccessToken          *string
-	BotID                *string
-	DuplicatedTemplateID *string
-	Owner                *string
-	WorkspaceIcon        *string
-	WorkspaceID          *string
-	WorkspaceName        *string
+type NotionIntegrationAuthConfig struct {
+	Code                 *string `json:"code"`
+	AccessToken          *string `json:"access_token"`
+	BotID                *string `json:"bot_id"`
+	DuplicatedTemplateID *string `json:"duplicated_template_id"`
+	Owner                *string `json:"owner"`
+	WorkspaceIcon        *string `json:"workspace_icon"`
+	WorkspaceID          *string `json:"workspace_id"`
+	WorkspaceName        *string `json:"workspace_name"`
 }
 
 func (i notionIntegration) Type() IntegrationType {

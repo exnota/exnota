@@ -13,6 +13,7 @@ import (
 	_ "exnota.com/backend/migrations"
 	"exnota.com/backend/record"
 	user_api_hooks "exnota.com/backend/user/api"
+	"github.com/caarlos0/env"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
@@ -24,6 +25,12 @@ import (
 )
 
 func main() {
+	cfg := Config{}
+	err := env.Parse(&cfg)
+	if err != nil {
+		panic(err)
+	}
+
 	app := pocketbase.New()
 
 	// Custom flags

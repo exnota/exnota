@@ -37,8 +37,8 @@ func (h *integrationRequestHooks) Apply() {
 		if err != nil {
 			return err
 		}
-		if config.auth.Code == nil {
-			return apis.NewBadRequestError("Missing integration config", nil)
+		if config.Auth.Code == nil {
+			return apis.NewBadRequestError("Missing Notion OAuth code", nil)
 		}
 
 		// TODO: Send code to notion

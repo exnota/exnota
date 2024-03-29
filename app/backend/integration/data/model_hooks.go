@@ -1,8 +1,9 @@
 package modelhooks
 
 import (
+	"errors"
+
 	integ "exnota.com/backend/integration"
-	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
 )
@@ -28,7 +29,7 @@ func (h *modelHooks) Apply() {
 			return err
 		}
 		if existingRecord != nil {
-			return apis.NewBadRequestError("user already has an integration", nil)
+			return errors.New("user already has an integration")
 		}
 
 		return nil
