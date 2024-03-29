@@ -1,4 +1,4 @@
-package requesthooks
+package modelhooks
 
 import (
 	"github.com/pocketbase/pocketbase/apis"
@@ -6,16 +6,16 @@ import (
 	"github.com/pocketbase/pocketbase/models"
 )
 
-type RequestHooks interface {
+type ModelHooks interface {
 	Apply()
 }
 
-type requestHooks struct {
+type modelHooks struct {
 	app core.App
 }
 
-func NewRequestHooks(app core.App) RequestHooks {
-	return &requestHooks{app: app}
+func NewModelHooks(app core.App) ModelHooks {
+	return &modelHooks{app: app}
 }
 
 const (
@@ -23,7 +23,7 @@ const (
 	IntegrationFieldUser  = "user"
 )
 
-func (h *requestHooks) Apply() {
+func (h *modelHooks) Apply() {
 	h.app.OnModelBeforeCreate(CollectionIntegration).Add(func(e *core.ModelEvent) error {
 		integration := e.Model.(*models.Record)
 		userId := integration.GetString(IntegrationFieldUser)
