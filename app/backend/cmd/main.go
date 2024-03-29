@@ -10,6 +10,7 @@ import (
 	"exnota.com/backend/job"
 	_ "exnota.com/backend/migrations"
 	"exnota.com/backend/record"
+	user_api_hooks "exnota.com/backend/user/api"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
@@ -94,8 +95,8 @@ func bindAppHooks(app core.App, skipWorkers *bool) {
 	// bindJobCreatorHooks(app)
 
 	// Rules and invariants
+	user_api_hooks.NewUserRequestHooks(app).Apply()
 	setGlobalDeleteRules(app)
-	setGlobalAuthenticationRules(app)
 	setBlockInvariants(app)
 	setBlockJobInvariants(app)
 
@@ -106,41 +107,9 @@ func bindAppHooks(app core.App, skipWorkers *bool) {
 
 func setGlobalDeleteRules(app core.App) {
 	// deleting not allowed on any collection
-	app.OnRecordBeforeDeleteRequest().Add(func(e *core.RecordDeleteEvent) error {
-		return api.NewMethodNotAllowedError("Cannot delete", nil)
-	})
-}
-
-func setGlobalAuthenticationRules(app core.App) {
-	app.OnRecordsListRequest().Add(func(e *core.RecordsListEvent) error {
-		requestInfo := apis.RequestInfo(e.HttpContext)
-		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
-			return apis.NewUnauthorizedError("Not logged in", nil)
-		}
-		return nil
-	})
-	app.OnRecordViewRequest().Add(func(e *core.RecordViewEvent) error {
-		requestInfo := apis.RequestInfo(e.HttpContext)
-		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
-			return apis.NewUnauthorizedError("Not logged in", nil)
-		}
-		return nil
-	})
-
-	app.OnRecordBeforeCreateRequest().Add(func(e *core.RecordCreateEvent) error {
-		requestInfo := apis.RequestInfo(e.HttpContext)
-		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
-			return apis.NewUnauthorizedError("Not logged in", nil)
-		}
-		return nil
-	})
-
-	app.OnRecordBeforeUpdateRequest().Add(func(e *core.RecordUpdateEvent) error {
-		requestInfo := apis.RequestInfo(e.HttpContext)
-		if requestInfo.AuthRecord == nil && requestInfo.Admin == nil {
-			return apis.NewUnauthorizedError("Not logged in", nil)
-		}
-		return nil
+	app.OnModelBeforeDelete().Add(func(e *core.ModelEvent) error {
+		// Create `archived` fields instead.
+		return api.NewMethodNotAllowedError("Cannot delete. Archive instead.", nil)
 	})
 }
 
