@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"exnota.com/backend/api"
-	integration_api_hooks "exnota.com/backend/integration/api"
+	integration_data_hooks "exnota.com/backend/integration/data"
 	"exnota.com/backend/job"
 	_ "exnota.com/backend/migrations"
 	"exnota.com/backend/record"
@@ -99,8 +99,12 @@ func bindAppHooks(app core.App, skipWorkers *bool) {
 	user_api_hooks.NewUserRequestHooks(app).Apply()
 	setGlobalDeleteRules(app)
 
-	// Domain rules
-	integration_api_hooks.NewRequestHooks(app).Apply()
+	// API rules
+	integration_data_hooks.NewModelHooks(app).Apply()
+
+	// Data rules
+
+	// Old rules, need extracting/refactoring
 	setBlockInvariants(app)
 	setBlockJobInvariants(app)
 
