@@ -65,7 +65,10 @@ func TestAppHooks(t *testing.T) {
 		// defer testApp.Cleanup()
 
 		skipWorkers := true
-		bindAppHooks(testApp, &skipWorkers)
+		bindAppHooks(testApp, Config{
+			NotionOAuthClientID:     "test notion oauth client id",
+			NotionOAuthClientSecret: "test notion oauth secret",
+		}, &skipWorkers)
 
 		return testApp
 	}

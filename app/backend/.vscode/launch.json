@@ -18,7 +18,11 @@
         // is passed to dlv via dlvFlags
         "--dir",
         "${workspaceFolder}/pb_data"
-      ]
+      ],
+      "env": {
+        "NOTION_OAUTH_CLIENT_ID": "${config:rest-client.environmentVariables.$shared.notionOauthClientId}",
+        "NOTION_OAUTH_CLIENT_SECRET": "${config:rest-client.environmentVariables.$shared.notionOauthSecret}"
+      }
     },
     {
       "name": "Backend (skip workers)",

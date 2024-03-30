@@ -30,9 +30,20 @@ func NewIntegration(r *models.Record) (Integration, error) {
 	return nil, errors.New("Unknown integration type")
 }
 
+type SuccessfulNotionIntegrationAuth struct {
+	AccessToken          string
+	BotID                string
+	DuplicatedTemplateID *string
+	OwnerUserId          *string
+	WorkspaceIcon        string
+	WorkspaceID          string
+	WorkspaceName        string
+}
+
 type NotionIntegration interface {
 	Integration
 	Config() (*notionIntegrationConfig, error)
+	SetSuccessfulAuth(auth SuccessfulNotionIntegrationAuth) error
 }
 
 type notionIntegration struct {
@@ -48,7 +59,7 @@ type NotionIntegrationAuthConfig struct {
 	AccessToken          *string `json:"access_token"`
 	BotID                *string `json:"bot_id"`
 	DuplicatedTemplateID *string `json:"duplicated_template_id"`
-	Owner                *string `json:"owner"`
+	OwnerUserId          *string `json:"owner_user_id"`
 	WorkspaceIcon        *string `json:"workspace_icon"`
 	WorkspaceID          *string `json:"workspace_id"`
 	WorkspaceName        *string `json:"workspace_name"`
@@ -75,4 +86,22 @@ func (i notionIntegration) Config() (*notionIntegrationConfig, error) {
 	}
 
 	return &config, nil
+}
+
+func (i notionIntegration) SetSuccessfulAuth(auth SuccessfulNotionIntegrationAuth) error {
+	config, err := i.Config()
+	if err != nil {
+		return err
+	}
+	config.Auth = NotionIntegrationAuthConfig{
+		AccessToken:          &auth.AccessToken,
+		BotID:                &auth.BotID,
+		DuplicatedTemplateID: auth.DuplicatedTemplateID,
+		OwnerUserId:          auth.OwnerUserId,
+		WorkspaceID:          &auth.WorkspaceID,
+		WorkspaceName:        &auth.WorkspaceName,
+		WorkspaceIcon:        &auth.WorkspaceIcon,
+	}
+	i.record.Set(integ.IntegrationFieldConfig, config)
+	return nil
 }
