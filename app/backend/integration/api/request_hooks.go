@@ -35,8 +35,35 @@ func NewIntegrationRequestHooks(app core.App, credentials NotionCredentials) Int
 }
 
 func (h *integrationRequestHooks) Apply() {
+	h.preventFieldUpdates()
+
 	h.createValidationAndFetchAccessToken()
 	h.updateValidationAndRefetchAccessToken()
+}
+
+func (h *integrationRequestHooks) preventFieldUpdates() {
+	h.app.OnRecordBeforeUpdateRequest(integ.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
+		updated, err := castToNotionIntegration(e.Record)
+		if err != nil {
+			return err
+		}
+
+		existingRecord, err := h.app.Dao().FindRecordById(integ.CollectionIntegration, updated.Id(), nil)
+		if err != nil {
+			return err
+		}
+		existing, err := castToNotionIntegration(existingRecord)
+		if err != nil {
+			return err
+		}
+		if updated.Type() != existing.Type() {
+			return apis.NewBadRequestError("Cannot update integration type", nil)
+		}
+		if updated.User() != existing.User() {
+			return apis.NewBadRequestError("Cannot update integration user", nil)
+		}
+		return nil
+	})
 }
 
 func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
