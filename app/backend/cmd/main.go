@@ -117,7 +117,11 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 	}).Apply()
 
 	// Custom endpoints
-	integ_api.NewIntegrationEndpointHooks(app).Apply()
+	integ_api.NewIntegrationEndpointHooks(app, integ_api.IntegrationEndpointConfig{
+		BasePath:               cfg.BasePath,
+		NotionClientID:         cfg.NotionOAuthClientID,
+		NotionRedirectBasePath: cfg.NotionRedirectBasePath,
+	}).Apply()
 
 	// Old rules, need extracting/refactoring
 	setBlockInvariants(app)
