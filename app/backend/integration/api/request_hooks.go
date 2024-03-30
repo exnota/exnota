@@ -35,6 +35,8 @@ func NewIntegrationRequestHooks(app core.App, credentials NotionCredentials) Int
 }
 
 func (h *integrationRequestHooks) Apply() {
+	// Authorization is implemented using API Rules in the Admin UI:
+	//   Edit Collection > API Rules > Add `user.id = @request.auth.id`
 	h.preventFieldUpdates()
 
 	h.createValidationAndFetchAccessToken()
