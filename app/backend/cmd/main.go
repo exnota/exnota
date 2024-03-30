@@ -51,7 +51,7 @@ func main() {
 		Automigrate: autoMigrate,
 	})
 
-	bindAppHooks(app, &skipWorkersCmd)
+	bindAppHooks(app, cfg, &skipWorkersCmd)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
@@ -93,7 +93,7 @@ func isAutoMigrate() bool {
 	return autoMigrate
 }
 
-func bindAppHooks(app core.App, skipWorkers *bool) {
+func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 	// serves static files from the provided public dir (if exists)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
@@ -111,7 +111,10 @@ func bindAppHooks(app core.App, skipWorkers *bool) {
 	integ_data.NewModelHooks(app).Apply()
 
 	// Data rules
-	integ_api.NewIntegrationRequestHooks(app).Apply()
+	integ_api.NewIntegrationRequestHooks(app, integ_api.NotionCredentials{
+		ClientId: cfg.NotionOAuthClientID,
+		Secret:   cfg.NotionOAuthClientSecret,
+	}).Apply()
 
 	// Old rules, need extracting/refactoring
 	setBlockInvariants(app)
