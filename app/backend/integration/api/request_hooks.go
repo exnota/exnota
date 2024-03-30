@@ -4,6 +4,7 @@ import (
 	"bytes"
 	b64 "encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	integ "exnota.com/backend/integration"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/models"
 )
 
 type IntegrationRequestHooks interface {
@@ -33,14 +35,14 @@ func NewIntegrationRequestHooks(app core.App, credentials NotionCredentials) Int
 }
 
 func (h *integrationRequestHooks) Apply() {
-	h.app.OnRecordBeforeCreateRequest(integ.CollectionIntegration).Add(func(e *core.RecordCreateEvent) error {
-		integration, err := NewIntegration(e.Record)
-		if err != nil {
-			return err
-		}
+	h.createValidationAndFetchAccessToken()
+	h.updateValidationAndRefetchAccessToken()
+}
 
+func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
+	h.app.OnRecordBeforeCreateRequest(integ.CollectionIntegration).Add(func(e *core.RecordCreateEvent) error {
 		var notionIntegration NotionIntegration
-		switch i := integration.(type) {
+		switch i := notionIntegration.(type) {
 		case NotionIntegration:
 			notionIntegration = i
 		default:
@@ -74,7 +76,81 @@ func (h *integrationRequestHooks) Apply() {
 
 		return nil
 	})
+}
 
+func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
+	h.app.OnRecordBeforeUpdateRequest(integ.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
+		updated, err := castToNotionIntegration(e.Record)
+		if err != nil {
+			return err
+		}
+		updatedCode, err := codeFromNotionIntegration(updated)
+		if err != nil {
+			return err
+		}
+
+		existingRecord, err := h.app.Dao().FindRecordById(integ.CollectionIntegration, updated.Id(), nil)
+		if err != nil {
+			return err
+		}
+		existing, err := castToNotionIntegration(existingRecord)
+		if err != nil {
+			return err
+		}
+		existingCode, err := codeFromNotionIntegration(existing)
+		if err != nil {
+			return err
+		}
+
+		if updatedCode == nil {
+			return apis.NewBadRequestError("Missing Notion OAuth code", nil)
+		}
+		if updatedCode == existingCode {
+			return apis.NewBadRequestError("New Notion OAuth code not provided", nil)
+		}
+
+		response, err := h.getNotionAccessTokenResponse(updated)
+		if err != nil {
+			return err
+		}
+		err = updated.SetSuccessfulAuth(SuccessfulNotionIntegrationAuth{
+			AccessToken:          response.AccessToken,
+			BotID:                response.BotId,
+			DuplicatedTemplateID: &response.DuplicatedTemplateId,
+			OwnerUserId:          &response.Owner.User.Id,
+			WorkspaceIcon:        response.WorkspaceIcon,
+			WorkspaceID:          response.WorkspaceId,
+			WorkspaceName:        response.WorkspaceName,
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func castToNotionIntegration(record *models.Record) (NotionIntegration, error) {
+	integration, err := NewIntegration(record)
+	if err != nil {
+		return nil, err
+	}
+
+	switch i := integration.(type) {
+	case NotionIntegration:
+		return i, nil
+	default:
+		return nil, errors.New("Invalid integration type")
+	}
+}
+
+func codeFromNotionIntegration(integration NotionIntegration) (*string, error) {
+	config, err := integration.Config()
+	if err != nil {
+		return nil, err
+	}
+
+	return config.Auth.Code, nil
 }
 
 type NotionAccessTokenResponse struct {
