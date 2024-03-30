@@ -107,14 +107,17 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 	user_api_hooks.NewUserRequestHooks(app).Apply()
 	setGlobalDeleteRules(app)
 
-	// API rules
+	// Data rules
 	integ_data.NewModelHooks(app).Apply()
 
-	// Data rules
+	// API rules
 	integ_api.NewIntegrationRequestHooks(app, integ_api.NotionCredentials{
 		ClientId: cfg.NotionOAuthClientID,
 		Secret:   cfg.NotionOAuthClientSecret,
 	}).Apply()
+
+	// Custom endpoints
+	integ_api.NewIntegrationEndpointHooks(app).Apply()
 
 	// Old rules, need extracting/refactoring
 	setBlockInvariants(app)
