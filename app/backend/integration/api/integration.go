@@ -15,6 +15,7 @@ const (
 )
 
 type Integration interface {
+	Id() string
 	Type() IntegrationType
 }
 
@@ -63,6 +64,10 @@ type NotionIntegrationAuthConfig struct {
 	WorkspaceIcon        *string `json:"workspace_icon"`
 	WorkspaceID          *string `json:"workspace_id"`
 	WorkspaceName        *string `json:"workspace_name"`
+}
+
+func (i notionIntegration) Id() string {
+	return i.record.Id
 }
 
 func (i notionIntegration) Type() IntegrationType {
