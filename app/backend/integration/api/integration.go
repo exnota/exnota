@@ -17,6 +17,7 @@ const (
 type Integration interface {
 	Id() string
 	Type() IntegrationType
+	User() string
 }
 
 func NewIntegration(r *models.Record) (Integration, error) {
@@ -72,6 +73,10 @@ func (i notionIntegration) Id() string {
 
 func (i notionIntegration) Type() IntegrationType {
 	return TypeNotion
+}
+
+func (i notionIntegration) User() string {
+	return i.record.GetString(integ.IntegrationFieldUser)
 }
 
 func (i notionIntegration) Config() (*notionIntegrationConfig, error) {
