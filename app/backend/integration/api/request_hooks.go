@@ -70,8 +70,12 @@ func (h *integrationRequestHooks) preventFieldUpdates() {
 
 func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 	h.app.OnRecordBeforeCreateRequest(integ.CollectionIntegration).Add(func(e *core.RecordCreateEvent) error {
+		integration, err := NewIntegration(e.Record)
+		if err != nil {
+			return err
+		}
 		var notionIntegration NotionIntegration
-		switch i := notionIntegration.(type) {
+		switch i := integration.(type) {
 		case NotionIntegration:
 			notionIntegration = i
 		default:
@@ -233,6 +237,13 @@ func (h *integrationRequestHooks) getNotionAccessTokenResponse(integration Notio
 	if err != nil {
 		return nil, err
 	}
+	if res.StatusCode != 200 {
+		slog.Warn("Notion API returned non-200 status code",
+			"status_code", res.StatusCode,
+			"status", res.Status)
+		return nil, errors.New("Notion API returned non-200 status code")
+	}
+
 	defer res.Body.Close()
 	jsonBlob, err := io.ReadAll(res.Body)
 	if err != nil {
