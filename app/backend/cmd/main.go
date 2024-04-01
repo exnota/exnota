@@ -1,12 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 
-	"exnota.com/backend/api"
+	block_data "exnota.com/backend/block/data"
 	integ_api "exnota.com/backend/integration/api"
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/job"
@@ -109,6 +110,7 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 
 	// Data rules
 	integ_data.NewModelHooks(app).Apply()
+	block_data.NewWorkspaceDataRules(app).ApplyHooks()
 
 	// API rules
 	integ_api.NewIntegrationRequestHooks(app, integ_api.NotionCredentials{
@@ -136,7 +138,7 @@ func setGlobalDeleteRules(app core.App) {
 	// deleting not allowed on any collection
 	app.OnModelBeforeDelete().Add(func(e *core.ModelEvent) error {
 		// Create `archived` fields instead.
-		return api.NewMethodNotAllowedError("Cannot delete. Archive instead.", nil)
+		return errors.New("Cannot delete. Archive instead.")
 	})
 }
 

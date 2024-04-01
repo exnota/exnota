@@ -1,4 +1,4 @@
-package modelhooks
+package data
 
 import (
 	"errors"

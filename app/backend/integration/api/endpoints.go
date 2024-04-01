@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	integ "exnota.com/backend/integration"
+	"exnota.com/backend/integration/data"
 	"github.com/dstotijn/go-notion"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/dbx"
@@ -171,7 +172,7 @@ func (h *integrationEndpointHooks) executeNotionSearch(query string, object Obje
 	if err != nil {
 		return nil, err
 	}
-	integration, err := NewNotionIntegration(integrationRecord)
+	integration, err := data.NewNotionIntegration(integrationRecord)
 	if err != nil {
 		return nil, err
 	}
