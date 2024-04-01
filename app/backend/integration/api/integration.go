@@ -32,6 +32,19 @@ func NewIntegration(r *models.Record) (Integration, error) {
 	return nil, errors.New("Unknown integration type")
 }
 
+// Returns error if not of type notion.
+func NewNotionIntegration(r *models.Record) (NotionIntegration, error) {
+	blockType := r.GetString(integ.IntegrationFieldType)
+	switch blockType {
+	case integ.IntegrationTypeNotion:
+		var b NotionIntegration = &notionIntegration{
+			record: r,
+		}
+		return b, nil
+	}
+	return nil, errors.New("Not a notion integration")
+}
+
 type SuccessfulNotionIntegrationAuth struct {
 	AccessToken          string
 	BotID                string
