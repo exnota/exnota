@@ -88,6 +88,8 @@ func (j *exportJobRunnerConfig) setJobStatus(status string, validateWaiting bool
 			fmt.Println("summary", summary)
 		}
 
+		// TODO: Should this be updated to use forms.NewRecordUpsert so it has validations?
+		// https://pocketbase.io/docs/go-records/#update-existing-record
 		if err := txDao.SaveRecord(blockJob); err != nil {
 			return err
 		}
