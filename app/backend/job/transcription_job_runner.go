@@ -125,6 +125,8 @@ func (j *transcriptionJobRunner) setJobStatus(status string, validateWaiting boo
 			fmt.Println("summary", summary)
 		}
 
+		// TODO: Should this be updated to use forms.NewRecordUpsert so it has validations?
+		// https://pocketbase.io/docs/go-records/#update-existing-record
 		if err := txDao.SaveRecord(blockJob); err != nil {
 			return err
 		}
@@ -245,6 +247,8 @@ func (j *transcriptionJobRunner) saveTranscription(result *TranscriptionResult) 
 			return err
 		}
 
+		// TODO: Should this be updated to use forms.NewRecordUpsert so it has validations?
+		// https://pocketbase.io/docs/go-records/#update-existing-record
 		err = txDao.SaveRecord(blockRecord)
 		if err != nil {
 			return err
