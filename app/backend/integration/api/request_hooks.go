@@ -11,6 +11,7 @@ import (
 	"time"
 
 	integ "exnota.com/backend/integration"
+	"exnota.com/backend/integration/data"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
@@ -70,13 +71,13 @@ func (h *integrationRequestHooks) preventFieldUpdates() {
 
 func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 	h.app.OnRecordBeforeCreateRequest(integ.CollectionIntegration).Add(func(e *core.RecordCreateEvent) error {
-		integration, err := NewIntegration(e.Record)
+		integration, err := data.NewIntegration(e.Record)
 		if err != nil {
 			return err
 		}
-		var notionIntegration NotionIntegration
+		var notionIntegration data.NotionIntegration
 		switch i := integration.(type) {
-		case NotionIntegration:
+		case data.NotionIntegration:
 			notionIntegration = i
 		default:
 			return apis.NewBadRequestError("Invalid integration type", nil)
@@ -94,7 +95,7 @@ func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 		if err != nil {
 			return err
 		}
-		err = notionIntegration.SetSuccessfulAuth(SuccessfulNotionIntegrationAuth{
+		err = notionIntegration.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
 			AccessToken:          response.AccessToken,
 			BotID:                response.BotId,
 			DuplicatedTemplateID: &response.DuplicatedTemplateId,
@@ -146,7 +147,7 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 		if err != nil {
 			return err
 		}
-		err = updated.SetSuccessfulAuth(SuccessfulNotionIntegrationAuth{
+		err = updated.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
 			AccessToken:          response.AccessToken,
 			BotID:                response.BotId,
 			DuplicatedTemplateID: &response.DuplicatedTemplateId,
@@ -163,21 +164,21 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 	})
 }
 
-func castToNotionIntegration(record *models.Record) (NotionIntegration, error) {
-	integration, err := NewIntegration(record)
+func castToNotionIntegration(record *models.Record) (data.NotionIntegration, error) {
+	integration, err := data.NewIntegration(record)
 	if err != nil {
 		return nil, err
 	}
 
 	switch i := integration.(type) {
-	case NotionIntegration:
+	case data.NotionIntegration:
 		return i, nil
 	default:
 		return nil, errors.New("Invalid integration type")
 	}
 }
 
-func codeFromNotionIntegration(integration NotionIntegration) (*string, error) {
+func codeFromNotionIntegration(integration data.NotionIntegration) (*string, error) {
 	config, err := integration.Config()
 	if err != nil {
 		return nil, err
@@ -208,7 +209,7 @@ type User struct {
 	}
 }
 
-func (h *integrationRequestHooks) getNotionAccessTokenResponse(integration NotionIntegration) (*NotionAccessTokenResponse, error) {
+func (h *integrationRequestHooks) getNotionAccessTokenResponse(integration data.NotionIntegration) (*NotionAccessTokenResponse, error) {
 	config, err := integration.Config()
 	if err != nil {
 		return nil, err
