@@ -1,7 +1,6 @@
 package data
 
 import (
-	"exnota.com/backend/integration"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -18,7 +17,7 @@ func NewFetcher(app core.App) *AppFetcher {
 }
 
 func (f *AppFetcher) FetchById(id string) (Integration, error) {
-	record, err := f.app.Dao().FindRecordById(integration.CollectionIntegration, id)
+	record, err := f.app.Dao().FindRecordById(CollectionIntegration, id)
 	if err != nil {
 		return nil, err
 	}
