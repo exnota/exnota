@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	block_api "exnota.com/backend/block/api"
 	block_data "exnota.com/backend/block/data"
 	integ_api "exnota.com/backend/integration/api"
 	integ_data "exnota.com/backend/integration/data"
@@ -120,6 +121,7 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 		Secret:   cfg.NotionOAuthClientSecret,
 	}).Apply()
 	integ_api.NewIntegrationNotionObjectApiRules(app).ApplyHooks()
+	block_api.NewDestinationApiRules(app).ApplyHooks()
 
 	// Custom endpoints
 	integ_api.NewIntegrationEndpointHooks(app, integ_api.IntegrationEndpointConfig{
