@@ -8,19 +8,19 @@ import (
 	"github.com/pocketbase/pocketbase/models"
 )
 
-type ModelHooks interface {
-	Apply()
+type IntegrationDataRules interface {
+	ApplyHooks()
 }
 
-type modelHooks struct {
+type integrationDataRules struct {
 	app core.App
 }
 
-func NewModelHooks(app core.App) ModelHooks {
-	return &modelHooks{app: app}
+func NewIntegrationDataRules(app core.App) IntegrationDataRules {
+	return &integrationDataRules{app: app}
 }
 
-func (h *modelHooks) Apply() {
+func (h *integrationDataRules) ApplyHooks() {
 	h.app.OnModelBeforeCreate(CollectionIntegration).Add(func(e *core.ModelEvent) error {
 		integration := e.Model.(*models.Record)
 		userId := integration.GetString(IntegrationFieldUser)
