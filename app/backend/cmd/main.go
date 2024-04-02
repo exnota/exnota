@@ -112,6 +112,7 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 	// Data rules
 	integ_data.NewIntegrationDataRules(app).ApplyHooks()
 	integ_data.NewIntegrationNotionObjectHooks(app).ApplyHooks()
+	integ_data.NewIntegrationDestinationDataRules(app).ApplyHooks()
 	block_data.NewWorkspaceDataRules(app).ApplyHooks()
 	block_data.NewDestinationDataRules(app).ApplyHooks()
 
