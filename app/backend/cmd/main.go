@@ -121,6 +121,7 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 		Secret:   cfg.NotionOAuthClientSecret,
 	}).Apply()
 	integ_api.NewIntegrationNotionObjectApiRules(app).ApplyHooks()
+	integ_api.NewIntegrationDestinationApiRules(app).ApplyHooks()
 	block_api.NewDestinationApiRules(app).ApplyHooks()
 
 	// Custom endpoints
