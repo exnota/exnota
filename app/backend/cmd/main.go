@@ -117,6 +117,7 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 		ClientId: cfg.NotionOAuthClientID,
 		Secret:   cfg.NotionOAuthClientSecret,
 	}).Apply()
+	integ_api.NewIntegrationNotionObjectApiRules(app).ApplyHooks()
 
 	// Custom endpoints
 	integ_api.NewIntegrationEndpointHooks(app, integ_api.IntegrationEndpointConfig{
