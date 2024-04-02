@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -45,13 +44,13 @@ func (h *integrationRequestHooks) Apply() {
 }
 
 func (h *integrationRequestHooks) preventFieldUpdates() {
-	h.app.OnRecordBeforeUpdateRequest(integ.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
+	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
 		updated, err := castToNotionIntegration(e.Record)
 		if err != nil {
 			return err
 		}
 
-		existingRecord, err := h.app.Dao().FindRecordById(integ.CollectionIntegration, updated.Id(), nil)
+		existingRecord, err := h.app.Dao().FindRecordById(data.CollectionIntegration, updated.Id(), nil)
 		if err != nil {
 			return err
 		}
@@ -70,7 +69,7 @@ func (h *integrationRequestHooks) preventFieldUpdates() {
 }
 
 func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
-	h.app.OnRecordBeforeCreateRequest(integ.CollectionIntegration).Add(func(e *core.RecordCreateEvent) error {
+	h.app.OnRecordBeforeCreateRequest(data.CollectionIntegration).Add(func(e *core.RecordCreateEvent) error {
 		integration, err := data.NewIntegration(e.Record)
 		if err != nil {
 			return err
@@ -113,7 +112,7 @@ func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 }
 
 func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
-	h.app.OnRecordBeforeUpdateRequest(integ.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
+	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
 		updated, err := castToNotionIntegration(e.Record)
 		if err != nil {
 			return err
@@ -123,7 +122,7 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 			return err
 		}
 
-		existingRecord, err := h.app.Dao().FindRecordById(integ.CollectionIntegration, updated.Id(), nil)
+		existingRecord, err := h.app.Dao().FindRecordById(data.CollectionIntegration, updated.Id(), nil)
 		if err != nil {
 			return err
 		}

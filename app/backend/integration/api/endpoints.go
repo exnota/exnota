@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strings"
 
-	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"github.com/dstotijn/go-notion"
 	"github.com/labstack/echo/v5"
@@ -163,12 +162,12 @@ func (h *integrationEndpointHooks) notionSearch() {
 
 func (h *integrationEndpointHooks) executeNotionSearch(query string, object ObjectType, userId string) (*SearchResponse, error) {
 	// Get integration
-	filter := integ.IntegrationFieldUser + "={:user} && " +
-		integ.IntegrationFieldType + "={:type}"
+	filter := data.IntegrationFieldUser + "={:user} && " +
+		data.IntegrationFieldType + "={:type}"
 	integrationRecord, err := h.app.Dao().FindFirstRecordByFilter(
-		integ.CollectionIntegration,
+		data.CollectionIntegration,
 		filter,
-		dbx.Params{"user": userId, "type": integ.IntegrationTypeNotion})
+		dbx.Params{"user": userId, "type": data.IntegrationTypeNotion})
 	if err != nil {
 		return nil, err
 	}

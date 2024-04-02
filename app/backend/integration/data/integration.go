@@ -3,9 +3,19 @@ package data
 import (
 	"errors"
 
-	integ "exnota.com/backend/integration"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/tools/types"
+)
+
+const (
+	CollectionIntegration = "integration"
+
+	IntegrationFieldUser = "user"
+
+	IntegrationFieldConfig = "config"
+
+	IntegrationFieldType  = "type"
+	IntegrationTypeNotion = "notion"
 )
 
 type IntegrationType int
@@ -21,9 +31,9 @@ type Integration interface {
 }
 
 func NewIntegration(r *models.Record) (Integration, error) {
-	blockType := r.GetString(integ.IntegrationFieldType)
+	blockType := r.GetString(IntegrationFieldType)
 	switch blockType {
-	case integ.IntegrationTypeNotion:
+	case IntegrationTypeNotion:
 		var b NotionIntegration = &notionIntegration{
 			record: r,
 		}
@@ -34,9 +44,9 @@ func NewIntegration(r *models.Record) (Integration, error) {
 
 // Returns error if not of type notion.
 func NewNotionIntegration(r *models.Record) (NotionIntegration, error) {
-	blockType := r.GetString(integ.IntegrationFieldType)
+	blockType := r.GetString(IntegrationFieldType)
 	switch blockType {
-	case integ.IntegrationTypeNotion:
+	case IntegrationTypeNotion:
 		var b NotionIntegration = &notionIntegration{
 			record: r,
 		}
@@ -89,11 +99,11 @@ func (i notionIntegration) Type() IntegrationType {
 }
 
 func (i notionIntegration) User() string {
-	return i.record.GetString(integ.IntegrationFieldUser)
+	return i.record.GetString(IntegrationFieldUser)
 }
 
 func (i notionIntegration) Config() (*notionIntegrationConfig, error) {
-	rawConfig := i.record.Get(integ.IntegrationFieldConfig).(types.JsonRaw)
+	rawConfig := i.record.Get(IntegrationFieldConfig).(types.JsonRaw)
 	val, err := rawConfig.Value()
 	if err != nil {
 		return nil, err
@@ -103,7 +113,7 @@ func (i notionIntegration) Config() (*notionIntegrationConfig, error) {
 	}
 
 	var config notionIntegrationConfig
-	err = i.record.UnmarshalJSONField(integ.IntegrationFieldConfig, &config)
+	err = i.record.UnmarshalJSONField(IntegrationFieldConfig, &config)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +135,6 @@ func (i notionIntegration) SetSuccessfulAuth(auth SuccessfulNotionIntegrationAut
 		WorkspaceName:        &auth.WorkspaceName,
 		WorkspaceIcon:        &auth.WorkspaceIcon,
 	}
-	i.record.Set(integ.IntegrationFieldConfig, config)
+	i.record.Set(IntegrationFieldConfig, config)
 	return nil
 }
