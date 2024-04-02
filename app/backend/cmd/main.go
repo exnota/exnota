@@ -110,7 +110,7 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 	setGlobalDeleteRules(app)
 
 	// Data rules
-	integ_data.NewModelHooks(app).Apply()
+	integ_data.NewIntegrationDataRules(app).ApplyHooks()
 	integ_data.NewIntegrationNotionObjectHooks(app).ApplyHooks()
 	block_data.NewWorkspaceDataRules(app).ApplyHooks()
 	block_data.NewDestinationDataRules(app).ApplyHooks()
