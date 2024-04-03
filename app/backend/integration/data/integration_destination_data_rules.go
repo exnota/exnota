@@ -33,7 +33,7 @@ func (h *integrationDestinationDataRules) immutableFields() {
 		if updated.User() != existing.User() {
 			return errors.New("Cannot change user field")
 		}
-		if updated.Type() != existing.Type() {
+		if updated.ExternalRecordType() != existing.ExternalRecordType() {
 			return errors.New("Cannot change type field")
 		}
 		if updated.DestinationId() != existing.DestinationId() {

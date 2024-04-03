@@ -11,6 +11,7 @@ import (
 	block_data "exnota.com/backend/block/data"
 	integ_api "exnota.com/backend/integration/api"
 	integ_data "exnota.com/backend/integration/data"
+	"exnota.com/backend/integration/service"
 	"exnota.com/backend/job"
 	_ "exnota.com/backend/migrations"
 	"exnota.com/backend/record"
@@ -114,6 +115,7 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 	integ_data.NewIntegrationNotionObjectHooks(app).ApplyHooks()
 	integ_data.NewIntegrationDestinationDataRules(app).ApplyHooks()
 	block_data.NewWorkspaceDataRules(app).ApplyHooks()
+	integrationDestinationSync := service.NewIntegrationDestinationSync(app)
 	block_data.NewDestinationDataRules(app).ApplyHooks()
 
 	// API rules
@@ -123,7 +125,7 @@ func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
 	}).Apply()
 	integ_api.NewIntegrationNotionObjectApiRules(app).ApplyHooks()
 	integ_api.NewIntegrationDestinationApiRules(app).ApplyHooks()
-	block_api.NewDestinationApiRules(app).ApplyHooks()
+	block_api.NewDestinationApiRules(app, integrationDestinationSync.Sync).ApplyHooks()
 
 	// Custom endpoints
 	integ_api.NewIntegrationEndpointHooks(app, integ_api.IntegrationEndpointConfig{

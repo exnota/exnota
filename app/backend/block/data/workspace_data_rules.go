@@ -31,7 +31,7 @@ func (r *workspaceDataRules) relationRules() {
 			return err
 		}
 
-		fetcher := integ_data.NewFetcher(r.app)
+		fetcher := integ_data.NewIntegrationFetcher(r.app)
 		integration, err := fetcher.FetchById(workspace.Integration())
 		if err != nil {
 			return err

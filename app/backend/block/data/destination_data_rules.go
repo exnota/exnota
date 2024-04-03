@@ -24,7 +24,7 @@ func (r *destinationDataRules) ApplyHooks() {
 
 func (r *destinationDataRules) immutableRules() {
 	r.app.OnModelBeforeUpdate(CollectionDestination).Add(func(e *core.ModelEvent) error {
-		updated, err := NewDestination(e.Model)
+		updated, err := NewDestination(e.Model, r.app)
 		if err != nil {
 			return err
 		}
@@ -34,7 +34,6 @@ func (r *destinationDataRules) immutableRules() {
 			return err
 		}
 
-		// Cann't change user or workspace
 		if updated.User() != existing.User() {
 			return errors.New("Cannot change user")
 		}

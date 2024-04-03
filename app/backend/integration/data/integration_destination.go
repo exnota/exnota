@@ -1,26 +1,29 @@
 package data
 
-import "github.com/pocketbase/pocketbase/models"
-
-const (
-	CollectionIntegrationDestination         = "integration_destination"
-	IntegrationDestinationFieldDestinationId = "destination_id"
-	IntegrationDestinationFieldExternalType  = "external_type"
-	IntegrationDestinationFieldExternalId    = "external_id"
-	IntegrationDestinationFieldUser          = "user"
+import (
+	"exnota.com/backend/lib/block"
+	"github.com/pocketbase/pocketbase/models"
 )
 
-type IntegrationDestinationType string
+const (
+	CollectionIntegrationDestination              = "integration_destination"
+	IntegrationDestinationFieldDestinationId      = "destination_id"
+	IntegrationDestinationFieldExternalRecordType = "external_record_type"
+	IntegrationDestinationFieldExternalRecordId   = "external_record_id"
+	IntegrationDestinationFieldUser               = "user"
+)
+
+type IntegrationDestinationRecordType = block.DestinationExternalRecordType
 
 const (
-	IntegrationDestinationTypeNotion = "notion"
+	IntegrationDestinationRecordTypeNotion IntegrationDestinationRecordType = block.DestinationExternalRecordTypeNotion
 )
 
 type IntegrationDestination interface {
 	Id() string
 	DestinationId() string
-	Type() IntegrationDestinationType
-	ExternalId() string
+	ExternalRecordType() IntegrationDestinationRecordType
+	ExternalRecordId() string
 	User() string
 }
 
@@ -44,12 +47,12 @@ func (i *integrationDestination) DestinationId() string {
 	return i.record.GetString(IntegrationDestinationFieldDestinationId)
 }
 
-func (i *integrationDestination) Type() IntegrationDestinationType {
-	return IntegrationDestinationType(i.record.GetString(IntegrationDestinationFieldExternalType))
+func (i *integrationDestination) ExternalRecordType() IntegrationDestinationRecordType {
+	return IntegrationDestinationRecordType(i.record.GetString(IntegrationDestinationFieldExternalRecordType))
 }
 
-func (i *integrationDestination) ExternalId() string {
-	return i.record.GetString(IntegrationDestinationFieldExternalId)
+func (i *integrationDestination) ExternalRecordId() string {
+	return i.record.GetString(IntegrationDestinationFieldExternalRecordId)
 }
 
 func (i *integrationDestination) User() string {

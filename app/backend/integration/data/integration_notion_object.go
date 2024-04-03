@@ -3,10 +3,16 @@ package data
 import "github.com/pocketbase/pocketbase/models"
 
 const (
-	CollectionIntegrationNotionObject      = "integration_notion_object"
-	IntegrationNotionObjectFieldType       = "type"
+	CollectionIntegrationNotionObject = "integration_notion_object"
+
+	// Id (system)
 	IntegrationNotionObjectFieldExternalId = "external_id"
+	IntegrationNotionObjectFieldType       = "type"
+	IntegrationNotionObjectFieldProperties = "properties"
+	IntegrationNotionObjectFieldLastSynced = "last_synced"
 	IntegrationNotionObjectFieldUser       = "user"
+	// created (system)
+	// updated (system)
 )
 
 type IntegrationNotionObjectType string
