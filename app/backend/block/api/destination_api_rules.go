@@ -2,8 +2,10 @@ package api
 
 import (
 	"exnota.com/backend/block/data"
+	lib_block "exnota.com/backend/lib/block"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/forms"
 )
 
 type DestinationApiRules interface {
@@ -11,15 +13,22 @@ type DestinationApiRules interface {
 }
 
 type destinationApiRules struct {
-	app core.App
+	app             core.App
+	destinationSync DestinationSync
 }
 
-func NewDestinationApiRules(app core.App) DestinationApiRules {
-	return &destinationApiRules{app: app}
+type DestinationSync func(request lib_block.DestinationSyncRequest) (result *lib_block.DestinationSyncResult, err error)
+
+func NewDestinationApiRules(app core.App, destinationSync DestinationSync) DestinationApiRules {
+	return &destinationApiRules{
+		app:             app,
+		destinationSync: destinationSync,
+	}
 }
 
 func (h *destinationApiRules) ApplyHooks() {
 	h.blockApiAccessForNonAdmins()
+	h.createIntegrationRelations()
 }
 
 func (h *destinationApiRules) blockApiAccessForNonAdmins() {
@@ -29,5 +38,60 @@ func (h *destinationApiRules) blockApiAccessForNonAdmins() {
 			return nil
 		}
 		return apis.NewForbiddenError("Not allowed to modify this collection", nil)
+	})
+}
+
+func (h *destinationApiRules) createIntegrationRelations() {
+	h.app.OnRecordBeforeCreateRequest(data.CollectionDestination).Add(func(e *core.RecordCreateEvent) error {
+
+		// Validate early to avoid extra work if there's a simple validation
+		// error
+		// TODO: Test that this works. It could be DrySubmit() instead, although that requires a transaction?
+		form := forms.NewRecordUpsert(h.app, e.Record)
+		err := form.Validate()
+		if err != nil {
+			return err
+		}
+
+		destination, err := data.NewDestination(e.Record, h.app)
+		if err != nil {
+			return err
+		}
+
+		destinationID := destination.Id()
+		if destinationID == "" {
+			return apis.NewBadRequestError("Destination ID is empty", nil)
+		}
+		external := destination.External()
+		if external == nil {
+			return apis.NewBadRequestError("Destination external is nil", nil)
+		}
+
+		// Get integration ID from workspace
+		workspaceFetcher := data.NewWorkspaceFetcher(h.app)
+		workspace, err := workspaceFetcher.FetchById(destination.Workspace())
+		if err != nil {
+			return err
+		}
+
+		// Sync data from remote destination
+		syncResult, err := h.destinationSync(lib_block.DestinationSyncRequest{
+			DestinationId: destinationID,
+			IntegrationId: workspace.Integration(),
+			Config:        external.Config,
+			User:          destination.User(),
+		})
+		if err != nil {
+			return err
+		}
+
+		// Update destination using data from sync
+		destination.SetName(syncResult.DestinationName)
+		err = destination.Validate()
+		if err != nil {
+			return err
+		}
+
+		return nil
 	})
 }

@@ -21,7 +21,7 @@ func (f *destinationFetcher) FetchById(id string) (Destination, error) {
 	if err != nil {
 		return nil, err
 	}
-	destination, err := NewDestination(record)
+	destination, err := NewDestination(record, f.app)
 	if err != nil {
 		return nil, err
 	}

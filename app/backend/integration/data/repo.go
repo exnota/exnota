@@ -4,19 +4,19 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-type Fetcher interface {
-	FetchById(id string) (interface{}, error)
+type IntegrationFetcher interface {
+	FetchById(id string) (Integration, error)
 }
 
-type AppFetcher struct {
+type integrationFetcher struct {
 	app core.App
 }
 
-func NewFetcher(app core.App) *AppFetcher {
-	return &AppFetcher{app}
+func NewIntegrationFetcher(app core.App) IntegrationFetcher {
+	return &integrationFetcher{app}
 }
 
-func (f *AppFetcher) FetchById(id string) (Integration, error) {
+func (f *integrationFetcher) FetchById(id string) (Integration, error) {
 	record, err := f.app.Dao().FindRecordById(CollectionIntegration, id)
 	if err != nil {
 		return nil, err

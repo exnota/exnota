@@ -18,10 +18,10 @@ const (
 	IntegrationTypeNotion = "notion"
 )
 
-type IntegrationType int
+type IntegrationType string
 
 const (
-	TypeNotion IntegrationType = iota
+	TypeNotion IntegrationType = IntegrationTypeNotion
 )
 
 type Integration interface {
