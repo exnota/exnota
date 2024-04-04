@@ -1,6 +1,9 @@
 package job
 
 import (
+	"fmt"
+	"time"
+
 	"exnota.com/backend/job/data"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -30,5 +33,17 @@ func (j *blockJobQueue) Start() error {
 	// TODO: Every 1 second, query for jobs that meet the criteria
 	// Criteria = 'waiting' status as 'next_run_at' <= now()
 	// Add them to queue
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			// TODO: Query for jobs that meet the criteria
+			// TODO: Add them to the queue
+			fmt.Println("✅ Found job, off to one second")
+		}
+	}()
+
 	return nil
 }
