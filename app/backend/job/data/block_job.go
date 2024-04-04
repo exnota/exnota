@@ -15,7 +15,8 @@ const (
 	BlockJobStatusRunning  = "running"
 	BlockJobStatusComplete = "complete"
 
-	BlockJobFieldType = "type"
+	BlockJobFieldType      = "type"
+	BlockJobFieldNextRunAt = "next_run_at"
 )
 
 type BlockJobType string

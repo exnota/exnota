@@ -3,7 +3,6 @@ package data
 import (
 	"log/slog"
 
-	"exnota.com/backend/lib/data"
 	filter "exnota.com/backend/lib/data"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/forms"
@@ -77,7 +76,7 @@ func (f *blockJobFetcher) ListJobsToProcess() ([]BlockJob, error) {
 			Value: BlockJobStatusWaiting,
 		},
 		filter.Field{
-			Name:        data.DefaultFieldCreated,
+			Name:        BlockJobFieldNextRunAt,
 			Op:          filter.OpLessThanEquals,
 			ValuePreset: filter.ValuePresetNow,
 		},
