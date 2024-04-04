@@ -36,7 +36,7 @@ func (j *exportJobRunnerConfig) Run() error {
 		return err
 	}
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	err = j.setJobStatus("complete", false, nil)
 	if err != nil {
