@@ -4,19 +4,26 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/models"
+	"github.com/pocketbase/pocketbase/tools/types"
 )
 
 const (
 	CollectionBlockJob = "block_job"
 
 	BlockJobFieldStatus    = "status"
-	BlockJobStatusError    = "error"
-	BlockJobStatusWaiting  = "waiting"
-	BlockJobStatusRunning  = "running"
-	BlockJobStatusComplete = "complete"
-
+	BlockJobFieldBlock     = "block"
 	BlockJobFieldType      = "type"
 	BlockJobFieldNextRunAt = "next_run_at"
+	BlockJobFieldUser      = "user"
+)
+
+type BlockJobStatus string
+
+const (
+	BlockJobStatusWaiting  BlockJobStatus = "waiting"
+	BlockJobStatusRunning  BlockJobStatus = "running"
+	BlockJobStatusComplete BlockJobStatus = "complete"
+	BlockJobStatusError    BlockJobStatus = "error"
 )
 
 type BlockJobType string
@@ -29,10 +36,11 @@ const (
 type BlockJob interface {
 	ID() string
 	Type() BlockJobType
-	Status() JobStatus
+	Status() BlockJobStatus
 	Block() string
 	User() string
 	Record() *models.Record
+	NextRunAt() types.DateTime
 }
 
 func LoadBlockJob(r *models.Record) BlockJob {
@@ -52,41 +60,18 @@ func NewExportBlockJobForm(config NewExportBlockJobFormConfig) (*forms.RecordUps
 	record := models.NewRecord(config.Collection)
 	form := forms.NewRecordUpsert(config.App, record)
 
-	err := form.LoadData(map[string]any{
-		BlockJobFieldType: BlockJobTypeExport,
-		"status":          Waiting.String(),
-		"block":           config.BlockId,
-		"user":            config.UserId,
+	err := form.LoadData(map[string]interface{}{
+		BlockJobFieldType:      BlockJobTypeExport,
+		BlockJobFieldStatus:    BlockJobStatusWaiting,
+		BlockJobFieldBlock:     config.BlockId,
+		BlockJobFieldUser:      config.UserId,
+		BlockJobFieldNextRunAt: types.NowDateTime(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return form, nil
-}
-
-type JobStatus int
-
-const (
-	Waiting JobStatus = iota
-	Running
-	Error
-	Complete
-)
-
-func (s JobStatus) String() string {
-	switch s {
-	case Waiting:
-		return "waiting"
-	case Running:
-		return "running"
-	case Error:
-		return "error"
-	case Complete:
-		return "complete"
-	default:
-		panic("unknown status")
-	}
 }
 
 type blockJob struct {
@@ -97,19 +82,8 @@ func (j *blockJob) ID() string {
 	return j.record.Id
 }
 
-func (j *blockJob) Status() JobStatus {
-	switch j.record.GetString("status") {
-	case "waiting":
-		return Waiting
-	case "running":
-		return Running
-	case "error":
-		return Error
-	case "complete":
-		return Complete
-	default:
-		panic("unknown status")
-	}
+func (j *blockJob) Status() BlockJobStatus {
+	return BlockJobStatus(j.record.GetString(BlockJobFieldStatus))
 }
 
 func (j *blockJob) Type() BlockJobType {
@@ -121,9 +95,13 @@ func (j *blockJob) Record() *models.Record {
 }
 
 func (j *blockJob) Block() string {
-	return j.record.GetString("block")
+	return j.record.GetString(BlockJobFieldBlock)
 }
 
 func (j *blockJob) User() string {
-	return j.record.GetString("user")
+	return j.record.GetString(BlockJobFieldUser)
+}
+
+func (j *blockJob) NextRunAt() types.DateTime {
+	return j.record.GetDateTime(BlockJobFieldNextRunAt)
 }

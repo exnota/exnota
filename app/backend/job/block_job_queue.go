@@ -59,9 +59,10 @@ func (j *blockJobQueue) Start() error {
 			for _, job := range jobs {
 				switch job.Type() {
 				case data.BlockJobTypeExport:
+					slog.Info("⬆️ Adding export job to queue")
 					exportQueue <- job
 				case data.BlockJobTypeTranscription:
-					slog.Info("Nothing is done for job of type transcription")
+					slog.Info("🎙️ Nothing is done for job of type transcription")
 				default:
 					slog.Error("Unknown job type", "type", job.Type())
 				}
