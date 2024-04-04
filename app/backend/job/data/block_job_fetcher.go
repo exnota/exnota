@@ -100,13 +100,6 @@ func (f *blockJobFetcher) ListJobsToProcess() ([]BlockJob, error) {
 	var blocks []BlockJob
 	for _, r := range records {
 		blockJob := LoadBlockJob(r)
-		slog.Info("📥 Found block job to process",
-			"id", blockJob.ID(),
-			"type", blockJob.Type(),
-			"status", blockJob.Status(),
-			"block", blockJob.Block(),
-			"user", blockJob.User(),
-		)
 		blocks = append(blocks, blockJob)
 	}
 
