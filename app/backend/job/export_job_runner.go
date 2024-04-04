@@ -28,7 +28,8 @@ func NewExportJobRunner(blockJobId string, blockId string, app core.App) ExportJ
 	}
 }
 
-// run method
+// TODO: Refactor to use the proper status constants
+
 func (j *exportJobRunnerConfig) Run() error {
 	err := j.setJobStatus("running", true, nil)
 	if err != nil {

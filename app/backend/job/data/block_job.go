@@ -28,7 +28,7 @@ const (
 
 type BlockJob interface {
 	ID() string
-	Type() JobType
+	Type() BlockJobType
 	Status() JobStatus
 	Block() string
 	User() string
@@ -53,10 +53,10 @@ func NewExportBlockJobForm(config NewExportBlockJobFormConfig) (*forms.RecordUps
 	form := forms.NewRecordUpsert(config.App, record)
 
 	err := form.LoadData(map[string]any{
-		"type":   Export.String(),
-		"status": Waiting.String(),
-		"block":  config.BlockId,
-		"user":   config.UserId,
+		BlockJobFieldType: BlockJobTypeExport,
+		"status":          Waiting.String(),
+		"block":           config.BlockId,
+		"user":            config.UserId,
 	})
 	if err != nil {
 		return nil, err
@@ -89,24 +89,6 @@ func (s JobStatus) String() string {
 	}
 }
 
-type JobType int
-
-const (
-	Transcription JobType = iota
-	Export
-)
-
-func (t JobType) String() string {
-	switch t {
-	case Transcription:
-		return "transcription"
-	case Export:
-		return "export"
-	default:
-		panic("unknown type")
-	}
-}
-
 type blockJob struct {
 	record *models.Record
 }
@@ -130,15 +112,8 @@ func (j *blockJob) Status() JobStatus {
 	}
 }
 
-func (j *blockJob) Type() JobType {
-	switch j.record.GetString("type") {
-	case "transcription":
-		return Transcription
-	case "export":
-		return Export
-	default:
-		panic("unknown type")
-	}
+func (j *blockJob) Type() BlockJobType {
+	return BlockJobType(j.record.GetString(BlockJobFieldType))
 }
 
 func (j *blockJob) Record() *models.Record {
