@@ -1,7 +1,7 @@
 package job
 
 import (
-	"fmt"
+	"log/slog"
 	"time"
 
 	"exnota.com/backend/job/data"
@@ -39,9 +39,15 @@ func (j *blockJobQueue) Start() error {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			// TODO: Query for jobs that meet the criteria
+			jobs, err := blockJobFetcher.ListJobsToProcess()
+			if err != nil {
+				slog.Error("Error fetching jobs to process", "error", err)
+				continue
+			}
+			slog.Info("Fetched jobs to process", "count", len(jobs))
+
 			// TODO: Add them to the queue
-			fmt.Println("✅ Found job, off to one second")
+
 		}
 	}()
 

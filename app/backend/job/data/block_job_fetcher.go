@@ -3,15 +3,15 @@ package data
 import (
 	"log/slog"
 
+	"exnota.com/backend/lib/data"
 	filter "exnota.com/backend/lib/data"
-	"github.com/dstotijn/go-notion"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/forms"
 )
 
 type BlockJobFetcher interface {
-	FetchBlock(blockID string, integrationID string) (*notion.Block, error)
 	ResetRunningJobs() error
+	ListJobsToProcess() ([]BlockJob, error)
 }
 
 type blockJobFetcher struct {
@@ -22,15 +22,16 @@ func NewBlockJobFetcher(app core.App) BlockJobFetcher {
 	return &blockJobFetcher{app}
 }
 
-func (f *blockJobFetcher) FetchBlock(blockID string, integrationID string) (*notion.Block, error) {
-	return nil, nil
-}
-
 func (f *blockJobFetcher) ResetRunningJobs() error {
-	filter, params := filter.CreateAndFilter(filter.Field{
+	filter, params, err := filter.CreateAndFilter(filter.Field{
 		Name:  BlockJobFieldStatus,
+		Op:    filter.OpEquals,
 		Value: BlockJobStatusRunning,
 	})
+	if err != nil {
+		return err
+	}
+
 	records, err := f.app.Dao().FindRecordsByFilter(
 		CollectionBlockJob,
 		filter,
@@ -66,4 +67,49 @@ func (f *blockJobFetcher) ResetRunningJobs() error {
 	}
 
 	return nil
+}
+
+func (f *blockJobFetcher) ListJobsToProcess() ([]BlockJob, error) {
+	filter, params, err := filter.CreateAndFilter(
+		filter.Field{
+			Name:  BlockJobFieldStatus,
+			Op:    filter.OpEquals,
+			Value: BlockJobStatusWaiting,
+		},
+		filter.Field{
+			Name:        data.DefaultFieldCreated,
+			Op:          filter.OpLessThanEquals,
+			ValuePreset: filter.ValuePresetNow,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	records, err := f.app.Dao().FindRecordsByFilter(
+		CollectionBlockJob,
+		filter,
+		"+created",
+		0,
+		0,
+		params,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var blocks []BlockJob
+	for _, r := range records {
+		blockJob := LoadBlockJob(r)
+		slog.Info("📥 Found block job to process",
+			"id", blockJob.ID(),
+			"type", blockJob.Type(),
+			"status", blockJob.Status(),
+			"block", blockJob.Block(),
+			"user", blockJob.User(),
+		)
+		blocks = append(blocks, blockJob)
+	}
+
+	return blocks, nil
 }

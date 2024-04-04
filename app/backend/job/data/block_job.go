@@ -14,6 +14,15 @@ const (
 	BlockJobStatusWaiting  = "waiting"
 	BlockJobStatusRunning  = "running"
 	BlockJobStatusComplete = "complete"
+
+	BlockJobFieldType = "type"
+)
+
+type BlockJobType string
+
+const (
+	BlockJobTypeTranscription BlockJobType = "transcription"
+	BlockJobTypeExport        BlockJobType = "export"
 )
 
 type BlockJob interface {
