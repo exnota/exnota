@@ -6,6 +6,7 @@ import (
 
 type IntegrationFetcher interface {
 	FetchById(id string) (Integration, error)
+	FetchNotionIntegration(id string) (NotionIntegration, error)
 }
 
 type integrationFetcher struct {
@@ -22,6 +23,18 @@ func (f *integrationFetcher) FetchById(id string) (Integration, error) {
 		return nil, err
 	}
 	integration, err := NewIntegration(record)
+	if err != nil {
+		return nil, err
+	}
+	return integration, nil
+}
+
+func (f *integrationFetcher) FetchNotionIntegration(id string) (NotionIntegration, error) {
+	record, err := f.app.Dao().FindRecordById(CollectionIntegration, id)
+	if err != nil {
+		return nil, err
+	}
+	integration, err := NewNotionIntegration(record)
 	if err != nil {
 		return nil, err
 	}
