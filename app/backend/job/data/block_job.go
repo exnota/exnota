@@ -1,9 +1,19 @@
-package record
+package data
 
 import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/models"
+)
+
+const (
+	CollectionBlockJob = "block_job"
+
+	BlockJobFieldStatus    = "status"
+	BlockJobStatusError    = "error"
+	BlockJobStatusWaiting  = "waiting"
+	BlockJobStatusRunning  = "running"
+	BlockJobStatusComplete = "complete"
 )
 
 type BlockJob interface {

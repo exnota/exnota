@@ -13,8 +13,8 @@ import (
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service"
 	"exnota.com/backend/job"
+	job_data "exnota.com/backend/job/data"
 	_ "exnota.com/backend/migrations"
-	"exnota.com/backend/record"
 	user_api_hooks "exnota.com/backend/user/api"
 	"github.com/caarlos0/env"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -54,7 +54,8 @@ func main() {
 		Automigrate: autoMigrate,
 	})
 
-	bindAppHooks(app, cfg, &skipWorkersCmd)
+	initJobWorker(app)
+	bindRequestAndRecordHooks(app, cfg, &skipWorkersCmd)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
@@ -96,7 +97,14 @@ func isAutoMigrate() bool {
 	return autoMigrate
 }
 
-func bindAppHooks(app core.App, cfg Config, skipWorkers *bool) {
+func initJobWorker(app core.App) {
+	jobQueue := job.NewBlockJobQueue(app)
+	app.OnAfterBootstrap().Add(func(e *core.BootstrapEvent) error {
+		return jobQueue.Start()
+	})
+}
+
+func bindRequestAndRecordHooks(app core.App, cfg Config, skipWorkers *bool) {
 	// serves static files from the provided public dir (if exists)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
@@ -392,17 +400,17 @@ func setBlockExportHooks(app core.App, skipWorkers *bool) {
 	// On transcription job completion, create an export job
 	app.OnModelAfterUpdate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
 		// Transcription jobs only
-		updatedJob := record.LoadBlockJob(e.Model.(*models.Record))
-		if updatedJob.Type() != record.Transcription {
+		updatedJob := job_data.LoadBlockJob(e.Model.(*models.Record))
+		if updatedJob.Type() != job_data.Transcription {
 			return nil
 		}
 
 		// Job complete events only
-		if updatedJob.Status() != record.Complete {
+		if updatedJob.Status() != job_data.Complete {
 			return nil
 		}
-		prevUpdatedJob := record.LoadBlockJob(updatedJob.Record().OriginalCopy())
-		if prevUpdatedJob.Status() == record.Complete {
+		prevUpdatedJob := job_data.LoadBlockJob(updatedJob.Record().OriginalCopy())
+		if prevUpdatedJob.Status() == job_data.Complete {
 			return nil
 		}
 
@@ -411,7 +419,7 @@ func setBlockExportHooks(app core.App, skipWorkers *bool) {
 			return err
 		}
 
-		form, err := record.NewExportBlockJobForm(record.NewExportBlockJobFormConfig{
+		form, err := job_data.NewExportBlockJobForm(job_data.NewExportBlockJobFormConfig{
 			Collection: collection,
 			App:        app,
 			BlockId:    updatedJob.Block(),
@@ -444,11 +452,11 @@ func setBlockExportHooks(app core.App, skipWorkers *bool) {
 			return nil
 		}
 
-		blockJob := record.LoadBlockJob(e.Model.(*models.Record))
-		if blockJob.Type() != record.Export {
+		blockJob := job_data.LoadBlockJob(e.Model.(*models.Record))
+		if blockJob.Type() != job_data.Export {
 			return nil
 		}
-		if blockJob.Status() != record.Waiting {
+		if blockJob.Status() != job_data.Waiting {
 			return fmt.Errorf("Job %s created with a status other than waiting", blockJob.ID())
 		}
 
