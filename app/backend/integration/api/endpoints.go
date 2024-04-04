@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"exnota.com/backend/integration/data"
+	"exnota.com/backend/integration/util"
 	"github.com/dstotijn/go-notion"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/dbx"
@@ -215,7 +216,7 @@ func (h *integrationEndpointHooks) executeNotionSearch(query string, object Obje
 			case notion.PageProperties:
 				results = append(results, SearchResult{
 					Id:         result.ID,
-					Name:       h.titleToText(properties.Title.Title),
+					Name:       util.TitleToText(properties.Title.Title),
 					Object:     "page",
 					ParentType: parentType,
 					ParentId:   parentId,
@@ -227,7 +228,7 @@ func (h *integrationEndpointHooks) executeNotionSearch(query string, object Obje
 					if v.Type == notion.DBPropTypeTitle {
 						results = append(results, SearchResult{
 							Id:         result.ID,
-							Name:       h.titleToText(v.Title),
+							Name:       util.TitleToText(v.Title),
 							Object:     "page",
 							ParentType: parentType,
 							ParentId:   parentId,
@@ -247,7 +248,7 @@ func (h *integrationEndpointHooks) executeNotionSearch(query string, object Obje
 			parentType, parentId := h.mapParent(result.Parent)
 			results = append(results, SearchResult{
 				Id:         result.ID,
-				Name:       h.titleToText(result.Title),
+				Name:       util.TitleToText(result.Title),
 				Object:     "database",
 				ParentType: parentType,
 				ParentId:   parentId,
@@ -264,13 +265,6 @@ func (h *integrationEndpointHooks) executeNotionSearch(query string, object Obje
 	return &SearchResponse{
 		Results: results,
 	}, nil
-}
-
-func (h *integrationEndpointHooks) titleToText(title []notion.RichText) (text string) {
-	for _, textSlice := range title {
-		text += textSlice.PlainText
-	}
-	return
 }
 
 func (h *integrationEndpointHooks) mapParent(parent notion.Parent) (parentType ParentType, parentId *string) {

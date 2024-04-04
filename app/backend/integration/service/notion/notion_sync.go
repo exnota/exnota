@@ -1,7 +1,11 @@
 package notion
 
 import (
+	"encoding/json"
+	"errors"
+
 	"exnota.com/backend/integration/data"
+	"exnota.com/backend/integration/util"
 	"exnota.com/backend/lib/block"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pocketbase/pocketbase/core"
@@ -46,24 +50,70 @@ func (s *notionSync) Sync(request NotionSyncRequest) (result *block.DestinationS
 		return nil, nil, err
 	}
 
-	// TODO: Call Notion to get info
+	notionFetcher := NewNotionFetcher(s.app)
+	switch config.Object {
+	case NotionSyncConfigObjectDatabase:
+		database, err := notionFetcher.FetchDatabase(config.Id, request.IntegrationId)
+		if err != nil {
+			return nil, nil, err
+		}
 
-	objectWriter := data.NewIntegrationNotionObjectWriter(s.app)
-	record, err = objectWriter.UpsertRecord(data.CreateRequest{
-		ExternalId: config.Id,
-		Type:       data.IntegrationNotionObjectTypePage, // TODO: update
-		Properties: map[string]interface{}{},             // TODO: update
-		User:       request.User,
-	})
-	if err != nil {
-		return nil, nil, err
+		props, err := json.Marshal(database.Properties)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		objectWriter := data.NewIntegrationNotionObjectWriter(s.app)
+		record, err = objectWriter.UpsertRecord(data.CreateRequest{
+			ExternalId: config.Id,
+			Type:       data.IntegrationNotionObjectTypeDatabase,
+			Properties: props,
+			User:       request.User,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return &block.DestinationSyncResult{
+			ExternalRecordId:   record.Id,
+			ExternalRecordType: block.DestinationExternalRecordTypeNotion,
+			DestinationId:      request.DestinationId,
+			DestinationName:    util.TitleToText(database.Title),
+		}, record, nil
+
+	case NotionSyncConfigObjectPage:
+		page, err := notionFetcher.FetchPage(config.Id, request.IntegrationId)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		props, err := json.Marshal(page.Properties)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		objectWriter := data.NewIntegrationNotionObjectWriter(s.app)
+		record, err = objectWriter.UpsertRecord(data.CreateRequest{
+			ExternalId: config.Id,
+			Type:       data.IntegrationNotionObjectTypePage,
+			Properties: props,
+			User:       request.User,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		title, err := util.TitleForPage(page)
+		if err != nil {
+			return nil, nil, err
+		}
+		return &block.DestinationSyncResult{
+			ExternalRecordId:   record.Id,
+			ExternalRecordType: block.DestinationExternalRecordTypeNotion,
+			DestinationId:      request.DestinationId,
+			DestinationName:    title,
+		}, record, nil
+	default:
+		return nil, nil, errors.New("invalid object type: " + string(config.Object))
 	}
-
-	// TODO: Return result
-	return &block.DestinationSyncResult{
-		ExternalRecordId:   record.Id,
-		ExternalRecordType: block.DestinationExternalRecordTypeNotion,
-		DestinationId:      request.DestinationId,
-		DestinationName:    "Test destination name", // TODO:
-	}, record, nil
 }

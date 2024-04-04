@@ -28,7 +28,7 @@ func NewIntegrationNotionObjectWriter(app core.App) IntegrationNotionObjectWrite
 type CreateRequest struct {
 	ExternalId string                      `validate:"required"`
 	Type       IntegrationNotionObjectType `validate:"required"`
-	Properties map[string]any              `validate:"required"`
+	Properties any                         `validate:"required"`
 	User       string                      `validate:"required"`
 }
 
@@ -68,6 +68,10 @@ func (w *integrationNotionObjectWriter) UpsertRecord(request CreateRequest) (*mo
 		if errors.Is(err, sql.ErrNoRows) {
 			// Doesn't exist? Create a new record
 			record = models.NewRecord(collection)
+			// Generate ID so it can be referenced in a transaction. Currently
+			// needed so notion_sync.go can return it in its result without
+			// having to persist it yet.
+			record.BaseModel.RefreshId()
 			record.Set(IntegrationNotionObjectFieldExternalId, request.ExternalId)
 			record.Set(IntegrationNotionObjectFieldType, string(request.Type))
 			record.Set(IntegrationNotionObjectFieldUser, request.User)
