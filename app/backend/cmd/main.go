@@ -25,6 +25,7 @@ import (
 	"github.com/pocketbase/pocketbase/forms/validators"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
+	"github.com/pocketbase/pocketbase/tools/types"
 )
 
 func main() {
@@ -326,10 +327,11 @@ func setBlockTranscriptionHooks(app core.App, skipWorkers *bool) {
 			form := forms.NewRecordUpsert(app, job)
 
 			err = form.LoadData(map[string]any{
-				BLOCK_JOB_FIELD_TYPE:   BLOCK_JOB_TYPE_TRANSCRIPTION,
-				BLOCK_JOB_FIELD_STATUS: BLOCK_JOB_STATUS_WAITING,
-				BLOCK_JOB_FIELD_BLOCK:  block.Id,
-				BLOCK_JOB_FIELD_USER:   block.GetString(BLOCK_FIELD_USER),
+				BLOCK_JOB_FIELD_TYPE:            BLOCK_JOB_TYPE_TRANSCRIPTION,
+				BLOCK_JOB_FIELD_STATUS:          BLOCK_JOB_STATUS_WAITING,
+				BLOCK_JOB_FIELD_BLOCK:           block.Id,
+				BLOCK_JOB_FIELD_USER:            block.GetString(BLOCK_FIELD_USER),
+				job_data.BlockJobFieldNextRunAt: types.NowDateTime(),
 			})
 			if err != nil {
 				return err
@@ -406,11 +408,11 @@ func setBlockExportHooks(app core.App) {
 		}
 
 		// Job complete events only
-		if updatedJob.Status() != job_data.Complete {
+		if updatedJob.Status() != job_data.BlockJobStatusComplete {
 			return nil
 		}
 		prevUpdatedJob := job_data.LoadBlockJob(updatedJob.Record().OriginalCopy())
-		if prevUpdatedJob.Status() == job_data.Complete {
+		if prevUpdatedJob.Status() == job_data.BlockJobStatusComplete {
 			return nil
 		}
 

@@ -25,7 +25,7 @@ func (f *blockJobFetcher) ResetRunningJobs() error {
 	filter, params, err := filter.CreateAndFilter(filter.Field{
 		Name:  BlockJobFieldStatus,
 		Op:    filter.OpEquals,
-		Value: BlockJobStatusRunning,
+		Value: string(BlockJobStatusRunning),
 	})
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (f *blockJobFetcher) ListJobsToProcess() ([]BlockJob, error) {
 		filter.Field{
 			Name:  BlockJobFieldStatus,
 			Op:    filter.OpEquals,
-			Value: BlockJobStatusWaiting,
+			Value: string(BlockJobStatusWaiting),
 		},
 		filter.Field{
 			Name:        BlockJobFieldNextRunAt,
