@@ -5,7 +5,6 @@ import (
 
 	filter "exnota.com/backend/lib/data"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/forms"
 )
 
 type BlockJobFetcher interface {
@@ -44,20 +43,11 @@ func (f *blockJobFetcher) ResetRunningJobs() error {
 	}
 
 	for _, r := range records {
-		r.Set(BlockJobFieldStatus, BlockJobStatusWaiting)
-		form := forms.NewRecordUpsert(f.app, r)
-		err := form.Validate()
+		blockJob := NewBlockJob(r, f.app)
+		blockJob.SetStatus(BlockJobStatusWaiting)
+		err := blockJob.ValidateAndSubmit(f.app.Dao())
 		if err != nil {
-			slog.Error("Error validating block job setting status to waiting",
-				"id", r.Id,
-				"error", err,
-			)
-			continue
-		}
-
-		err = form.Submit()
-		if err != nil {
-			slog.Error("Error submitting new block job status to waiting",
+			slog.Error("Error setting block job status to waiting",
 				"id", r.Id,
 				"error", err,
 			)
@@ -99,7 +89,7 @@ func (f *blockJobFetcher) ListJobsToProcess() ([]BlockJob, error) {
 
 	var blocks []BlockJob
 	for _, r := range records {
-		blockJob := LoadBlockJob(r)
+		blockJob := NewBlockJob(r, f.app)
 		blocks = append(blocks, blockJob)
 	}
 

@@ -2,6 +2,7 @@ package data
 
 import (
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/daos"
 	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/tools/types"
@@ -10,11 +11,12 @@ import (
 const (
 	CollectionBlockJob = "block_job"
 
-	BlockJobFieldStatus    = "status"
-	BlockJobFieldBlock     = "block"
 	BlockJobFieldType      = "type"
-	BlockJobFieldNextRunAt = "next_run_at"
+	BlockJobFieldStatus    = "status"
+	BlockJobFieldSummary   = "summary"
+	BlockJobFieldBlock     = "block"
 	BlockJobFieldUser      = "user"
+	BlockJobFieldNextRunAt = "next_run_at"
 )
 
 type BlockJobStatus string
@@ -37,15 +39,29 @@ type BlockJob interface {
 	ID() string
 	Type() BlockJobType
 	Status() BlockJobStatus
+	Summary() string
 	Block() string
 	User() string
-	Record() *models.Record
 	NextRunAt() types.DateTime
+
+	Record() *models.Record
+
+	SetStatus(status BlockJobStatus)
+	SetSummaryError(err error)
+	SetSummaryEmpty()
+
+	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
-func LoadBlockJob(r *models.Record) BlockJob {
+type blockJob struct {
+	record *models.Record
+	app    core.App
+}
+
+func NewBlockJob(r *models.Record, app core.App) BlockJob {
 	return &blockJob{
 		record: r,
+		app:    app,
 	}
 }
 
@@ -56,6 +72,7 @@ type NewExportBlockJobFormConfig struct {
 	UserId     string
 }
 
+// Creates a new export block job initialised to now and waiting status.
 func NewExportBlockJobForm(config NewExportBlockJobFormConfig) (*forms.RecordUpsert, error) {
 	record := models.NewRecord(config.Collection)
 	form := forms.NewRecordUpsert(config.App, record)
@@ -74,16 +91,16 @@ func NewExportBlockJobForm(config NewExportBlockJobFormConfig) (*forms.RecordUps
 	return form, nil
 }
 
-type blockJob struct {
-	record *models.Record
-}
-
 func (j *blockJob) ID() string {
 	return j.record.Id
 }
 
 func (j *blockJob) Status() BlockJobStatus {
 	return BlockJobStatus(j.record.GetString(BlockJobFieldStatus))
+}
+
+func (j *blockJob) Summary() string {
+	return j.record.GetString(BlockJobFieldSummary)
 }
 
 func (j *blockJob) Type() BlockJobType {
@@ -104,4 +121,33 @@ func (j *blockJob) User() string {
 
 func (j *blockJob) NextRunAt() types.DateTime {
 	return j.record.GetDateTime(BlockJobFieldNextRunAt)
+}
+
+func (j *blockJob) SetStatus(status BlockJobStatus) {
+	j.record.Set(BlockJobFieldStatus, string(status))
+}
+
+type SummaryError struct {
+	Error string `json:"errors" validate:"required"`
+}
+
+func (j *blockJob) SetSummaryError(err error) {
+	j.record.Set("summary", SummaryError{
+		Error: err.Error(),
+	})
+}
+
+func (j *blockJob) SetSummaryEmpty() {
+	j.record.Set("summary", nil)
+}
+
+func (j *blockJob) ValidateAndSubmit(txDao *daos.Dao) error {
+	form := forms.NewRecordUpsert(j.app, j.record)
+	form.SetDao(txDao)
+
+	if err := form.Validate(); err != nil {
+		return err
+	}
+
+	return form.Submit()
 }

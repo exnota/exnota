@@ -100,7 +100,7 @@ func isAutoMigrate() bool {
 
 func initJobWorker(app core.App) {
 	jobQueue := job.NewBlockJobQueue(app)
-	app.OnAfterBootstrap().Add(func(e *core.BootstrapEvent) error {
+	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		return jobQueue.Start()
 	})
 }
@@ -350,7 +350,7 @@ func setBlockExportHooks(app core.App) {
 	// On transcription job completion, create an export job
 	app.OnModelAfterUpdate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
 		// Transcription jobs only
-		updatedJob := job_data.LoadBlockJob(e.Model.(*models.Record))
+		updatedJob := job_data.NewBlockJob(e.Model.(*models.Record), app)
 		if updatedJob.Type() != job_data.BlockJobTypeTranscription {
 			return nil
 		}
@@ -359,7 +359,7 @@ func setBlockExportHooks(app core.App) {
 		if updatedJob.Status() != job_data.BlockJobStatusComplete {
 			return nil
 		}
-		prevUpdatedJob := job_data.LoadBlockJob(updatedJob.Record().OriginalCopy())
+		prevUpdatedJob := job_data.NewBlockJob(updatedJob.Record().OriginalCopy(), app)
 		if prevUpdatedJob.Status() == job_data.BlockJobStatusComplete {
 			return nil
 		}
