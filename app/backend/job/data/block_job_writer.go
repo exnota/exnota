@@ -5,9 +5,11 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
+	"github.com/pocketbase/pocketbase/models"
 )
 
 type BlockJobWriter interface {
+	CreateTranscriptionJob(blockId string, userId string) error
 	SetStatusWaiting(id string) error
 	SetStatusRunning(id string) error
 	SetStatusError(id string, nextRunAt time.Time, err error) error
@@ -20,6 +22,25 @@ type blockJobWriter struct {
 
 func NewBlockJobWriter(app core.App) BlockJobWriter {
 	return &blockJobWriter{app}
+}
+
+func (b *blockJobWriter) CreateTranscriptionJob(blockId string, userId string) error {
+	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		collection, err := b.app.Dao().FindCollectionByNameOrId(CollectionBlockJob)
+		if err != nil {
+			return err
+		}
+
+		blockJobRecord := models.NewRecord(collection)
+		blockJob := NewBlockJob(blockJobRecord, b.app)
+		blockJob.SetType(BlockJobTypeTranscription)
+		blockJob.SetStatus(BlockJobStatusWaiting)
+		blockJob.SetBlock(blockId)
+		blockJob.SetUser(userId)
+		blockJob.SetNextRunAt(time.Now())
+
+		return blockJob.ValidateAndSubmit(txDao)
+	})
 }
 
 func (b *blockJobWriter) SetStatusWaiting(id string) error {

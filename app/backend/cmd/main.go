@@ -13,7 +13,6 @@ import (
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service"
 	"exnota.com/backend/job"
-	job_data "exnota.com/backend/job/data"
 	_ "exnota.com/backend/migrations"
 	user_api_hooks "exnota.com/backend/user/api"
 	"github.com/caarlos0/env"
@@ -21,11 +20,8 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/forms/validators"
-	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
-	"github.com/pocketbase/pocketbase/tools/types"
 )
 
 func main() {
@@ -127,6 +123,9 @@ func bindRequestAndRecordHooks(app core.App, cfg Config, skipWorkers *bool) {
 	integrationDestinationSync := service.NewIntegrationDestinationSync(app)
 	block_data.NewDestinationDataRules(app).ApplyHooks()
 
+	// Job workflow
+	job.NewBlockJobWorkflow(app).ApplyHooks()
+
 	// API rules
 	integ_api.NewIntegrationRequestHooks(app, integ_api.NotionCredentials{
 		ClientId: cfg.NotionOAuthClientID,
@@ -146,10 +145,6 @@ func bindRequestAndRecordHooks(app core.App, cfg Config, skipWorkers *bool) {
 	// Old rules, need extracting/refactoring
 	setBlockInvariants(app)
 	setBlockJobInvariants(app)
-
-	// Job creation
-	setBlockTranscriptionHooks(app, skipWorkers)
-	setBlockExportHooks(app)
 }
 
 func setGlobalDeleteRules(app core.App) {
@@ -308,81 +303,6 @@ func setBlockJobInvariants(app core.App) {
 			return apis.NewBadRequestError("Block job user must match block user", nil)
 		}
 
-		return nil
-	})
-}
-
-func setBlockTranscriptionHooks(app core.App, skipWorkers *bool) {
-	// On audio block creation, create a transcription job
-	app.OnModelAfterCreate(COLLECTION_BLOCK).Add(func(e *core.ModelEvent) error {
-		block := e.Model.(*models.Record)
-		if block.GetString(BLOCK_FIELD_TYPE) == "audio" {
-			collection, err := app.Dao().FindCollectionByNameOrId(COLLECTION_BLOCK_JOB)
-			if err != nil {
-				return err
-			}
-
-			job := models.NewRecord(collection)
-
-			form := forms.NewRecordUpsert(app, job)
-
-			err = form.LoadData(map[string]any{
-				BLOCK_JOB_FIELD_TYPE:            BLOCK_JOB_TYPE_TRANSCRIPTION,
-				BLOCK_JOB_FIELD_STATUS:          BLOCK_JOB_STATUS_WAITING,
-				BLOCK_JOB_FIELD_BLOCK:           block.Id,
-				BLOCK_JOB_FIELD_USER:            block.GetString(BLOCK_FIELD_USER),
-				job_data.BlockJobFieldNextRunAt: types.NowDateTime(),
-			})
-			if err != nil {
-				return err
-			}
-
-			// validate and submit (internally it calls app.Dao().SaveRecord(record) in a transaction)
-			if err := form.Submit(); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-func setBlockExportHooks(app core.App) {
-	// On transcription job completion, create an export job
-	app.OnModelAfterUpdate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
-		// Transcription jobs only
-		updatedJob := job_data.NewBlockJob(e.Model.(*models.Record), app)
-		if updatedJob.Type() != job_data.BlockJobTypeTranscription {
-			return nil
-		}
-
-		// Job complete events only
-		if updatedJob.Status() != job_data.BlockJobStatusComplete {
-			return nil
-		}
-		prevUpdatedJob := job_data.NewBlockJob(updatedJob.Record().OriginalCopy(), app)
-		if prevUpdatedJob.Status() == job_data.BlockJobStatusComplete {
-			return nil
-		}
-
-		collection, err := app.Dao().FindCollectionByNameOrId(COLLECTION_BLOCK_JOB)
-		if err != nil {
-			return err
-		}
-
-		form, err := job_data.NewExportBlockJobForm(job_data.NewExportBlockJobFormConfig{
-			Collection: collection,
-			App:        app,
-			BlockId:    updatedJob.Block(),
-			UserId:     updatedJob.User(),
-		})
-		if err != nil {
-			return err
-		}
-
-		// validate and submit (internally it calls app.Dao().SaveRecord(record) in a transaction)
-		if err := form.Submit(); err != nil {
-			return err
-		}
 		return nil
 	})
 }
