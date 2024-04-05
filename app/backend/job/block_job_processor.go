@@ -2,6 +2,7 @@ package job
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"math"
 	"time"
@@ -41,9 +42,18 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 	// Handle panics from the runnable
 	defer func() {
 		if r := recover(); r != nil {
-			// `err` is the named return variable, so it will be returned
-			// without an explicit return statement.
-			err = errors.New("panic in runnable.Run")
+			// `err` is the named return variable of this method, so assiging
+			// the panic error to it will mean it can be returned from this
+			// method without an explicit return statement (which the defer()
+			// function doesn't seem to allow).
+			if rErr, ok := r.(error); ok {
+				err = rErr
+			} else if rStr, ok := r.(string); ok {
+				err = errors.New(rStr)
+			} else {
+				err = fmt.Errorf("unknown panic caught of type: %T", r)
+			}
+
 			j.handleError(job, err)
 		}
 	}()
