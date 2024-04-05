@@ -49,9 +49,12 @@ type BlockJob interface {
 
 	Record() *models.Record
 
+	SetType(t BlockJobType)
 	SetStatus(status BlockJobStatus)
 	SetSummaryError(err error)
 	SetSummaryEmpty()
+	SetBlock(blockId string)
+	SetUser(userId string)
 	SetNextRunAt(nextRunAt time.Time)
 	IncrementErrorCount()
 	ClearErrorCount()
@@ -133,6 +136,10 @@ func (j *blockJob) ErrorCount() int {
 	return j.record.GetInt(BlockJobFieldErrorCount)
 }
 
+func (j *blockJob) SetType(t BlockJobType) {
+	j.record.Set(BlockJobFieldType, string(t))
+}
+
 func (j *blockJob) SetStatus(status BlockJobStatus) {
 	j.record.Set(BlockJobFieldStatus, string(status))
 }
@@ -149,6 +156,14 @@ func (j *blockJob) SetSummaryError(err error) {
 
 func (j *blockJob) SetSummaryEmpty() {
 	j.record.Set(BlockJobFieldSummary, nil)
+}
+
+func (j *blockJob) SetBlock(blockId string) {
+	j.record.Set(BlockJobFieldBlock, blockId)
+}
+
+func (j *blockJob) SetUser(userId string) {
+	j.record.Set(BlockJobFieldUser, userId)
 }
 
 func (j *blockJob) SetNextRunAt(nextRunAt time.Time) {

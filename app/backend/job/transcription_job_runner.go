@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	block_data "exnota.com/backend/block/data"
 	"exnota.com/backend/job/data"
 	whisper "exnota.com/backend/lib"
-	"exnota.com/backend/record"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
@@ -160,7 +160,7 @@ func (j *transcriptionJobRunner) saveTranscription(result *TranscriptionResult, 
 			return err
 		}
 
-		block, err := record.NewAudioBlock(blockRecord)
+		block, err := block_data.NewAudioBlock(blockRecord)
 		if err != nil {
 			return err
 		}
