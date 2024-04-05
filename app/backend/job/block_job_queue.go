@@ -52,7 +52,7 @@ func (j *blockJobQueue) Start() error {
 	}
 
 	go func() {
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		for range ticker.C {
@@ -89,8 +89,10 @@ func exportWorker(id int, jobs <-chan data.BlockJob, _ chan<- string, app core.A
 	for j := range jobs {
 		slog.Info("[export worker] Received job", "worker id", id, "block job id", j.ID(), "block id", j.Block())
 
-		runner := NewExportJobRunner(j.ID(), j.Block(), app)
-		err := runner.Run()
+		// The processor handles the status and panics of the runner
+		processor := NewBlockJobProcessor(app)
+		exportRunner := NewExportJobRunner(j.ID(), j.Block(), app)
+		err := processor.Process(j, exportRunner)
 		if err != nil {
 			slog.Warn("[export worker] Job errored", "worker id", id, "block job id", j.ID(), "block id", j.Block(), "error", err)
 			continue
