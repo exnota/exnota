@@ -1,6 +1,8 @@
 package data
 
 import (
+	"time"
+
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 	"github.com/pocketbase/pocketbase/forms"
@@ -42,7 +44,7 @@ type BlockJob interface {
 	Summary() string
 	Block() string
 	User() string
-	NextRunAt() types.DateTime
+	NextRunAt() time.Time
 	ErrorCount() int
 
 	Record() *models.Record
@@ -50,6 +52,7 @@ type BlockJob interface {
 	SetStatus(status BlockJobStatus)
 	SetSummaryError(err error)
 	SetSummaryEmpty()
+	SetNextRunAt(nextRunAt time.Time)
 	IncrementErrorCount()
 	ClearErrorCount()
 
@@ -122,8 +125,8 @@ func (j *blockJob) User() string {
 	return j.record.GetString(BlockJobFieldUser)
 }
 
-func (j *blockJob) NextRunAt() types.DateTime {
-	return j.record.GetDateTime(BlockJobFieldNextRunAt)
+func (j *blockJob) NextRunAt() time.Time {
+	return j.record.GetDateTime(BlockJobFieldNextRunAt).Time()
 }
 
 func (j *blockJob) ErrorCount() int {
@@ -146,6 +149,10 @@ func (j *blockJob) SetSummaryError(err error) {
 
 func (j *blockJob) SetSummaryEmpty() {
 	j.record.Set(BlockJobFieldSummary, nil)
+}
+
+func (j *blockJob) SetNextRunAt(nextRunAt time.Time) {
+	j.record.Set(BlockJobFieldNextRunAt, nextRunAt)
 }
 
 func (j *blockJob) IncrementErrorCount() {

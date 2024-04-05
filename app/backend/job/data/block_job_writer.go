@@ -1,6 +1,8 @@
 package data
 
 import (
+	"time"
+
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
@@ -8,7 +10,7 @@ import (
 type BlockJobWriter interface {
 	SetStatusWaiting(id string) error
 	SetStatusRunning(id string) error
-	SetStatusError(id string, err error) error
+	SetStatusError(id string, nextRunAt time.Time, err error) error
 	SetStatusComplete(id string) error
 }
 
@@ -46,7 +48,7 @@ func (b *blockJobWriter) SetStatusRunning(id string) error {
 	})
 }
 
-func (b *blockJobWriter) SetStatusError(id string, statusError error) error {
+func (b *blockJobWriter) SetStatusError(id string, nextRunAt time.Time, statusError error) error {
 	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
 		record, err := txDao.FindRecordById(CollectionBlockJob, id)
 		if err != nil {
@@ -56,6 +58,7 @@ func (b *blockJobWriter) SetStatusError(id string, statusError error) error {
 		blockJob.SetStatus(BlockJobStatusError)
 		blockJob.SetSummaryError(statusError)
 		blockJob.IncrementErrorCount()
+		blockJob.SetNextRunAt(nextRunAt)
 		return blockJob.ValidateAndSubmit(txDao)
 	})
 }

@@ -14,7 +14,9 @@ const (
 )
 
 const (
-	MAX_ERROR_COUNT = 4
+	// When changing this, ensure it works reasonably with the backoff strategy
+	// in job/block_job_processor.go
+	MAX_ERROR_COUNT = 10
 )
 
 type BlockJobQueue interface {
