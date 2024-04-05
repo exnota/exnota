@@ -39,9 +39,16 @@ func (j *blockJobQueue) Start() error {
 	// Might not need this, but have left it because I'm not familiar with
 	// channel patterns and it could be useful
 	exportResults := make(chan string)
-
 	for w := 1; w <= NUM_EXPORT_WORKERS; w++ {
 		go exportWorker(w, exportQueue, exportResults, j.app)
+	}
+
+	transcriptionQueue := make(chan data.BlockJob)
+	// Might not need this, but have left it because I'm not familiar with
+	// channel patterns and it could be useful
+	transcriptionResults := make(chan string)
+	for w := 1; w <= NUM_TRANSCRIPTION_WORKERS; w++ {
+		go transcriptionWorker(w, transcriptionQueue, transcriptionResults, j.app)
 	}
 
 	go func() {
@@ -59,10 +66,15 @@ func (j *blockJobQueue) Start() error {
 			for _, job := range jobs {
 				switch job.Type() {
 				case data.BlockJobTypeExport:
-					slog.Info("⬆️ Adding export job to queue")
+					slog.Info("⬆️ ⬆️ ⬆️ ⬆️ ⬆️ ⬆️ ⬆️ ⬆️ ⬆️")
+					slog.Info("Adding export job to queue")
+					slog.Info("⬆️ ⬆️ ⬆️ ⬆️ ⬆️ ⬆️ ⬆️ ⬆️ ⬆️")
 					exportQueue <- job
 				case data.BlockJobTypeTranscription:
-					slog.Info("🎙️ Nothing is done for job of type transcription")
+					slog.Info("🎙️ 🎙️ 🎙️ 🎙️ 🎙️ 🎙️ 🎙️ 🎙️ 🎙️ ")
+					slog.Info("Adding transcription job to queue")
+					slog.Info("🎙️ 🎙️ 🎙️ 🎙️ 🎙️ 🎙️ 🎙️ 🎙️ 🎙️ ")
+					transcriptionQueue <- job
 				default:
 					slog.Error("Unknown job type", "type", job.Type())
 				}
@@ -80,11 +92,27 @@ func exportWorker(id int, jobs <-chan data.BlockJob, _ chan<- string, app core.A
 		runner := NewExportJobRunner(j.ID(), j.Block(), app)
 		err := runner.Run()
 		if err != nil {
-			slog.Info("[export worker] Job errored", "worker id", id, "block job id", j.ID(), "block id", j.Block(), "error", err)
+			slog.Warn("[export worker] Job errored", "worker id", id, "block job id", j.ID(), "block id", j.Block(), "error", err)
 			continue
 		}
 
 		// results <- "done"
 		slog.Info("[export worker] Job completed", "worker id", id, "block job id", j.ID(), "block id", j.Block())
+	}
+}
+
+func transcriptionWorker(id int, jobs <-chan data.BlockJob, _ chan<- string, app core.App) {
+	for j := range jobs {
+		slog.Info("[transcription worker] Received job", "worker id", id, "block job id", j.ID(), "block id", j.Block())
+
+		runner := NewTranscriptionJobRunner(j.ID(), j.Block(), app)
+		err := runner.Run()
+		if err != nil {
+			slog.Warn("[transcription worker] Job errored", "worker id", id, "block job id", j.ID(), "block id", j.Block(), "error", err)
+			continue
+		}
+
+		// results <- "done"
+		slog.Info("[transcription worker] Job completed", "worker id", id, "block job id", j.ID(), "block id", j.Block())
 	}
 }

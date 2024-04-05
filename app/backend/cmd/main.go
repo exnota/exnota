@@ -147,7 +147,7 @@ func bindRequestAndRecordHooks(app core.App, cfg Config, skipWorkers *bool) {
 	setBlockInvariants(app)
 	setBlockJobInvariants(app)
 
-	// Job creation (and legacy processing)
+	// Job creation
 	setBlockTranscriptionHooks(app, skipWorkers)
 	setBlockExportHooks(app)
 }
@@ -344,58 +344,6 @@ func setBlockTranscriptionHooks(app core.App, skipWorkers *bool) {
 		}
 		return nil
 	})
-
-	jobs := make(chan TranscriptionWorkerJob)
-	results := make(chan string)
-
-	for w := 1; w <= 2; w++ {
-		go transcriptionWorker(w, jobs, results, app)
-	}
-
-	// On transcription job creation, queue it for processing
-	app.OnModelAfterCreate(COLLECTION_BLOCK_JOB).Add(func(e *core.ModelEvent) error {
-		// Flags are resolved (it seems) on app.Start(), so this check has been
-		// added inside the hook, rather than preventing the hook from being
-		// created, as that happens before app.Start() is called.
-		if *skipWorkers {
-			return nil
-		}
-
-		record := e.Model.(*models.Record)
-		if record.GetString(BLOCK_JOB_FIELD_TYPE) != BLOCK_JOB_TYPE_TRANSCRIPTION {
-			return nil
-		}
-		if record.GetString(BLOCK_JOB_FIELD_STATUS) != BLOCK_JOB_STATUS_WAITING {
-			return fmt.Errorf("Job %s created with a status other than waiting", record.Id)
-		}
-
-		jobs <- TranscriptionWorkerJob{
-			BlockJobId: record.Id,
-			BlockId:    record.GetString(BLOCK_JOB_FIELD_BLOCK),
-		}
-		return nil
-	})
-}
-
-type TranscriptionWorkerJob struct {
-	BlockJobId string
-	BlockId    string
-}
-
-func transcriptionWorker(id int, jobs <-chan TranscriptionWorkerJob, results chan<- string, app core.App) {
-	for j := range jobs {
-		fmt.Println("transcription worker", id, "started block job", j.BlockJobId, "for block", j.BlockId)
-
-		transJob := job.NewTranscriptionJobRunner(j.BlockJobId, j.BlockId, app)
-		err := transJob.Run()
-		if err != nil {
-			fmt.Println("transcription worker", id, "errored running job", j.BlockJobId, "for block", j.BlockId, "with error", err)
-			continue
-		}
-
-		// results <- "done"
-		fmt.Println("transcription worker", id, "finished job", j.BlockJobId, "for block", j.BlockId)
-	}
 }
 
 func setBlockExportHooks(app core.App) {
