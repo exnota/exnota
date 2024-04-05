@@ -9,7 +9,7 @@ import (
 
 type BlockJobFetcher interface {
 	ResetRunningJobs() error
-	ListJobsToProcess() ([]BlockJob, error)
+	ListJobsToProcess(maxErrorCount int) ([]BlockJob, error)
 }
 
 type blockJobFetcher struct {
@@ -21,7 +21,7 @@ func NewBlockJobFetcher(app core.App) BlockJobFetcher {
 }
 
 func (f *blockJobFetcher) ResetRunningJobs() error {
-	filter, params, err := filter.CreateAndFilter(filter.Field{
+	filter, err := filter.CreateAndFilter(filter.Field{
 		Name:  BlockJobFieldStatus,
 		Op:    filter.OpEquals,
 		Value: string(BlockJobStatusRunning),
@@ -32,11 +32,11 @@ func (f *blockJobFetcher) ResetRunningJobs() error {
 
 	records, err := f.app.Dao().FindRecordsByFilter(
 		CollectionBlockJob,
-		filter,
+		filter.Filter,
 		"+created",
 		0,
 		0,
-		params,
+		filter.Params,
 	)
 	if err != nil {
 		return err
@@ -58,8 +58,8 @@ func (f *blockJobFetcher) ResetRunningJobs() error {
 	return nil
 }
 
-func (f *blockJobFetcher) ListJobsToProcess() ([]BlockJob, error) {
-	filter, params, err := filter.CreateAndFilter(
+func (f *blockJobFetcher) ListJobsToProcess(maxErrorCount int) ([]BlockJob, error) {
+	waitingFilter, err := filter.CreateAndFilter(
 		filter.Field{
 			Name:  BlockJobFieldStatus,
 			Op:    filter.OpEquals,
@@ -75,13 +75,39 @@ func (f *blockJobFetcher) ListJobsToProcess() ([]BlockJob, error) {
 		return nil, err
 	}
 
+	errorFilter, err := filter.CreateAndFilter(
+		filter.Field{
+			Name:  BlockJobFieldStatus,
+			Op:    filter.OpEquals,
+			Value: string(BlockJobStatusError),
+		},
+		filter.Field{
+			Name:        BlockJobFieldNextRunAt,
+			Op:          filter.OpLessThanEquals,
+			ValuePreset: filter.ValuePresetNow,
+		},
+		filter.Field{
+			Name:     BlockJobFieldErrorCount,
+			Op:       filter.OpLessThan,
+			ValueInt: &maxErrorCount,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	combinedFilter, err := filter.GroupFiltersWithOr(waitingFilter, errorFilter)
+	if err != nil {
+		return nil, err
+	}
+
 	records, err := f.app.Dao().FindRecordsByFilter(
 		CollectionBlockJob,
-		filter,
-		"+created",
+		combinedFilter.Filter,
+		"+"+filter.DefaultFieldCreated,
 		0,
 		0,
-		params,
+		combinedFilter.Params,
 	)
 	if err != nil {
 		return nil, err

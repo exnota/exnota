@@ -13,6 +13,10 @@ const (
 	NUM_TRANSCRIPTION_WORKERS = 1
 )
 
+const (
+	MAX_ERROR_COUNT = 4
+)
+
 type BlockJobQueue interface {
 	Start() error
 }
@@ -56,7 +60,7 @@ func (j *blockJobQueue) Start() error {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			jobs, err := blockJobFetcher.ListJobsToProcess()
+			jobs, err := blockJobFetcher.ListJobsToProcess(MAX_ERROR_COUNT)
 			if err != nil {
 				slog.Error("Error fetching jobs to process", "error", err)
 				continue
