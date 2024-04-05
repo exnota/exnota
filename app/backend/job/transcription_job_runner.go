@@ -2,7 +2,6 @@ package job
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,68 +9,48 @@ import (
 	"path/filepath"
 	"strings"
 
+	"exnota.com/backend/job/data"
 	whisper "exnota.com/backend/lib"
 	"exnota.com/backend/record"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
-	"github.com/pocketbase/pocketbase/tools/types"
 )
 
 const tempTranscriptionDir = "transcription"
 
 type TranscriptionJobRunner interface {
-	Run() error
+	RunnableBlockJob
 }
 
 type transcriptionJobRunner struct {
-	blockJobId string
-	blockId    string
-	app        core.App
+	app core.App
 }
 
-func NewTranscriptionJobRunner(blockJobId string, blockId string, app core.App) TranscriptionJobRunner {
+func NewTranscriptionJobRunner(app core.App) TranscriptionJobRunner {
 	return &transcriptionJobRunner{
-		blockJobId: blockJobId,
-		blockId:    blockId,
-		app:        app,
+		app: app,
 	}
 }
 
 // run method
-func (j *transcriptionJobRunner) Run() error {
-	err := j.setJobStatus("running", true, nil)
+func (j *transcriptionJobRunner) Run(job data.BlockJob, app core.App) error {
+	fileInfo, err := j.getFileInfo(job.Block())
 	if err != nil {
-		err := j.setJobStatusError(err)
-		return err
-	}
-
-	fileInfo, err := j.getFileInfo()
-	if err != nil {
-		err := j.setJobStatusError(err)
 		return err
 	}
 
 	convertedFileInfo, err := j.convertAudio(fileInfo)
 	if err != nil {
-		err := j.setJobStatusError(err)
 		return err
 	}
 
 	result, err := j.transcribe(*convertedFileInfo)
 	if err != nil {
-		err := j.setJobStatusError(err)
 		return err
 	}
 
-	err = j.saveTranscription(result)
+	err = j.saveTranscription(result, job.Block())
 	if err != nil {
-		err := j.setJobStatusError(err)
-		return err
-	}
-
-	err = j.setJobStatus("complete", false, nil)
-	if err != nil {
-		err := j.setJobStatusError(err)
 		return err
 	}
 
@@ -84,59 +63,8 @@ type FileInfo struct {
 	fullPath string
 }
 
-func (j *transcriptionJobRunner) setJobStatusError(jobErr error) error {
-	return j.setJobStatus("error", false, jobErr)
-}
-
-func (j *transcriptionJobRunner) setJobStatus(status string, validateWaiting bool, jobErr error) error {
-	err := j.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		blockJob, err := txDao.FindRecordById("block_job", j.blockJobId)
-		if err != nil {
-			return err
-		}
-
-		if validateWaiting && blockJob.GetString("status") != "waiting" {
-			return errors.New("Block Job is not in waiting state")
-		}
-
-		blockJob.Set("status", status)
-		if jobErr != nil {
-			var summary []string
-
-			rawField := blockJob.Get("summary").(types.JsonRaw)
-			val, err := rawField.Value()
-			if err != nil {
-				return err
-			}
-
-			if val == nil {
-				summary = []string{jobErr.Error()}
-			} else {
-				// TODO: There is a limit on the size of the summary field. We
-				// should truncate it if it gets too big.
-				err = blockJob.UnmarshalJSONField("summary", &summary)
-				if err != nil {
-					return err
-				}
-				summary = append(summary, jobErr.Error())
-			}
-
-			blockJob.Set("summary", summary)
-			fmt.Println("summary", summary)
-		}
-
-		// TODO: Should this be updated to use forms.NewRecordUpsert so it has validations?
-		// https://pocketbase.io/docs/go-records/#update-existing-record
-		if err := txDao.SaveRecord(blockJob); err != nil {
-			return err
-		}
-		return nil
-	})
-	return err
-}
-
-func (j *transcriptionJobRunner) getFileInfo() (*FileInfo, error) {
-	block, err := j.app.Dao().FindRecordById("block", j.blockId)
+func (j *transcriptionJobRunner) getFileInfo(blockId string) (*FileInfo, error) {
+	block, err := j.app.Dao().FindRecordById("block", blockId)
 	if err != nil {
 		return nil, err
 	}
@@ -225,9 +153,9 @@ func (j *transcriptionJobRunner) transcribe(convertedFileInfo ConvertedFileInfo)
 	return &result, nil
 }
 
-func (j *transcriptionJobRunner) saveTranscription(result *TranscriptionResult) error {
+func (j *transcriptionJobRunner) saveTranscription(result *TranscriptionResult, blockId string) error {
 	err := j.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		blockRecord, err := txDao.FindRecordById("block", j.blockId)
+		blockRecord, err := txDao.FindRecordById("block", blockId)
 		if err != nil {
 			return err
 		}

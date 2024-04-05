@@ -12,16 +12,12 @@ type ExportJobRunner interface {
 }
 
 type exportJobRunnerConfig struct {
-	blockJobId string
-	blockId    string
-	app        core.App
+	app core.App
 }
 
-func NewExportJobRunner(blockJobId string, blockId string, app core.App) ExportJobRunner {
+func NewExportJobRunner(app core.App) ExportJobRunner {
 	return &exportJobRunnerConfig{
-		blockJobId: blockJobId,
-		blockId:    blockId,
-		app:        app,
+		app: app,
 	}
 }
 
