@@ -3,6 +3,8 @@ package job
 import (
 	"errors"
 	"log/slog"
+	"math"
+	"time"
 
 	"exnota.com/backend/job/data"
 	"github.com/pocketbase/pocketbase/core"
@@ -48,10 +50,7 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 
 	err = runnable.Run(job, j.app)
 	if err != nil {
-		statusErr := writer.SetStatusError(job.ID(), err)
-		if statusErr != nil {
-			return statusErr
-		}
+		j.handleError(job, err)
 		return err
 	}
 
@@ -68,8 +67,24 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 }
 
 func (j *blockJobProcessor) handleError(job data.BlockJob, err error) {
+	// The backoff logic below should progress like this (generate this using:
+	// https://go.dev/play/p/4Pn10aAcY3h):
+	//
+	// 3s
+	// 9s
+	// 27s
+	// 1m21s
+	// 4m3s
+	// 12m9s
+	// 36m27s
+	// 1h49m21s
+	// 5h28m3s
+	// 16h24m9s
+	errorCount := job.ErrorCount()
+	nextRunAt := time.Now().Add(time.Duration(math.Pow(3, float64(errorCount+1))) * 1 * time.Second)
+
 	writer := data.NewBlockJobWriter(j.app)
-	statusErr := writer.SetStatusError(job.ID(), err)
+	statusErr := writer.SetStatusError(job.ID(), nextRunAt, err)
 	if statusErr != nil {
 		slog.Error("error updating status", "error", statusErr)
 	}
