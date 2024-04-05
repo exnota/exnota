@@ -1,6 +1,9 @@
 package job
 
 import (
+	"errors"
+	"log/slog"
+
 	"exnota.com/backend/job/data"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -23,10 +26,10 @@ type RunnableBlockJob interface {
 	Run(job data.BlockJob, app core.App) error
 }
 
-func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob) error {
+func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob) (err error) {
 	writer := data.NewBlockJobWriter(j.app)
 
-	err := writer.UpdateStatus(data.UpdateStatusRequest{
+	err = writer.UpdateStatus(data.UpdateStatusRequest{
 		Id:     job.ID(),
 		Status: data.BlockJobStatusRunning,
 	})
@@ -36,7 +39,26 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 		return err
 	}
 
-	// TODO: Handle if runnable.Run panics
+	// Handle panics from the runnable
+	defer func() {
+		if r := recover(); r != nil {
+			// `err` is the named return variable, so it will be returned
+			// without an explicit return statement.
+			err = errors.New("panic in runnable.Run")
+			slog.Error("panic in runnable.Run", "error", r)
+
+			statusErr := writer.UpdateStatus(data.UpdateStatusRequest{
+				Id:     job.ID(),
+				Status: data.BlockJobStatusError,
+				Error:  err,
+			})
+			if statusErr != nil {
+				// The panic error is more important, so just log this one.
+				slog.Error("error updating status", "error", statusErr)
+			}
+		}
+	}()
+
 	err = runnable.Run(job, j.app)
 	if err != nil {
 		statusErr := writer.UpdateStatus(data.UpdateStatusRequest{
@@ -61,5 +83,6 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 		return err
 	}
 
-	return nil
+	// This error may come from the defer call
+	return err
 }
