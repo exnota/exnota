@@ -1,13 +1,15 @@
 package data
 
 import (
-	"github.com/go-playground/validator/v10"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
 
 type BlockJobWriter interface {
-	UpdateStatus(request UpdateStatusRequest) error
+	SetStatusWaiting(id string) error
+	SetStatusRunning(id string) error
+	SetStatusError(id string, err error) error
+	SetStatusComplete(id string) error
 }
 
 type blockJobWriter struct {
@@ -18,33 +20,55 @@ func NewBlockJobWriter(app core.App) BlockJobWriter {
 	return &blockJobWriter{app}
 }
 
-type UpdateStatusRequest struct {
-	Id     string         `validate:"required"`
-	Status BlockJobStatus `validate:"required"`
-	Error  error
-}
-
-var validate *validator.Validate = validator.New(validator.WithRequiredStructEnabled())
-
-func (b *blockJobWriter) UpdateStatus(request UpdateStatusRequest) error {
-	if err := validate.Struct(request); err != nil {
-		return err
-	}
-
+func (b *blockJobWriter) SetStatusWaiting(id string) error {
 	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		record, err := txDao.FindRecordById(CollectionBlockJob, request.Id)
+		record, err := txDao.FindRecordById(CollectionBlockJob, id)
 		if err != nil {
 			return err
 		}
-
 		blockJob := NewBlockJob(record, b.app)
-		blockJob.SetStatus(request.Status)
-		if request.Status == BlockJobStatusError && request.Error != nil {
-			blockJob.SetSummaryError(request.Error)
-		} else {
-			blockJob.SetSummaryEmpty()
-		}
+		blockJob.SetStatus(BlockJobStatusWaiting)
+		blockJob.SetSummaryEmpty()
+		return blockJob.ValidateAndSubmit(txDao)
+	})
+}
 
+func (b *blockJobWriter) SetStatusRunning(id string) error {
+	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		record, err := txDao.FindRecordById(CollectionBlockJob, id)
+		if err != nil {
+			return err
+		}
+		blockJob := NewBlockJob(record, b.app)
+		blockJob.SetStatus(BlockJobStatusRunning)
+		blockJob.SetSummaryEmpty()
+		return blockJob.ValidateAndSubmit(txDao)
+	})
+}
+
+func (b *blockJobWriter) SetStatusError(id string, statusError error) error {
+	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		record, err := txDao.FindRecordById(CollectionBlockJob, id)
+		if err != nil {
+			return err
+		}
+		blockJob := NewBlockJob(record, b.app)
+		blockJob.SetStatus(BlockJobStatusError)
+		blockJob.SetSummaryError(statusError)
+		blockJob.IncrementErrorCount()
+		return blockJob.ValidateAndSubmit(txDao)
+	})
+}
+
+func (b *blockJobWriter) SetStatusComplete(id string) error {
+	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		record, err := txDao.FindRecordById(CollectionBlockJob, id)
+		if err != nil {
+			return err
+		}
+		blockJob := NewBlockJob(record, b.app)
+		blockJob.SetStatus(BlockJobStatusComplete)
+		blockJob.SetSummaryEmpty()
 		return blockJob.ValidateAndSubmit(txDao)
 	})
 }

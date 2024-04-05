@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	CollectionBlockJob = "block_job"
-
-	BlockJobFieldType      = "type"
-	BlockJobFieldStatus    = "status"
-	BlockJobFieldSummary   = "summary"
-	BlockJobFieldBlock     = "block"
-	BlockJobFieldUser      = "user"
-	BlockJobFieldNextRunAt = "next_run_at"
+	CollectionBlockJob      = "block_job"
+	BlockJobFieldType       = "type"
+	BlockJobFieldStatus     = "status"
+	BlockJobFieldSummary    = "summary"
+	BlockJobFieldBlock      = "block"
+	BlockJobFieldUser       = "user"
+	BlockJobFieldNextRunAt  = "next_run_at"
+	BlockJobFieldErrorCount = "error_count"
 )
 
 type BlockJobStatus string
@@ -43,12 +43,15 @@ type BlockJob interface {
 	Block() string
 	User() string
 	NextRunAt() types.DateTime
+	ErrorCount() int
 
 	Record() *models.Record
 
 	SetStatus(status BlockJobStatus)
 	SetSummaryError(err error)
 	SetSummaryEmpty()
+	IncrementErrorCount()
+	ClearErrorCount()
 
 	ValidateAndSubmit(txDao *daos.Dao) error
 }
@@ -123,6 +126,10 @@ func (j *blockJob) NextRunAt() types.DateTime {
 	return j.record.GetDateTime(BlockJobFieldNextRunAt)
 }
 
+func (j *blockJob) ErrorCount() int {
+	return j.record.GetInt(BlockJobFieldErrorCount)
+}
+
 func (j *blockJob) SetStatus(status BlockJobStatus) {
 	j.record.Set(BlockJobFieldStatus, string(status))
 }
@@ -132,13 +139,21 @@ type SummaryError struct {
 }
 
 func (j *blockJob) SetSummaryError(err error) {
-	j.record.Set("summary", SummaryError{
+	j.record.Set(BlockJobFieldSummary, SummaryError{
 		Error: err.Error(),
 	})
 }
 
 func (j *blockJob) SetSummaryEmpty() {
-	j.record.Set("summary", nil)
+	j.record.Set(BlockJobFieldSummary, nil)
+}
+
+func (j *blockJob) IncrementErrorCount() {
+	j.record.Set(BlockJobFieldErrorCount, j.ErrorCount()+1)
+}
+
+func (j *blockJob) ClearErrorCount() {
+	j.record.Set(BlockJobFieldErrorCount, 0)
 }
 
 func (j *blockJob) ValidateAndSubmit(txDao *daos.Dao) error {
