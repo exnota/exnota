@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"exnota.com/backend/cmd/config"
 	"exnota.com/backend/test"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/dbx"
@@ -66,7 +67,7 @@ func TestAppHooks(t *testing.T) {
 		// no need to cleanup since scenario.Test() will do that for us
 		// defer testApp.Cleanup()
 
-		bindRequestAndRecordHooks(testApp, Config{
+		bindRequestAndRecordHooks(testApp, config.Config{
 			NotionOAuthClientID:     "test notion oauth client id",
 			NotionOAuthClientSecret: "test notion oauth secret",
 		})
