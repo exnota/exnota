@@ -1,4 +1,4 @@
-package main
+package config
 
 // For local development in VS Code, add to launch.json
 type Config struct {

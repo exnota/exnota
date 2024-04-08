@@ -9,6 +9,7 @@ import (
 	"exnota.com/backend/api"
 	block_api "exnota.com/backend/block/api"
 	block_data "exnota.com/backend/block/data"
+	"exnota.com/backend/cmd/config"
 	integ_api "exnota.com/backend/integration/api"
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service"
@@ -23,7 +24,7 @@ import (
 )
 
 func main() {
-	cfg := Config{}
+	cfg := config.Config{}
 	err := env.Parse(&cfg)
 	if err != nil {
 		panic(err)
@@ -104,7 +105,7 @@ func initJobWorker(app core.App, skipWorkers *bool) {
 	})
 }
 
-func bindRequestAndRecordHooks(app core.App, cfg Config) {
+func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// serves static files from the provided public dir (if exists)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
