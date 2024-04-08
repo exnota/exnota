@@ -46,7 +46,6 @@ func (h *destinationApiRules) createIntegrationRelations() {
 
 		// Validate early to avoid extra work if there's a simple validation
 		// error
-		// TODO: Test that this works. It could be DrySubmit() instead, although that requires a transaction?
 		form := forms.NewRecordUpsert(h.app, e.Record)
 		err := form.Validate()
 		if err != nil {
@@ -56,15 +55,6 @@ func (h *destinationApiRules) createIntegrationRelations() {
 		destination, err := data.NewDestination(e.Record, h.app)
 		if err != nil {
 			return err
-		}
-
-		destinationID := destination.Id()
-		if destinationID == "" {
-			return apis.NewBadRequestError("Destination ID is empty", nil)
-		}
-		external := destination.External()
-		if external == nil {
-			return apis.NewBadRequestError("Destination external is nil", nil)
 		}
 
 		// Get integration ID from workspace
@@ -78,6 +68,15 @@ func (h *destinationApiRules) createIntegrationRelations() {
 		integration := workspace.Integration()
 		if integration == "" {
 			return nil
+		}
+
+		destinationID := destination.Id()
+		if destinationID == "" {
+			return apis.NewBadRequestError("Destination ID is empty", nil)
+		}
+		external := destination.External()
+		if external == nil {
+			return apis.NewBadRequestError("Destination external is nil", nil)
 		}
 
 		// Sync data from remote destination
