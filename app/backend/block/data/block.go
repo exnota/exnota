@@ -22,6 +22,7 @@ type BlockType string
 
 const (
 	BlockTypeAudio BlockType = "audio"
+	BlockTypeText  BlockType = "text"
 )
 
 type Block interface {
@@ -29,6 +30,9 @@ type Block interface {
 	Type() BlockType
 	User() string
 	Destination() string
+	// Not all block types have files, but having this method on the root
+	// interface makes it easier to work with blocks in a generic way, e.g.
+	// creating immutability rules.
 	File() string
 
 	SetTitle(string)
@@ -36,6 +40,7 @@ type Block interface {
 
 type AudioBlock interface {
 	Block
+
 	SetTranscription([]string) error
 }
 
@@ -44,6 +49,11 @@ func NewBlock(r *models.Record) (Block, error) {
 	switch blockType {
 	case BlockTypeAudio:
 		var b AudioBlock = &audioBlock{
+			record: r,
+		}
+		return b, nil
+	case BlockTypeText:
+		var b TextBlock = &textBlock{
 			record: r,
 		}
 		return b, nil
@@ -122,4 +132,36 @@ func (b *audioBlock) SetTranscription(transcription []string) error {
 	field.Transcription = transcription
 	b.record.Set(BlockFieldAudio, field)
 	return nil
+}
+
+type TextBlock interface {
+	Block
+}
+
+type textBlock struct {
+	record *models.Record
+}
+
+func (t *textBlock) Id() string {
+	return t.record.Id
+}
+
+func (t *textBlock) Type() BlockType {
+	return BlockType(t.record.GetString(BlockFieldType))
+}
+
+func (t *textBlock) User() string {
+	return t.record.GetString(BlockFieldUser)
+}
+
+func (t *textBlock) Destination() string {
+	return t.record.GetString(BlockFieldDestination)
+}
+
+func (t *textBlock) File() string {
+	return t.record.GetString(BlockFieldFile)
+}
+
+func (t *textBlock) SetTitle(title string) {
+	t.record.Set(BlockFieldTitle, title)
 }
