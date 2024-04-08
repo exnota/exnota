@@ -83,7 +83,7 @@ Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
         if (block.type == BlockType.audio &&
             block.audio?.transcription == null) {
           status = BlockStatus.transcribing;
-        } else if (block.externalUrl != null) {
+        } else if (block.external != null) {
           status = BlockStatus.exported;
         }
       }

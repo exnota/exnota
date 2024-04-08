@@ -13,7 +13,7 @@ class Block with _$Block {
     required String id,
     String? title,
     required BlockType type,
-    String? externalUrl,
+    External? external,
     String? file,
     Audio? audio,
     required String userId,
@@ -57,11 +57,17 @@ class Block with _$Block {
       audio = Audio.fromJson(audioMap);
     }
 
+    External? external;
+    final externalMap = model.data['external'];
+    if (externalMap != null && externalMap is Map<String, dynamic>) {
+      external = External.fromJson(externalMap);
+    }
+
     return Block(
       id: model.id,
       title: model.data['title'],
       type: type,
-      externalUrl: model.data['externalUrl'],
+      external: external,
       file: model.data['file'],
       audio: audio,
       userId: model.data['user'],
@@ -92,7 +98,7 @@ class Block with _$Block {
         throw Exception('Unknown block type');
     }
 
-    // Ignore externalUrl, file, audio. They won't be initialized locally.
+    // Ignore external, file, audio. They won't be initialized locally.
     body['user'] = userId;
     body['userCreated'] = userCreated.toIso8601String();
     // Ignore created, updated. They will be set by the server.
@@ -113,4 +119,14 @@ class Audio with _$Audio {
   const Audio._();
 
   factory Audio.fromJson(Map<String, dynamic> json) => _$AudioFromJson(json);
+}
+
+@freezed
+class External with _$External {
+  const factory External({String? url}) = _External;
+
+  const External._();
+
+  factory External.fromJson(Map<String, dynamic> json) =>
+      _$ExternalFromJson(json);
 }

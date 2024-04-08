@@ -9,7 +9,7 @@ class BlockRepoMapper {
       id: repo.id,
       title: repo.title,
       type: _typeFromRepo(repo.type),
-      externalUrl: repo.externalUrl,
+      external: _fromExternalRepo(repo.external),
       file: repo.file,
       audio: _fromAudioRepo(repo.audio),
       userId: repo.user,
@@ -25,7 +25,7 @@ class BlockRepoMapper {
       id: block.id,
       title: block.title,
       type: _typeToRepo(block.type),
-      externalUrl: block.externalUrl,
+      external: _toExternalRepo(block.external),
       file: block.file,
       audio: _toAudioRepo(block.audio),
       user: block.userId,
@@ -78,5 +78,26 @@ class BlockRepoMapper {
     }
 
     return jsonEncode({'transcription': audio.transcription});
+  }
+
+  static External? _fromExternalRepo(String? external) {
+    if (external == null) {
+      return null;
+    }
+    final json = jsonDecode(external) as Map<String, dynamic>;
+    final url = json['url'];
+    if (url is String) {
+      return External(url: url);
+    } else {
+      return const External(url: null);
+    }
+  }
+
+  static String? _toExternalRepo(External? external) {
+    if (external == null) {
+      return null;
+    }
+
+    return jsonEncode({'url': external.url});
   }
 }
