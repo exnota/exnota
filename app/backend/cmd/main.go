@@ -16,11 +16,9 @@ import (
 	_ "exnota.com/backend/migrations"
 	user_api_hooks "exnota.com/backend/user/api"
 	"github.com/caarlos0/env"
-	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/forms/validators"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 )
 
@@ -64,8 +62,6 @@ func main() {
 }
 
 const (
-	COLLECTION_USER = "user"
-
 	COLLECTION_BLOCK  = "block"
 	BLOCK_FIELD_TYPE  = "type"
 	BLOCK_FIELD_USER  = "user"
@@ -129,6 +125,7 @@ func bindRequestAndRecordHooks(app core.App, cfg Config) {
 	block_data.NewWorkspaceDataRules(app).ApplyHooks()
 	integrationDestinationSync := service.NewIntegrationDestinationSync(app)
 	block_data.NewDestinationDataRules(app).ApplyHooks()
+	block_data.NewBlockDataRules(app).ApplyHooks()
 
 	// Job workflow
 	job.NewBlockJobWorkflow(app).ApplyHooks()
@@ -141,6 +138,7 @@ func bindRequestAndRecordHooks(app core.App, cfg Config) {
 	integ_api.NewIntegrationNotionObjectApiRules(app).ApplyHooks()
 	integ_api.NewIntegrationDestinationApiRules(app).ApplyHooks()
 	block_api.NewDestinationApiRules(app, integrationDestinationSync.Sync).ApplyHooks()
+	block_api.NewBlockApiRules(app).ApplyHooks()
 
 	// Custom endpoints
 	integ_api.NewIntegrationEndpointHooks(app, integ_api.IntegrationEndpointConfig{
@@ -150,7 +148,6 @@ func bindRequestAndRecordHooks(app core.App, cfg Config) {
 	}).Apply()
 
 	// Old rules, need extracting/refactoring
-	setBlockInvariants(app)
 	setBlockJobInvariants(app)
 }
 
@@ -160,91 +157,6 @@ func setGlobalDeleteRules(app core.App) {
 		// Create `archived` fields instead.
 		return errors.New("Cannot delete. Archive instead.")
 	})
-}
-
-func setBlockInvariants(app core.App) {
-	// type cannot be changed
-	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK).Add(func(e *core.RecordUpdateEvent) error {
-		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
-		if err != nil {
-			return err
-		}
-
-		newType := e.Record.GetString(BLOCK_FIELD_TYPE)
-
-		if newType != existingRecord.GetString(BLOCK_FIELD_TYPE) {
-			return apis.NewBadRequestError("Cannot change block type", nil)
-		}
-
-		return nil
-	})
-
-	// user cannot be changed
-	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK).Add(func(e *core.RecordUpdateEvent) error {
-		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
-		if err != nil {
-			return err
-		}
-
-		newUserId := e.Record.GetString(BLOCK_FIELD_USER)
-
-		if newUserId != existingRecord.GetString(BLOCK_FIELD_USER) {
-			return apis.NewBadRequestError("Cannot change block user", nil)
-		}
-
-		return nil
-	})
-
-	// file creation
-	app.OnRecordBeforeCreateRequest(COLLECTION_BLOCK).Add(func(e *core.RecordCreateEvent) error {
-		newType := e.Record.GetString(BLOCK_FIELD_TYPE)
-
-		// audio block must have a file
-		if newType == "audio" {
-			files := e.UploadedFiles[BLOCK_FIELD_FILE]
-			if len(files) != 1 {
-				return apis.NewBadRequestError("Audio block must have exactly 1 file", nil)
-			}
-
-			// Content types supported by Pocketbase: https://github.com/gabriel-vasile/mimetype/blob/master/supported_mimes.md
-			// The mime type *may* also be in the attributes returned by filesystem.Attributes(): https://github.com/pocketbase/pocketbase/blob/9436efb7fd8b9726715b58eb949f12a634fcafa0/tools/filesystem/filesystem.go#L104
-			if err := validators.UploadedFileMimeType([]string{"audio/wav", "audio/mpeg"})(files[0]); err != nil {
-				// Verify it's a mime type error, because if we simply return
-				// the err object the error message will be a generic
-				// "Something went wrong while processing your request."
-				errObj := err.(validation.ErrorObject)
-				if errObj.Code() == "validation_invalid_mime_type" {
-					return apis.NewBadRequestError("Audio block must have a .wav or .mp3 file.", nil)
-				}
-				return err
-			}
-		} else {
-			files := e.UploadedFiles[BLOCK_FIELD_FILE]
-			if len(files) != 0 {
-				return apis.NewBadRequestError("Non-audio block cannot have a file", nil)
-			}
-		}
-
-		return nil
-	})
-
-	// file cannot be changed
-	// If file is changed, PocketBase will delete the previous one.
-	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK).Add(func(e *core.RecordUpdateEvent) error {
-		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
-		if err != nil {
-			return err
-		}
-
-		newFile := e.Record.Get(BLOCK_FIELD_FILE)
-
-		if newFile != existingRecord.Get(BLOCK_FIELD_FILE) {
-			return apis.NewBadRequestError("Cannot change block file", nil)
-		}
-
-		return nil
-	})
-
 }
 
 func setBlockJobInvariants(app core.App) {
