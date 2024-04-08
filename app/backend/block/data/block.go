@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	CollectionBlock = "block"
-	BlockFieldType  = "type"
-	BlockFieldUser  = "user"
-	BlockFieldTitle = "title"
-	BlockFieldFile  = "file"
-	BlockFieldAudio = "audio"
+	CollectionBlock       = "block"
+	BlockFieldType        = "type"
+	BlockFieldUser        = "user"
+	BlockFieldTitle       = "title"
+	BlockFieldFile        = "file"
+	BlockFieldAudio       = "audio"
+	BlockFieldDestination = "destination"
 )
 
 type BlockType string
@@ -27,6 +28,8 @@ type Block interface {
 	Id() string
 	Type() BlockType
 	User() string
+	Destination() string
+	File() string
 
 	SetTitle(string)
 }
@@ -46,6 +49,14 @@ func NewBlock(r *models.Record) (Block, error) {
 		return b, nil
 	}
 	return nil, fmt.Errorf("unknown block type %s", blockType)
+}
+
+func NewBlockFromModel(m models.Model) (Block, error) {
+	castedRecord, ok := m.(*models.Record)
+	if !ok {
+		return nil, errors.New("not a record")
+	}
+	return NewBlock(castedRecord)
 }
 
 func NewAudioBlock(r *models.Record) (AudioBlock, error) {
@@ -77,6 +88,14 @@ func (b *audioBlock) Type() BlockType {
 
 func (b *audioBlock) User() string {
 	return b.record.GetString(BlockFieldUser)
+}
+
+func (b *audioBlock) Destination() string {
+	return b.record.GetString(BlockFieldDestination)
+}
+
+func (b *audioBlock) File() string {
+	return b.record.GetString(BlockFieldFile)
 }
 
 func (b *audioBlock) SetTitle(title string) {
