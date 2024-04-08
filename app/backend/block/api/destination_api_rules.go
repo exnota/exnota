@@ -74,10 +74,16 @@ func (h *destinationApiRules) createIntegrationRelations() {
 			return err
 		}
 
+		// If there's no integration, skip syncing the destination
+		integration := workspace.Integration()
+		if integration == "" {
+			return nil
+		}
+
 		// Sync data from remote destination
 		syncResult, err := h.destinationSync(lib_block.DestinationSyncRequest{
 			DestinationId: destinationID,
-			IntegrationId: workspace.Integration(),
+			IntegrationId: integration,
 			Config:        external.Config,
 			User:          destination.User(),
 		})
