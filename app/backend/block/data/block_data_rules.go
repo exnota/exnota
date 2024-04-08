@@ -24,8 +24,22 @@ func (r *blockDataRules) ApplyHooks() {
 }
 
 func (r *blockDataRules) relationRules() {
+	// user must match destination's user
 	r.app.OnModelBeforeCreate(CollectionBlock).Add(func(e *core.ModelEvent) error {
-		// TODO:
+		block, err := NewBlockFromModel(e.Model)
+		if err != nil {
+			return err
+		}
+
+		destination, err := NewDestinationFetcher(r.app).FetchById(block.Destination())
+		if err != nil {
+			return err
+		}
+
+		if block.User() != destination.User() {
+			return errors.New("Block user does not match destination user")
+		}
+
 		return nil
 	})
 }
