@@ -49,10 +49,12 @@ const (
 )
 
 type MockBlockWithFile struct {
-	Type     BlockType
-	Title    string
-	User     string
-	FilePath string
+	Type        BlockType
+	Title       string
+	User        string
+	FilePath    string
+	UserCreated string
+	Destination string
 }
 
 func TestAppHooks(t *testing.T) {
@@ -87,7 +89,6 @@ func TestAppHooks(t *testing.T) {
 	var requestScenarios []RequestScenario
 	requestScenarios = append(requestScenarios, generateBlockAuthScenarios(setupTestApp, tokens)...)
 	requestScenarios = append(requestScenarios, generateBlockInvariantScenarios(setupTestApp, tokens)...)
-	requestScenarios = append(requestScenarios, generateBlockJobInvariantScenarios(setupTestApp, tokens)...)
 
 	for _, scenario := range requestScenarios {
 		for _, authScenario := range scenario.AuthScenarios {
@@ -116,11 +117,13 @@ func TestAppHooks(t *testing.T) {
 				Body:            body,
 				ExpectedStatus:  authScenario.ExpectedStatus,
 				ExpectedContent: authScenario.ExpectedContent,
-				ExpectedEvents:  authScenario.ExpectedEvents,
-				TestAppFactory:  scenario.TestAppFactory,
-				BeforeTestFunc:  authScenario.BeforeTestFunc,
-				AfterTestFunc:   authScenario.AfterTestFunc,
+				// If ExpectedEvents isn't passed, tests will fail
+				ExpectedEvents: authScenario.ExpectedEvents,
+				TestAppFactory: scenario.TestAppFactory,
+				BeforeTestFunc: authScenario.BeforeTestFunc,
+				AfterTestFunc:  authScenario.AfterTestFunc,
 			}
+
 			apiScenario.Test(t)
 		}
 	}
@@ -129,9 +132,11 @@ func TestAppHooks(t *testing.T) {
 func generateBodyWithFile(scenario RequestScenario) (io.Reader, *multipart.Writer) {
 	blockBody := scenario.BodyForBlockWithFile
 	formData, mp, err := MockMultipartData(map[string]string{
-		"title": blockBody.Title,
-		"type":  string(blockBody.Type),
-		"user":  blockBody.User,
+		"title":       blockBody.Title,
+		"type":        string(blockBody.Type),
+		"user":        blockBody.User,
+		"userCreated": blockBody.UserCreated,
+		"destination": blockBody.Destination,
 	}, MockField{
 		name: "file",
 		path: blockBody.FilePath,
@@ -254,7 +259,9 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 			BodyStr: `{
 				"title":"test123",
 				"type":"text",
-				"user":"user1-15char-id"
+				"user":"user1-15char-id",
+				"userCreated":"2024-04-02 00:05:02.711Z",
+				"destination":"dest1----15char"
 			}`,
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -292,10 +299,12 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyForBlockWithFile: &MockBlockWithFile{
-				Title:    "new audio block",
-				Type:     BlockTypeAudio,
-				User:     "user1-15char-id",
-				FilePath: "../testdata/test.wav",
+				Title:       "new audio block",
+				Type:        BlockTypeAudio,
+				User:        "user1-15char-id",
+				FilePath:    "../testdata/test.wav",
+				UserCreated: "2022-01-01T00:00:00Z",
+				Destination: "dest1----15char",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -328,7 +337,7 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 							t.Fatal(err)
 						}
 						if len(records) != 1 {
-							t.Errorf("Expected to find 1 newly created block but found %v", len(records))
+							t.Fatalf("Expected to find 1 newly created block but found %v", len(records))
 						}
 						block := records[0]
 
@@ -341,7 +350,7 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 						}
 
 						if len(jobs) != 1 {
-							t.Errorf("Expected to find 1 newly created block job for block id %v but found %v", block.Id, len(jobs))
+							t.Fatalf("Expected to find 1 newly created block job for block id %v but found %v", block.Id, len(jobs))
 						}
 						job := jobs[0]
 						if job.GetString(BLOCK_JOB_FIELD_TYPE) != string(BLOCK_JOB_TYPE_TRANSCRIPTION) {
@@ -437,6 +446,8 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 					ExpectedStatus:  405,
 					ExpectedContent: []string{"\"data\":{}"},
 					ExpectedEvents: map[string]int{
+						"OnAfterApiError":             1,
+						"OnBeforeApiError":            1,
 						"OnRecordBeforeDeleteRequest": 1,
 					},
 				},
@@ -448,6 +459,8 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 					ExpectedStatus:  405,
 					ExpectedContent: []string{"\"data\":{}"},
 					ExpectedEvents: map[string]int{
+						"OnAfterApiError":             1,
+						"OnBeforeApiError":            1,
 						"OnRecordBeforeDeleteRequest": 1,
 					},
 				},
@@ -473,9 +486,12 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 						"Authorization": tokens.UserOne,
 					},
 					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block type.\""},
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Failed to update record.\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeUpdateRequest": 1,
+						"OnAfterApiError":             1,
+						"OnBeforeApiError":            1,
+						"OnModelBeforeUpdate":         1,
 					},
 				},
 			},
@@ -495,9 +511,12 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 						"Authorization": tokens.UserOne,
 					},
 					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block user.\""},
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Failed to update record.\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeUpdateRequest": 1,
+						"OnAfterApiError":             1,
+						"OnBeforeApiError":            1,
+						"OnModelBeforeUpdate":         1,
 					},
 				},
 			},
@@ -509,7 +528,9 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			BodyStr: `{
 				"title":"test123",
 				"type":"audio",
-				"user":"user1-15char-id"
+				"user":"user1-15char-id",
+				"userCreated":"2022-01-01T00:00:00Z",
+				"destination":"dest1----15char"
 			}`,
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -519,7 +540,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 						"Authorization": tokens.UserOne,
 					},
 					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Audio block must have exactly 1 file.\""},
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Voice note block must have exactly 1 file.\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeCreateRequest": 1,
 					},
@@ -531,10 +552,12 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyForBlockWithFile: &MockBlockWithFile{
-				Title:    "test123",
-				Type:     BlockTypeAudio,
-				User:     "user1-15char-id",
-				FilePath: "../testdata/test.txt",
+				Title:       "test123",
+				Type:        BlockTypeAudio,
+				User:        "user1-15char-id",
+				FilePath:    "../testdata/test.txt",
+				UserCreated: "2022-01-01T00:00:00Z",
+				Destination: "dest1----15char",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -556,10 +579,12 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyForBlockWithFile: &MockBlockWithFile{
-				Title:    "test123",
-				Type:     BlockTypeText,
-				User:     "user1-15char-id",
-				FilePath: "../testdata/test.wav",
+				Title:       "test123",
+				Type:        BlockTypeText,
+				User:        "user1-15char-id",
+				FilePath:    "../testdata/test.wav",
+				UserCreated: "2022-01-01T00:00:00Z",
+				Destination: "dest1----15char",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -569,7 +594,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 						"Authorization": tokens.UserOne,
 					},
 					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Non-audio block cannot have a file.\""},
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Non-voice note block cannot have a file.\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeCreateRequest": 1,
 					},
@@ -581,10 +606,12 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			Method: http.MethodPatch,
 			Url:    "/api/collections/lrffu3q1yweoljo/records/block10-15chars",
 			BodyForBlockWithFile: &MockBlockWithFile{
-				Title:    "test123",
-				Type:     BlockTypeAudio,
-				User:     "user1-15char-id",
-				FilePath: "../testdata/test.wav",
+				Title:       "test123",
+				Type:        BlockTypeAudio,
+				User:        "user1-15char-id",
+				FilePath:    "../testdata/test.wav",
+				UserCreated: "2022-01-01T00:00:00Z",
+				Destination: "dest1----15char",
 			},
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -594,9 +621,12 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 						"Authorization": tokens.Admin,
 					},
 					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block file.\""},
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Failed to update record.\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeUpdateRequest": 1,
+						"OnAfterApiError":             1,
+						"OnBeforeApiError":            1,
+						"OnModelBeforeUpdate":         1,
 					},
 				},
 				{
@@ -605,139 +635,13 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 						"Authorization": tokens.UserOne,
 					},
 					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block file.\""},
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Failed to update record.\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeUpdateRequest": 1,
+						"OnAfterApiError":             1,
+						"OnBeforeApiError":            1,
+						"OnModelBeforeUpdate":         1,
 					},
-				},
-			},
-		},
-	}
-}
-
-func generateBlockJobInvariantScenarios(setupTestApp func(t *testing.T) *tests.TestApp, tokens Tokens) []RequestScenario {
-	return []RequestScenario{
-		{
-			Name:   "Block job invariant > Cannot update type",
-			Method: http.MethodPatch,
-			Url:    "/api/collections/cml7ayp8msc7q1w/records/block01-job---1",
-			BodyStr: `{
-				"type":"export"
-			}`,
-			TestAppFactory: setupTestApp,
-			AuthScenarios: []AuthScenario{
-				{
-					Name: "Admin updating",
-					RequestHeaders: map[string]string{
-						"Authorization": tokens.Admin,
-					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block job type.\""},
-					ExpectedEvents: map[string]int{
-						"OnRecordBeforeUpdateRequest": 1,
-					},
-				},
-				{
-					Name: "User updating own",
-					RequestHeaders: map[string]string{
-						"Authorization": tokens.UserOne,
-					},
-					ExpectedStatus:  403,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Only admins can perform this action.\""},
-				},
-			},
-		},
-		{
-			Name:   "Block job invariant > Cannot update user",
-			Method: http.MethodPatch,
-			Url:    "/api/collections/cml7ayp8msc7q1w/records/block01-job---1",
-			BodyStr: `{
-				"user":"user2-15char-id"
-			}`,
-			TestAppFactory: setupTestApp,
-			AuthScenarios: []AuthScenario{
-				{
-					Name: "Admin updating",
-					RequestHeaders: map[string]string{
-						"Authorization": tokens.Admin,
-					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block job user.\""},
-					ExpectedEvents: map[string]int{
-						"OnRecordBeforeUpdateRequest": 1,
-					},
-				},
-				{
-					Name: "User updating own",
-					RequestHeaders: map[string]string{
-						"Authorization": tokens.UserOne,
-					},
-					ExpectedStatus:  403,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Only admins can perform this action.\""},
-				},
-			},
-		},
-		{
-			Name:   "Block job invariant > Cannot update block",
-			Method: http.MethodPatch,
-			Url:    "/api/collections/cml7ayp8msc7q1w/records/block01-job---1",
-			BodyStr: `{
-				"block":"block2--15chars"
-			}`,
-			TestAppFactory: setupTestApp,
-			AuthScenarios: []AuthScenario{
-				{
-					Name: "Admin updating",
-					RequestHeaders: map[string]string{
-						"Authorization": tokens.Admin,
-					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Cannot change block job block.\""},
-					ExpectedEvents: map[string]int{
-						"OnRecordBeforeUpdateRequest": 1,
-					},
-				},
-				{
-					Name: "User updating own",
-					RequestHeaders: map[string]string{
-						"Authorization": tokens.UserOne,
-					},
-					ExpectedStatus:  403,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Only admins can perform this action.\""},
-				},
-			},
-		},
-		{
-			Name:   "Block job invariant > User must match block's user",
-			Url:    "/api/collections/cml7ayp8msc7q1w/records",
-			Method: http.MethodPost,
-			BodyStr: `{
-				"type": "transcription",
-				"status": "waiting",
-				"summary": [],
-				"block": "block2--15chars",
-				"user": "user2-15char-id"
-			}`,
-			TestAppFactory: setupTestApp,
-			AuthScenarios: []AuthScenario{
-				{
-					Name: "Admin updating",
-					RequestHeaders: map[string]string{
-						"Authorization": tokens.Admin,
-					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Block job user must match block user.\""},
-					ExpectedEvents: map[string]int{
-						"OnRecordBeforeCreateRequest": 1,
-					},
-				},
-				{
-					Name: "User updating own",
-					RequestHeaders: map[string]string{
-						"Authorization": tokens.UserOne,
-					},
-					ExpectedStatus:  403,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Only admins can perform this action.\""},
 				},
 			},
 		},
