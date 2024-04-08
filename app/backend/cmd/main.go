@@ -34,6 +34,10 @@ func main() {
 	app := pocketbase.New()
 
 	// Custom flags
+	//
+	// Note: These are not loaded until *after* app.Start(), so pass values as
+	// pointers that are read after app.Start() is called (e.g. when a hook
+	// is called).
 	cmd := app.RootCmd
 	var skipWorkersCmd bool
 	cmd.PersistentFlags().BoolVar(
@@ -51,8 +55,8 @@ func main() {
 		Automigrate: autoMigrate,
 	})
 
-	initJobWorker(app)
-	bindRequestAndRecordHooks(app, cfg, &skipWorkersCmd)
+	initJobWorker(app, &skipWorkersCmd)
+	bindRequestAndRecordHooks(app, cfg)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
@@ -94,14 +98,17 @@ func isAutoMigrate() bool {
 	return autoMigrate
 }
 
-func initJobWorker(app core.App) {
+func initJobWorker(app core.App, skipWorkers *bool) {
 	jobQueue := job.NewBlockJobQueue(app)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		if *skipWorkers {
+			return nil
+		}
 		return jobQueue.Start()
 	})
 }
 
-func bindRequestAndRecordHooks(app core.App, cfg Config, skipWorkers *bool) {
+func bindRequestAndRecordHooks(app core.App, cfg Config) {
 	// serves static files from the provided public dir (if exists)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
