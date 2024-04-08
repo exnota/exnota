@@ -15,11 +15,11 @@
 1. Delete test data `pb_data_test`
 2. Setup an empty database:
    1. Stop your local server
-   2. Rename or delete your local `pb_data`
+   2. Rename your local `pb_data` to `pb_data_backup` (will be gitignored)
    3. Start without workers: Use `Backend (skip workers)` config
 3. Create the data:
-   1. Run `Tool: Test Seed` launch config **outside dev container**
+   1. **Outside the dev container**: Run `Tool: Test Seed` launch config.
    2. If it fails, repeat Step 2 to remove partially created data.
 4. Use data for tests. Steps:
    1. Rename newly created `pb_data` to `pb_data_test`
-5. Optional: Restore your local `pb_data` if you renamed it.
+5. Rename `pb_data_backup` back to `pb_data`

@@ -64,11 +64,10 @@ func TestAppHooks(t *testing.T) {
 		// no need to cleanup since scenario.Test() will do that for us
 		// defer testApp.Cleanup()
 
-		skipWorkers := true
 		bindRequestAndRecordHooks(testApp, Config{
 			NotionOAuthClientID:     "test notion oauth client id",
 			NotionOAuthClientSecret: "test notion oauth secret",
-		}, &skipWorkers)
+		})
 
 		return testApp
 	}
