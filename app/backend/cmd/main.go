@@ -1,12 +1,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 
+	"exnota.com/backend/api"
 	block_api "exnota.com/backend/block/api"
 	block_data "exnota.com/backend/block/data"
 	integ_api "exnota.com/backend/integration/api"
@@ -153,9 +153,15 @@ func bindRequestAndRecordHooks(app core.App, cfg Config) {
 
 func setGlobalDeleteRules(app core.App) {
 	// deleting not allowed on any collection
+	//
+	// set on request hook so HTTP response is as expected
+	app.OnRecordBeforeDeleteRequest().Add(func(e *core.RecordDeleteEvent) error {
+		return api.NewMethodNotAllowedError("Cannot delete. Archive instead.", nil)
+	})
+
+	// set on model hook to catch accidental non-api usage
 	app.OnModelBeforeDelete().Add(func(e *core.ModelEvent) error {
-		// Create `archived` fields instead.
-		return errors.New("Cannot delete. Archive instead.")
+		return api.NewMethodNotAllowedError("Cannot delete. Archive instead.", nil)
 	})
 }
 

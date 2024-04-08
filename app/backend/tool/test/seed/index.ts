@@ -21,18 +21,21 @@ try {
     email: "user1@example.com",
     password: "longpassword",
     passwordConfirm: "longpassword",
+    verified: true,
   });
   const user2 = await pb.collection(COLLECTION_USER).create({
     id: "user2-15char-id",
     email: "user2@example.com",
     password: "longpassword",
     passwordConfirm: "longpassword",
+    verified: true,
   });
   await pb.collection(COLLECTION_USER).create({
     id: "user3-15char-id",
     email: "user3@example.com",
     password: "longpassword",
     passwordConfirm: "longpassword",
+    verified: true,
   });
 
   // --------------------
