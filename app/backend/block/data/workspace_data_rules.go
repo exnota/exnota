@@ -31,17 +31,19 @@ func (r *workspaceDataRules) relationRules() {
 			return err
 		}
 
-		fetcher := integ_data.NewIntegrationFetcher(r.app)
-		integration, err := fetcher.FetchById(workspace.Integration())
-		if err != nil {
-			return err
-		}
-		if integration == nil {
-			return errors.New("Integration not found with id: " + workspace.Integration())
-		}
+		if workspace.Integration() != "" {
+			fetcher := integ_data.NewIntegrationFetcher(r.app)
+			integration, err := fetcher.FetchById(workspace.Integration())
+			if err != nil {
+				return err
+			}
+			if integration == nil {
+				return errors.New("Integration not found with id: " + workspace.Integration())
+			}
 
-		if integration.User() != workspace.User() {
-			return errors.New("Integration user does not match workspace user")
+			if integration.User() != workspace.User() {
+				return errors.New("Integration user does not match workspace user")
+			}
 		}
 
 		return nil
