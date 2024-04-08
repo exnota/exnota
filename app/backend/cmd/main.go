@@ -222,6 +222,7 @@ func setBlockInvariants(app core.App) {
 	})
 
 	// file cannot be changed
+	// If file is changed, PocketBase will delete the previous one.
 	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK).Add(func(e *core.RecordUpdateEvent) error {
 		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
 		if err != nil {
