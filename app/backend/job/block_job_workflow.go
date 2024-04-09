@@ -27,7 +27,7 @@ func (j *blockJobWorkflow) ApplyHooks() {
 }
 
 func (j *blockJobWorkflow) createTranscriptionJob() {
-	// On audio block creation, create a transcription job
+	// On voice note creation, create a transcription job
 	j.app.OnModelAfterCreate(block_data.CollectionBlock).Add(func(e *core.ModelEvent) error {
 		blockRecord := e.Model.(*models.Record)
 		block, err := block_data.NewBlock(blockRecord)
@@ -35,7 +35,7 @@ func (j *blockJobWorkflow) createTranscriptionJob() {
 			return err
 		}
 
-		if block.Type() == block_data.BlockTypeAudio {
+		if block.Type() == block_data.BlockTypeVoiceNote {
 			blockJobWriter := data.NewBlockJobWriter(j.app)
 			err := blockJobWriter.CreateTranscriptionJob(
 				block.Id(),
