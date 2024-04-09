@@ -21,8 +21,8 @@ const (
 type BlockType string
 
 const (
-	BlockTypeAudio BlockType = "audio"
-	BlockTypeText  BlockType = "text"
+	BlockTypeVoiceNote BlockType = "voice-note"
+	BlockTypeTextNote  BlockType = "text-note"
 )
 
 type Block interface {
@@ -38,7 +38,7 @@ type Block interface {
 	SetTitle(string)
 }
 
-type AudioBlock interface {
+type VoiceNoteBlock interface {
 	Block
 
 	SetTranscription([]string) error
@@ -47,12 +47,12 @@ type AudioBlock interface {
 func NewBlock(r *models.Record) (Block, error) {
 	blockType := BlockType(r.GetString(BlockFieldType))
 	switch blockType {
-	case BlockTypeAudio:
-		var b AudioBlock = &audioBlock{
+	case BlockTypeVoiceNote:
+		var b VoiceNoteBlock = &voiceNoteBlock{
 			record: r,
 		}
 		return b, nil
-	case BlockTypeText:
+	case BlockTypeTextNote:
 		var b TextBlock = &textBlock{
 			record: r,
 		}
@@ -69,18 +69,18 @@ func NewBlockFromModel(m models.Model) (Block, error) {
 	return NewBlock(castedRecord)
 }
 
-func NewAudioBlock(r *models.Record) (AudioBlock, error) {
+func NewVoiceNoteBlock(r *models.Record) (VoiceNoteBlock, error) {
 	blockType := r.GetString(BlockFieldType)
-	if blockType != string(BlockTypeAudio) {
-		return nil, errors.New("not an audio block")
+	if blockType != string(BlockTypeVoiceNote) {
+		return nil, errors.New("not a voice note block")
 	}
-	var b AudioBlock = &audioBlock{
+	var b VoiceNoteBlock = &voiceNoteBlock{
 		record: r,
 	}
 	return b, nil
 }
 
-type audioBlock struct {
+type voiceNoteBlock struct {
 	record *models.Record
 }
 
@@ -88,31 +88,31 @@ type audioField struct {
 	Transcription []string `json:"transcription"`
 }
 
-func (b *audioBlock) Id() string {
+func (b *voiceNoteBlock) Id() string {
 	return b.record.Id
 }
 
-func (b *audioBlock) Type() BlockType {
+func (b *voiceNoteBlock) Type() BlockType {
 	return BlockType(b.record.GetString(BlockFieldType))
 }
 
-func (b *audioBlock) User() string {
+func (b *voiceNoteBlock) User() string {
 	return b.record.GetString(BlockFieldUser)
 }
 
-func (b *audioBlock) Destination() string {
+func (b *voiceNoteBlock) Destination() string {
 	return b.record.GetString(BlockFieldDestination)
 }
 
-func (b *audioBlock) File() string {
+func (b *voiceNoteBlock) File() string {
 	return b.record.GetString(BlockFieldFile)
 }
 
-func (b *audioBlock) SetTitle(title string) {
+func (b *voiceNoteBlock) SetTitle(title string) {
 	b.record.Set(BlockFieldTitle, title)
 }
 
-func (b *audioBlock) SetTranscription(transcription []string) error {
+func (b *voiceNoteBlock) SetTranscription(transcription []string) error {
 	rawField := b.record.Get(BlockFieldAudio).(types.JsonRaw)
 	val, err := rawField.Value()
 	if err != nil {

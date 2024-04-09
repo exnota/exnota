@@ -27,15 +27,15 @@ func (h *blockApiRules) ApplyHooks() {
 }
 
 func (h *blockApiRules) fileRules() {
-	// audio block must have a file
+	// voice note must have a file
 	h.app.OnRecordBeforeCreateRequest(data.CollectionBlock).Add(func(e *core.RecordCreateEvent) error {
 		block, err := data.NewBlock(e.Record)
 		if err != nil {
 			return err
 		}
 
-		// audio block must have a file
-		if block.Type() == data.BlockTypeAudio {
+		// voice note must have a file
+		if block.Type() == data.BlockTypeVoiceNote {
 			files := e.UploadedFiles[data.BlockFieldFile]
 			if len(files) != 1 {
 				return apis.NewBadRequestError("Voice note block must have exactly 1 file", nil)
@@ -49,7 +49,7 @@ func (h *blockApiRules) fileRules() {
 				// "Something went wrong while processing your request."
 				errObj := err.(validation.ErrorObject)
 				if errObj.Code() == "validation_invalid_mime_type" {
-					return apis.NewBadRequestError("Audio block must have a .wav or .mp3 file.", nil)
+					return apis.NewBadRequestError("Voice note block must have a .wav or .mp3 file.", nil)
 				}
 				return err
 			}

@@ -71,10 +71,10 @@ try {
   // Blocks
   // --------------------
 
-  // User 1: Create 8 text blocks and 2 audio blocks
+  // User 1: Create 8 text blocks and 2 voice note blocks
   const block1 = await pb.collection(COLLECTION_BLOCK).create({
     id: "block1--15chars",
-    type: "text",
+    type: "text-note",
     title: "block 1",
     user: user1.id,
     destination: destination1.id,
@@ -82,7 +82,7 @@ try {
   });
   const block2 = await pb.collection(COLLECTION_BLOCK).create({
     id: "block2--15chars",
-    type: "text",
+    type: "text-note",
     title: "block 2",
     user: user1.id,
     destination: destination1.id,
@@ -90,7 +90,7 @@ try {
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block3--15chars",
-    type: "text",
+    type: "text-note",
     title: "block 3",
     user: user1.id,
     destination: destination1.id,
@@ -98,7 +98,7 @@ try {
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block4--15chars",
-    type: "text",
+    type: "text-note",
     title: "block 4",
     user: user1.id,
     destination: destination1.id,
@@ -106,7 +106,7 @@ try {
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block5--15chars",
-    type: "text",
+    type: "text-note",
     title: "block 5",
     user: user1.id,
     destination: destination1.id,
@@ -114,7 +114,7 @@ try {
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block6--15chars",
-    type: "text",
+    type: "text-note",
     title: "block 6",
     user: user1.id,
     destination: destination1.id,
@@ -122,7 +122,7 @@ try {
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block7--15chars",
-    type: "text",
+    type: "text-note",
     title: "block 7",
     user: user1.id,
     destination: destination1.id,
@@ -130,7 +130,7 @@ try {
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block8--15chars",
-    type: "text",
+    type: "text-note",
     title: "block 8",
     user: user1.id,
     destination: destination1.id,
@@ -139,7 +139,7 @@ try {
   const testFile = fs.readFileSync("./test.wav");
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block9--15chars",
-    type: "audio",
+    type: "voice-note",
     title: "block 9",
     user: user1.id,
     destination: destination1.id,
@@ -148,7 +148,7 @@ try {
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block10-15chars",
-    type: "audio",
+    type: "voice-note",
     title: "block 10",
     user: user1.id,
     destination: destination1.id,
@@ -162,7 +162,7 @@ try {
   // User 2: Create 2 text blocks
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block11-15chars",
-    type: "text",
+    type: "text-note",
     title: "block 11",
     user: user2.id,
     destination: destination2.id,
@@ -170,7 +170,7 @@ try {
   });
   await pb.collection(COLLECTION_BLOCK).create({
     id: "block12-15chars",
-    type: "text",
+    type: "text-note",
     title: "block 12",
     user: user2.id,
     destination: destination2.id,

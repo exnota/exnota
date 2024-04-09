@@ -45,8 +45,8 @@ type AuthScenario struct {
 type BlockType string
 
 const (
-	BlockTypeAudio BlockType = "audio"
-	BlockTypeText  BlockType = "text"
+	BlockTypeVoiceNote BlockType = "voice-note"
+	BlockTypeTextNote  BlockType = "text-note"
 )
 
 type MockBlockWithFile struct {
@@ -259,7 +259,7 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyStr: `{
 				"title":"test123",
-				"type":"text",
+				"type":"text-note",
 				"user":"user1-15char-id",
 				"userCreated":"2024-04-02 00:05:02.711Z",
 				"destination":"dest1----15char"
@@ -296,12 +296,12 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 			},
 		},
 		{
-			Name:   "Create audio block",
+			Name:   "Create voice note block",
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyForBlockWithFile: &MockBlockWithFile{
-				Title:       "new audio block",
-				Type:        BlockTypeAudio,
+				Title:       "new voice note block",
+				Type:        BlockTypeVoiceNote,
 				User:        "user1-15char-id",
 				FilePath:    "../testdata/test.wav",
 				UserCreated: "2022-01-01T00:00:00Z",
@@ -320,7 +320,7 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 						"Authorization": tokens.UserOne,
 					},
 					ExpectedStatus:  200,
-					ExpectedContent: []string{"\"title\":\"new audio block\""},
+					ExpectedContent: []string{"\"title\":\"new voice note block\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeCreateRequest": 1,
 						"OnRecordAfterCreateRequest":  1,
@@ -330,8 +330,8 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 					AfterTestFunc: func(t *testing.T, app *tests.TestApp, res *http.Response) {
 						// Find block that was just created
 						records, err := app.Dao().FindRecordsByExpr(COLLECTION_BLOCK,
-							dbx.HashExp{BLOCK_FIELD_TITLE: "new audio block"},
-							dbx.HashExp{BLOCK_FIELD_TYPE: string(BlockTypeAudio)},
+							dbx.HashExp{BLOCK_FIELD_TITLE: "new voice note block"},
+							dbx.HashExp{BLOCK_FIELD_TYPE: string(BlockTypeVoiceNote)},
 							dbx.HashExp{BLOCK_FIELD_USER: "user1-15char-id"},
 						)
 						if err != nil {
@@ -477,7 +477,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			Method: http.MethodPatch,
 			Url:    "/api/collections/lrffu3q1yweoljo/records/block1--15chars",
 			BodyStr: `{
-				"type":"audio"
+				"type":"voice-note"
 			}`,
 			TestAppFactory: setupTestApp,
 			AuthScenarios: []AuthScenario{
@@ -523,12 +523,12 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			},
 		},
 		{
-			Name:   "Block invariant > Audio type > File required",
+			Name:   "Block invariant > Voice note type > File required",
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyStr: `{
 				"title":"test123",
-				"type":"audio",
+				"type":"voice-note",
 				"user":"user1-15char-id",
 				"userCreated":"2022-01-01T00:00:00Z",
 				"destination":"dest1----15char"
@@ -549,12 +549,12 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			},
 		},
 		{
-			Name:   "Block invariant > Audio type >  Non-wav/mp3 not allowed",
+			Name:   "Block invariant > Voice note type >  Non-wav/mp3 not allowed",
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyForBlockWithFile: &MockBlockWithFile{
 				Title:       "test123",
-				Type:        BlockTypeAudio,
+				Type:        BlockTypeVoiceNote,
 				User:        "user1-15char-id",
 				FilePath:    "../testdata/test.txt",
 				UserCreated: "2022-01-01T00:00:00Z",
@@ -568,7 +568,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 						"Authorization": tokens.UserOne,
 					},
 					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Audio block must have a .wav or .mp3 file.\""},
+					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Voice note block must have a .wav or .mp3 file.\""},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeCreateRequest": 1,
 					},
@@ -576,12 +576,12 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			},
 		},
 		{
-			Name:   "Block invariant > Non-audio type > Cannot have a file",
+			Name:   "Block invariant > Non-voice note type > Cannot have a file",
 			Method: http.MethodPost,
 			Url:    "/api/collections/lrffu3q1yweoljo/records",
 			BodyForBlockWithFile: &MockBlockWithFile{
 				Title:       "test123",
-				Type:        BlockTypeText,
+				Type:        BlockTypeTextNote,
 				User:        "user1-15char-id",
 				FilePath:    "../testdata/test.wav",
 				UserCreated: "2022-01-01T00:00:00Z",
@@ -608,7 +608,7 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 			Url:    "/api/collections/lrffu3q1yweoljo/records/block10-15chars",
 			BodyForBlockWithFile: &MockBlockWithFile{
 				Title:       "test123",
-				Type:        BlockTypeAudio,
+				Type:        BlockTypeVoiceNote,
 				User:        "user1-15char-id",
 				FilePath:    "../testdata/test.wav",
 				UserCreated: "2022-01-01T00:00:00Z",

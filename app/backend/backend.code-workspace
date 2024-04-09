@@ -1,4 +1,6 @@
 {
+  // Don't add docs folder (or any other) because it will prevent the workspace
+  // loading as a dev container.
   "folders": [
     {
       "path": "."

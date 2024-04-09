@@ -160,7 +160,7 @@ func (j *transcriptionJobRunner) saveTranscription(result *TranscriptionResult, 
 			return err
 		}
 
-		block, err := block_data.NewAudioBlock(blockRecord)
+		block, err := block_data.NewVoiceNoteBlock(blockRecord)
 		if err != nil {
 			return err
 		}
