@@ -53,7 +53,10 @@ func (j *blockJobWorkflow) createExportJob() {
 	// On transcription job completion, create an export job
 	j.app.OnModelAfterUpdate(data.CollectionBlockJob).Add(func(e *core.ModelEvent) error {
 		// Transcription jobs only
-		updatedJob := data.NewBlockJob(e.Model.(*models.Record), j.app)
+		updatedJob, err := data.NewBlockJob(e.Model.(*models.Record), j.app)
+		if err != nil {
+			return err
+		}
 		if updatedJob.Type() != data.BlockJobTypeTranscription {
 			return nil
 		}
@@ -62,7 +65,10 @@ func (j *blockJobWorkflow) createExportJob() {
 		if updatedJob.Status() != data.BlockJobStatusComplete {
 			return nil
 		}
-		prevUpdatedJob := data.NewBlockJob(updatedJob.Record().OriginalCopy(), j.app)
+		prevUpdatedJob, err := data.NewBlockJob(updatedJob.Record().OriginalCopy(), j.app)
+		if err != nil {
+			return err
+		}
 		if prevUpdatedJob.Status() == data.BlockJobStatusComplete {
 			return nil
 		}

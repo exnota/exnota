@@ -32,7 +32,10 @@ func (b *blockJobWriter) CreateTranscriptionJob(blockId string, userId string) e
 		}
 
 		blockJobRecord := models.NewRecord(collection)
-		blockJob := NewBlockJob(blockJobRecord, b.app)
+		blockJob, err := NewBlockJob(blockJobRecord, b.app)
+		if err != nil {
+			return err
+		}
 		blockJob.SetType(BlockJobTypeTranscription)
 		blockJob.SetStatus(BlockJobStatusWaiting)
 		blockJob.SetBlock(blockId)
@@ -49,7 +52,11 @@ func (b *blockJobWriter) SetStatusWaiting(id string) error {
 		if err != nil {
 			return err
 		}
-		blockJob := NewBlockJob(record, b.app)
+		blockJob, err := NewBlockJob(record, b.app)
+		if err != nil {
+			return err
+		}
+
 		blockJob.SetStatus(BlockJobStatusWaiting)
 		blockJob.SetSummaryEmpty()
 		return blockJob.ValidateAndSubmit(txDao)
@@ -62,7 +69,10 @@ func (b *blockJobWriter) SetStatusRunning(id string) error {
 		if err != nil {
 			return err
 		}
-		blockJob := NewBlockJob(record, b.app)
+		blockJob, err := NewBlockJob(record, b.app)
+		if err != nil {
+			return err
+		}
 		blockJob.SetStatus(BlockJobStatusRunning)
 		blockJob.SetSummaryEmpty()
 		return blockJob.ValidateAndSubmit(txDao)
@@ -75,7 +85,10 @@ func (b *blockJobWriter) SetStatusError(id string, nextRunAt time.Time, statusEr
 		if err != nil {
 			return err
 		}
-		blockJob := NewBlockJob(record, b.app)
+		blockJob, err := NewBlockJob(record, b.app)
+		if err != nil {
+			return err
+		}
 		blockJob.SetStatus(BlockJobStatusError)
 		blockJob.SetSummaryError(statusError)
 		blockJob.IncrementErrorCount()
@@ -90,7 +103,10 @@ func (b *blockJobWriter) SetStatusComplete(id string) error {
 		if err != nil {
 			return err
 		}
-		blockJob := NewBlockJob(record, b.app)
+		blockJob, err := NewBlockJob(record, b.app)
+		if err != nil {
+			return err
+		}
 		blockJob.SetStatus(BlockJobStatusComplete)
 		blockJob.SetSummaryEmpty()
 		return blockJob.ValidateAndSubmit(txDao)

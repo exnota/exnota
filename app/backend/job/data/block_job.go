@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pocketbase/pocketbase/core"
@@ -38,6 +39,8 @@ const (
 )
 
 type BlockJob interface {
+	Record() *models.Record
+
 	ID() string
 	Type() BlockJobType
 	Status() BlockJobStatus
@@ -46,8 +49,6 @@ type BlockJob interface {
 	User() string
 	NextRunAt() time.Time
 	ErrorCount() int
-
-	Record() *models.Record
 
 	SetType(t BlockJobType)
 	SetStatus(status BlockJobStatus)
@@ -62,42 +63,24 @@ type BlockJob interface {
 	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
+func NewBlockJob(r *models.Record, app core.App) (BlockJob, error) {
+	switch BlockJobType(r.GetString(BlockJobFieldType)) {
+	case BlockJobTypeTranscription:
+		return NewTranscriptionBlockJob(r, app)
+	case BlockJobTypeExport:
+		return NewExportBlockJob(r, app)
+	default:
+		return nil, fmt.Errorf("unknown block job type: %s", r.GetString(BlockJobFieldType))
+	}
+}
+
+// ----------------------------
+// Block Job base
+// ----------------------------
+
 type blockJob struct {
 	record *models.Record
 	app    core.App
-}
-
-func NewBlockJob(r *models.Record, app core.App) BlockJob {
-	return &blockJob{
-		record: r,
-		app:    app,
-	}
-}
-
-type NewExportBlockJobFormConfig struct {
-	Collection *models.Collection
-	App        core.App
-	BlockId    string
-	UserId     string
-}
-
-// Creates a new export block job initialised to now and waiting status.
-func NewExportBlockJobForm(config NewExportBlockJobFormConfig) (*forms.RecordUpsert, error) {
-	record := models.NewRecord(config.Collection)
-	form := forms.NewRecordUpsert(config.App, record)
-
-	err := form.LoadData(map[string]interface{}{
-		BlockJobFieldType:      BlockJobTypeExport,
-		BlockJobFieldStatus:    BlockJobStatusWaiting,
-		BlockJobFieldBlock:     config.BlockId,
-		BlockJobFieldUser:      config.UserId,
-		BlockJobFieldNextRunAt: types.NowDateTime(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return form, nil
 }
 
 func (j *blockJob) ID() string {
@@ -187,4 +170,80 @@ func (j *blockJob) ValidateAndSubmit(txDao *daos.Dao) error {
 	}
 
 	return form.Submit()
+}
+
+// ----------------------------
+// Transcription Block Job
+// ----------------------------
+
+type TranscriptionBlockJob interface {
+	BlockJob
+}
+
+type transcriptionBlockJob struct {
+	blockJob
+}
+
+func NewTranscriptionBlockJob(r *models.Record, app core.App) (TranscriptionBlockJob, error) {
+	// if wrong type, return error
+	if BlockJobType(r.GetString(BlockJobFieldType)) != BlockJobTypeTranscription {
+		return nil, fmt.Errorf("Not a transcription job: %s", r.GetString(BlockJobFieldType))
+	}
+
+	return &transcriptionBlockJob{
+		blockJob: blockJob{
+			record: r,
+			app:    app,
+		},
+	}, nil
+}
+
+// ----------------------------
+// Export Block Job base
+// ----------------------------
+
+type ExportBlockJob interface {
+	BlockJob
+}
+
+type exportBlockJob struct {
+	blockJob
+}
+
+func NewExportBlockJob(r *models.Record, app core.App) (ExportBlockJob, error) {
+	if BlockJobType(r.GetString(BlockJobFieldType)) != BlockJobTypeExport {
+		return nil, fmt.Errorf("Not an export job: %s", r.GetString(BlockJobFieldType))
+	}
+	return &exportBlockJob{
+		blockJob: blockJob{
+			record: r,
+			app:    app,
+		},
+	}, nil
+}
+
+type NewExportBlockJobFormConfig struct {
+	Collection *models.Collection
+	App        core.App
+	BlockId    string
+	UserId     string
+}
+
+// Creates a new export block job initialised to now and waiting status.
+func NewExportBlockJobForm(config NewExportBlockJobFormConfig) (*forms.RecordUpsert, error) {
+	record := models.NewRecord(config.Collection)
+	form := forms.NewRecordUpsert(config.App, record)
+
+	err := form.LoadData(map[string]interface{}{
+		BlockJobFieldType:      BlockJobTypeExport,
+		BlockJobFieldStatus:    BlockJobStatusWaiting,
+		BlockJobFieldBlock:     config.BlockId,
+		BlockJobFieldUser:      config.UserId,
+		BlockJobFieldNextRunAt: types.NowDateTime(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return form, nil
 }

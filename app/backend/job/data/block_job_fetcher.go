@@ -43,9 +43,16 @@ func (f *blockJobFetcher) ResetRunningJobs() error {
 	}
 
 	for _, r := range records {
-		blockJob := NewBlockJob(r, f.app)
+		blockJob, err := NewBlockJob(r, f.app)
+		if err != nil {
+			slog.Error("Error creating block job",
+				"id", r.Id,
+				"error", err,
+			)
+			continue
+		}
 		blockJob.SetStatus(BlockJobStatusWaiting)
-		err := blockJob.ValidateAndSubmit(f.app.Dao())
+		err = blockJob.ValidateAndSubmit(f.app.Dao())
 		if err != nil {
 			slog.Error("Error setting block job status to waiting",
 				"id", r.Id,
@@ -115,7 +122,14 @@ func (f *blockJobFetcher) ListJobsToProcess(maxErrorCount int) ([]BlockJob, erro
 
 	var blocks []BlockJob
 	for _, r := range records {
-		blockJob := NewBlockJob(r, f.app)
+		blockJob, err := NewBlockJob(r, f.app)
+		if err != nil {
+			slog.Error("Error creating block job",
+				"id", r.Id,
+				"error", err,
+			)
+			continue
+		}
 		blocks = append(blocks, blockJob)
 	}
 
