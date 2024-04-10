@@ -1,6 +1,7 @@
 package data
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -259,16 +260,17 @@ type NewExportBlockJobFormConfig struct {
 // ----------------------------
 
 type CreateVoiceNoteJobConfig struct {
-	Data CreateVoiceNoteJobConfigData `json:"data" validate:"required"`
+	Command ExportJobCommand             `json:"command" validate:"eq=create_voice_note"`
+	Data    CreateVoiceNoteJobConfigData `json:"data" validate:"required"`
 }
 
 type CreateVoiceNoteJobConfigData struct {
-	InternalBlockId string `json:"internal_block_id" validate:"required"`
-	DestinationId   string `json:"destination_id" validate:"required"`
-	Files           []File `json:"files" validate:"required"`
+	InternalBlockId string                `json:"internal_block_id" validate:"required"`
+	DestinationId   string                `json:"destination_id" validate:"required"`
+	Files           []CreateVoiceNoteFile `json:"files" validate:"required"`
 }
 
-type File struct {
+type CreateVoiceNoteFile struct {
 	Path string
 	Name string
 }
@@ -277,6 +279,7 @@ type CreateVoiceNoteJob interface {
 	ExportBlockJob
 
 	ConfigData() (*CreateVoiceNoteJobConfigData, error)
+	SetConfigData(data *CreateVoiceNoteJobConfigData) error
 }
 
 type createVoiceNoteJob struct {
@@ -325,4 +328,25 @@ func (j *createVoiceNoteJob) ConfigData() (*CreateVoiceNoteJobConfigData, error)
 	}
 
 	return &config.Data, nil
+}
+
+func (j *createVoiceNoteJob) SetConfigData(data *CreateVoiceNoteJobConfigData) error {
+	config := CreateVoiceNoteJobConfig{
+		Command: ExportJobCommandCreateVoiceNote,
+		Data:    *data,
+	}
+
+	err := validate.Struct(config)
+	if err != nil {
+		slog.Error("Error validating create voice note job config", "err", err)
+		return err
+	}
+
+	json, err := json.Marshal(config)
+	if err != nil {
+		slog.Error("Error marshalling create voice note job config", "err", err)
+		return err
+	}
+	j.record.Set(BlockJobFieldConfig, json)
+	return nil
 }
