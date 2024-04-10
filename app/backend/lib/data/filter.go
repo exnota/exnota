@@ -36,7 +36,7 @@ const (
 	ValuePresetNow ValuePreset = "@now"
 )
 
-var validate = validator.New()
+var validate = validator.New(validator.WithRequiredStructEnabled())
 
 type Filter struct {
 	Filter string

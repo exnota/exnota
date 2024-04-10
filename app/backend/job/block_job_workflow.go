@@ -73,25 +73,13 @@ func (j *blockJobWorkflow) createExportJob() {
 			return nil
 		}
 
-		collection, err := j.app.Dao().FindCollectionByNameOrId(data.CollectionBlockJob)
-		if err != nil {
-			return err
-		}
+		// Create export job
+		blockJobWriter := data.NewBlockJobWriter(j.app)
+		err = blockJobWriter.CreateExportJob(
+			updatedJob.Block(),
+			updatedJob.User(),
+		)
 
-		form, err := data.NewExportBlockJobForm(data.NewExportBlockJobFormConfig{
-			Collection: collection,
-			App:        j.app,
-			BlockId:    updatedJob.Block(),
-			UserId:     updatedJob.User(),
-		})
-		if err != nil {
-			return err
-		}
-
-		// validate and submit (internally it calls app.Dao().SaveRecord(record) in a transaction)
-		if err := form.Submit(); err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 }

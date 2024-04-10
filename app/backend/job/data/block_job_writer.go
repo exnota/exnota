@@ -10,6 +10,7 @@ import (
 
 type BlockJobWriter interface {
 	CreateTranscriptionJob(blockId string, userId string) error
+	CreateExportJob(blockId string, userId string) error
 	SetStatusWaiting(id string) error
 	SetStatusRunning(id string) error
 	SetStatusError(id string, nextRunAt time.Time, err error) error
@@ -37,6 +38,28 @@ func (b *blockJobWriter) CreateTranscriptionJob(blockId string, userId string) e
 			return err
 		}
 		blockJob.SetType(BlockJobTypeTranscription)
+		blockJob.SetStatus(BlockJobStatusWaiting)
+		blockJob.SetBlock(blockId)
+		blockJob.SetUser(userId)
+		blockJob.SetNextRunAt(time.Now())
+
+		return blockJob.ValidateAndSubmit(txDao)
+	})
+}
+
+func (b *blockJobWriter) CreateExportJob(blockId string, userId string) error {
+	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		collection, err := b.app.Dao().FindCollectionByNameOrId(CollectionBlockJob)
+		if err != nil {
+			return err
+		}
+
+		blockJobRecord := models.NewRecord(collection)
+		blockJob, err := NewBlockJob(blockJobRecord, b.app)
+		if err != nil {
+			return err
+		}
+		blockJob.SetType(BlockJobTypeExport)
 		blockJob.SetStatus(BlockJobStatusWaiting)
 		blockJob.SetBlock(blockId)
 		blockJob.SetUser(userId)
