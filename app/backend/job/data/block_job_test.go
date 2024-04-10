@@ -394,6 +394,58 @@ func TestNewExportBlockJob(t *testing.T) {
 				t.Errorf("ConfigData() did not return an error")
 			}
 		})
+
+		t.Run("SetConfigData sets the config data", func(t *testing.T) {
+			record := models.NewRecord(collection)
+			record.SetId("15-character-id")
+			record.Set("type", "export")
+			record.Set("status", "waiting")
+			record.Set("summary", "the summary")
+			record.Set("block", "the block id")
+			record.Set("user", "the user id")
+			record.Set("next_run_at", "2021-01-01T00:00:00Z")
+			record.Set("error_count", 0)
+			record.Set("config", `{"command":"create_voice_note","data":{"internal_block_id":"the block id","destination_id":"the destination id","files":[{"path":"the path","name":"the name"}]}}`)
+
+			job, err := NewCreateVoiceNoteJob(record, app)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			configData := &CreateVoiceNoteJobConfigData{
+				InternalBlockId: "new block id",
+				DestinationId:   "new destination id",
+				Files: []CreateVoiceNoteFile{
+					{
+						Path: "new path",
+						Name: "new name",
+					},
+				},
+			}
+
+			err = job.SetConfigData(configData)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			configData, err = job.ConfigData()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if configData.InternalBlockId != "new block id" {
+				t.Errorf("ConfigData() returned unexpected internal block id: got %v, want %v", configData.InternalBlockId, "new block id")
+			}
+			if configData.DestinationId != "new destination id" {
+				t.Errorf("ConfigData() returned unexpected destination id: got %v, want %v", configData.DestinationId, "new destination id")
+			}
+			if configData.Files[0].Path != "new path" {
+				t.Errorf("ConfigData() returned unexpected file path: got %v, want %v", configData.Files[0].Path, "new path")
+			}
+			if configData.Files[0].Name != "new name" {
+				t.Errorf("ConfigData() returned unexpected file name: got %v, want %v", configData.Files[0].Name, "new name")
+			}
+		})
 	})
 
 }

@@ -11,6 +11,7 @@ import (
 type BlockJobWriter interface {
 	CreateTranscriptionJob(blockId string, userId string) error
 	CreateExportJob(blockId string, userId string) error
+	CreateCreateVoiceNoteExportJob(request CreateCreateVoiceNoteRequest) error
 	SetStatusWaiting(id string) error
 	SetStatusRunning(id string) error
 	SetStatusError(id string, nextRunAt time.Time, err error) error
@@ -66,6 +67,49 @@ func (b *blockJobWriter) CreateExportJob(blockId string, userId string) error {
 		blockJob.SetNextRunAt(time.Now())
 
 		return blockJob.ValidateAndSubmit(txDao)
+	})
+}
+
+type CreateCreateVoiceNoteRequest struct {
+	BlockId       string                `validate:"required"`
+	UserId        string                `validate:"required"`
+	DestinationId string                `validate:"required"`
+	Files         []CreateVoiceNoteFile `validate:"required,min=1"`
+}
+
+func (b *blockJobWriter) CreateCreateVoiceNoteExportJob(request CreateCreateVoiceNoteRequest) error {
+	err := validate.Struct(request)
+	if err != nil {
+		return err
+	}
+
+	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		collection, err := b.app.Dao().FindCollectionByNameOrId(CollectionBlockJob)
+		if err != nil {
+			return err
+		}
+
+		jobRecord := models.NewRecord(collection)
+		job, err := NewCreateVoiceNoteJob(jobRecord, b.app)
+		if err != nil {
+			return err
+		}
+		job.SetType(BlockJobTypeExport)
+		job.SetStatus(BlockJobStatusWaiting)
+		job.SetBlock(request.BlockId)
+		job.SetUser(request.UserId)
+		job.SetNextRunAt(time.Now())
+		data := &CreateVoiceNoteJobConfigData{
+			InternalBlockId: request.BlockId,
+			DestinationId:   request.DestinationId,
+			Files:           request.Files,
+		}
+		err = job.SetConfigData(data)
+		if err != nil {
+			return err
+		}
+
+		return job.ValidateAndSubmit(txDao)
 	})
 }
 
