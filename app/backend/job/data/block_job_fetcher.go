@@ -8,7 +8,6 @@ import (
 )
 
 type BlockJobFetcher interface {
-	ResetRunningJobs() error
 	ListJobsToProcess(maxErrorCount int) ([]BlockJob, error)
 }
 
@@ -18,51 +17,6 @@ type blockJobFetcher struct {
 
 func NewBlockJobFetcher(app core.App) BlockJobFetcher {
 	return &blockJobFetcher{app}
-}
-
-func (f *blockJobFetcher) ResetRunningJobs() error {
-	filter, err := filter.CreateAndFilter(filter.Field{
-		Name:  BlockJobFieldStatus,
-		Op:    filter.OpEquals,
-		Value: string(BlockJobStatusRunning),
-	})
-	if err != nil {
-		return err
-	}
-
-	records, err := f.app.Dao().FindRecordsByFilter(
-		CollectionBlockJob,
-		filter.Filter,
-		"+created",
-		0,
-		0,
-		filter.Params,
-	)
-	if err != nil {
-		return err
-	}
-
-	for _, r := range records {
-		blockJob, err := NewBlockJob(r, f.app)
-		if err != nil {
-			slog.Error("Error creating block job",
-				"id", r.Id,
-				"error", err,
-			)
-			continue
-		}
-		blockJob.SetStatus(BlockJobStatusWaiting)
-		err = blockJob.ValidateAndSubmit(f.app.Dao())
-		if err != nil {
-			slog.Error("Error setting block job status to waiting",
-				"id", r.Id,
-				"error", err,
-			)
-			continue
-		}
-	}
-
-	return nil
 }
 
 func (f *blockJobFetcher) ListJobsToProcess(maxErrorCount int) ([]BlockJob, error) {

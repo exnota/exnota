@@ -66,7 +66,8 @@ type BlockJob interface {
 	IncrementErrorCount()
 	ClearErrorCount()
 
-	ValidateAndSubmit(txDao *daos.Dao) error
+	// Validates the base block job logic (not specific to the type) and submits
+	ValidateAndSubmitBase(txDao *daos.Dao) error
 }
 
 func NewBlockJob(r *models.Record, app core.App) (BlockJob, error) {
@@ -168,14 +169,11 @@ func (j *blockJob) ClearErrorCount() {
 	j.record.Set(BlockJobFieldErrorCount, 0)
 }
 
-func (j *blockJob) ValidateAndSubmit(txDao *daos.Dao) error {
+func (j *blockJob) ValidateAndSubmitBase(txDao *daos.Dao) error {
 	form := forms.NewRecordUpsert(j.app, j.record)
 	form.SetDao(txDao)
 
-	if err := form.Validate(); err != nil {
-		return err
-	}
-
+	// Submit calls validate internally
 	return form.Submit()
 }
 
@@ -185,10 +183,23 @@ func (j *blockJob) ValidateAndSubmit(txDao *daos.Dao) error {
 
 type TranscriptionBlockJob interface {
 	BlockJob
+
+	ValidateTranscription(txDao *daos.Dao) error
 }
 
 type transcriptionBlockJob struct {
 	blockJob
+}
+
+func CreateTranscriptionBlockJob(app core.App) (TranscriptionBlockJob, error) {
+	collection, err := app.Dao().FindCollectionByNameOrId(CollectionBlockJob)
+	if err != nil {
+		return nil, err
+	}
+
+	record := models.NewRecord(collection)
+	record.Set(BlockJobFieldType, string(BlockJobTypeTranscription))
+	return NewTranscriptionBlockJob(record, app)
 }
 
 func NewTranscriptionBlockJob(r *models.Record, app core.App) (TranscriptionBlockJob, error) {
@@ -203,6 +214,11 @@ func NewTranscriptionBlockJob(r *models.Record, app core.App) (TranscriptionBloc
 			app:    app,
 		},
 	}, nil
+}
+
+func (j *transcriptionBlockJob) ValidateTranscription(txDao *daos.Dao) error {
+	// TODO: Implement when there is transcription-specific logic
+	return nil
 }
 
 // ----------------------------
@@ -280,10 +296,28 @@ type CreateVoiceNoteJob interface {
 
 	ConfigData() (*CreateVoiceNoteJobConfigData, error)
 	SetConfigData(data *CreateVoiceNoteJobConfigData) error
+
+	ValidateCreateVoiceNote(txDao *daos.Dao) error
 }
 
 type createVoiceNoteJob struct {
 	exportBlockJob
+}
+
+func CreateCreateVoiceNoteJob(app core.App) (CreateVoiceNoteJob, error) {
+	collection, err := app.Dao().FindCollectionByNameOrId(CollectionBlockJob)
+	if err != nil {
+		return nil, err
+	}
+
+	record := models.NewRecord(collection)
+	record.Set(BlockJobFieldType, string(BlockJobTypeExport))
+	// Set the command so calling NewCreateVoiceNoteJob doesn't error, but this
+	// isn't a valid config without 'data'. This could be refactored.
+	record.Set(BlockJobFieldConfig, &CreateVoiceNoteJobConfig{
+		Command: ExportJobCommandCreateVoiceNote,
+	})
+	return NewCreateVoiceNoteJob(record, app)
 }
 
 func NewCreateVoiceNoteJob(r *models.Record, app core.App) (CreateVoiceNoteJob, error) {
@@ -349,4 +383,10 @@ func (j *createVoiceNoteJob) SetConfigData(data *CreateVoiceNoteJobConfigData) e
 	}
 	j.record.Set(BlockJobFieldConfig, json)
 	return nil
+}
+
+func (j *createVoiceNoteJob) ValidateCreateVoiceNote(txDao *daos.Dao) error {
+	// Validate config by reading
+	_, err := j.ConfigData()
+	return err
 }

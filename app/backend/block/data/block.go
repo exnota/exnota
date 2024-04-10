@@ -26,6 +26,8 @@ const (
 )
 
 type Block interface {
+	Record() *models.Record
+
 	Id() string
 	Type() BlockType
 	User() string
@@ -88,6 +90,10 @@ type audioField struct {
 	Transcription []string `json:"transcription"`
 }
 
+func (b *voiceNoteBlock) Record() *models.Record {
+	return b.record
+}
+
 func (b *voiceNoteBlock) Id() string {
 	return b.record.Id
 }
@@ -140,6 +146,10 @@ type TextBlock interface {
 
 type textBlock struct {
 	record *models.Record
+}
+
+func (t *textBlock) Record() *models.Record {
+	return t.record
 }
 
 func (t *textBlock) Id() string {
