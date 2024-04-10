@@ -35,8 +35,8 @@ func NewBlockJobQueue(app core.App) BlockJobQueue {
 
 // run method
 func (j *blockJobQueue) Start() error {
-	blockJobFetcher := data.NewBlockJobFetcher(j.app)
-	err := blockJobFetcher.ResetRunningJobs()
+	blockJobWriter := data.NewBlockJobWriter(j.app)
+	err := blockJobWriter.ResetRunningJobs()
 	if err != nil {
 		return err
 	}
@@ -61,6 +61,7 @@ func (j *blockJobQueue) Start() error {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
+		blockJobFetcher := data.NewBlockJobFetcher(j.app)
 		for range ticker.C {
 			jobs, err := blockJobFetcher.ListJobsToProcess(MAX_ERROR_COUNT)
 			if err != nil {
