@@ -69,6 +69,7 @@ RUN apt-get update \
 RUN go install -v github.com/go-delve/delve/cmd/dlv@latest
 RUN go install -v golang.org/x/tools/gopls@latest
 RUN go install -v  honnef.co/go/tools/cmd/staticcheck@2023.1.6
+RUN go install github.com/segmentio/golines@latest
 # binary will be $(go env GOPATH)/bin/golangci-lint
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
 
