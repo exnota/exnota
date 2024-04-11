@@ -32,7 +32,7 @@ func TitleForPage(page *notion.Page) (string, error) {
 	}
 }
 
-func TextToTitle(text string) []notion.RichText {
+func TextToRichText(text string) []notion.RichText {
 	return []notion.RichText{
 		{
 			Text: &notion.Text{
