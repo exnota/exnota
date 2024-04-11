@@ -1,6 +1,7 @@
 package data
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -22,7 +23,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		record.SetId("15-character-id")
 		record.Set("type", "export")
 		record.Set("status", "waiting")
-		record.Set("summary", "the summary")
+		record.Set("summary", `{"message": "a summary"}`)
 		record.Set("block", "the block id")
 		record.Set("user", "the user id")
 		record.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -34,7 +35,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			unknownTypeRecord.SetId("15-character-id")
 			unknownTypeRecord.Set("type", "unknown")
 			unknownTypeRecord.Set("status", "waiting")
-			unknownTypeRecord.Set("summary", "the summary")
+			unknownTypeRecord.Set("summary", `{"message": "a summary"}`)
 			unknownTypeRecord.Set("block", "the block id")
 			unknownTypeRecord.Set("user", "the user id")
 			unknownTypeRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -82,8 +83,15 @@ func TestNewExportBlockJob(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if job.Summary() != "\"the summary\"" {
-				t.Errorf("NewExportBlockJob() returned unexpected summary: got %v, want %v", job.Summary(), "the summary")
+			summary, err := job.Summary()
+			if err != nil {
+				t.Fatal(err)
+			}
+			expectedSummary := map[string]interface{}{
+				"message": "a summary",
+			}
+			if reflect.DeepEqual(summary, expectedSummary) {
+				t.Errorf("NewExportBlockJob() returned unexpected summary: got %v, want %v", summary, expectedSummary)
 			}
 		})
 
@@ -139,7 +147,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		record.SetId("15-character-id")
 		record.Set("type", "transcription")
 		record.Set("status", "waiting")
-		record.Set("summary", "the summary")
+		record.Set("summary", `{"message": "a summary"}`)
 		record.Set("block", "the block id")
 		record.Set("user", "the user id")
 		record.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -161,7 +169,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			exportRecord.SetId("15-character-id")
 			exportRecord.Set("type", "export")
 			exportRecord.Set("status", "waiting")
-			exportRecord.Set("summary", "the summary")
+			exportRecord.Set("summary", `{"message": "a summary"}`)
 			exportRecord.Set("block", "the block id")
 			exportRecord.Set("user", "the user id")
 			exportRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -185,7 +193,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		record.SetId("15-character-id")
 		record.Set("type", "export")
 		record.Set("status", "waiting")
-		record.Set("summary", "the summary")
+		record.Set("summary", `{"message": "a summary"}`)
 		record.Set("block", "the block id")
 		record.Set("user", "the user id")
 		record.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -207,7 +215,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			exportRecord.SetId("15-character-id")
 			exportRecord.Set("type", "transcription")
 			exportRecord.Set("status", "waiting")
-			exportRecord.Set("summary", "the summary")
+			exportRecord.Set("summary", `{"message": "a summary"}`)
 			exportRecord.Set("block", "the block id")
 			exportRecord.Set("user", "the user id")
 			exportRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -225,7 +233,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			invalidConfigRecord.SetId("15-character-id")
 			invalidConfigRecord.Set("type", "export")
 			invalidConfigRecord.Set("status", "waiting")
-			invalidConfigRecord.Set("summary", "the summary")
+			invalidConfigRecord.Set("summary", `{"message": "a summary"}`)
 			invalidConfigRecord.Set("block", "the block id")
 			invalidConfigRecord.Set("user", "the user id")
 			invalidConfigRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -243,7 +251,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			invalidConfigRecord.SetId("15-character-id")
 			invalidConfigRecord.Set("type", "export")
 			invalidConfigRecord.Set("status", "waiting")
-			invalidConfigRecord.Set("summary", "the summary")
+			invalidConfigRecord.Set("summary", `{"message": "a summary"}`)
 			invalidConfigRecord.Set("block", "the block id")
 			invalidConfigRecord.Set("user", "the user id")
 			invalidConfigRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -261,7 +269,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			invalidConfigRecord.SetId("15-character-id")
 			invalidConfigRecord.Set("type", "export")
 			invalidConfigRecord.Set("status", "waiting")
-			invalidConfigRecord.Set("summary", "the summary")
+			invalidConfigRecord.Set("summary", `{"message": "a summary"}`)
 			invalidConfigRecord.Set("block", "the block id")
 			invalidConfigRecord.Set("user", "the user id")
 			invalidConfigRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -285,7 +293,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		record.SetId("15-character-id")
 		record.Set("type", "export")
 		record.Set("status", "waiting")
-		record.Set("summary", "the summary")
+		record.Set("summary", `{"message": "a summary"}`)
 		record.Set("block", "the block id")
 		record.Set("user", "the user id")
 		record.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -317,7 +325,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			exportRecord.SetId("15-character-id")
 			exportRecord.Set("type", "transcription")
 			exportRecord.Set("status", "waiting")
-			exportRecord.Set("summary", "the summary")
+			exportRecord.Set("summary", `{"message": "a summary"}`)
 			exportRecord.Set("block", "the block id")
 			exportRecord.Set("user", "the user id")
 			exportRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -335,7 +343,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			invalidConfigRecord.SetId("15-character-id")
 			invalidConfigRecord.Set("type", "export")
 			invalidConfigRecord.Set("status", "waiting")
-			invalidConfigRecord.Set("summary", "the summary")
+			invalidConfigRecord.Set("summary", `{"message": "a summary"}`)
 			invalidConfigRecord.Set("block", "the block id")
 			invalidConfigRecord.Set("user", "the user id")
 			invalidConfigRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -378,7 +386,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			invalidConfigRecord.SetId("15-character-id")
 			invalidConfigRecord.Set("type", "export")
 			invalidConfigRecord.Set("status", "waiting")
-			invalidConfigRecord.Set("summary", "the summary")
+			invalidConfigRecord.Set("summary", `{"message": "a summary"}`)
 			invalidConfigRecord.Set("block", "the block id")
 			invalidConfigRecord.Set("user", "the user id")
 			invalidConfigRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
@@ -400,7 +408,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			record.SetId("15-character-id")
 			record.Set("type", "export")
 			record.Set("status", "waiting")
-			record.Set("summary", "the summary")
+			record.Set("summary", `{"message": "a summary"}`)
 			record.Set("block", "the block id")
 			record.Set("user", "the user id")
 			record.Set("next_run_at", "2021-01-01T00:00:00Z")

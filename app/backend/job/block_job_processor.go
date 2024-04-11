@@ -26,7 +26,8 @@ func NewBlockJobProcessor(app core.App) BlockJobProcessor {
 }
 
 type RunnableBlockJob interface {
-	Run(job data.BlockJob, app core.App) error
+	// Runs the job and returns the summary result.
+	Run(job data.BlockJob, app core.App) (data.Summary, error)
 }
 
 func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob) (err error) {
@@ -58,13 +59,13 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 		}
 	}()
 
-	err = runnable.Run(job, j.app)
+	summary, err := runnable.Run(job, j.app)
 	if err != nil {
 		j.handleError(job, err)
 		return err
 	}
 
-	err = writer.SetStatusComplete(job.ID())
+	err = writer.SetStatusComplete(job.ID(), summary)
 	if err != nil {
 		// Don't bother setting status to error if setting status to complete
 		// fails. It might have the same underlying error and it won't

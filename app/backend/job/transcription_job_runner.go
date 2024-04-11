@@ -33,28 +33,28 @@ func NewTranscriptionJobRunner(app core.App) TranscriptionJobRunner {
 }
 
 // run method
-func (j *transcriptionJobRunner) Run(job data.BlockJob, app core.App) error {
+func (j *transcriptionJobRunner) Run(job data.BlockJob, app core.App) (data.Summary, error) {
 	fileInfo, err := j.getFileInfo(job.Block())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	convertedFileInfo, err := j.convertAudio(fileInfo)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	result, err := j.transcribe(*convertedFileInfo)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = j.saveTranscription(result, job.Block())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return data.NewSummaryCompleteEmpty(), nil
 }
 
 type FileInfo struct {

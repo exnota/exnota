@@ -18,7 +18,7 @@ type BlockJobWriter interface {
 	SetStatusWaiting(id string) error
 	SetStatusRunning(id string) error
 	SetStatusError(id string, nextRunAt time.Time, err error) error
-	SetStatusComplete(id string) error
+	SetStatusComplete(id string, summary Summary) error
 }
 
 type blockJobWriter struct {
@@ -170,7 +170,10 @@ func (b *blockJobWriter) SetStatusWaiting(id string) error {
 		}
 
 		blockJob.SetStatus(BlockJobStatusWaiting)
-		blockJob.SetSummaryEmpty()
+		err = blockJob.SetSummary(NewSummaryCompleteEmpty())
+		if err != nil {
+			return err
+		}
 		return blockJob.ValidateAndSubmitBase(txDao)
 	})
 }
@@ -186,7 +189,10 @@ func (b *blockJobWriter) SetStatusRunning(id string) error {
 			return err
 		}
 		blockJob.SetStatus(BlockJobStatusRunning)
-		blockJob.SetSummaryEmpty()
+		err = blockJob.SetSummary(NewSummaryCompleteEmpty())
+		if err != nil {
+			return err
+		}
 		return blockJob.ValidateAndSubmitBase(txDao)
 	})
 }
@@ -202,14 +208,17 @@ func (b *blockJobWriter) SetStatusError(id string, nextRunAt time.Time, statusEr
 			return err
 		}
 		blockJob.SetStatus(BlockJobStatusError)
-		blockJob.SetSummaryError(statusError)
+		err = blockJob.SetSummary(NewSummaryError(statusError))
+		if err != nil {
+			return err
+		}
 		blockJob.IncrementErrorCount()
 		blockJob.SetNextRunAt(nextRunAt)
 		return blockJob.ValidateAndSubmitBase(txDao)
 	})
 }
 
-func (b *blockJobWriter) SetStatusComplete(id string) error {
+func (b *blockJobWriter) SetStatusComplete(id string, summary Summary) error {
 	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
 		record, err := txDao.FindRecordById(CollectionBlockJob, id)
 		if err != nil {
@@ -220,7 +229,10 @@ func (b *blockJobWriter) SetStatusComplete(id string) error {
 			return err
 		}
 		blockJob.SetStatus(BlockJobStatusComplete)
-		blockJob.SetSummaryEmpty()
+		err = blockJob.SetSummary(summary)
+		if err != nil {
+			return err
+		}
 		return blockJob.ValidateAndSubmitBase(txDao)
 	})
 }

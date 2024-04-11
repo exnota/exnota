@@ -50,7 +50,7 @@ type BlockJob interface {
 	ID() string
 	Type() BlockJobType
 	Status() BlockJobStatus
-	Summary() string
+	Summary() (map[string]interface{}, error)
 	Block() string
 	User() string
 	NextRunAt() time.Time
@@ -58,8 +58,7 @@ type BlockJob interface {
 
 	SetType(t BlockJobType)
 	SetStatus(status BlockJobStatus)
-	SetSummaryError(err error)
-	SetSummaryEmpty()
+	SetSummary(summary Summary) error
 	SetBlock(blockId string)
 	SetUser(userId string)
 	SetNextRunAt(nextRunAt time.Time)
@@ -98,9 +97,14 @@ func (j *blockJob) Status() BlockJobStatus {
 	return BlockJobStatus(j.record.GetString(BlockJobFieldStatus))
 }
 
-func (j *blockJob) Summary() string {
-	result := j.record.GetString(BlockJobFieldSummary)
-	return result
+func (j *blockJob) Summary() (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	err := j.record.UnmarshalJSONField(BlockJobFieldSummary, result)
+	if err != nil {
+		slog.Error("Error unmarshalling block job summary", "err", err)
+		return nil, err
+	}
+	return result, nil
 }
 
 func (j *blockJob) Type() BlockJobType {
@@ -135,18 +139,52 @@ func (j *blockJob) SetStatus(status BlockJobStatus) {
 	j.record.Set(BlockJobFieldStatus, string(status))
 }
 
-type SummaryError struct {
-	Error string `json:"errors" validate:"required"`
+type Summary interface {
+	AsMap() map[string]interface{}
 }
 
-func (j *blockJob) SetSummaryError(err error) {
-	j.record.Set(BlockJobFieldSummary, SummaryError{
-		Error: err.Error(),
-	})
+type summaryComplete struct {
+	message string
 }
 
-func (j *blockJob) SetSummaryEmpty() {
-	j.record.Set(BlockJobFieldSummary, nil)
+func NewSummaryComplete(message string) Summary {
+	return summaryComplete{
+		message: message,
+	}
+}
+func NewSummaryCompleteEmpty() Summary {
+	return summaryComplete{}
+}
+func (s summaryComplete) AsMap() map[string]interface{} {
+	return map[string]interface{}{
+		"message": s.message,
+	}
+}
+
+type summaryError struct {
+	error error
+}
+
+func NewSummaryError(err error) Summary {
+	return summaryError{
+		error: err,
+	}
+}
+func (s summaryError) AsMap() map[string]interface{} {
+	return map[string]interface{}{
+		"error": s.error.Error(),
+	}
+}
+
+func (j *blockJob) SetSummary(summary Summary) error {
+	asMap := summary.AsMap()
+	asMapBytes, err := json.Marshal(asMap)
+	if err != nil {
+		slog.Error("Error marshalling block job summary", "err", err)
+		return err
+	}
+	j.record.Set(BlockJobFieldSummary, string(asMapBytes))
+	return nil
 }
 
 func (j *blockJob) SetBlock(blockId string) {

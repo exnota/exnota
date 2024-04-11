@@ -26,10 +26,10 @@ func NewExportJobRunner(app core.App) ExportJobRunner {
 	}
 }
 
-func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) error {
+func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (data.Summary, error) {
 	genericExportJob, err := data.NewExportBlockJob(genericJob.Record(), app)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	switch job := genericExportJob.(type) {
@@ -39,23 +39,25 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) erro
 		// Get integration info
 		configData, err := job.ConfigData()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		genericIntegration, err := j.integrationForDestination(configData.DestinationId, job.User())
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// Complete job if destination isn't integrated
 		if genericIntegration == nil {
 			slog.Info("No integration for destination", "destinationId", configData.DestinationId)
-			return nil
+			return data.NewSummaryComplete(
+				"No integration for destination " + configData.DestinationId,
+			), nil
 		}
 
 		// Get external record id
 		externalRecordId, err := j.getExternalRecordId(configData.DestinationId)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// Call appropriate integration type handler
@@ -80,16 +82,16 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) erro
 				Files:            files,
 			})
 			if err != nil {
-				return err
+				return nil, err
 			}
-			return nil
+			return data.NewSummaryCompleteEmpty(), nil
 		default:
 			slog.Error("Unknown integration type", "type", reflect.TypeOf(genericIntegration))
-			return fmt.Errorf("Unknown integration type: %s", reflect.TypeOf(genericIntegration))
+			return nil, fmt.Errorf("Unknown integration type: %s", reflect.TypeOf(genericIntegration))
 		}
 	default:
 		slog.Error("unknown export job type", "type", genericExportJob.Type())
-		return fmt.Errorf("unknown export job type: %s", genericExportJob.Type())
+		return nil, fmt.Errorf("unknown export job type: %s", genericExportJob.Type())
 	}
 }
 
