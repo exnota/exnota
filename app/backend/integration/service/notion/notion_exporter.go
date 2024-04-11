@@ -22,11 +22,12 @@ func NewNotionExporter(app core.App) NotionExporter {
 }
 
 type CreateVoiceNoteRequest struct {
-	Integration data.NotionIntegration `validate:"required"`
-	// internal block id
+	Integration      data.NotionIntegration           `validate:"required"`
+	BlockId          string                           `validate:"required"`
 	DestinationId    string                           `validate:"required"`
 	ExternalRecordId string                           `validate:"required"`
 	Files            []CreateVoiceNotePageRequestFile `validate:"required"`
+	// TODO: Extra validation that user is user?
 	// user
 }
 
@@ -39,8 +40,16 @@ func (s *notionExporter) CreateVoiceNoteExporter(request CreateVoiceNoteRequest)
 		return err
 	}
 
-	// TODO: Check if mapping exists for internal block id
-	// If it does, log an error and return nil (let job complete, maybe first attempt already succeeded)
+	// Complete silently if mapping already exists, as this is a create operation
+	mappingFetcher := data.NewIntegrationBlockNotionMappingFetcher(s.app)
+	mapping, err := mappingFetcher.FetchByInternalBlockId(request.BlockId)
+	if err != nil {
+		return err
+	}
+	if mapping != nil {
+		slog.Warn("Mapping already exists", "request.BlockId", request.BlockId)
+		return nil
+	}
 
 	// Get external destination object
 	objectFetcher := data.NewIntegrationNotionObjectFetcher(s.app)
