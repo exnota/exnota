@@ -7,15 +7,23 @@
     }
   ],
   "settings": {
-    "saveAndRunExt": {
+    "emeraldwalk.runonsave": {
       "commands": [
         {
-          "match": "\\.(go$)",
-          "isShellCommand": false,
-          "cmd": "workbench.action.debug.restart"
+          "match": "\\.go$",
+          "cmd": "golines ${file} -w"
         }
       ]
     },
+    // "saveAndRunExt": {
+    //   "commands": [
+    //     {
+    //       "match": "\\.(go$)",
+    //       "isShellCommand": false,
+    //       "cmd": "workbench.action.debug.restart"
+    //     },
+    //   ]
+    // },
     "markdown.extension.toc.levels": "2..3",
     "go.lintTool": "golangci-lint"
     // Using golangci-lint without --fast can apparently freeze VSCode, but it

@@ -30,9 +30,24 @@ To restart:
 * `docker restart backend`
 * Or if already stopped: `docker start backend`
 
-## Troubleshooting
+## VS Code workspace
 
+### Extensions
+
+* Line formatter
+  * The Run On Save extension executes `golines` which is installed in `Dockerfile` as defined in `backend.code-workspace`
+* Reload on save
+  * Had previously setup delve to restart on save using the Save And Run (different to Run On Save!) extension.
+  * See commented-out `saveAndRunExt` settings in `backend.code-workspace`
+  * IIRC it wasn't always what I wanted so I toggled the extension on and off using the command `Save and Run Ext: Enabled/Disable`.
+
+
+### Dev container in VS Code
+
+* See build progress by opening the notifications and clicking `Configuring Dev Container (show log)`
+  * It should bring up the log in terminal.
 
 ### Workspace
+
 * Don't add folders to workspace, e.g. `docs`
   * Dev Containers doesn't seem to support multiple. Sometimes it works, other times it seems to load `docs` instead of `backend` and doesn't start the docker container.
