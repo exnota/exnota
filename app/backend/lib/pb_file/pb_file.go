@@ -12,3 +12,9 @@ import (
 func Path(app core.App, record *models.Record, filename string) string {
 	return path.Join(app.DataDir(), core.LocalStorageDirName, record.BaseFilesPath(), filename)
 }
+
+// Collection can be ID or name.
+func Url(filename string, collection string, recordId string, app core.App) string {
+	appUrl := app.Settings().Meta.AppUrl
+	return appUrl + "/api/files/" + collection + "/" + recordId + "/" + filename
+}

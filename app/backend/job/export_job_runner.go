@@ -62,11 +62,22 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) erro
 		switch integration := genericIntegration.(type) {
 		case integ_data.NotionIntegration:
 			slog.Info("Running create voice note job for Notion", "job", genericJob)
+
+			files := make([]notion.CreateVoiceNotePageRequestFile, len(configData.Files))
+			for i, file := range configData.Files {
+				files[i] = notion.CreateVoiceNotePageRequestFile{
+					Collection: block_data.CollectionBlock,
+					RecordId:   configData.InternalBlockId,
+					FileName:   file.Name,
+				}
+			}
+
 			notionExporter := notion.NewNotionExporter(j.app)
 			err := notionExporter.CreateVoiceNoteExporter(notion.CreateVoiceNoteRequest{
 				Integration:      integration,
 				DestinationId:    configData.DestinationId,
 				ExternalRecordId: externalRecordId,
+				Files:            files,
 			})
 			if err != nil {
 				return err

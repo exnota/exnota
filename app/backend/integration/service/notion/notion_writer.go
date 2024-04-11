@@ -7,6 +7,7 @@ import (
 
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/util"
+	"exnota.com/backend/lib/pb_file"
 	"github.com/dstotijn/go-notion"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -31,12 +32,19 @@ type CreateVoiceNotePageRequest struct {
 }
 
 type CreateVoiceNotePageRequestFile struct {
-	Path string
-	Name string
+	Collection string `validate:"required"`
+	RecordId   string `validate:"required"`
+	FileName   string `validate:"required"`
 }
 
 func (n *notionWriter) CreateVoiceNotePage(request CreateVoiceNotePageRequest) (*notion.Page, error) {
+	err := validate.Struct(request)
+	if err != nil {
+		return nil, err
+	}
+
 	client := notion.NewClient(n.accessToken)
+	children := n.fileChildren(request.Files)
 
 	switch request.ParentType {
 	case data.IntegrationNotionObjectTypeDatabase:
@@ -44,6 +52,7 @@ func (n *notionWriter) CreateVoiceNotePage(request CreateVoiceNotePageRequest) (
 			ParentType: notion.ParentTypeDatabase,
 			ParentID:   request.ParentID,
 			Title:      util.TextToTitle("dummy title db page"), // TODO: Remove
+			Children:   children,
 		})
 		if err != nil {
 			return nil, err
@@ -55,6 +64,7 @@ func (n *notionWriter) CreateVoiceNotePage(request CreateVoiceNotePageRequest) (
 			ParentType: notion.ParentTypePage,
 			ParentID:   request.ParentID,
 			Title:      title,
+			Children:   children,
 		})
 		if err != nil {
 			return nil, err
@@ -65,4 +75,19 @@ func (n *notionWriter) CreateVoiceNotePage(request CreateVoiceNotePageRequest) (
 		return nil, errors.New("unknown parent type")
 
 	}
+}
+
+func (n *notionWriter) fileChildren(files []CreateVoiceNotePageRequestFile) []notion.Block {
+	var children []notion.Block
+	for _, file := range files {
+		url := pb_file.Url(file.FileName, file.Collection, file.RecordId, n.app)
+		block := notion.AudioBlock{
+			Type: notion.FileTypeExternal,
+			External: &notion.FileExternal{
+				URL: url,
+			},
+		}
+		children = append(children, block)
+	}
+	return children
 }

@@ -24,9 +24,9 @@ func NewNotionExporter(app core.App) NotionExporter {
 type CreateVoiceNoteRequest struct {
 	Integration data.NotionIntegration `validate:"required"`
 	// internal block id
-	DestinationId    string `validate:"required"`
-	ExternalRecordId string `validate:"required"`
-	// files
+	DestinationId    string                           `validate:"required"`
+	ExternalRecordId string                           `validate:"required"`
+	Files            []CreateVoiceNotePageRequestFile `validate:"required"`
 	// user
 }
 
@@ -62,7 +62,7 @@ func (s *notionExporter) CreateVoiceNoteExporter(request CreateVoiceNoteRequest)
 	page, err := writer.CreateVoiceNotePage(CreateVoiceNotePageRequest{
 		ParentType: object.Type(),
 		ParentID:   object.ExternalId(),
-		Files:      []CreateVoiceNotePageRequestFile{},
+		Files:      request.Files,
 	})
 	if err != nil {
 		return err
