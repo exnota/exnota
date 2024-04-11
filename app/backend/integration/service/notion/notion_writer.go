@@ -37,7 +37,9 @@ type CreateVoiceNotePageRequestFile struct {
 	FileName   string `validate:"required"`
 }
 
-func (n *notionWriter) CreateVoiceNotePage(request CreateVoiceNotePageRequest) (*notion.Page, error) {
+func (n *notionWriter) CreateVoiceNotePage(
+	request CreateVoiceNotePageRequest,
+) (*notion.Page, error) {
 	err := validate.Struct(request)
 	if err != nil {
 		return nil, err
@@ -51,7 +53,7 @@ func (n *notionWriter) CreateVoiceNotePage(request CreateVoiceNotePageRequest) (
 		page, err := client.CreatePage(context.Background(), notion.CreatePageParams{
 			ParentType: notion.ParentTypeDatabase,
 			ParentID:   request.ParentID,
-			Title:      util.TextToTitle("dummy title db page"), // TODO: Remove
+			Title:      util.TextToRichText("dummy title db page"), // TODO: Remove
 			Children:   children,
 		})
 		if err != nil {
@@ -59,7 +61,7 @@ func (n *notionWriter) CreateVoiceNotePage(request CreateVoiceNotePageRequest) (
 		}
 		return &page, nil
 	case data.IntegrationNotionObjectTypePage:
-		title := util.TextToTitle("dummy title page") // TODO: Remove
+		title := util.TextToRichText("dummy title page") // TODO: Remove
 		page, err := client.CreatePage(context.Background(), notion.CreatePageParams{
 			ParentType: notion.ParentTypePage,
 			ParentID:   request.ParentID,
@@ -86,6 +88,7 @@ func (n *notionWriter) fileChildren(files []CreateVoiceNotePageRequestFile) []no
 			External: &notion.FileExternal{
 				URL: url,
 			},
+			Caption: util.TextToRichText(file.FileName),
 		}
 		children = append(children, block)
 	}
