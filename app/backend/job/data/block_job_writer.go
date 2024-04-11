@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"time"
 
-	filter "exnota.com/backend/lib/data"
+	"exnota.com/backend/lib/data/filter"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
