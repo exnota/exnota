@@ -3,7 +3,8 @@ package data
 import (
 	"log/slog"
 
-	filter "exnota.com/backend/lib/data"
+	"exnota.com/backend/lib/data/field"
+	"exnota.com/backend/lib/data/filter"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -65,7 +66,7 @@ func (f *blockJobFetcher) ListJobsToProcess(maxErrorCount int) ([]BlockJob, erro
 	records, err := f.app.Dao().FindRecordsByFilter(
 		CollectionBlockJob,
 		combinedFilter.Filter,
-		"+"+filter.DefaultFieldCreated,
+		"+"+field.DefaultFieldCreated,
 		0,
 		0,
 		combinedFilter.Params,

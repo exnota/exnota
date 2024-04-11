@@ -1,4 +1,4 @@
-package data
+package field
 
 const (
 	DefaultFieldCreated = "created"

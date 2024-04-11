@@ -31,3 +31,13 @@ func TitleForPage(page *notion.Page) (string, error) {
 		return "", errors.New("unknown notion page type")
 	}
 }
+
+func TextToTitle(text string) []notion.RichText {
+	return []notion.RichText{
+		{
+			Text: &notion.Text{
+				Content: text,
+			},
+		},
+	}
+}

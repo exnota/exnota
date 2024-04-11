@@ -26,7 +26,7 @@ func NewIntegrationDestinationSync(app core.App) IntegrationDestinationSync {
 
 func (s *integrationDestinationSync) Sync(request block.DestinationSyncRequest) (result *block.DestinationSyncResult, err error) {
 	fetcher := data.NewIntegrationFetcher(s.app)
-	integration, err := fetcher.FetchById(request.IntegrationId)
+	integration, err := fetcher.FetchById(request.IntegrationId, request.User)
 	if err != nil {
 		return nil, err
 	}
