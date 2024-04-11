@@ -78,6 +78,7 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 			err := notionExporter.CreateVoiceNoteExporter(notion.CreateVoiceNoteRequest{
 				Integration:      integration,
 				DestinationId:    configData.DestinationId,
+				BlockId:          configData.InternalBlockId,
 				ExternalRecordId: externalRecordId,
 				Files:            files,
 			})
@@ -95,7 +96,10 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 	}
 }
 
-func (j *exportJobRunnerConfig) integrationForDestination(destinationId string, userId string) (integ_data.Integration, error) {
+func (j *exportJobRunnerConfig) integrationForDestination(
+	destinationId string,
+	userId string,
+) (integ_data.Integration, error) {
 	// Get destination
 	destinationFetcher := block_data.NewDestinationFetcher(j.app)
 	destination, err := destinationFetcher.FetchById(destinationId)
@@ -112,7 +116,13 @@ func (j *exportJobRunnerConfig) integrationForDestination(destinationId string, 
 	workspaceFetcher := block_data.NewWorkspaceFetcher(j.app)
 	workspace, err := workspaceFetcher.FetchById(destination.Workspace())
 	if err != nil {
-		slog.Error("Error fetching workspace by destination id", "destinationId", destinationId, "err", err)
+		slog.Error(
+			"Error fetching workspace by destination id",
+			"destinationId",
+			destinationId,
+			"err",
+			err,
+		)
 		return nil, err
 	}
 	if workspace == nil {
@@ -143,7 +153,13 @@ func (j *exportJobRunnerConfig) getExternalRecordId(destinationId string) (strin
 	integrationDestinationRepo := integ_data.NewIntegrationDestinationFetcher(j.app)
 	integrationDestination, err := integrationDestinationRepo.FetchByDestinationId(destinationId)
 	if err != nil {
-		slog.Error("Error fetching integration destination by destination id", "destinationId", destinationId, "err", err)
+		slog.Error(
+			"Error fetching integration destination by destination id",
+			"destinationId",
+			destinationId,
+			"err",
+			err,
+		)
 		return "", err
 	}
 	if integrationDestination == nil {

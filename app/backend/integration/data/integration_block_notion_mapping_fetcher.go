@@ -1,6 +1,7 @@
 package data
 
 import (
+	"database/sql"
 	"log/slog"
 
 	"exnota.com/backend/lib/data/filter"
@@ -36,7 +37,9 @@ func (f *integrationBlockNotionMappingFetcher) FetchByInternalBlockId(
 	record, err := f.app.Dao().FindFirstRecordByFilter(CollectionIntegrationBlockNotionMapping,
 		filter.Filter, filter.Params,
 	)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 	mapping, err := NewIntegrationBlockNotionMapping(record, f.app)
