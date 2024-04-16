@@ -10,6 +10,7 @@ import (
 
 type NotionFetcher interface {
 	FetchPage(pageID string, integrationID string) (*notion.Page, error)
+	FetchPageChildren(pageID string, integrationID string) ([]notion.Block, error)
 	FetchDatabase(databaseID string, integrationID string) (*notion.Database, error) // Added method
 }
 
@@ -36,7 +37,28 @@ func (f *notionFetcher) FetchPage(pageID string, integrationID string) (*notion.
 	return &result, nil
 }
 
-func (f *notionFetcher) FetchDatabase(databaseID string, integrationID string) (*notion.Database, error) {
+func (f *notionFetcher) FetchPageChildren(
+	pageID string,
+	integrationID string,
+) ([]notion.Block, error) {
+	accessToken, err := f.accessToken(integrationID)
+	if err != nil {
+		return nil, err
+	}
+
+	client := notion.NewClient(accessToken)
+	result, err := client.FindBlockChildrenByID(context.Background(), pageID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Results, nil
+}
+
+func (f *notionFetcher) FetchDatabase(
+	databaseID string,
+	integrationID string,
+) (*notion.Database, error) {
 	accessToken, err := f.accessToken(integrationID)
 	if err != nil {
 		return nil, err

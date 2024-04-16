@@ -53,11 +53,11 @@ func (s *notionExporter) CreateVoiceNoteExporter(request CreateVoiceNoteRequest)
 
 	// Get external destination object
 	objectFetcher := data.NewIntegrationNotionObjectFetcher(s.app)
-	object, err := objectFetcher.FetchById(request.ExternalRecordId)
+	destinationObject, err := objectFetcher.FetchById(request.ExternalRecordId)
 	if err != nil {
 		return err
 	}
-	if object == nil {
+	if destinationObject == nil {
 		slog.Error("No notion object found", "id", request.ExternalRecordId)
 		return fmt.Errorf("No notion object found: %s", request.ExternalRecordId)
 	}
@@ -69,9 +69,8 @@ func (s *notionExporter) CreateVoiceNoteExporter(request CreateVoiceNoteRequest)
 	}
 	writer := NewNotionWriter(s.app, *config.Auth.AccessToken)
 	page, err := writer.CreateVoiceNotePage(CreateVoiceNotePageRequest{
-		ParentType: object.Type(),
-		ParentID:   object.ExternalId(),
-		Files:      request.Files,
+		Parent: destinationObject,
+		Files:  request.Files,
 	})
 	if err != nil {
 		return err
@@ -81,7 +80,15 @@ func (s *notionExporter) CreateVoiceNoteExporter(request CreateVoiceNoteRequest)
 		return fmt.Errorf("No page created")
 	}
 
-	// TODO: Create mapping
+	// TODO: Get children and map to files
+	notionFetcher := NewNotionFetcher(s.app)
+	pageChildren, err := notionFetcher.FetchPageChildren(page.ID, request.Integration.Id())
+	if err != nil {
+		// Don't fail as this isn't critical for the user
+		slog.Error("Failed to fetch page children. Will map without them.", "err", err)
+	}
+	// TODO: Remove this
+	slog.Info("Fetched page children", "num", len(pageChildren))
 
 	return nil
 }

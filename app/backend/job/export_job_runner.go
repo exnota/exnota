@@ -9,6 +9,7 @@ import (
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service/notion"
 	"exnota.com/backend/job/data"
+	"exnota.com/backend/lib/pb_file"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -67,10 +68,13 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 
 			files := make([]notion.CreateVoiceNotePageRequestFile, len(configData.Files))
 			for i, file := range configData.Files {
+				url := pb_file.Url(file.Name, block_data.CollectionBlock, configData.InternalBlockId, j.app)
 				files[i] = notion.CreateVoiceNotePageRequestFile{
 					Collection: block_data.CollectionBlock,
-					RecordId:   configData.InternalBlockId,
+					BlockId:    configData.InternalBlockId,
 					FileName:   file.Name,
+					FilePath:   file.Path,
+					Url:        url,
 				}
 			}
 

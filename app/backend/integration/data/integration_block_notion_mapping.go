@@ -48,11 +48,11 @@ type IntegrationBlockNotionMapping interface {
 }
 
 type NotionPropertyMapping struct {
-	InternalId  string    `json:"id" validate:"required"`
-	ExternalId  string    `json:"externalId" validate:"required"`
+	InternalId  string    `json:"id"          validate:"required"`
+	ExternalId  string    `json:"externalId"  validate:"required"`
 	ContentHash string    `json:"contentHash" validate:"required"`
-	Created     time.Time `json:"created" validate:"required"`
-	Updated     time.Time `json:"updated" validate:"required"`
+	Created     time.Time `json:"created"     validate:"required"`
+	Updated     time.Time `json:"updated"     validate:"required"`
 }
 
 type integrationBlockNotionMapping struct {
@@ -60,7 +60,10 @@ type integrationBlockNotionMapping struct {
 	app    core.App
 }
 
-func NewIntegrationBlockNotionMapping(record *models.Record, app core.App) (IntegrationBlockNotionMapping, error) {
+func NewIntegrationBlockNotionMapping(
+	record *models.Record,
+	app core.App,
+) (IntegrationBlockNotionMapping, error) {
 	switch record.GetString(BlockNotionMappingFieldType) {
 	case string(BlockNotionMappingTypeVoiceNote):
 		return NewVoiceNoteMapping(record, app)
@@ -76,7 +79,10 @@ func NewIntegrationBlockNotionMapping(record *models.Record, app core.App) (Inte
 	}
 }
 
-func NewIntegrationBlockNotionMappingFromModel(model models.Model, app core.App) (IntegrationBlockNotionMapping, error) {
+func NewIntegrationBlockNotionMappingFromModel(
+	model models.Model,
+	app core.App,
+) (IntegrationBlockNotionMapping, error) {
 	return NewIntegrationBlockNotionMapping(model.(*models.Record), app)
 }
 
@@ -142,16 +148,29 @@ type VoiceNoteMapping interface {
 }
 
 type VoiceNoteMappingConfig struct {
-	Properties  []NotionPropertyMapping `json:"properties" validate:"required"`
+	Properties  []NotionPropertyMapping `json:"properties"  validate:"required"`
 	AudioBlocks []AudioBlockMapping     `json:"audioBlocks" validate:"required"`
 }
+
+type BlockMappingStatus string
+
+const (
+	BlockMappingStatusMapped  BlockMappingStatus = "mapped"
+	BlockMappingStatusMissing BlockMappingStatus = "missing"
+)
+
+type BlockMapping struct {
+	InternalBlockId string             `json:"internalBlockId" validate:"required"`
+	Status          BlockMappingStatus `json:"status"          validate:"required"`
+	ExternalBlockId string             `json:"externalBlockId" validate:"required_if=Status mapped"`
+	ContentHash     string             `json:"contentHash"     validate:"required"`
+	Created         time.Time          `json:"created"         validate:"required"`
+	Updated         time.Time          `json:"updated"         validate:"required"`
+}
+
 type AudioBlockMapping struct {
-	InternalBlockId string    `json:"internalBlockId" validate:"required"`
-	Filename        string    `json:"filename" validate:"required"`
-	ExternalBlockId string    `json:"externalBlockId" validate:"required"`
-	ContentHash     string    `json:"contentHash" validate:"required"`
-	Created         time.Time `json:"created" validate:"required"`
-	Updated         time.Time `json:"updated" validate:"required"`
+	BlockMapping
+	Filename string `json:"filename" validate:"required"`
 }
 
 type voiceNoteMapping struct {
