@@ -34,7 +34,7 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 	}
 
 	switch job := genericExportJob.(type) {
-	case data.CreateVoiceNoteJob:
+	case data.VoiceNoteJob:
 		slog.Info("Running create voice note job", "jobId", genericJob.ID())
 
 		// Get integration info
@@ -66,10 +66,10 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 		case integ_data.NotionIntegration:
 			slog.Info("Running create voice note job for Notion", "job", genericJob)
 
-			files := make([]notion.CreateVoiceNotePageRequestFile, len(configData.Files))
+			files := make([]notion.VoiceNotePageRequestFile, len(configData.Files))
 			for i, file := range configData.Files {
 				url := pb_file.Url(file.Name, block_data.CollectionBlock, configData.InternalBlockId, j.app)
-				files[i] = notion.CreateVoiceNotePageRequestFile{
+				files[i] = notion.VoiceNotePageRequestFile{
 					Collection: block_data.CollectionBlock,
 					BlockId:    configData.InternalBlockId,
 					FileName:   file.Name,
@@ -79,7 +79,7 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 			}
 
 			notionExporter := notion.NewNotionExporter(j.app)
-			err := notionExporter.CreateVoiceNoteExporter(notion.CreateVoiceNoteRequest{
+			err := notionExporter.VoiceNoteExporter(notion.VoiceNoteRequest{
 				Integration:      integration,
 				DestinationId:    configData.DestinationId,
 				BlockId:          configData.InternalBlockId,

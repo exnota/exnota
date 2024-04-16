@@ -52,7 +52,7 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 				BlockId:       block.Id(),
 				UserId:        block.User(),
 				DestinationId: block.Destination(),
-				Files: []data.CreateVoiceNoteFile{
+				Files: []data.VoiceNoteFile{
 					{
 						Path: pb_file.Path(j.app, block.Record(), block.File()),
 						Name: block.File(),

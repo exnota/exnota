@@ -10,7 +10,7 @@ import (
 )
 
 type NotionExporter interface {
-	CreateVoiceNoteExporter(request CreateVoiceNoteRequest) error
+	VoiceNoteExporter(request VoiceNoteRequest) error
 }
 
 type notionExporter struct {
@@ -21,22 +21,22 @@ func NewNotionExporter(app core.App) NotionExporter {
 	return &notionExporter{app}
 }
 
-type CreateVoiceNoteRequest struct {
-	Integration      data.NotionIntegration           `validate:"required"`
-	BlockId          string                           `validate:"required"`
-	DestinationId    string                           `validate:"required"`
-	ExternalRecordId string                           `validate:"required"`
-	Files            []CreateVoiceNotePageRequestFile `validate:"required"`
+type VoiceNoteRequest struct {
+	Integration      data.NotionIntegration     `validate:"required"`
+	BlockId          string                     `validate:"required"`
+	DestinationId    string                     `validate:"required"`
+	ExternalRecordId string                     `validate:"required"`
+	Files            []VoiceNotePageRequestFile `validate:"required"`
 	// TODO: Extra validation that user is user?
 	// user
 }
 
 var validate = validator.New(validator.WithRequiredStructEnabled())
 
-func (s *notionExporter) CreateVoiceNoteExporter(request CreateVoiceNoteRequest) error {
+func (s *notionExporter) VoiceNoteExporter(request VoiceNoteRequest) error {
 	err := validate.Struct(request)
 	if err != nil {
-		slog.Error("Invalid CreateVoiceNoteExporter request", "err", err)
+		slog.Error("Invalid VoiceNoteExporter request", "err", err)
 		return err
 	}
 

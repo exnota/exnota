@@ -28,10 +28,10 @@ func NewNotionWriter(app core.App, accessToken string) NotionWriter {
 // properties field, check the essay in block_job.go
 type CreateVoiceNotePageRequest struct {
 	Parent data.IntegrationNotionObject
-	Files  []CreateVoiceNotePageRequestFile `validate:"required"`
+	Files  []VoiceNotePageRequestFile `validate:"required"`
 }
 
-type CreateVoiceNotePageRequestFile struct {
+type VoiceNotePageRequestFile struct {
 	Collection string `validate:"required"`
 	BlockId    string `validate:"required"`
 	FileName   string `validate:"required"`
@@ -97,7 +97,7 @@ func (n *notionWriter) CreateVoiceNotePage(
 	}
 }
 
-func (n *notionWriter) fileChildren(files []CreateVoiceNotePageRequestFile) []notion.Block {
+func (n *notionWriter) fileChildren(files []VoiceNotePageRequestFile) []notion.Block {
 	var children []notion.Block
 	for _, file := range files {
 		block := notion.AudioBlock{
