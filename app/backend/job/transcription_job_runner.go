@@ -12,6 +12,7 @@ import (
 	block_data "exnota.com/backend/block/data"
 	"exnota.com/backend/job/data"
 	whisper "exnota.com/backend/lib"
+	"exnota.com/backend/lib/pb_file"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
@@ -59,7 +60,6 @@ func (j *transcriptionJobRunner) Run(job data.BlockJob, app core.App) (data.Summ
 
 type FileInfo struct {
 	name     string
-	dir      string
 	fullPath string
 }
 
@@ -68,13 +68,12 @@ func (j *transcriptionJobRunner) getFileInfo(blockId string) (*FileInfo, error) 
 	if err != nil {
 		return nil, err
 	}
-	fileDir := path.Join(j.app.DataDir(), core.LocalStorageDirName, block.BaseFilesPath())
 	fileName := block.GetString("file")
+	filePath := pb_file.Path(j.app, block, fileName)
 
 	return &FileInfo{
 		name:     fileName,
-		dir:      fileDir,
-		fullPath: path.Join(fileDir, fileName),
+		fullPath: filePath,
 	}, nil
 }
 
@@ -93,7 +92,10 @@ func (j *transcriptionJobRunner) convertAudio(fileInfo *FileInfo) (*ConvertedFil
 		return nil, err
 	}
 
-	convertedName := strings.TrimSuffix(fileInfo.name, filepath.Ext(fileInfo.name)) + "-converted.wav"
+	convertedName := strings.TrimSuffix(
+		fileInfo.name,
+		filepath.Ext(fileInfo.name),
+	) + "-converted.wav"
 	convertedPath := path.Join(convertedTempDir, convertedName)
 	fmt.Println("convertedPath", convertedPath)
 
@@ -124,7 +126,9 @@ type Timestamp struct {
 	To   string `json:"to"`
 }
 
-func (j *transcriptionJobRunner) transcribe(convertedFileInfo ConvertedFileInfo) (*TranscriptionResult, error) {
+func (j *transcriptionJobRunner) transcribe(
+	convertedFileInfo ConvertedFileInfo,
+) (*TranscriptionResult, error) {
 	cmnd := whisper.Command(convertedFileInfo.fullPath)
 	out, err := cmnd.CombinedOutput()
 	fmt.Println("Transcribe:")
@@ -153,7 +157,10 @@ func (j *transcriptionJobRunner) transcribe(convertedFileInfo ConvertedFileInfo)
 	return &result, nil
 }
 
-func (j *transcriptionJobRunner) saveTranscription(result *TranscriptionResult, blockId string) error {
+func (j *transcriptionJobRunner) saveTranscription(
+	result *TranscriptionResult,
+	blockId string,
+) error {
 	err := j.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
 		blockRecord, err := txDao.FindRecordById("block", blockId)
 		if err != nil {

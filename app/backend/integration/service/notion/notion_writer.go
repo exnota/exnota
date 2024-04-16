@@ -7,7 +7,6 @@ import (
 
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/util"
-	"exnota.com/backend/lib/pb_file"
 	"github.com/dstotijn/go-notion"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -25,16 +24,19 @@ func NewNotionWriter(app core.App, accessToken string) NotionWriter {
 	return &notionWriter{app, accessToken}
 }
 
+// TODO: Use some consistent properties across requests. For thoughts on a
+// properties field, check the essay in block_job.go
 type CreateVoiceNotePageRequest struct {
-	ParentType data.IntegrationNotionObjectType `validate:"required"`
-	ParentID   string                           `validate:"required"`
-	Files      []CreateVoiceNotePageRequestFile `validate:"required"`
+	Parent data.IntegrationNotionObject
+	Files  []CreateVoiceNotePageRequestFile `validate:"required"`
 }
 
 type CreateVoiceNotePageRequestFile struct {
 	Collection string `validate:"required"`
-	RecordId   string `validate:"required"`
+	BlockId    string `validate:"required"`
 	FileName   string `validate:"required"`
+	FilePath   string `validate:"required"`
+	Url        string `validate:"required"`
 }
 
 func (n *notionWriter) CreateVoiceNotePage(
@@ -48,13 +50,30 @@ func (n *notionWriter) CreateVoiceNotePage(
 	client := notion.NewClient(n.accessToken)
 	children := n.fileChildren(request.Files)
 
-	switch request.ParentType {
+	switch request.Parent.Type() {
 	case data.IntegrationNotionObjectTypeDatabase:
+		titlePropId, err := request.Parent.DatabaseTitlePropertyId()
+		if err != nil {
+			return nil, err
+		}
+
 		page, err := client.CreatePage(context.Background(), notion.CreatePageParams{
 			ParentType: notion.ParentTypeDatabase,
-			ParentID:   request.ParentID,
-			Title:      util.TextToRichText("dummy title db page"), // TODO: Remove
+			ParentID:   request.Parent.ExternalId(),
 			Children:   children,
+			DatabasePageProperties: &notion.DatabasePageProperties{
+				titlePropId: notion.DatabasePageProperty{
+					Type: notion.DBPropTypeTitle,
+					ID:   titlePropId,
+					Title: []notion.RichText{
+						{
+							Text: &notion.Text{
+								Content: "dummy title db page x", // TODO: Remove
+							},
+						},
+					},
+				},
+			},
 		})
 		if err != nil {
 			return nil, err
@@ -64,7 +83,7 @@ func (n *notionWriter) CreateVoiceNotePage(
 		title := util.TextToRichText("dummy title page") // TODO: Remove
 		page, err := client.CreatePage(context.Background(), notion.CreatePageParams{
 			ParentType: notion.ParentTypePage,
-			ParentID:   request.ParentID,
+			ParentID:   request.Parent.ExternalId(),
 			Title:      title,
 			Children:   children,
 		})
@@ -73,20 +92,18 @@ func (n *notionWriter) CreateVoiceNotePage(
 		}
 		return &page, nil
 	default:
-		slog.Error("Unknown parent type", "type", request.ParentType)
+		slog.Error("Unknown parent type", "type", request.Parent.Type())
 		return nil, errors.New("unknown parent type")
-
 	}
 }
 
 func (n *notionWriter) fileChildren(files []CreateVoiceNotePageRequestFile) []notion.Block {
 	var children []notion.Block
 	for _, file := range files {
-		url := pb_file.Url(file.FileName, file.Collection, file.RecordId, n.app)
 		block := notion.AudioBlock{
 			Type: notion.FileTypeExternal,
 			External: &notion.FileExternal{
-				URL: url,
+				URL: file.Url,
 			},
 			Caption: util.TextToRichText(file.FileName),
 		}

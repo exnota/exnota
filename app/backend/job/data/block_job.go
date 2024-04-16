@@ -315,13 +315,13 @@ type NewExportBlockJobFormConfig struct {
 
 type CreateVoiceNoteJobConfig struct {
 	Command ExportJobCommand             `json:"command" validate:"eq=create_voice_note"`
-	Data    CreateVoiceNoteJobConfigData `json:"data" validate:"required"`
+	Data    CreateVoiceNoteJobConfigData `json:"data"    validate:"required"`
 }
 
 type CreateVoiceNoteJobConfigData struct {
 	InternalBlockId string                `json:"internal_block_id" validate:"required"`
-	DestinationId   string                `json:"destination_id" validate:"required"`
-	Files           []CreateVoiceNoteFile `json:"files" validate:"required"`
+	DestinationId   string                `json:"destination_id"    validate:"required"`
+	Files           []CreateVoiceNoteFile `json:"files"             validate:"required"`
 }
 
 type CreateVoiceNoteFile struct {
