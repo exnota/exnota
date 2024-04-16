@@ -313,6 +313,7 @@ type exportBlockJob struct {
 func CreateExportJob(app core.App) (ExportBlockJob, error) {
 	collection, err := app.Dao().FindCollectionByNameOrId(CollectionBlockJob)
 	if err != nil {
+		slog.Error("Error finding collection", "error", err)
 		return nil, err
 	}
 

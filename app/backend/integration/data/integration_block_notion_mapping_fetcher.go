@@ -42,7 +42,7 @@ func (f *integrationBlockNotionMappingFetcher) FetchByInternalBlockId(
 	} else if err != nil {
 		return nil, err
 	}
-	mapping, err := NewIntegrationBlockNotionMapping(record, f.app)
+	mapping, err := LoadIntegrationBlockNotionMapping(record, f.app)
 	if err != nil {
 		slog.Error(
 			"Failed to create IntegrationBlockNotionMapping instance after fetching",
