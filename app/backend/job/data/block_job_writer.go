@@ -12,7 +12,7 @@ import (
 type BlockJobWriter interface {
 	CreateTranscriptionJob(blockId string, userId string) error
 	// CreateExportJob(blockId string, userId string) error
-	CreateCreateVoiceNoteExportJob(request CreateCreateVoiceNoteRequest) error
+	CreateExportJob(request CreateCreateVoiceNoteRequest) error
 
 	ResetRunningJobs() error
 	SetStatusWaiting(id string) error
@@ -45,7 +45,7 @@ func (b *blockJobWriter) CreateTranscriptionJob(blockId string, userId string) e
 		if err != nil {
 			return err
 		}
-		return job.ValidateAndSubmitBase(txDao)
+		return job.ValidateAndSubmit(txDao)
 	})
 }
 
@@ -72,13 +72,15 @@ func (b *blockJobWriter) CreateTranscriptionJob(blockId string, userId string) e
 // }
 
 type CreateCreateVoiceNoteRequest struct {
-	BlockId       string          `validate:"required"`
-	UserId        string          `validate:"required"`
-	DestinationId string          `validate:"required"`
-	Files         []VoiceNoteFile `validate:"required,min=1"`
+	// Block Job
+	BlockId string `validate:"required"`
+	UserId  string `validate:"required"`
+
+	// Export block job
+	Config ExportJobConfig `validate:"required"`
 }
 
-func (b *blockJobWriter) CreateCreateVoiceNoteExportJob(
+func (b *blockJobWriter) CreateExportJob(
 	request CreateCreateVoiceNoteRequest,
 ) error {
 	err := validate.Struct(request)
@@ -87,7 +89,7 @@ func (b *blockJobWriter) CreateCreateVoiceNoteExportJob(
 	}
 
 	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		job, err := CreateVoiceNoteJob(b.app)
+		job, err := CreateExportJob(b.app)
 		if err != nil {
 			return err
 		}
@@ -96,22 +98,12 @@ func (b *blockJobWriter) CreateCreateVoiceNoteExportJob(
 		job.SetBlock(request.BlockId)
 		job.SetUser(request.UserId)
 		job.SetNextRunAt(time.Now())
-		data := &VoiceNoteJobConfigData{
-			InternalBlockId: request.BlockId,
-			DestinationId:   request.DestinationId,
-			Files:           request.Files,
-		}
-		err = job.SetConfigData(data)
+		err = job.SetConfig(request.Config)
 		if err != nil {
 			return err
 		}
 
-		err = job.ValidateVoiceNote(txDao)
-		if err != nil {
-			return err
-		}
-
-		return job.ValidateAndSubmitBase(txDao)
+		return job.ValidateAndSubmit(txDao)
 	})
 }
 
@@ -147,7 +139,7 @@ func (b *blockJobWriter) ResetRunningJobs() error {
 			continue
 		}
 		blockJob.SetStatus(BlockJobStatusWaiting)
-		err = blockJob.ValidateAndSubmitBase(b.app.Dao())
+		err = blockJob.ValidateAndSubmit(b.app.Dao())
 		if err != nil {
 			slog.Error("Error setting block job status to waiting",
 				"id", r.Id,
@@ -176,7 +168,7 @@ func (b *blockJobWriter) SetStatusWaiting(id string) error {
 		if err != nil {
 			return err
 		}
-		return blockJob.ValidateAndSubmitBase(txDao)
+		return blockJob.ValidateAndSubmit(txDao)
 	})
 }
 
@@ -195,7 +187,7 @@ func (b *blockJobWriter) SetStatusRunning(id string) error {
 		if err != nil {
 			return err
 		}
-		return blockJob.ValidateAndSubmitBase(txDao)
+		return blockJob.ValidateAndSubmit(txDao)
 	})
 }
 
@@ -216,7 +208,7 @@ func (b *blockJobWriter) SetStatusError(id string, nextRunAt time.Time, statusEr
 		}
 		blockJob.IncrementErrorCount()
 		blockJob.SetNextRunAt(nextRunAt)
-		return blockJob.ValidateAndSubmitBase(txDao)
+		return blockJob.ValidateAndSubmit(txDao)
 	})
 }
 
@@ -235,6 +227,6 @@ func (b *blockJobWriter) SetStatusComplete(id string, summary Summary) error {
 		if err != nil {
 			return err
 		}
-		return blockJob.ValidateAndSubmitBase(txDao)
+		return blockJob.ValidateAndSubmit(txDao)
 	})
 }

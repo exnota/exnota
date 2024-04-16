@@ -65,8 +65,7 @@ type BlockJob interface {
 	IncrementErrorCount()
 	ClearErrorCount()
 
-	// Validates the base block job logic (not specific to the type) and submits
-	ValidateAndSubmitBase(txDao *daos.Dao) error
+	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
 func NewBlockJob(r *models.Record, app core.App) (BlockJob, error) {
@@ -74,7 +73,7 @@ func NewBlockJob(r *models.Record, app core.App) (BlockJob, error) {
 	case BlockJobTypeTranscription:
 		return NewTranscriptionBlockJob(r, app)
 	case BlockJobTypeExport:
-		return NewExportBlockJob(r, app)
+		return LoadExportBlockJob(r, app)
 	default:
 		return nil, fmt.Errorf("unknown block job type: %s", r.GetString(BlockJobFieldType))
 	}
@@ -207,7 +206,7 @@ func (j *blockJob) ClearErrorCount() {
 	j.record.Set(BlockJobFieldErrorCount, 0)
 }
 
-func (j *blockJob) ValidateAndSubmitBase(txDao *daos.Dao) error {
+func (j *blockJob) ValidateAndSubmit(txDao *daos.Dao) error {
 	form := forms.NewRecordUpsert(j.app, j.record)
 	form.SetDao(txDao)
 
@@ -260,89 +259,58 @@ func (j *transcriptionBlockJob) ValidateTranscription(txDao *daos.Dao) error {
 }
 
 // ----------------------------
-// Export Block Job base
+// Export Block Job
 // ----------------------------
 
 type ExportJobCommand string
 
 const (
-	ExportJobCommandCreateVoiceNote ExportJobCommand = "create_voice_note"
+	CommandCreateVoiceNote ExportJobCommand = "create_voice_note"
 )
 
 type ExportBlockJob interface {
 	BlockJob
+
+	Config() (ExportJobConfig, error)
+	SetConfig(config ExportJobConfig) error
 }
 
 type ExportJobConfig struct {
 	Command ExportJobCommand `json:"command" validate:"required"`
+	Data    ExportJobData    `json:"data"    validate:"required"`
+}
+
+type ExportBlockType string
+
+const (
+	BlockTypeVoiceNote ExportBlockType = "voice-note"
+	BlockTypeTextNote  ExportBlockType = "text-note"
+)
+
+type audioField struct {
+	Transcription []string `json:"transcription"`
+}
+
+// This is a diff representing the changes to a block that should be exported.
+type ExportJobData struct {
+	Id          string          `json:"id"          validate:"required"`
+	Title       *string         `json:"title"`
+	Type        ExportBlockType `json:"type"        validate:"required"`
+	Destination string          `json:"destination" validate:"required"`
+	File        *string         `json:"file"`
+	Audio       *audioField     `json:"audio"`
+
+	// UserCreated string
+	// Archived    string
+
+	// UserProperties lib_block.UserPropertyValues
 }
 
 type exportBlockJob struct {
 	blockJob
 }
 
-func NewExportBlockJob(r *models.Record, app core.App) (ExportBlockJob, error) {
-	if BlockJobType(r.GetString(BlockJobFieldType)) != BlockJobTypeExport {
-		slog.Error("Not an export job", slog.String("type", r.GetString(BlockJobFieldType)))
-		return nil, fmt.Errorf("Not an export job: %s", r.GetString(BlockJobFieldType))
-	}
-
-	var config ExportJobConfig
-	err := r.UnmarshalJSONField(BlockJobFieldConfig, &config)
-	if err != nil {
-		slog.Error("Error unmarshalling export job config", "err", err)
-		return nil, err
-	}
-
-	switch config.Command {
-	case ExportJobCommandCreateVoiceNote:
-		return NewVoiceNoteJob(r, app)
-	default:
-		return nil, fmt.Errorf("Unknown export job command: %s", config.Command)
-	}
-}
-
-type NewExportBlockJobFormConfig struct {
-	Collection *models.Collection
-	App        core.App
-	BlockId    string
-	UserId     string
-}
-
-// ----------------------------
-// Create Voice Note export job
-// ----------------------------
-
-type VoiceNoteJobConfig struct {
-	Command ExportJobCommand       `json:"command" validate:"eq=create_voice_note"`
-	Data    VoiceNoteJobConfigData `json:"data"    validate:"required"`
-}
-
-type VoiceNoteJobConfigData struct {
-	InternalBlockId string          `json:"internal_block_id" validate:"required"`
-	DestinationId   string          `json:"destination_id"    validate:"required"`
-	Files           []VoiceNoteFile `json:"files"             validate:"required"`
-}
-
-type VoiceNoteFile struct {
-	Path string
-	Name string
-}
-
-type VoiceNoteJob interface {
-	ExportBlockJob
-
-	ConfigData() (*VoiceNoteJobConfigData, error)
-	SetConfigData(data *VoiceNoteJobConfigData) error
-
-	ValidateVoiceNote(txDao *daos.Dao) error
-}
-
-type voiceNoteJob struct {
-	exportBlockJob
-}
-
-func CreateVoiceNoteJob(app core.App) (VoiceNoteJob, error) {
+func CreateExportJob(app core.App) (ExportBlockJob, error) {
 	collection, err := app.Dao().FindCollectionByNameOrId(CollectionBlockJob)
 	if err != nil {
 		return nil, err
@@ -352,79 +320,54 @@ func CreateVoiceNoteJob(app core.App) (VoiceNoteJob, error) {
 	record.Set(BlockJobFieldType, string(BlockJobTypeExport))
 	// Set the command so calling NewVoiceNoteJob doesn't error, but this
 	// isn't a valid config without 'data'. This could be refactored.
-	record.Set(BlockJobFieldConfig, &VoiceNoteJobConfig{
-		Command: ExportJobCommandCreateVoiceNote,
-	})
-	return NewVoiceNoteJob(record, app)
+	record.Set(BlockJobFieldConfig, &ExportJobConfig{})
+	return LoadExportBlockJob(record, app)
 }
 
-func NewVoiceNoteJob(r *models.Record, app core.App) (VoiceNoteJob, error) {
-	// Validate is export job
+func LoadExportBlockJob(r *models.Record, app core.App) (ExportBlockJob, error) {
+	// Verify is export job
 	if BlockJobType(r.GetString(BlockJobFieldType)) != BlockJobTypeExport {
+		slog.Error("Not an export job", slog.String("type", r.GetString(BlockJobFieldType)))
 		return nil, fmt.Errorf("Not an export job: %s", r.GetString(BlockJobFieldType))
 	}
 
-	// Validate is create voice note job
-	var config ExportJobConfig
-	err := r.UnmarshalJSONField(BlockJobFieldConfig, &config)
+	job := &exportBlockJob{
+		blockJob: blockJob{
+			record: r,
+			app:    app,
+		},
+	}
+
+	// Validate config to catch errors early
+	_, err := job.Config()
 	if err != nil {
-		slog.Error("Error unmarshalling export job config", "err", err)
 		return nil, err
 	}
-	if config.Command != ExportJobCommandCreateVoiceNote {
-		return nil, fmt.Errorf("Not a create voice note job: %s", config.Command)
-	}
 
-	return &voiceNoteJob{
-		exportBlockJob: exportBlockJob{
-			blockJob: blockJob{
-				record: r,
-				app:    app,
-			},
-		},
-	}, nil
+	return job, nil
 }
 
-func (j *voiceNoteJob) ConfigData() (*VoiceNoteJobConfigData, error) {
-	var config VoiceNoteJobConfig
+func (j *exportBlockJob) Config() (ExportJobConfig, error) {
+	var config ExportJobConfig
 	err := j.record.UnmarshalJSONField(BlockJobFieldConfig, &config)
 	if err != nil {
-		slog.Error("Error unmarshalling create voice note job config", "err", err)
-		return nil, err
+		slog.Error("Error unmarshalling export job config", "err", err)
+		return ExportJobConfig{}, err
 	}
-
-	err = validate.Struct(config)
-	if err != nil {
-		slog.Error("Error validating create voice note job config", "err", err)
-		return nil, err
-	}
-
-	return &config.Data, nil
+	return config, nil
 }
 
-func (j *voiceNoteJob) SetConfigData(data *VoiceNoteJobConfigData) error {
-	config := VoiceNoteJobConfig{
-		Command: ExportJobCommandCreateVoiceNote,
-		Data:    *data,
-	}
-
+func (j *exportBlockJob) SetConfig(config ExportJobConfig) error {
 	err := validate.Struct(config)
 	if err != nil {
-		slog.Error("Error validating create voice note job config", "err", err)
 		return err
 	}
 
-	json, err := json.Marshal(config)
+	configBytes, err := json.Marshal(config)
 	if err != nil {
-		slog.Error("Error marshalling create voice note job config", "err", err)
+		slog.Error("Error marshalling export job config", "err", err)
 		return err
 	}
-	j.record.Set(BlockJobFieldConfig, json)
+	j.record.Set(BlockJobFieldConfig, string(configBytes))
 	return nil
-}
-
-func (j *voiceNoteJob) ValidateVoiceNote(txDao *daos.Dao) error {
-	// Validate config by reading
-	_, err := j.ConfigData()
-	return err
 }
