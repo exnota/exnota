@@ -2,9 +2,7 @@ package data
 
 import (
 	"encoding/json"
-	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -15,7 +13,7 @@ import (
 const (
 	CollectionIntegrationBlockNotionMapping = "integration_block_notion_mapping"
 
-	BlockNotionMappingFieldType                = "type"
+	BlockNotionMappingFieldBlockType           = "blockType"
 	BlockNotionMappingFieldInternalBlock       = "internalBlock"
 	BlockNotionMappingFieldInternalDestination = "internalDestination"
 	BlockNotionMappingFieldExternalBlock       = "externalBlock"
@@ -24,74 +22,121 @@ const (
 	BlockNotionMappingFieldConfig              = "config"
 )
 
-type BlockNotionMappingType string
+type BlockType string
 
 const (
-	BlockNotionMappingTypeVoiceNote BlockNotionMappingType = "voice-note"
-	BlockNotionMappingTypeTextNote  BlockNotionMappingType = "text-note"
+	BlockTypeVoiceNote BlockType = "voice-note"
+	BlockTypeTextNote  BlockType = "text-note"
 )
 
 type IntegrationBlockNotionMapping interface {
 	Id() string
-	Type() BlockNotionMappingType
+	BlockType() BlockType
 	InternalBlock() string
 	InternalDestination() string
 	ExternalBlock() string
 	ExternalDestination() string
 	ExternalUrl() string
+	Config() (*BlockMappingConfig, error)
 
+	SetBlockType(BlockType)
 	SetInternalBlock(string)
 	SetInternalDestination(string)
 	SetExternalBlock(string)
 	SetExternalDestination(string)
 	SetExternalUrl(string)
+	SetConfig(*BlockMappingConfig) error
+
+	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
-type NotionPropertyMapping struct {
-	InternalId  string    `json:"id"          validate:"required"`
-	ExternalId  string    `json:"externalId"  validate:"required"`
-	ContentHash string    `json:"contentHash" validate:"required"`
-	Created     time.Time `json:"created"     validate:"required"`
-	Updated     time.Time `json:"updated"     validate:"required"`
+type BlockMappingConfig struct {
+	// TODO: Which of these are NOT needed
+	// Id          string // Is mapped to InternalBlockId
+	Title []NotionMapping `json:"title,omitempty"`
+	// Type        string // Doesn't need mapping
+	// User        string // Doesn't need maping
+	// Destination string // Is mapped to ExternalDestinationId
+	File []NotionMapping `json:"file,omitempty"`
+
+	// UserCreated []NotionMapping
+	// Archived    []NotionMapping
+
+	Audio []AudioMapping `json:"audio,omitempty"`
+
+	// UserProperties map[string][]NotionMapping `json:"user_properties,omitempty"`
 }
+
+type AudioMapping struct {
+	Transcription []NotionMapping `json:"transcription,omitempty"`
+}
+
+type NotionMapping struct {
+	TargetType  MappingTargetType  `json:"target_type" validate:"required"`
+	Status      BlockMappingStatus `json:"status"      validate:"required"`
+	ContentHash string             `json:"contentHash" validate:"required"`
+	Created     string             `json:"created"     validate:"required"`
+	Updated     string             `json:"updated"     validate:"required"`
+
+	// Should match Type
+	ExternalPropertyId *string `json:"external_property_id" validate:"required_if=Type property"`
+	ExternalBlockId    *string `json:"external_block_id"    validate:"required_if=Type block"`
+}
+
+type MappingTargetType string
+
+const (
+	MappingTargetTypeProperty       MappingTargetType = "property"
+	MappingTargetTypeBlock          MappingTargetType = "block"
+	MappingTargetTypeChildPageTitle MappingTargetType = "child-page-title"
+)
+
+type BlockMappingStatus string
+
+const (
+	BlockMappingStatusMapped  BlockMappingStatus = "mapped"
+	BlockMappingStatusError   BlockMappingStatus = "error"
+	BlockMappingStatusMissing BlockMappingStatus = "missing"
+)
 
 type integrationBlockNotionMapping struct {
 	record *models.Record
 	app    core.App
 }
 
-func NewIntegrationBlockNotionMapping(
+func CreateIntegrationBlockNotionMapping(
+	app core.App,
+) (IntegrationBlockNotionMapping, error) {
+	collection, err := app.Dao().FindCollectionByNameOrId(CollectionIntegrationBlockNotionMapping)
+	if err != nil {
+		slog.Error("Error finding collection", "error", err)
+		return nil, err
+	}
+
+	record := models.NewRecord(collection)
+	return &integrationBlockNotionMapping{record: record, app: app}, nil
+}
+
+func LoadIntegrationBlockNotionMapping(
 	record *models.Record,
 	app core.App,
 ) (IntegrationBlockNotionMapping, error) {
-	switch record.GetString(BlockNotionMappingFieldType) {
-	case string(BlockNotionMappingTypeVoiceNote):
-		return NewVoiceNoteMapping(record, app)
-	default:
-		slog.Error(
-			"Unsupported integration block notion mapping type",
-			"recordId",
-			record.Id,
-			"type",
-			record.GetString(BlockNotionMappingFieldType),
-		)
-		return nil, fmt.Errorf("unsupported integration block notion mapping type")
-	}
+	return &integrationBlockNotionMapping{record: record, app: app}, nil
 }
 
-func NewIntegrationBlockNotionMappingFromModel(
+func LoadIntegrationBlockNotionMappingFromModel(
 	model models.Model,
 	app core.App,
 ) (IntegrationBlockNotionMapping, error) {
-	return NewIntegrationBlockNotionMapping(model.(*models.Record), app)
+	return LoadIntegrationBlockNotionMapping(model.(*models.Record), app)
 }
 
 func (i *integrationBlockNotionMapping) Id() string {
 	return i.record.Id
 }
 
-func (i *integrationBlockNotionMapping) Type() BlockNotionMappingType {
-	return BlockNotionMappingType(i.record.GetString(BlockNotionMappingFieldType))
+func (i *integrationBlockNotionMapping) BlockType() BlockType {
+	return BlockType(i.record.GetString(BlockNotionMappingFieldBlockType))
 }
 
 func (i *integrationBlockNotionMapping) InternalBlock() string {
@@ -114,6 +159,20 @@ func (i *integrationBlockNotionMapping) ExternalUrl() string {
 	return i.record.GetString(BlockNotionMappingFieldExternalUrl)
 }
 
+func (i *integrationBlockNotionMapping) Config() (*BlockMappingConfig, error) {
+	var config BlockMappingConfig
+	err := i.record.UnmarshalJSONField(BlockNotionMappingFieldConfig, &config)
+	if err != nil {
+		slog.Error("Error unmarshalling config", "id", i.Id(), "error", err)
+		return nil, err
+	}
+	return &config, nil
+}
+
+func (i *integrationBlockNotionMapping) SetBlockType(blockType BlockType) {
+	i.record.Set(BlockNotionMappingFieldBlockType, string(blockType))
+}
+
 func (i *integrationBlockNotionMapping) SetInternalBlock(internalBlock string) {
 	i.record.Set(BlockNotionMappingFieldInternalBlock, internalBlock)
 }
@@ -134,103 +193,25 @@ func (i *integrationBlockNotionMapping) SetExternalUrl(externalUrl string) {
 	i.record.Set(BlockNotionMappingFieldExternalUrl, externalUrl)
 }
 
-// ----------------------------
-// Voice note mapping
-// ----------------------------
-
-type VoiceNoteMapping interface {
-	IntegrationBlockNotionMapping
-
-	Config() (*VoiceNoteMappingConfig, error)
-	SetConfig(config *VoiceNoteMappingConfig) error
-
-	ValidateAndSubmit(txDao *daos.Dao) error
-}
-
-type VoiceNoteMappingConfig struct {
-	Properties  []NotionPropertyMapping `json:"properties"  validate:"required"`
-	AudioBlocks []AudioBlockMapping     `json:"audioBlocks" validate:"required"`
-}
-
-type BlockMappingStatus string
-
-const (
-	BlockMappingStatusMapped  BlockMappingStatus = "mapped"
-	BlockMappingStatusMissing BlockMappingStatus = "missing"
-)
-
-type BlockMapping struct {
-	InternalBlockId string             `json:"internalBlockId" validate:"required"`
-	Status          BlockMappingStatus `json:"status"          validate:"required"`
-	ExternalBlockId string             `json:"externalBlockId" validate:"required_if=Status mapped"`
-	ContentHash     string             `json:"contentHash"     validate:"required"`
-	Created         time.Time          `json:"created"         validate:"required"`
-	Updated         time.Time          `json:"updated"         validate:"required"`
-}
-
-type AudioBlockMapping struct {
-	BlockMapping
-	Filename string `json:"filename" validate:"required"`
-}
-
-type voiceNoteMapping struct {
-	integrationBlockNotionMapping
-}
-
-// Creates an empty voice note mapping with the expected type
-func CreateVoiceNoteMapping(app core.App) (VoiceNoteMapping, error) {
-	collection, err := app.Dao().FindCollectionByNameOrId(CollectionIntegrationBlockNotionMapping)
-	if err != nil {
-		return nil, err
-	}
-
-	record := models.NewRecord(collection)
-	record.Set(BlockNotionMappingFieldType, string(BlockNotionMappingTypeVoiceNote))
-	return NewVoiceNoteMapping(record, app)
-}
-
-func NewVoiceNoteMapping(record *models.Record, app core.App) (VoiceNoteMapping, error) {
-	if record.GetString(BlockNotionMappingFieldType) != string(BlockNotionMappingTypeVoiceNote) {
-		slog.Error(
-			"Not a voice note mapping",
-			"recordId",
-			record.Id,
-			"type",
-			record.GetString(BlockNotionMappingFieldType),
-		)
-		return nil, fmt.Errorf("not a voice note mapping")
-	}
-
-	return &voiceNoteMapping{integrationBlockNotionMapping{record: record}}, nil
-}
-
-func (v *voiceNoteMapping) Config() (*VoiceNoteMappingConfig, error) {
-	var config VoiceNoteMappingConfig
-	err := v.record.UnmarshalJSONField(BlockNotionMappingFieldConfig, &config)
-	if err != nil {
-		slog.Error("Error unmarshalling config", "id", v.Id(), "error", err)
-		return nil, err
-	}
-	return &config, nil
-}
-
-func (v *voiceNoteMapping) SetConfig(config *VoiceNoteMappingConfig) error {
+func (i *integrationBlockNotionMapping) SetConfig(config *BlockMappingConfig) error {
 	err := validate.Struct(config)
 	if err != nil {
-		slog.Error("Error validating config", "id", v.Id(), "error", err)
 		return err
 	}
 
-	configJSON, err := json.Marshal(config)
+	configBytes, err := json.Marshal(config)
 	if err != nil {
-		slog.Error("Error marshalling config", "id", v.Id(), "error", err)
+		slog.Error("Error marshalling integration block notion mapping config", "err", err)
 		return err
 	}
-	v.record.Set(BlockNotionMappingFieldConfig, configJSON)
+	i.record.Set(BlockNotionMappingFieldConfig, string(configBytes))
 	return nil
 }
 
-func (v *voiceNoteMapping) ValidateAndSubmit(txDao *daos.Dao) error {
-	form := forms.NewRecordUpsert(v.app, v.record)
+func (i *integrationBlockNotionMapping) ValidateAndSubmit(txDao *daos.Dao) error {
+	form := forms.NewRecordUpsert(i.app, i.record)
+	form.SetDao(txDao)
+
+	// Submit calls validate internally
 	return form.Submit()
 }
