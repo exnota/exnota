@@ -4,12 +4,13 @@ import (
 	"errors"
 	"fmt"
 
+	lib_block "exnota.com/backend/lib/block"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/tools/types"
 )
 
 const (
-	CollectionBlock       = "block"
+	CollectionBlock       = lib_block.CollectionBlock
 	BlockFieldType        = "type"
 	BlockFieldUser        = "user"
 	BlockFieldTitle       = "title"

@@ -3,7 +3,6 @@ package job
 import (
 	block_data "exnota.com/backend/block/data"
 	"exnota.com/backend/job/data"
-	"exnota.com/backend/lib/pb_file"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
 )
@@ -48,15 +47,19 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 			}
 
 			// Create export job
-			err = blockJobWriter.CreateCreateVoiceNoteExportJob(data.CreateCreateVoiceNoteRequest{
-				BlockId:       block.Id(),
-				UserId:        block.User(),
-				DestinationId: block.Destination(),
-				Files: []data.VoiceNoteFile{
-					{
-						Path: pb_file.Path(j.app, block.Record(), block.File()),
-						Name: block.File(),
-					}},
+			file := block.File()
+			err = blockJobWriter.CreateExportJob(data.CreateCreateVoiceNoteRequest{
+				BlockId: block.Id(),
+				UserId:  block.User(),
+				Config: data.ExportJobConfig{
+					Command: data.CommandCreateVoiceNote,
+					Data: data.ExportJobData{
+						Id:          block.Id(),
+						Type:        data.BlockTypeVoiceNote,
+						Destination: block.Destination(),
+						File:        &file,
+					},
+				},
 			})
 			if err != nil {
 				return err

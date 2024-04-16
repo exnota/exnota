@@ -48,7 +48,9 @@ func (i *integrationDestination) DestinationId() string {
 }
 
 func (i *integrationDestination) ExternalRecordType() IntegrationDestinationRecordType {
-	return IntegrationDestinationRecordType(i.record.GetString(IntegrationDestinationFieldExternalRecordType))
+	return IntegrationDestinationRecordType(
+		i.record.GetString(IntegrationDestinationFieldExternalRecordType),
+	)
 }
 
 func (i *integrationDestination) ExternalRecordId() string {

@@ -9,7 +9,6 @@ import (
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service/notion"
 	"exnota.com/backend/job/data"
-	"exnota.com/backend/lib/pb_file"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -28,75 +27,57 @@ func NewExportJobRunner(app core.App) ExportJobRunner {
 }
 
 func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (data.Summary, error) {
-	genericExportJob, err := data.NewExportBlockJob(genericJob.Record(), app)
+	job, err := data.LoadExportBlockJob(genericJob.Record(), app)
 	if err != nil {
 		return nil, err
 	}
 
-	switch job := genericExportJob.(type) {
-	case data.VoiceNoteJob:
-		slog.Info("Running create voice note job", "jobId", genericJob.ID())
+	// Get integration info
+	config, err := job.Config()
+	if err != nil {
+		return nil, err
+	}
+	destination := config.Data.Destination
+	genericIntegration, err := j.integrationForDestination(destination, job.User())
+	if err != nil {
+		return nil, err
+	}
 
-		// Get integration info
-		configData, err := job.ConfigData()
-		if err != nil {
-			return nil, err
+	// Complete job if destination isn't integrated
+	if genericIntegration == nil {
+		slog.Info("No integration for destination", "destinationId", destination)
+		return data.NewSummaryComplete(
+			"No integration for destination " + destination,
+		), nil
+	}
+
+	// Call appropriate integration type handler
+	switch integration := genericIntegration.(type) {
+	case integ_data.NotionIntegration:
+		slog.Info("Running Notion export job", "job", job.ID())
+		notionExporter := notion.NewNotionExporter(j.app)
+		exportRequest := notion.NoteRequest{
+			Integration: integration,
+			Id:          config.Data.Id,
+			Title:       config.Data.Title,
+			Type:        notion.ExportBlockType(config.Data.Type),
+			Destination: config.Data.Destination,
+			File:        config.Data.File,
 		}
-		genericIntegration, err := j.integrationForDestination(configData.DestinationId, job.User())
-		if err != nil {
-			return nil, err
-		}
-
-		// Complete job if destination isn't integrated
-		if genericIntegration == nil {
-			slog.Info("No integration for destination", "destinationId", configData.DestinationId)
-			return data.NewSummaryComplete(
-				"No integration for destination " + configData.DestinationId,
-			), nil
-		}
-
-		// Get external record id
-		externalRecordId, err := j.getExternalRecordId(configData.DestinationId)
-		if err != nil {
-			return nil, err
-		}
-
-		// Call appropriate integration type handler
-		switch integration := genericIntegration.(type) {
-		case integ_data.NotionIntegration:
-			slog.Info("Running create voice note job for Notion", "job", genericJob)
-
-			files := make([]notion.VoiceNotePageRequestFile, len(configData.Files))
-			for i, file := range configData.Files {
-				url := pb_file.Url(file.Name, block_data.CollectionBlock, configData.InternalBlockId, j.app)
-				files[i] = notion.VoiceNotePageRequestFile{
-					Collection: block_data.CollectionBlock,
-					BlockId:    configData.InternalBlockId,
-					FileName:   file.Name,
-					FilePath:   file.Path,
-					Url:        url,
-				}
+		if config.Data.Audio != nil {
+			exportRequest.Audio = &notion.AudioField{
+				Transcription: config.Data.Audio.Transcription,
 			}
-
-			notionExporter := notion.NewNotionExporter(j.app)
-			err := notionExporter.VoiceNoteExporter(notion.VoiceNoteRequest{
-				Integration:      integration,
-				DestinationId:    configData.DestinationId,
-				BlockId:          configData.InternalBlockId,
-				ExternalRecordId: externalRecordId,
-				Files:            files,
-			})
-			if err != nil {
-				return nil, err
-			}
-			return data.NewSummaryCompleteEmpty(), nil
-		default:
-			slog.Error("Unknown integration type", "type", reflect.TypeOf(genericIntegration))
-			return nil, fmt.Errorf("Unknown integration type: %s", reflect.TypeOf(genericIntegration))
 		}
+
+		err := notionExporter.NoteExporter(exportRequest)
+		if err != nil {
+			return nil, err
+		}
+		return data.NewSummaryCompleteEmpty(), nil
 	default:
-		slog.Error("unknown export job type", "type", genericExportJob.Type())
-		return nil, fmt.Errorf("unknown export job type: %s", genericExportJob.Type())
+		slog.Error("Unknown integration type", "type", reflect.TypeOf(genericIntegration))
+		return nil, fmt.Errorf("Unknown integration type: %s", reflect.TypeOf(genericIntegration))
 	}
 }
 
@@ -153,23 +134,4 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 	return integration, nil
 }
 
-func (j *exportJobRunnerConfig) getExternalRecordId(destinationId string) (string, error) {
-	integrationDestinationRepo := integ_data.NewIntegrationDestinationFetcher(j.app)
-	integrationDestination, err := integrationDestinationRepo.FetchByDestinationId(destinationId)
-	if err != nil {
-		slog.Error(
-			"Error fetching integration destination by destination id",
-			"destinationId",
-			destinationId,
-			"err",
-			err,
-		)
-		return "", err
-	}
-	if integrationDestination == nil {
-		slog.Error("Integration destination not found", "destinationId", destinationId)
-		return "", fmt.Errorf("Integration destination not found")
-	}
-
-	return integrationDestination.ExternalRecordId(), nil
-}
+// TODO: Remove if not used
