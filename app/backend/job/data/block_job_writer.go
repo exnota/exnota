@@ -72,20 +72,22 @@ func (b *blockJobWriter) CreateTranscriptionJob(blockId string, userId string) e
 // }
 
 type CreateCreateVoiceNoteRequest struct {
-	BlockId       string                `validate:"required"`
-	UserId        string                `validate:"required"`
-	DestinationId string                `validate:"required"`
-	Files         []CreateVoiceNoteFile `validate:"required,min=1"`
+	BlockId       string          `validate:"required"`
+	UserId        string          `validate:"required"`
+	DestinationId string          `validate:"required"`
+	Files         []VoiceNoteFile `validate:"required,min=1"`
 }
 
-func (b *blockJobWriter) CreateCreateVoiceNoteExportJob(request CreateCreateVoiceNoteRequest) error {
+func (b *blockJobWriter) CreateCreateVoiceNoteExportJob(
+	request CreateCreateVoiceNoteRequest,
+) error {
 	err := validate.Struct(request)
 	if err != nil {
 		return err
 	}
 
 	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		job, err := CreateCreateVoiceNoteJob(b.app)
+		job, err := CreateVoiceNoteJob(b.app)
 		if err != nil {
 			return err
 		}
@@ -94,7 +96,7 @@ func (b *blockJobWriter) CreateCreateVoiceNoteExportJob(request CreateCreateVoic
 		job.SetBlock(request.BlockId)
 		job.SetUser(request.UserId)
 		job.SetNextRunAt(time.Now())
-		data := &CreateVoiceNoteJobConfigData{
+		data := &VoiceNoteJobConfigData{
 			InternalBlockId: request.BlockId,
 			DestinationId:   request.DestinationId,
 			Files:           request.Files,
@@ -104,7 +106,7 @@ func (b *blockJobWriter) CreateCreateVoiceNoteExportJob(request CreateCreateVoic
 			return err
 		}
 
-		err = job.ValidateCreateVoiceNote(txDao)
+		err = job.ValidateVoiceNote(txDao)
 		if err != nil {
 			return err
 		}

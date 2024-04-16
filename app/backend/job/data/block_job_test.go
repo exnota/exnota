@@ -28,7 +28,10 @@ func TestNewExportBlockJob(t *testing.T) {
 		record.Set("user", "the user id")
 		record.Set("next_run_at", "2021-01-01T00:00:00Z")
 		record.Set("error_count", 0)
-		record.Set("config", `{"command":"create_voice_note","data":{"internal_block_id":"the block id","destination_id":"the destination id","files":[{"path":"the path","name":"the name"}]}}`)
+		record.Set(
+			"config",
+			`{"command":"create_voice_note","data":{"internal_block_id":"the block id","destination_id":"the destination id","files":[{"path":"the path","name":"the name"}]}}`,
+		)
 
 		t.Run("An unknown type will error", func(t *testing.T) {
 			unknownTypeRecord := models.NewRecord(collection)
@@ -64,7 +67,11 @@ func TestNewExportBlockJob(t *testing.T) {
 				t.Fatal(err)
 			}
 			if job.Type() != BlockJobTypeExport {
-				t.Errorf("NewExportBlockJob() form type = %v, want %v", job.Type(), BlockJobTypeExport)
+				t.Errorf(
+					"NewExportBlockJob() form type = %v, want %v",
+					job.Type(),
+					BlockJobTypeExport,
+				)
 			}
 		})
 
@@ -74,7 +81,11 @@ func TestNewExportBlockJob(t *testing.T) {
 				t.Fatal(err)
 			}
 			if job.Status() != BlockJobStatusWaiting {
-				t.Errorf("NewExportBlockJob() form status = %v, want %v", job.Status(), BlockJobStatusWaiting)
+				t.Errorf(
+					"NewExportBlockJob() form status = %v, want %v",
+					job.Status(),
+					BlockJobStatusWaiting,
+				)
 			}
 		})
 
@@ -91,7 +102,11 @@ func TestNewExportBlockJob(t *testing.T) {
 				"message": "a summary",
 			}
 			if reflect.DeepEqual(summary, expectedSummary) {
-				t.Errorf("NewExportBlockJob() returned unexpected summary: got %v, want %v", summary, expectedSummary)
+				t.Errorf(
+					"NewExportBlockJob() returned unexpected summary: got %v, want %v",
+					summary,
+					expectedSummary,
+				)
 			}
 		})
 
@@ -101,7 +116,11 @@ func TestNewExportBlockJob(t *testing.T) {
 				t.Fatal(err)
 			}
 			if job.Block() != "the block id" {
-				t.Errorf("NewExportBlockJob() returned unexpected block: got %v, want %v", job.Block(), "the block id")
+				t.Errorf(
+					"NewExportBlockJob() returned unexpected block: got %v, want %v",
+					job.Block(),
+					"the block id",
+				)
 			}
 		})
 
@@ -111,7 +130,11 @@ func TestNewExportBlockJob(t *testing.T) {
 				t.Fatal(err)
 			}
 			if job.User() != "the user id" {
-				t.Errorf("NewExportBlockJob() returned unexpected user: got %v, want %v", job.User(), "the user id")
+				t.Errorf(
+					"NewExportBlockJob() returned unexpected user: got %v, want %v",
+					job.User(),
+					"the user id",
+				)
 			}
 		})
 
@@ -122,7 +145,11 @@ func TestNewExportBlockJob(t *testing.T) {
 			}
 			expectedTime, _ := time.Parse(time.RFC3339, "2021-01-01T00:00:00Z")
 			if !job.NextRunAt().Equal(expectedTime) {
-				t.Errorf("NewExportBlockJob() returned unexpected next run time: got %v, want %v", job.NextRunAt(), expectedTime)
+				t.Errorf(
+					"NewExportBlockJob() returned unexpected next run time: got %v, want %v",
+					job.NextRunAt(),
+					expectedTime,
+				)
 			}
 		})
 
@@ -132,7 +159,11 @@ func TestNewExportBlockJob(t *testing.T) {
 				t.Fatal(err)
 			}
 			if job.ErrorCount() != 0 {
-				t.Errorf("NewExportBlockJob() returned unexpected error count: got %v, want %v", job.ErrorCount(), 0)
+				t.Errorf(
+					"NewExportBlockJob() returned unexpected error count: got %v, want %v",
+					job.ErrorCount(),
+					0,
+				)
 			}
 		})
 	})
@@ -160,7 +191,11 @@ func TestNewExportBlockJob(t *testing.T) {
 				t.Fatal(err)
 			}
 			if _, ok := job.(TranscriptionBlockJob); !ok {
-				t.Errorf("NewBlockJob() returned unexpected type: got %T, want %T", job, TranscriptionBlockJob(nil))
+				t.Errorf(
+					"NewBlockJob() returned unexpected type: got %T, want %T",
+					job,
+					TranscriptionBlockJob(nil),
+				)
 			}
 		})
 
@@ -198,7 +233,10 @@ func TestNewExportBlockJob(t *testing.T) {
 		record.Set("user", "the user id")
 		record.Set("next_run_at", "2021-01-01T00:00:00Z")
 		record.Set("error_count", 0)
-		record.Set("config", `{"command":"create_voice_note","data":{"internal_block_id":"the block id","destination_id":"the destination id","files":[{"path":"the path","name":"the name"}]}}`)
+		record.Set(
+			"config",
+			`{"command":"create_voice_note","data":{"internal_block_id":"the block id","destination_id":"the destination id","files":[{"path":"the path","name":"the name"}]}}`,
+		)
 
 		t.Run("NewBlockJob factory returns an ExportBlockJob", func(t *testing.T) {
 			job, err := NewBlockJob(record, app)
@@ -206,7 +244,11 @@ func TestNewExportBlockJob(t *testing.T) {
 				t.Fatal(err)
 			}
 			if _, ok := job.(ExportBlockJob); !ok {
-				t.Errorf("NewBlockJob() returned unexpected type: got %T, want %T", job, ExportBlockJob(nil))
+				t.Errorf(
+					"NewBlockJob() returned unexpected type: got %T, want %T",
+					job,
+					ExportBlockJob(nil),
+				)
 			}
 		})
 
@@ -298,15 +340,22 @@ func TestNewExportBlockJob(t *testing.T) {
 		record.Set("user", "the user id")
 		record.Set("next_run_at", "2021-01-01T00:00:00Z")
 		record.Set("error_count", 0)
-		record.Set("config", `{"command":"create_voice_note","data":{"internal_block_id":"the block id","destination_id":"the destination id","files":[{"path":"the path","name":"the name"}]}}`)
+		record.Set(
+			"config",
+			`{"command":"create_voice_note","data":{"internal_block_id":"the block id","destination_id":"the destination id","files":[{"path":"the path","name":"the name"}]}}`,
+		)
 
 		t.Run("NewBlockJob factory returns a CreateVoiceNoteJob", func(t *testing.T) {
 			job, err := NewBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, ok := job.(CreateVoiceNoteJob); !ok {
-				t.Errorf("NewBlockJob() returned unexpected type: got %T, want %T", job, CreateVoiceNoteJob(nil))
+			if _, ok := job.(VoiceNoteJob); !ok {
+				t.Errorf(
+					"NewBlockJob() returned unexpected type: got %T, want %T",
+					job,
+					VoiceNoteJob(nil),
+				)
 			}
 		})
 
@@ -315,8 +364,12 @@ func TestNewExportBlockJob(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, ok := job.(CreateVoiceNoteJob); !ok {
-				t.Errorf("NewExportBlockJob() returned unexpected type: got %T, want %T", job, CreateVoiceNoteJob(nil))
+			if _, ok := job.(VoiceNoteJob); !ok {
+				t.Errorf(
+					"NewExportBlockJob() returned unexpected type: got %T, want %T",
+					job,
+					VoiceNoteJob(nil),
+				)
 			}
 		})
 
@@ -332,32 +385,35 @@ func TestNewExportBlockJob(t *testing.T) {
 			exportRecord.Set("error_count", 0)
 			exportRecord.Set("config", nil)
 
-			_, err := NewCreateVoiceNoteJob(exportRecord, app)
+			_, err := NewVoiceNoteJob(exportRecord, app)
 			if err == nil {
 				t.Errorf("NewCreateVoiceNoteJob() did not return an error")
 			}
 		})
 
-		t.Run("NewCreateVoiceNoteJob factory errors if not a create voice note command", func(t *testing.T) {
-			invalidConfigRecord := models.NewRecord(collection)
-			invalidConfigRecord.SetId("15-character-id")
-			invalidConfigRecord.Set("type", "export")
-			invalidConfigRecord.Set("status", "waiting")
-			invalidConfigRecord.Set("summary", `{"message": "a summary"}`)
-			invalidConfigRecord.Set("block", "the block id")
-			invalidConfigRecord.Set("user", "the user id")
-			invalidConfigRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
-			invalidConfigRecord.Set("error_count", 0)
-			invalidConfigRecord.Set("config", `{"command":"invalid command"}`)
+		t.Run(
+			"NewCreateVoiceNoteJob factory errors if not a create voice note command",
+			func(t *testing.T) {
+				invalidConfigRecord := models.NewRecord(collection)
+				invalidConfigRecord.SetId("15-character-id")
+				invalidConfigRecord.Set("type", "export")
+				invalidConfigRecord.Set("status", "waiting")
+				invalidConfigRecord.Set("summary", `{"message": "a summary"}`)
+				invalidConfigRecord.Set("block", "the block id")
+				invalidConfigRecord.Set("user", "the user id")
+				invalidConfigRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
+				invalidConfigRecord.Set("error_count", 0)
+				invalidConfigRecord.Set("config", `{"command":"invalid command"}`)
 
-			_, err := NewCreateVoiceNoteJob(invalidConfigRecord, app)
-			if err == nil {
-				t.Errorf("NewCreateVoiceNoteJob() did not return an error")
-			}
-		})
+				_, err := NewVoiceNoteJob(invalidConfigRecord, app)
+				if err == nil {
+					t.Errorf("NewCreateVoiceNoteJob() did not return an error")
+				}
+			},
+		)
 
 		t.Run("ConfigData returns the config data", func(t *testing.T) {
-			job, err := NewCreateVoiceNoteJob(record, app)
+			job, err := NewVoiceNoteJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -368,16 +424,32 @@ func TestNewExportBlockJob(t *testing.T) {
 			}
 
 			if configData.InternalBlockId != "the block id" {
-				t.Errorf("ConfigData() returned unexpected internal block id: got %v, want %v", configData.InternalBlockId, "the block id")
+				t.Errorf(
+					"ConfigData() returned unexpected internal block id: got %v, want %v",
+					configData.InternalBlockId,
+					"the block id",
+				)
 			}
 			if configData.DestinationId != "the destination id" {
-				t.Errorf("ConfigData() returned unexpected destination id: got %v, want %v", configData.DestinationId, "the destination id")
+				t.Errorf(
+					"ConfigData() returned unexpected destination id: got %v, want %v",
+					configData.DestinationId,
+					"the destination id",
+				)
 			}
 			if configData.Files[0].Path != "the path" {
-				t.Errorf("ConfigData() returned unexpected file path: got %v, want %v", configData.Files[0].Path, "the path")
+				t.Errorf(
+					"ConfigData() returned unexpected file path: got %v, want %v",
+					configData.Files[0].Path,
+					"the path",
+				)
 			}
 			if configData.Files[0].Name != "the name" {
-				t.Errorf("ConfigData() returned unexpected file name: got %v, want %v", configData.Files[0].Name, "the name")
+				t.Errorf(
+					"ConfigData() returned unexpected file name: got %v, want %v",
+					configData.Files[0].Name,
+					"the name",
+				)
 			}
 		})
 
@@ -391,8 +463,11 @@ func TestNewExportBlockJob(t *testing.T) {
 			invalidConfigRecord.Set("user", "the user id")
 			invalidConfigRecord.Set("next_run_at", "2021-01-01T00:00:00Z")
 			invalidConfigRecord.Set("error_count", 0)
-			invalidConfigRecord.Set("config", `{"command":"create_voice_note","data":{"key":"value"}}`)
-			job, err := NewCreateVoiceNoteJob(invalidConfigRecord, app)
+			invalidConfigRecord.Set(
+				"config",
+				`{"command":"create_voice_note","data":{"key":"value"}}`,
+			)
+			job, err := NewVoiceNoteJob(invalidConfigRecord, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -413,17 +488,20 @@ func TestNewExportBlockJob(t *testing.T) {
 			record.Set("user", "the user id")
 			record.Set("next_run_at", "2021-01-01T00:00:00Z")
 			record.Set("error_count", 0)
-			record.Set("config", `{"command":"create_voice_note","data":{"internal_block_id":"the block id","destination_id":"the destination id","files":[{"path":"the path","name":"the name"}]}}`)
+			record.Set(
+				"config",
+				`{"command":"create_voice_note","data":{"internal_block_id":"the block id","destination_id":"the destination id","files":[{"path":"the path","name":"the name"}]}}`,
+			)
 
-			job, err := NewCreateVoiceNoteJob(record, app)
+			job, err := NewVoiceNoteJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			configData := &CreateVoiceNoteJobConfigData{
+			configData := &VoiceNoteJobConfigData{
 				InternalBlockId: "new block id",
 				DestinationId:   "new destination id",
-				Files: []CreateVoiceNoteFile{
+				Files: []VoiceNoteFile{
 					{
 						Path: "new path",
 						Name: "new name",
@@ -442,16 +520,32 @@ func TestNewExportBlockJob(t *testing.T) {
 			}
 
 			if configData.InternalBlockId != "new block id" {
-				t.Errorf("ConfigData() returned unexpected internal block id: got %v, want %v", configData.InternalBlockId, "new block id")
+				t.Errorf(
+					"ConfigData() returned unexpected internal block id: got %v, want %v",
+					configData.InternalBlockId,
+					"new block id",
+				)
 			}
 			if configData.DestinationId != "new destination id" {
-				t.Errorf("ConfigData() returned unexpected destination id: got %v, want %v", configData.DestinationId, "new destination id")
+				t.Errorf(
+					"ConfigData() returned unexpected destination id: got %v, want %v",
+					configData.DestinationId,
+					"new destination id",
+				)
 			}
 			if configData.Files[0].Path != "new path" {
-				t.Errorf("ConfigData() returned unexpected file path: got %v, want %v", configData.Files[0].Path, "new path")
+				t.Errorf(
+					"ConfigData() returned unexpected file path: got %v, want %v",
+					configData.Files[0].Path,
+					"new path",
+				)
 			}
 			if configData.Files[0].Name != "new name" {
-				t.Errorf("ConfigData() returned unexpected file name: got %v, want %v", configData.Files[0].Name, "new name")
+				t.Errorf(
+					"ConfigData() returned unexpected file name: got %v, want %v",
+					configData.Files[0].Name,
+					"new name",
+				)
 			}
 		})
 	})

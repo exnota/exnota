@@ -296,7 +296,7 @@ func NewExportBlockJob(r *models.Record, app core.App) (ExportBlockJob, error) {
 
 	switch config.Command {
 	case ExportJobCommandCreateVoiceNote:
-		return NewCreateVoiceNoteJob(r, app)
+		return NewVoiceNoteJob(r, app)
 	default:
 		return nil, fmt.Errorf("Unknown export job command: %s", config.Command)
 	}
@@ -313,36 +313,36 @@ type NewExportBlockJobFormConfig struct {
 // Create Voice Note export job
 // ----------------------------
 
-type CreateVoiceNoteJobConfig struct {
-	Command ExportJobCommand             `json:"command" validate:"eq=create_voice_note"`
-	Data    CreateVoiceNoteJobConfigData `json:"data"    validate:"required"`
+type VoiceNoteJobConfig struct {
+	Command ExportJobCommand       `json:"command" validate:"eq=create_voice_note"`
+	Data    VoiceNoteJobConfigData `json:"data"    validate:"required"`
 }
 
-type CreateVoiceNoteJobConfigData struct {
-	InternalBlockId string                `json:"internal_block_id" validate:"required"`
-	DestinationId   string                `json:"destination_id"    validate:"required"`
-	Files           []CreateVoiceNoteFile `json:"files"             validate:"required"`
+type VoiceNoteJobConfigData struct {
+	InternalBlockId string          `json:"internal_block_id" validate:"required"`
+	DestinationId   string          `json:"destination_id"    validate:"required"`
+	Files           []VoiceNoteFile `json:"files"             validate:"required"`
 }
 
-type CreateVoiceNoteFile struct {
+type VoiceNoteFile struct {
 	Path string
 	Name string
 }
 
-type CreateVoiceNoteJob interface {
+type VoiceNoteJob interface {
 	ExportBlockJob
 
-	ConfigData() (*CreateVoiceNoteJobConfigData, error)
-	SetConfigData(data *CreateVoiceNoteJobConfigData) error
+	ConfigData() (*VoiceNoteJobConfigData, error)
+	SetConfigData(data *VoiceNoteJobConfigData) error
 
-	ValidateCreateVoiceNote(txDao *daos.Dao) error
+	ValidateVoiceNote(txDao *daos.Dao) error
 }
 
-type createVoiceNoteJob struct {
+type voiceNoteJob struct {
 	exportBlockJob
 }
 
-func CreateCreateVoiceNoteJob(app core.App) (CreateVoiceNoteJob, error) {
+func CreateVoiceNoteJob(app core.App) (VoiceNoteJob, error) {
 	collection, err := app.Dao().FindCollectionByNameOrId(CollectionBlockJob)
 	if err != nil {
 		return nil, err
@@ -350,15 +350,15 @@ func CreateCreateVoiceNoteJob(app core.App) (CreateVoiceNoteJob, error) {
 
 	record := models.NewRecord(collection)
 	record.Set(BlockJobFieldType, string(BlockJobTypeExport))
-	// Set the command so calling NewCreateVoiceNoteJob doesn't error, but this
+	// Set the command so calling NewVoiceNoteJob doesn't error, but this
 	// isn't a valid config without 'data'. This could be refactored.
-	record.Set(BlockJobFieldConfig, &CreateVoiceNoteJobConfig{
+	record.Set(BlockJobFieldConfig, &VoiceNoteJobConfig{
 		Command: ExportJobCommandCreateVoiceNote,
 	})
-	return NewCreateVoiceNoteJob(record, app)
+	return NewVoiceNoteJob(record, app)
 }
 
-func NewCreateVoiceNoteJob(r *models.Record, app core.App) (CreateVoiceNoteJob, error) {
+func NewVoiceNoteJob(r *models.Record, app core.App) (VoiceNoteJob, error) {
 	// Validate is export job
 	if BlockJobType(r.GetString(BlockJobFieldType)) != BlockJobTypeExport {
 		return nil, fmt.Errorf("Not an export job: %s", r.GetString(BlockJobFieldType))
@@ -375,7 +375,7 @@ func NewCreateVoiceNoteJob(r *models.Record, app core.App) (CreateVoiceNoteJob, 
 		return nil, fmt.Errorf("Not a create voice note job: %s", config.Command)
 	}
 
-	return &createVoiceNoteJob{
+	return &voiceNoteJob{
 		exportBlockJob: exportBlockJob{
 			blockJob: blockJob{
 				record: r,
@@ -385,8 +385,8 @@ func NewCreateVoiceNoteJob(r *models.Record, app core.App) (CreateVoiceNoteJob, 
 	}, nil
 }
 
-func (j *createVoiceNoteJob) ConfigData() (*CreateVoiceNoteJobConfigData, error) {
-	var config CreateVoiceNoteJobConfig
+func (j *voiceNoteJob) ConfigData() (*VoiceNoteJobConfigData, error) {
+	var config VoiceNoteJobConfig
 	err := j.record.UnmarshalJSONField(BlockJobFieldConfig, &config)
 	if err != nil {
 		slog.Error("Error unmarshalling create voice note job config", "err", err)
@@ -402,8 +402,8 @@ func (j *createVoiceNoteJob) ConfigData() (*CreateVoiceNoteJobConfigData, error)
 	return &config.Data, nil
 }
 
-func (j *createVoiceNoteJob) SetConfigData(data *CreateVoiceNoteJobConfigData) error {
-	config := CreateVoiceNoteJobConfig{
+func (j *voiceNoteJob) SetConfigData(data *VoiceNoteJobConfigData) error {
+	config := VoiceNoteJobConfig{
 		Command: ExportJobCommandCreateVoiceNote,
 		Data:    *data,
 	}
@@ -423,7 +423,7 @@ func (j *createVoiceNoteJob) SetConfigData(data *CreateVoiceNoteJobConfigData) e
 	return nil
 }
 
-func (j *createVoiceNoteJob) ValidateCreateVoiceNote(txDao *daos.Dao) error {
+func (j *voiceNoteJob) ValidateVoiceNote(txDao *daos.Dao) error {
 	// Validate config by reading
 	_, err := j.ConfigData()
 	return err
