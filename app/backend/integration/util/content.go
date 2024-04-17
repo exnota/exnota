@@ -3,9 +3,6 @@ package util
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"io"
-	"log/slog"
-	"os"
 )
 
 func ContentHash(input string) string {
@@ -13,19 +10,6 @@ func ContentHash(input string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func FileContentHash(filePath string) (string, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		slog.Error("Error opening file", "filePath", filePath, "err", err)
-		return "", err
-	}
-	defer f.Close()
-
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		slog.Error("Error copying file content", "filePath", filePath, "err", err)
-		return "", err
-	}
-	hash := string(h.Sum(nil))
-	return hash, nil
+func FileContentHash(collection, recordId, filename string) string {
+	return ContentHash(collection + recordId + filename)
 }

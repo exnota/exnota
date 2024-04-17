@@ -3,6 +3,7 @@ package notion
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/util"
@@ -121,20 +122,24 @@ func (s *notionExporter) createNote(request NoteRequest) error {
 	}
 	writer := NewNotionWriter(s.app, *config.Auth.AccessToken)
 
+	// Handle title
 	if request.Title != nil {
 		return fmt.Errorf("Title is not supported yet")
 	}
 
+	// Handle audio
 	if request.Audio != nil {
 		return fmt.Errorf("Audio is not supported yet")
 	}
 
+	// Handle file
 	children := []gonotion.Block{}
+	var file gonotion.Block
 	if request.File != nil {
 		switch request.Type {
 		case BlockTypeVoiceNote:
-			audioBlock := s.createAudioBlock(*request.File, request.Id)
-			children = append(children, audioBlock)
+			file = s.createAudioBlock(*request.File, request.Id)
+			children = append(children, file)
 		default:
 			return fmt.Errorf("Invalid export block type: %s", request.Type)
 		}
@@ -142,26 +147,77 @@ func (s *notionExporter) createNote(request NoteRequest) error {
 
 	switch destinationObject.Type() {
 	case data.IntegrationNotionObjectTypeDatabase:
+		databaseId := destinationObject.ExternalId()
 		result, err := writer.CreateDatabasePage(CreateDatabasePageRequest{
-			DatabaseId: destinationObject.ExternalId(),
+			DatabaseId: databaseId,
 			Children:   children,
 		})
 		if err != nil {
 			return err
 		}
 		slog.Info("Created database page", "id", result.PageId)
-		// TODO: Handle result
+
+		now := time.Now()
+		config := &data.BlockMappingConfig{}
+
+		// Map file
+		s.addFileMapping(config, request, result.Children, request.File, now)
+
+		// Map audio, transcription in future
+
+		mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
+		err = mappingWriter.Create(data.CreateMappingRequest{
+			BlockType:           data.BlockTypeVoiceNote,
+			InternalBlock:       request.Id,
+			InternalDestination: request.Destination,
+			ExternalBlock:       result.PageId,
+			ExternalDestination: databaseId,
+			ExternalUrl:         result.Url,
+			Config:              config,
+		})
+		if err != nil {
+			slog.Error("Failed to create mapping", "err", err)
+			return err
+		}
+
+		// TODO: Return results
 		return nil
 	case data.IntegrationNotionObjectTypePage:
+		parentId := destinationObject.ExternalId()
 		result, err := writer.CreateChildPage(CreateChildPageRequest{
-			ParentId: destinationObject.Id(),
+			ParentId: parentId,
 			Children: children,
 		})
 		if err != nil {
 			return err
 		}
 		slog.Info("Created child page", "id", result.PageId)
-		// TODO: handle result
+
+		now := time.Now()
+
+		config := &data.BlockMappingConfig{}
+
+		// Map file
+		s.addFileMapping(config, request, result.Children, request.File, now)
+
+		// Map audio, transcription in future
+
+		mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
+		err = mappingWriter.Create(data.CreateMappingRequest{
+			BlockType:           data.BlockTypeVoiceNote,
+			InternalBlock:       request.Id,
+			InternalDestination: request.Destination,
+			ExternalBlock:       result.PageId,
+			ExternalDestination: parentId,
+			ExternalUrl:         result.Url,
+			Config:              config,
+		})
+		if err != nil {
+			slog.Error("Failed to create mapping", "err", err)
+			return err
+		}
+
+		// TODO: return summary
 		return nil
 	}
 
@@ -210,5 +266,52 @@ func (s *notionExporter) createAudioBlock(
 			URL: url,
 		},
 		Caption: util.TextToRichText(file),
+	}
+}
+
+func (s *notionExporter) addFileMapping(
+	config *data.BlockMappingConfig,
+	request NoteRequest,
+	childrenIds []string,
+	file *string,
+	now time.Time) {
+	if file != nil {
+		if len(childrenIds) != 1 {
+			slog.Error(
+				"Expected one child block. Skipping mapping.",
+				"num",
+				len(childrenIds),
+			)
+			config.File = []data.NotionMapping{
+				{
+					TargetType: data.MappingTargetTypeBlock,
+					Status:     data.BlockMappingStatusError,
+					ContentHash: util.FileContentHash(
+						lib_block.CollectionBlock,
+						request.Id,
+						*request.File,
+					),
+					Created: now,
+					Updated: now,
+					// No ExternalBlockId,
+				},
+			}
+		} else {
+			config.File = []data.NotionMapping{
+				{
+					TargetType: data.MappingTargetTypeBlock,
+					Status:     data.BlockMappingStatusMapped,
+					ContentHash: util.FileContentHash(
+						lib_block.CollectionBlock,
+						request.Id,
+						*request.File,
+					),
+					Created:         now,
+					Updated:         now,
+					ExternalBlockId: &childrenIds[0],
+				},
+			}
+
+		}
 	}
 }

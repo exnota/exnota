@@ -3,6 +3,7 @@ package data
 import (
 	"encoding/json"
 	"log/slog"
+	"time"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -75,8 +76,8 @@ type NotionMapping struct {
 	TargetType  MappingTargetType  `json:"target_type" validate:"required"`
 	Status      BlockMappingStatus `json:"status"      validate:"required"`
 	ContentHash string             `json:"contentHash" validate:"required"`
-	Created     string             `json:"created"     validate:"required"`
-	Updated     string             `json:"updated"     validate:"required"`
+	Created     time.Time          `json:"created"     validate:"required"`
+	Updated     time.Time          `json:"updated"     validate:"required"`
 
 	// Should match Type
 	ExternalPropertyId *string `json:"external_property_id" validate:"required_if=Type property"`
