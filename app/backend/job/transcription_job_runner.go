@@ -162,12 +162,13 @@ func (j *transcriptionJobRunner) saveTranscription(
 	blockId string,
 ) error {
 	err := j.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		// TODO: Refactor to use repo
 		blockRecord, err := txDao.FindRecordById("block", blockId)
 		if err != nil {
 			return err
 		}
 
-		block, err := block_data.NewVoiceNoteBlock(blockRecord)
+		block, err := block_data.NewVoiceNoteBlock(blockRecord, j.app)
 		if err != nil {
 			return err
 		}
@@ -182,9 +183,7 @@ func (j *transcriptionJobRunner) saveTranscription(
 			return err
 		}
 
-		// TODO: Should this be updated to use forms.NewRecordUpsert so it has validations?
-		// https://pocketbase.io/docs/go-records/#update-existing-record
-		err = txDao.SaveRecord(blockRecord)
+		err = block.ValidateAndSubmit(txDao)
 		if err != nil {
 			return err
 		}

@@ -306,7 +306,7 @@ const (
 	BlockTypeTextNote  ExportBlockType = "text-note"
 )
 
-type audioField struct {
+type AudioField struct {
 	Transcription []string `json:"transcription"`
 }
 
@@ -317,7 +317,7 @@ type ExportJobData struct {
 	Type        ExportBlockType `json:"type"        validate:"required,oneof=voice-note text-note"`
 	Destination string          `json:"destination" validate:"required"`
 	File        *string         `json:"file"`
-	Audio       *audioField     `json:"audio"`
+	Audio       *AudioField     `json:"audio"`
 
 	// UserCreated string
 	// Archived    string

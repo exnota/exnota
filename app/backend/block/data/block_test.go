@@ -16,7 +16,7 @@ func TestAudioBlockSetters(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		block, err := NewVoiceNoteBlock(rec)
+		block, err := NewVoiceNoteBlock(rec, app)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -33,8 +33,13 @@ func TestAudioBlockSetters(t *testing.T) {
 			if err != nil {
 				t.Errorf("Expected transcription to be set, got error %v", err)
 			}
-			if rec.GetString("audio") != "{\"transcription\":[\"new paragraph 1\",\"new paragraph 2\"]}" {
-				t.Errorf("Expected audio to be marshalled correctly, but got %v", rec.GetString("audio"))
+			if rec.GetString(
+				"audio",
+			) != "{\"transcription\":[\"new paragraph 1\",\"new paragraph 2\"]}" {
+				t.Errorf(
+					"Expected audio to be marshalled correctly, but got %v",
+					rec.GetString("audio"),
+				)
 			}
 		})
 	})
@@ -45,7 +50,7 @@ func TestAudioBlockSetters(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		block, err := NewVoiceNoteBlock(rec)
+		block, err := NewVoiceNoteBlock(rec, app)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -55,8 +60,13 @@ func TestAudioBlockSetters(t *testing.T) {
 			t.Errorf("Expected transcription to be set, got error %v", err)
 		}
 
-		if rec.GetString("audio") != "{\"transcription\":[\"new paragraph 1\",\"new paragraph 2\"]}" {
-			t.Errorf("Expected new transcription to be marshalled correctly, but got %v", rec.GetString("audio"))
+		if rec.GetString(
+			"audio",
+		) != "{\"transcription\":[\"new paragraph 1\",\"new paragraph 2\"]}" {
+			t.Errorf(
+				"Expected new transcription to be marshalled correctly, but got %v",
+				rec.GetString("audio"),
+			)
 		}
 
 	})
