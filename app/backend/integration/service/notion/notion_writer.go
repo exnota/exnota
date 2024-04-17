@@ -39,11 +39,13 @@ func NewNotionWriter(app core.App, accessToken string) NotionWriter {
 type CreateDatabasePageResponse struct {
 	PageId   string
 	Children []string
+	Url      string
 }
 
 type CreateChildPageResponse struct {
 	PageId   string
 	Children []string
+	Url      string
 }
 
 func (n *notionWriter) CreateDatabasePage(
@@ -98,6 +100,7 @@ func (n *notionWriter) CreateDatabasePage(
 	return &CreateDatabasePageResponse{
 		PageId:   pageId,
 		Children: childIDs,
+		Url:      page.URL,
 	}, nil
 }
 
@@ -136,5 +139,6 @@ func (n *notionWriter) CreateChildPage(
 	return &CreateChildPageResponse{
 		PageId:   pageId,
 		Children: childIDs,
+		Url:      page.URL,
 	}, nil
 }
