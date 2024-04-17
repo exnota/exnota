@@ -5,6 +5,9 @@ import (
 	"fmt"
 
 	lib_block "exnota.com/backend/lib/block"
+	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/daos"
+	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/tools/types"
 )
@@ -30,6 +33,7 @@ type Block interface {
 	Record() *models.Record
 
 	Id() string
+	Title() *string
 	Type() BlockType
 	User() string
 	Destination() string
@@ -41,10 +45,17 @@ type Block interface {
 	SetTitle(string)
 }
 
+// TODO: Refactor so there's a block struct that implements the Block interface
+// and defines common methods, and then have separate structs for each block
+// type to implement the specific methods. See block_job.
+
 type VoiceNoteBlock interface {
 	Block
 
+	Audio() (*AudioField, error)
 	SetTranscription([]string) error
+
+	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
 func NewBlock(r *models.Record) (Block, error) {
@@ -72,22 +83,24 @@ func NewBlockFromModel(m models.Model) (Block, error) {
 	return NewBlock(castedRecord)
 }
 
-func NewVoiceNoteBlock(r *models.Record) (VoiceNoteBlock, error) {
+func NewVoiceNoteBlock(r *models.Record, app core.App) (VoiceNoteBlock, error) {
 	blockType := r.GetString(BlockFieldType)
 	if blockType != string(BlockTypeVoiceNote) {
 		return nil, errors.New("not a voice note block")
 	}
 	var b VoiceNoteBlock = &voiceNoteBlock{
+		app:    app,
 		record: r,
 	}
 	return b, nil
 }
 
 type voiceNoteBlock struct {
+	app    core.App
 	record *models.Record
 }
 
-type audioField struct {
+type AudioField struct {
 	Transcription []string `json:"transcription"`
 }
 
@@ -97,6 +110,14 @@ func (b *voiceNoteBlock) Record() *models.Record {
 
 func (b *voiceNoteBlock) Id() string {
 	return b.record.Id
+}
+
+func (b *voiceNoteBlock) Title() *string {
+	title := b.record.GetString(BlockFieldTitle)
+	if title == "" {
+		return nil
+	}
+	return &title
 }
 
 func (b *voiceNoteBlock) Type() BlockType {
@@ -115,6 +136,29 @@ func (b *voiceNoteBlock) File() string {
 	return b.record.GetString(BlockFieldFile)
 }
 
+func (b *voiceNoteBlock) Audio() (*AudioField, error) {
+	// Detect if nil.
+	//
+	// Cannot simply use UnmarshalJSONField because if the field is nil, it will
+	// throw an error even though nil is a valid value.
+	raw := b.record.Get(BlockFieldAudio).(types.JsonRaw)
+	val, err := raw.Value()
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, nil
+	}
+
+	// Unmarshall
+	var field AudioField
+	err = b.record.UnmarshalJSONField(BlockFieldAudio, &field)
+	if err != nil {
+		return nil, err
+	}
+	return &field, err
+}
+
 func (b *voiceNoteBlock) SetTitle(title string) {
 	b.record.Set(BlockFieldTitle, title)
 }
@@ -126,9 +170,9 @@ func (b *voiceNoteBlock) SetTranscription(transcription []string) error {
 		return err
 	}
 
-	var field audioField
+	var field AudioField
 	if val == nil {
-		field = audioField{}
+		field = AudioField{}
 	} else {
 		err = b.record.UnmarshalJSONField(BlockFieldAudio, &field)
 		if err != nil {
@@ -138,7 +182,20 @@ func (b *voiceNoteBlock) SetTranscription(transcription []string) error {
 
 	field.Transcription = transcription
 	b.record.Set(BlockFieldAudio, field)
+
+	if b.Title() == nil && len(transcription) > 0 {
+		b.SetTitle(transcription[0])
+	}
+
 	return nil
+}
+
+func (b *voiceNoteBlock) ValidateAndSubmit(txDao *daos.Dao) error {
+	form := forms.NewRecordUpsert(b.app, b.record)
+	form.SetDao(txDao)
+
+	// Submit calls validate internally
+	return form.Submit()
 }
 
 type TextBlock interface {
@@ -155,6 +212,14 @@ func (t *textBlock) Record() *models.Record {
 
 func (t *textBlock) Id() string {
 	return t.record.Id
+}
+
+func (t *textBlock) Title() *string {
+	title := t.record.GetString(BlockFieldTitle)
+	if title == "" {
+		return nil
+	}
+	return &title
 }
 
 func (t *textBlock) Type() BlockType {

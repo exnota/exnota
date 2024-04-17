@@ -23,7 +23,7 @@ func NewBlockJobWorkflow(app core.App) BlockJobWorkflow {
 
 func (j *blockJobWorkflow) ApplyHooks() {
 	j.createNewVoiceNoteJobs()
-	// j.createExportJob()
+	// j.createAddTranscriptionJob()
 }
 
 func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
@@ -48,6 +48,18 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 
 			// Create export job
 			file := block.File()
+			var audio *data.AudioField
+			if audioBlock, ok := block.(block_data.VoiceNoteBlock); ok {
+				blockAudio, err := audioBlock.Audio()
+				if err != nil {
+					return err
+				}
+				if blockAudio != nil {
+					audio = &data.AudioField{
+						Transcription: blockAudio.Transcription,
+					}
+				}
+			}
 			err = blockJobWriter.CreateExportJob(data.CreateCreateVoiceNoteRequest{
 				BlockId: block.Id(),
 				UserId:  block.User(),
@@ -58,6 +70,8 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 						Type:        data.BlockTypeVoiceNote,
 						Destination: block.Destination(),
 						File:        &file,
+						Title:       block.Title(),
+						Audio:       audio,
 					},
 				},
 			})
@@ -69,8 +83,7 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 	})
 }
 
-// TODO: Update this to be exporting an 'addTranscription' job
-// func (j *blockJobWorkflow) createExportJob() {
+// func (j *blockJobWorkflow) createAddTranscriptionJob() {
 // 	// On transcription job completion, create an export job
 // 	j.app.OnModelAfterUpdate(data.CollectionBlockJob).Add(func(e *core.ModelEvent) error {
 // 		// Transcription jobs only
@@ -95,11 +108,41 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 // 		}
 
 // 		// Create export job
-// 		blockJobWriter := data.NewBlockJobWriter(j.app)
-// 		err = blockJobWriter.CreateExportJob(
-// 			updatedJob.Block(),
-// 			updatedJob.User(),
-// 		)
+// 		blockJobFetcher := block_data.NewBlockFetcher(j.app)
+// 		block, err := blockJobFetcher.FetchById(updatedJob.Block())
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		// get transcription
+// 		var audio *data.AudioField
+// 		if audioBlock, ok := block.(block_data.VoiceNoteBlock); ok {
+// 			blockAudio, err := audioBlock.Audio()
+// 			if err != nil {
+// 				return err
+// 			}
+// 			audio = &data.AudioField{
+// 				Transcription: blockAudio.Transcription,
+// 			}
+// 		}
+// 		// TODO: Where to update title?
+// 		err = blockJobWriter.CreateExportJob(data.CreateCreateVoiceNoteRequest{
+// 			BlockId: block.Id(),
+// 			UserId:  block.User(),
+// 			Config: data.ExportJobConfig{
+// 				Command: data.CommandCreateVoiceNote,
+// 				Data: data.ExportJobData{
+// 					Id:          block.Id(),
+// 					Type:        data.BlockTypeVoiceNote,
+// 					Destination: block.Destination(),
+// 					// TODO: Test that audio is updated
+// 					Audio: audio,
+// 				},
+// 			},
+// 		})
+// 		if err != nil {
+// 			return err
+// 		}
 
 // 		return err
 // 	})
