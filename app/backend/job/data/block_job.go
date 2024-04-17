@@ -276,7 +276,7 @@ type ExportBlockJob interface {
 }
 
 type ExportJobConfig struct {
-	Command ExportJobCommand `json:"command" validate:"required"`
+	Command ExportJobCommand `json:"command" validate:"required,oneof=create_voice_note"`
 	Data    ExportJobData    `json:"data"    validate:"required"`
 }
 
@@ -295,7 +295,7 @@ type audioField struct {
 type ExportJobData struct {
 	Id          string          `json:"id"          validate:"required"`
 	Title       *string         `json:"title"`
-	Type        ExportBlockType `json:"type"        validate:"required"`
+	Type        ExportBlockType `json:"type"        validate:"required,oneof=voice-note text-note"`
 	Destination string          `json:"destination" validate:"required"`
 	File        *string         `json:"file"`
 	Audio       *audioField     `json:"audio"`
@@ -319,10 +319,12 @@ func CreateExportJob(app core.App) (ExportBlockJob, error) {
 
 	record := models.NewRecord(collection)
 	record.Set(BlockJobFieldType, string(BlockJobTypeExport))
-	// Set the command so calling NewVoiceNoteJob doesn't error, but this
-	// isn't a valid config without 'data'. This could be refactored.
-	record.Set(BlockJobFieldConfig, &ExportJobConfig{})
-	return LoadExportBlockJob(record, app)
+	return &exportBlockJob{
+		blockJob: blockJob{
+			record: record,
+			app:    app,
+		},
+	}, nil
 }
 
 func LoadExportBlockJob(r *models.Record, app core.App) (ExportBlockJob, error) {
