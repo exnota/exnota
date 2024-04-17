@@ -51,19 +51,21 @@ type IntegrationBlockNotionMapping interface {
 	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
+// mapstructure:",omitempty" is used by the export job runner when persisting
+// the summary.
 type BlockMappingConfig struct {
 	// TODO: Which of these are NOT needed
 	// Id          string // Is mapped to InternalBlockId
-	Title []NotionMapping `json:"title,omitempty"`
+	Title []NotionMapping `json:"title,omitempty" mapstructure:",omitempty"`
 	// Type        string // Doesn't need mapping
 	// User        string // Doesn't need maping
 	// Destination string // Is mapped to ExternalDestinationId
-	File []NotionMapping `json:"file,omitempty"`
+	File []NotionMapping `json:"file,omitempty"  mapstructure:",omitempty"`
 
 	// UserCreated []NotionMapping
 	// Archived    []NotionMapping
 
-	Audio []AudioMapping `json:"audio,omitempty"`
+	Audio []AudioMapping `json:"audio,omitempty" mapstructure:",omitempty"`
 
 	// UserProperties map[string][]NotionMapping `json:"user_properties,omitempty"`
 }

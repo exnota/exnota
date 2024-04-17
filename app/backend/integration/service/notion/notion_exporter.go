@@ -15,7 +15,7 @@ import (
 )
 
 type NotionExporter interface {
-	NoteExporter(request NoteRequest) error
+	NoteExporter(request NoteRequest) (*ExportResult, error)
 }
 
 type notionExporter struct {
@@ -55,55 +55,65 @@ type NoteRequest struct {
 	Audio       *AudioField
 }
 
+// mapstructure:",omitempty" is used by the export job runner when persisting
+// the summary.
+type ExportResult struct {
+	Message      string                   `json:"message"`
+	ConfigUpdate *data.BlockMappingConfig `json:"configUpdate,omitempty" mapstructure:",omitempty"`
+}
+
 var validate = validator.New(validator.WithRequiredStructEnabled())
 
-func (s *notionExporter) NoteExporter(request NoteRequest) error {
+func (s *notionExporter) NoteExporter(request NoteRequest) (*ExportResult, error) {
 	err := validate.Struct(request)
 	if err != nil {
 		slog.Error("Invalid NoteExporter request", "err", err)
-		return err
+		return nil, err
 	}
 
 	switch request.Type {
 	case BlockTypeVoiceNote:
 		return s.voiceNoteExporter(request)
 	default:
-		return fmt.Errorf("Invalid export block type: %s", request.Type)
+		return nil, fmt.Errorf("Invalid export block type: %s", request.Type)
 	}
 }
 
-func (s *notionExporter) voiceNoteExporter(request NoteRequest) error {
+func (s *notionExporter) voiceNoteExporter(request NoteRequest) (*ExportResult, error) {
 	if request.Command == CommandCreateVoiceNote {
 		return s.createNote(request)
 	}
-	return fmt.Errorf("Invalid command: %s", request.Command)
+	return nil, fmt.Errorf("Invalid command: %s", request.Command)
 }
 
-func (s *notionExporter) createNote(request NoteRequest) error {
+func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) {
 	// Complete silently if mapping already exists, as this is a create operation
 	mappingFetcher := data.NewIntegrationBlockNotionMappingFetcher(s.app)
 	mapping, err := mappingFetcher.FetchByInternalBlockId(request.Id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if mapping != nil {
 		slog.Warn("Mapping already exists", "request.Id", request.Id)
-		return nil
+
+		return &ExportResult{
+			Message: "Mapping already exists",
+		}, nil
 	}
 
 	// Get external destination object
 	notionObjectInternalId, err := s.getNotionObjectInternalId(request.Destination)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	objectFetcher := data.NewIntegrationNotionObjectFetcher(s.app)
 	destinationObject, err := objectFetcher.FetchById(notionObjectInternalId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if destinationObject == nil {
 		slog.Error("No notion object found", "id", notionObjectInternalId)
-		return fmt.Errorf("No notion object found: %s", notionObjectInternalId)
+		return nil, fmt.Errorf("No notion object found: %s", notionObjectInternalId)
 	}
 
 	// TODO: When needing to update title or other properties:
@@ -118,18 +128,18 @@ func (s *notionExporter) createNote(request NoteRequest) error {
 	// Create page in Notion
 	config, err := request.Integration.Config()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	writer := NewNotionWriter(s.app, *config.Auth.AccessToken)
 
 	// Handle title
 	if request.Title != nil {
-		return fmt.Errorf("Title is not supported yet")
+		return nil, fmt.Errorf("Title is not supported yet")
 	}
 
 	// Handle audio
 	if request.Audio != nil {
-		return fmt.Errorf("Audio is not supported yet")
+		return nil, fmt.Errorf("Audio is not supported yet")
 	}
 
 	// Handle file
@@ -141,7 +151,7 @@ func (s *notionExporter) createNote(request NoteRequest) error {
 			file = s.createAudioBlock(*request.File, request.Id)
 			children = append(children, file)
 		default:
-			return fmt.Errorf("Invalid export block type: %s", request.Type)
+			return nil, fmt.Errorf("Invalid export block type: %s", request.Type)
 		}
 	}
 
@@ -153,7 +163,7 @@ func (s *notionExporter) createNote(request NoteRequest) error {
 			Children:   children,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		slog.Info("Created database page", "id", result.PageId)
 
@@ -177,11 +187,13 @@ func (s *notionExporter) createNote(request NoteRequest) error {
 		})
 		if err != nil {
 			slog.Error("Failed to create mapping", "err", err)
-			return err
+			return nil, err
 		}
 
-		// TODO: Return results
-		return nil
+		return &ExportResult{
+			Message:      "Mapped to database page",
+			ConfigUpdate: config,
+		}, nil
 	case data.IntegrationNotionObjectTypePage:
 		parentId := destinationObject.ExternalId()
 		result, err := writer.CreateChildPage(CreateChildPageRequest{
@@ -189,7 +201,7 @@ func (s *notionExporter) createNote(request NoteRequest) error {
 			Children: children,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		slog.Info("Created child page", "id", result.PageId)
 
@@ -212,26 +224,19 @@ func (s *notionExporter) createNote(request NoteRequest) error {
 			ExternalUrl:         result.Url,
 			Config:              config,
 		})
+
 		if err != nil {
 			slog.Error("Failed to create mapping", "err", err)
-			return err
+			return nil, err
 		}
 
-		// TODO: return summary
-		return nil
+		return &ExportResult{
+			Message:      "Mapped to child page",
+			ConfigUpdate: config,
+		}, nil
 	}
 
-	// // TODO: Get children and map to files
-	// notionFetcher := NewNotionFetcher(s.app)
-	// pageChildren, err := notionFetcher.FetchPageChildren(page.ID, request.Integration.Id())
-	// if err != nil {
-	// 	// Don't fail as this isn't critical for the user
-	// 	slog.Error("Failed to fetch page children. Will map without them.", "err", err)
-	// }
-	// // TODO: Remove this
-	// slog.Info("Fetched page children", "num", len(pageChildren))
-
-	return nil
+	return nil, fmt.Errorf("Invalid destination object type: %s", destinationObject.Type())
 }
 
 func (s *notionExporter) getNotionObjectInternalId(destinationId string) (string, error) {
