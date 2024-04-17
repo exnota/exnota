@@ -58,6 +58,7 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 		notionExporter := notion.NewNotionExporter(j.app)
 		exportRequest := notion.NoteRequest{
 			Integration: integration,
+			Command:     notion.ExportCommand(config.Command),
 			Id:          config.Data.Id,
 			Title:       config.Data.Title,
 			Type:        notion.ExportBlockType(config.Data.Type),

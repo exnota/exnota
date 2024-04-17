@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"exnota.com/backend/test"
+	"github.com/go-playground/validator/v10"
 	"github.com/pocketbase/pocketbase/models"
 )
 
@@ -270,7 +271,7 @@ func TestNewExportBlockJob(t *testing.T) {
 			}
 		})
 
-		t.Run("NewExportBlockJob factory errors if config is nil", func(t *testing.T) {
+		t.Run("LoadExportBlockJob factory errors if config is nil", func(t *testing.T) {
 			invalidConfigRecord := models.NewRecord(collection)
 			invalidConfigRecord.SetId("15-character-id")
 			invalidConfigRecord.Set("type", "export")
@@ -284,11 +285,11 @@ func TestNewExportBlockJob(t *testing.T) {
 
 			_, err := LoadExportBlockJob(invalidConfigRecord, app)
 			if err == nil {
-				t.Errorf("NewExportBlockJob() did not return an error")
+				t.Errorf("LoadExportBlockJob() did not return an error")
 			}
 		})
 
-		t.Run("NewExportBlockJob factory errors if config is invalid JSON", func(t *testing.T) {
+		t.Run("LoadExportBlockJob factory errors if config is invalid JSON", func(t *testing.T) {
 			invalidConfigRecord := models.NewRecord(collection)
 			invalidConfigRecord.SetId("15-character-id")
 			invalidConfigRecord.Set("type", "export")
@@ -302,8 +303,140 @@ func TestNewExportBlockJob(t *testing.T) {
 
 			_, err := LoadExportBlockJob(invalidConfigRecord, app)
 			if err == nil {
-				t.Errorf("NewExportBlockJob() did not return an error")
+				t.Errorf("LoadExportBlockJob() did not return an error")
 			}
+		})
+
+		t.Run("Config is validated", func(t *testing.T) {
+			t.Run("Command must be valid", func(t *testing.T) {
+				job, err := CreateExportJob(app)
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = job.SetConfig(ExportJobConfig{
+					Command: "invalid command",
+					Data: ExportJobData{
+						Id:          "the block id",
+						Type:        BlockTypeVoiceNote,
+						Destination: "the destination id",
+					},
+				})
+				if err == nil {
+					t.Errorf("SetConfig() did not return an invalid command error")
+				} else {
+					if validationErrors, ok := err.(validator.ValidationErrors); !ok {
+						t.Errorf("SetConfig() returned an unexpected error: got %T, want %T", err, validator.ValidationErrors{})
+					} else {
+						hi := validationErrors[0]
+						if hi.Tag() != "oneof" {
+							t.Errorf("SetConfig() returned an unexpected error: got %v, want %v", hi.Tag(), "oneof")
+						}
+					}
+				}
+			})
+			t.Run("Type must be valid", func(t *testing.T) {
+				job, err := CreateExportJob(app)
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = job.SetConfig(ExportJobConfig{
+					Command: CommandCreateVoiceNote,
+					Data: ExportJobData{
+						Id:          "the block id",
+						Type:        "invalid type",
+						Destination: "the destination id",
+					},
+				})
+				if err == nil {
+					t.Errorf("SetConfig() did not return an invalid type error")
+				} else {
+					if validationErrors, ok := err.(validator.ValidationErrors); !ok {
+						t.Errorf("SetConfig() returned an unexpected error: got %T, want %T", err, validator.ValidationErrors{})
+					} else {
+						hi := validationErrors[0]
+						if hi.Tag() != "oneof" {
+							t.Errorf("SetConfig() returned an unexpected error: got %v, want %v", hi.Tag(), "oneof")
+						}
+					}
+				}
+			})
+		})
+		t.Run("Export job data is invalid if required fields are missing", func(t *testing.T) {
+			t.Run("Errors if Id is missing", func(t *testing.T) {
+				job, err := CreateExportJob(app)
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = job.SetConfig(ExportJobConfig{
+					Command: CommandCreateVoiceNote,
+					Data: ExportJobData{
+						Type:        BlockTypeVoiceNote,
+						Destination: "the destination id",
+					},
+				})
+				if err == nil {
+					t.Errorf("SetConfig() did not return an id required error")
+				} else {
+					if validationErrors, ok := err.(validator.ValidationErrors); !ok {
+						t.Errorf("SetConfig() returned an unexpected error: got %T, want %T", err, validator.ValidationErrors{})
+					} else {
+						hi := validationErrors[0]
+						if hi.Tag() != "required" {
+							t.Errorf("SetConfig() returned an unexpected error: got %v, want %v", hi.Tag(), "required")
+						}
+					}
+				}
+			})
+			t.Run("Errors if type is missing", func(t *testing.T) {
+				job, err := CreateExportJob(app)
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = job.SetConfig(ExportJobConfig{
+					Command: CommandCreateVoiceNote,
+					Data: ExportJobData{
+						Id:          "the block id",
+						Destination: "the destination id",
+					},
+				})
+				if err == nil {
+					t.Errorf("SetConfig() did not return a type required error")
+				} else {
+					if validationErrors, ok := err.(validator.ValidationErrors); !ok {
+						t.Errorf("SetConfig() returned an unexpected error: got %T, want %T", err, validator.ValidationErrors{})
+					} else {
+						hi := validationErrors[0]
+						if hi.Tag() != "required" {
+							t.Errorf("SetConfig() returned an unexpected error: got %v, want %v", hi.Tag(), "required")
+						}
+					}
+				}
+			})
+			t.Run("Errors if destination is missing", func(t *testing.T) {
+				job, err := CreateExportJob(app)
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = job.SetConfig(ExportJobConfig{
+					Command: CommandCreateVoiceNote,
+					Data: ExportJobData{
+						Id:   "the block id",
+						Type: BlockTypeVoiceNote,
+					},
+				})
+				if err == nil {
+					t.Errorf("SetConfig() did not return a destination required error")
+				} else {
+					if validationErrors, ok := err.(validator.ValidationErrors); !ok {
+						t.Errorf("SetConfig() returned an unexpected error: got %T, want %T", err, validator.ValidationErrors{})
+					} else {
+						hi := validationErrors[0]
+						if hi.Tag() != "required" {
+							t.Errorf("SetConfig() returned an unexpected error: got %v, want %v", hi.Tag(), "required")
+						}
+					}
+				}
+			})
 		})
 
 	})

@@ -36,20 +36,33 @@ type AudioField struct {
 	Transcription []string `json:"transcription"`
 }
 
+type ExportCommand string
+
+const (
+	CommandCreateVoiceNote ExportCommand = "create_voice_note"
+)
+
 type NoteRequest struct {
 	Integration data.NotionIntegration `validate:"required"`
+	Command     ExportCommand          `validate:"required"`
 
-	Id          string          `json:"id"          validate:"required"`
-	Title       *string         `json:"title"`
-	Type        ExportBlockType `json:"type"        validate:"required"`
-	Destination string          `json:"destination" validate:"required"`
-	File        *string         `json:"file"`
-	Audio       *AudioField     `json:"audio"`
+	Id          string `validate:"required"`
+	Title       *string
+	Type        ExportBlockType `validate:"required"`
+	Destination string          `validate:"required"`
+	File        *string
+	Audio       *AudioField
 }
 
 var validate = validator.New(validator.WithRequiredStructEnabled())
 
 func (s *notionExporter) NoteExporter(request NoteRequest) error {
+	err := validate.Struct(request)
+	if err != nil {
+		slog.Error("Invalid NoteExporter request", "err", err)
+		return err
+	}
+
 	switch request.Type {
 	case BlockTypeVoiceNote:
 		return s.voiceNoteExporter(request)
@@ -58,14 +71,14 @@ func (s *notionExporter) NoteExporter(request NoteRequest) error {
 	}
 }
 
-// TODO: Create AND update need to be handled
 func (s *notionExporter) voiceNoteExporter(request NoteRequest) error {
-	err := validate.Struct(request)
-	if err != nil {
-		slog.Error("Invalid VoiceNoteExporter request", "err", err)
-		return err
+	if request.Command == CommandCreateVoiceNote {
+		return s.createVoiceNote(request)
 	}
+	return fmt.Errorf("Invalid command: %s", request.Command)
+}
 
+func (s *notionExporter) createVoiceNote(request NoteRequest) error {
 	// Complete silently if mapping already exists, as this is a create operation
 	mappingFetcher := data.NewIntegrationBlockNotionMappingFetcher(s.app)
 	mapping, err := mappingFetcher.FetchByInternalBlockId(request.Id)
