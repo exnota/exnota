@@ -160,6 +160,25 @@ func (s summaryComplete) AsMap() map[string]interface{} {
 	}
 }
 
+type summaryWithData struct {
+	message string
+	data    map[string]interface{}
+}
+
+func NewSummaryWithData(message string, data map[string]interface{}) Summary {
+	return summaryWithData{
+		message: message,
+		data:    data,
+	}
+}
+
+func (s summaryWithData) AsMap() map[string]interface{} {
+	return map[string]interface{}{
+		"message": s.message,
+		"data":    s.data,
+	}
+}
+
 type summaryError struct {
 	error error
 }

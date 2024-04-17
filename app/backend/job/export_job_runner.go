@@ -9,6 +9,7 @@ import (
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service/notion"
 	"exnota.com/backend/job/data"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -71,11 +72,11 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 			}
 		}
 
-		err := notionExporter.NoteExporter(exportRequest)
+		exportResult, err := notionExporter.NoteExporter(exportRequest)
 		if err != nil {
 			return nil, err
 		}
-		return data.NewSummaryCompleteEmpty(), nil
+		return j.exportResultToSummary(exportResult)
 	default:
 		slog.Error("Unknown integration type", "type", reflect.TypeOf(genericIntegration))
 		return nil, fmt.Errorf("Unknown integration type: %s", reflect.TypeOf(genericIntegration))
@@ -135,4 +136,13 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 	return integration, nil
 }
 
-// TODO: Remove if not used
+func (j *exportJobRunnerConfig) exportResultToSummary(
+	result *notion.ExportResult,
+) (data.Summary, error) {
+	resultData := map[string]interface{}{}
+	err := mapstructure.Decode(result.ConfigUpdate, &resultData)
+	if err != nil {
+		return nil, err
+	}
+	return data.NewSummaryWithData(result.Message, resultData), nil
+}
