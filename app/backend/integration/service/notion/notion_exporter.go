@@ -73,12 +73,12 @@ func (s *notionExporter) NoteExporter(request NoteRequest) error {
 
 func (s *notionExporter) voiceNoteExporter(request NoteRequest) error {
 	if request.Command == CommandCreateVoiceNote {
-		return s.createVoiceNote(request)
+		return s.createNote(request)
 	}
 	return fmt.Errorf("Invalid command: %s", request.Command)
 }
 
-func (s *notionExporter) createVoiceNote(request NoteRequest) error {
+func (s *notionExporter) createNote(request NoteRequest) error {
 	// Complete silently if mapping already exists, as this is a create operation
 	mappingFetcher := data.NewIntegrationBlockNotionMappingFetcher(s.app)
 	mapping, err := mappingFetcher.FetchByInternalBlockId(request.Id)
@@ -91,18 +91,18 @@ func (s *notionExporter) createVoiceNote(request NoteRequest) error {
 	}
 
 	// Get external destination object
-	externalRecordId, err := s.getExternalRecordId(request.Destination)
+	notionObjectInternalId, err := s.getNotionObjectInternalId(request.Destination)
 	if err != nil {
 		return err
 	}
 	objectFetcher := data.NewIntegrationNotionObjectFetcher(s.app)
-	destinationObject, err := objectFetcher.FetchById(externalRecordId)
+	destinationObject, err := objectFetcher.FetchById(notionObjectInternalId)
 	if err != nil {
 		return err
 	}
 	if destinationObject == nil {
-		slog.Error("No notion object found", "id", externalRecordId)
-		return fmt.Errorf("No notion object found: %s", externalRecordId)
+		slog.Error("No notion object found", "id", notionObjectInternalId)
+		return fmt.Errorf("No notion object found: %s", notionObjectInternalId)
 	}
 
 	// TODO: When needing to update title or other properties:
@@ -121,13 +121,30 @@ func (s *notionExporter) createVoiceNote(request NoteRequest) error {
 	}
 	writer := NewNotionWriter(s.app, *config.Auth.AccessToken)
 
-	audioBlock := s.createAudioBlock(*request.File, request.Id)
+	if request.Title != nil {
+		return fmt.Errorf("Title is not supported yet")
+	}
+
+	if request.Audio != nil {
+		return fmt.Errorf("Audio is not supported yet")
+	}
+
+	children := []gonotion.Block{}
+	if request.File != nil {
+		switch request.Type {
+		case BlockTypeVoiceNote:
+			audioBlock := s.createAudioBlock(*request.File, request.Id)
+			children = append(children, audioBlock)
+		default:
+			return fmt.Errorf("Invalid export block type: %s", request.Type)
+		}
+	}
 
 	switch destinationObject.Type() {
 	case data.IntegrationNotionObjectTypeDatabase:
 		result, err := writer.CreateDatabasePage(CreateDatabasePageRequest{
 			DatabaseId: destinationObject.ExternalId(),
-			Children:   []gonotion.Block{audioBlock},
+			Children:   children,
 		})
 		if err != nil {
 			return err
@@ -138,7 +155,7 @@ func (s *notionExporter) createVoiceNote(request NoteRequest) error {
 	case data.IntegrationNotionObjectTypePage:
 		result, err := writer.CreateChildPage(CreateChildPageRequest{
 			ParentId: destinationObject.Id(),
-			Children: []gonotion.Block{audioBlock},
+			Children: children,
 		})
 		if err != nil {
 			return err
@@ -161,7 +178,7 @@ func (s *notionExporter) createVoiceNote(request NoteRequest) error {
 	return nil
 }
 
-func (s *notionExporter) getExternalRecordId(destinationId string) (string, error) {
+func (s *notionExporter) getNotionObjectInternalId(destinationId string) (string, error) {
 	integrationDestinationRepo := data.NewIntegrationDestinationFetcher(s.app)
 	integrationDestination, err := integrationDestinationRepo.FetchByDestinationId(destinationId)
 	if err != nil {
