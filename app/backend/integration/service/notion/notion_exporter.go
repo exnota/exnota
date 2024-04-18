@@ -274,21 +274,17 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	}
 
 	// Handle audio field (transcription)
-	// TODO: Check if transcriptions already mapped, and only proceed if content
-	// hash is different or status was not mapped. AND APPLY TO afterid as well
-	transcriptionChildren := []gonotion.Block{}
-	if request.Audio != nil {
-		for _, transcription := range request.Audio.Transcription {
-			transcriptionChildren = append(transcriptionChildren, gonotion.ParagraphBlock{
-				RichText: util.TextToRichText(transcription),
-			})
-		}
+	transcriptionChildren, err := s.addTranscriptionChildren(
+		request.Id,
+		mappingConfig,
+		request,
+	)
+	if err != nil {
+		return nil, err
 	}
-
-	// Get afterId for transcriptions
-
+	// Get position to insert transcription children
 	var afterId *string
-	if len(mappingConfig.File) > 0 {
+	if len(mappingConfig.File) > 0 && len(transcriptionChildren) > 0 {
 		afterId = mappingConfig.File[0].ExternalBlockId
 	}
 
@@ -439,4 +435,110 @@ func (s *notionExporter) addTitleProperty(
 	}
 
 	return nil
+}
+
+func (s *notionExporter) addTranscriptionChildren(
+	blockId string,
+	mappingConfig *data.BlockMappingConfig,
+	request NoteRequest,
+) ([]gonotion.Block, error) {
+	if request.Audio == nil || len(request.Audio.Transcription) == 0 {
+		return []gonotion.Block{}, nil
+	}
+
+	// Find if existing mappings were successful or not
+	children := []gonotion.Block{}
+	for _, audioMapping := range mappingConfig.Audio {
+		// Only support one set of mapped transcriptions for now
+		if len(children) > 0 {
+			slog.Error("Multiple transcription mappings are not supported yet", "blockId", blockId)
+			return nil, fmt.Errorf("Multiple transcription mappings are not supported yet")
+		}
+
+		// Only support cases where the number of mappings match the number of
+		// requested transcriptions. This is expected to always be the case as
+		// transcription blocks are added at the same time.
+		if len(audioMapping.Transcription) != len(request.Audio.Transcription) {
+			slog.Error(
+				"Mismatch between transcription mappings and request",
+				"num audioMapping transcriptions",
+				len(audioMapping.Transcription),
+				"num request transcriptions",
+				len(request.Audio.Transcription),
+				"blockId",
+				blockId,
+			)
+			return nil, fmt.Errorf("Mismatch between transcription mappings and request")
+		}
+
+		// Only support mapping transcriptions to blocks for now.
+		//
+		// There should be at least one transcription in this mapping as the
+		// length must match the request transcriptions (see condition above)
+		// and if request transcriptions is 0, we have returned early.
+		if audioMapping.Transcription[0].TargetType != data.MappingTargetTypeBlock {
+			slog.Error(
+				"Unexpected mapping target type",
+				"targetType",
+				audioMapping.Transcription[0].TargetType,
+				"blockId",
+				blockId,
+			)
+			return nil, fmt.Errorf("Unexpected mapping target type")
+		}
+
+		// Skip if all transcriptions have been successfully mapped
+		successfulMappings := 0
+		for _, transcriptionMapping := range audioMapping.Transcription {
+			if transcriptionMapping.Status == data.BlockMappingStatusMapped {
+				successfulMappings++
+			}
+		}
+		if successfulMappings == len(request.Audio.Transcription) {
+			slog.Warn(
+				"All transcriptions have already been mapped." + " Skipping and not checking content hash as multiple transcription mappings are not supported yet.",
+			)
+			continue
+		}
+
+		// Only support cases where there are no successful mappings, rather
+		// than partial. This is expected to always be the case as transcription
+		// blocks are added at the same time.
+		if successfulMappings > 0 {
+			slog.Error(
+				"Unexpected number of successful mappings",
+				"num successful mappings",
+				successfulMappings,
+				"num request transcriptions",
+				len(request.Audio.Transcription),
+				"blockId",
+				blockId,
+			)
+			return nil, fmt.Errorf("Unexpected number of successful mappings")
+		}
+
+		// At this point
+		// - There are the same number of mappings as transcriptions
+		// - They were all unsuccessful
+		// - They are all mapped to blocks
+		//
+		// So add all children to the array.
+		for _, transcription := range request.Audio.Transcription {
+			children = append(children, gonotion.ParagraphBlock{
+				RichText: util.TextToRichText(transcription),
+			})
+		}
+	}
+
+	if len(children) > 0 {
+		return children, nil
+	}
+
+	// If there are no mappings, add all children.
+	for _, transcription := range request.Audio.Transcription {
+		children = append(children, gonotion.ParagraphBlock{
+			RichText: util.TextToRichText(transcription),
+		})
+	}
+	return children, nil
 }
