@@ -258,14 +258,14 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	}
 
 	// Handle title
-	// TODO: Check that it differs from mappig content hash
+	mappingConfig, err := mapping.Config()
+	if err != nil {
+		return nil, err
+	}
 	props := gonotion.DatabasePageProperties{}
-	if request.Title != nil {
-		// This works for database pages and child pages, for title only.
-		props["title"] = gonotion.DatabasePageProperty{
-			Type:  gonotion.DBPropTypeTitle,
-			Title: util.TextToRichText(*request.Title),
-		}
+	err = s.addTitleProperty(props, request, mappingConfig)
+	if err != nil {
+		return nil, err
 	}
 
 	// Handle file (not supported)
@@ -285,14 +285,8 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 		}
 	}
 
-	// wait 30 seconds
-	time.Sleep(30 * time.Second)
-
 	// Get afterId for transcriptions
-	mappingConfig, err := mapping.Config()
-	if err != nil {
-		return nil, err
-	}
+
 	var afterId *string
 	if len(mappingConfig.File) > 0 {
 		afterId = mappingConfig.File[0].ExternalBlockId
@@ -400,4 +394,49 @@ func (s *notionExporter) addFileMapping(
 
 		}
 	}
+}
+
+func (s *notionExporter) addTitleProperty(
+	props gonotion.DatabasePageProperties,
+	request NoteRequest,
+	mappingConfig *data.BlockMappingConfig,
+) error {
+	if request.Title == nil {
+		return nil
+	}
+	title := *request.Title
+
+	// If title not mapped, proceed
+	if mappingConfig.Title == nil {
+		props["title"] = gonotion.DatabasePageProperty{
+			Type:  gonotion.DBPropTypeTitle,
+			Title: util.TextToRichText(title),
+		}
+		return nil
+	}
+
+	// Update all mappings
+	if mappingConfig.Title != nil {
+		for _, titleMapping := range mappingConfig.Title {
+			// Only handle property mappings for now
+			if titleMapping.TargetType != data.MappingTargetTypeProperty {
+				return fmt.Errorf("Unimplemented mapping target type: %s", titleMapping.TargetType)
+			}
+
+			// Skip if already mapped and content hash has not changed
+			if titleMapping.Status == data.BlockMappingStatusMapped {
+				if titleMapping.ContentHash == util.ContentHash(title) {
+					slog.Info("Title has already been mapped")
+					continue
+				}
+			}
+
+			props["title"] = gonotion.DatabasePageProperty{
+				Type:  gonotion.DBPropTypeTitle,
+				Title: util.TextToRichText(title),
+			}
+		}
+	}
+
+	return nil
 }
