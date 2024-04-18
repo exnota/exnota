@@ -23,7 +23,7 @@ func NewBlockJobWorkflow(app core.App) BlockJobWorkflow {
 
 func (j *blockJobWorkflow) ApplyHooks() {
 	j.createNewVoiceNoteJobs()
-	// j.createAddTranscriptionJob()
+	j.createAddTranscriptionJob()
 }
 
 func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
@@ -83,67 +83,67 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 	})
 }
 
-// func (j *blockJobWorkflow) createAddTranscriptionJob() {
-// 	// On transcription job completion, create an export job
-// 	j.app.OnModelAfterUpdate(data.CollectionBlockJob).Add(func(e *core.ModelEvent) error {
-// 		// Transcription jobs only
-// 		updatedJob, err := data.NewBlockJob(e.Model.(*models.Record), j.app)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		if updatedJob.Type() != data.BlockJobTypeTranscription {
-// 			return nil
-// 		}
+func (j *blockJobWorkflow) createAddTranscriptionJob() {
+	// On transcription job completion, create an export job
+	j.app.OnModelAfterUpdate(data.CollectionBlockJob).Add(func(e *core.ModelEvent) error {
+		// Transcription jobs only
+		updatedJob, err := data.NewBlockJob(e.Model.(*models.Record), j.app)
+		if err != nil {
+			return err
+		}
+		if updatedJob.Type() != data.BlockJobTypeTranscription {
+			return nil
+		}
 
-// 		// Job complete events only
-// 		if updatedJob.Status() != data.BlockJobStatusComplete {
-// 			return nil
-// 		}
-// 		prevUpdatedJob, err := data.NewBlockJob(updatedJob.Record().OriginalCopy(), j.app)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		if prevUpdatedJob.Status() == data.BlockJobStatusComplete {
-// 			return nil
-// 		}
+		// Job complete events only
+		if updatedJob.Status() != data.BlockJobStatusComplete {
+			return nil
+		}
+		prevUpdatedJob, err := data.NewBlockJob(updatedJob.Record().OriginalCopy(), j.app)
+		if err != nil {
+			return err
+		}
+		if prevUpdatedJob.Status() == data.BlockJobStatusComplete {
+			return nil
+		}
 
-// 		// Create export job
-// 		blockJobFetcher := block_data.NewBlockFetcher(j.app)
-// 		block, err := blockJobFetcher.FetchById(updatedJob.Block())
-// 		if err != nil {
-// 			return err
-// 		}
+		// Create export job
+		blockJobFetcher := block_data.NewBlockFetcher(j.app)
+		block, err := blockJobFetcher.FetchById(updatedJob.Block())
+		if err != nil {
+			return err
+		}
 
-// 		// get transcription
-// 		var audio *data.AudioField
-// 		if audioBlock, ok := block.(block_data.VoiceNoteBlock); ok {
-// 			blockAudio, err := audioBlock.Audio()
-// 			if err != nil {
-// 				return err
-// 			}
-// 			audio = &data.AudioField{
-// 				Transcription: blockAudio.Transcription,
-// 			}
-// 		}
-// 		// TODO: Where to update title?
-// 		err = blockJobWriter.CreateExportJob(data.CreateCreateVoiceNoteRequest{
-// 			BlockId: block.Id(),
-// 			UserId:  block.User(),
-// 			Config: data.ExportJobConfig{
-// 				Command: data.CommandCreateVoiceNote,
-// 				Data: data.ExportJobData{
-// 					Id:          block.Id(),
-// 					Type:        data.BlockTypeVoiceNote,
-// 					Destination: block.Destination(),
-// 					// TODO: Test that audio is updated
-// 					Audio: audio,
-// 				},
-// 			},
-// 		})
-// 		if err != nil {
-// 			return err
-// 		}
+		// get transcription
+		var audio *data.AudioField
+		if audioBlock, ok := block.(block_data.VoiceNoteBlock); ok {
+			blockAudio, err := audioBlock.Audio()
+			if err != nil {
+				return err
+			}
+			audio = &data.AudioField{
+				Transcription: blockAudio.Transcription,
+			}
+		}
+		blockJobWriter := data.NewBlockJobWriter(j.app)
+		err = blockJobWriter.CreateExportJob(data.CreateCreateVoiceNoteRequest{
+			BlockId: block.Id(),
+			UserId:  block.User(),
+			Config: data.ExportJobConfig{
+				Command: data.CommandAddTranscription,
+				Data: data.ExportJobData{
+					// Mandatory fields
+					Id:          block.Id(),
+					Type:        data.BlockTypeVoiceNote,
+					Destination: block.Destination(),
 
-// 		return err
-// 	})
-// }
+					// Updated fields
+					Title: block.Title(),
+					Audio: audio,
+				},
+			},
+		})
+
+		return err
+	})
+}
