@@ -139,6 +139,11 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 func (j *exportJobRunnerConfig) exportResultToSummary(
 	result *notion.ExportResult,
 ) (data.Summary, error) {
+	if result == nil {
+		slog.Warn("Export result is nil")
+		return data.NewSummaryCompleteEmpty(), nil
+	}
+
 	resultData := map[string]interface{}{}
 	err := mapstructure.Decode(result.ConfigUpdate, &resultData)
 	if err != nil {

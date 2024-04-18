@@ -40,7 +40,8 @@ type AudioField struct {
 type ExportCommand string
 
 const (
-	CommandCreateVoiceNote ExportCommand = "create_voice_note"
+	CommandCreateVoiceNote  ExportCommand = "create_voice_note"
+	CommandAddTranscription ExportCommand = "add_transcription"
 )
 
 type NoteRequest struct {
@@ -80,10 +81,14 @@ func (s *notionExporter) NoteExporter(request NoteRequest) (*ExportResult, error
 }
 
 func (s *notionExporter) voiceNoteExporter(request NoteRequest) (*ExportResult, error) {
-	if request.Command == CommandCreateVoiceNote {
+	switch request.Command {
+	case CommandCreateVoiceNote:
 		return s.createNote(request)
+	case CommandAddTranscription:
+		return s.updateNote(request)
+	default:
+		return nil, fmt.Errorf("Invalid command: %s", request.Command)
 	}
-	return nil, fmt.Errorf("Invalid command: %s", request.Command)
 }
 
 func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) {
@@ -237,6 +242,70 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 	}
 
 	return nil, fmt.Errorf("Invalid destination object type: %s", destinationObject.Type())
+}
+
+func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) {
+	// Get mapping
+	mappingFetcher := data.NewIntegrationBlockNotionMappingFetcher(s.app)
+	mapping, err := mappingFetcher.FetchByInternalBlockId(request.Id)
+	if err != nil {
+		return nil, err
+	}
+	if mapping == nil {
+		slog.Error("Mapping does not exist for block update", "blockId", request.Id)
+
+		return nil, fmt.Errorf("Mapping does not exist for block id %s", request.Id)
+	}
+
+	// Handle title
+	// TODO: Check that it differs from mappig content hash
+	props := gonotion.DatabasePageProperties{}
+	if request.Title != nil {
+		// This works for database pages and child pages, for title only.
+		props["title"] = gonotion.DatabasePageProperty{
+			Type:  gonotion.DBPropTypeTitle,
+			Title: util.TextToRichText(*request.Title),
+		}
+	}
+
+	// Handle file (not supported)
+	if request.File != nil {
+		return nil, fmt.Errorf("Updating file is not supported")
+	}
+
+	// Handle audio field (transcription)
+	// TODO: Check that it differs from mappig content hash
+	transcriptionChildren := []gonotion.Block{}
+	if request.Audio != nil {
+		for _, transcription := range request.Audio.Transcription {
+			transcriptionChildren = append(transcriptionChildren, gonotion.ParagraphBlock{
+				RichText: util.TextToRichText(transcription),
+			})
+		}
+	}
+	// TODO: Get 'after' from mapping. Move above?
+	var afterId *string
+
+	// Create notion writer
+	config, err := request.Integration.Config()
+	if err != nil {
+		return nil, err
+	}
+	writer := NewNotionWriter(s.app, *config.Auth.AccessToken)
+	_, err = writer.UpdatePage(UpdatePageRequest{
+		PageId:             mapping.ExternalBlock(),
+		DatabaseProperties: props,
+		Children:           transcriptionChildren,
+		AfterId:            afterId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// - TODO: update mapping
+	// - TODO: return response summary update
+
+	return nil, nil
 }
 
 func (s *notionExporter) getNotionObjectInternalId(destinationId string) (string, error) {

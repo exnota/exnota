@@ -22,9 +22,17 @@ type CreateChildPageRequest struct {
 	Children []gonotion.Block
 }
 
+type UpdatePageRequest struct {
+	PageId             string `validate:"required"`
+	DatabaseProperties gonotion.DatabasePageProperties
+	Children           []gonotion.Block `validate:"required"`
+	AfterId            *string
+}
+
 type NotionWriter interface {
 	CreateDatabasePage(request CreateDatabasePageRequest) (*CreateDatabasePageResponse, error)
 	CreateChildPage(request CreateChildPageRequest) (*CreateChildPageResponse, error)
+	UpdatePage(request UpdatePageRequest) (*UpdatePageResponse, error)
 }
 
 type notionWriter struct {
@@ -43,9 +51,17 @@ type CreateDatabasePageResponse struct {
 }
 
 type CreateChildPageResponse struct {
-	PageId   string
+	// New page ID
+	PageId string
+	// Ids of inserted child blocks
 	Children []string
-	Url      string
+	// Page URL in Notion
+	Url string
+}
+
+type UpdatePageResponse struct {
+	// Ids of inserted child blocks
+	Children []string
 }
 
 func (n *notionWriter) CreateDatabasePage(
@@ -140,5 +156,47 @@ func (n *notionWriter) CreateChildPage(
 		PageId:   pageId,
 		Children: childIDs,
 		Url:      page.URL,
+	}, nil
+}
+
+func (n *notionWriter) UpdatePage(
+	request UpdatePageRequest,
+) (*UpdatePageResponse, error) {
+	err := validate.Struct(request)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update page properties
+	client := notion.NewClient(n.accessToken)
+	_, err = client.UpdatePage(context.Background(), request.PageId, gonotion.UpdatePageParams{
+		// Title of child pages are updated using the "title" property, despite
+		// the struct property name here being 'database page properties'.
+		DatabasePageProperties: request.DatabaseProperties,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Append children
+	extendedClient := NewExtendedClient(n.accessToken)
+	childrenResp, err := extendedClient.AppendBlockChildren(
+		context.Background(),
+		request.PageId,
+		request.Children,
+		request.AfterId,
+	)
+	if err != nil {
+		slog.Error("Failed to append block children", "error", err)
+		return nil, err
+	}
+
+	var childIDs []string
+	for _, child := range childrenResp.Results {
+		childIDs = append(childIDs, child.ID())
+	}
+
+	return &UpdatePageResponse{
+		Children: childIDs,
 	}, nil
 }
