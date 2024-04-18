@@ -274,7 +274,8 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	}
 
 	// Handle audio field (transcription)
-	// TODO: Check that it differs from mappig content hash
+	// TODO: Check if transcriptions already mapped, and only proceed if content
+	// hash is different or status was not mapped. AND APPLY TO afterid as well
 	transcriptionChildren := []gonotion.Block{}
 	if request.Audio != nil {
 		for _, transcription := range request.Audio.Transcription {
@@ -283,8 +284,19 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 			})
 		}
 	}
-	// TODO: Get 'after' from mapping. Move above?
+
+	// wait 30 seconds
+	time.Sleep(30 * time.Second)
+
+	// Get afterId for transcriptions
+	mappingConfig, err := mapping.Config()
+	if err != nil {
+		return nil, err
+	}
 	var afterId *string
+	if len(mappingConfig.File) > 0 {
+		afterId = mappingConfig.File[0].ExternalBlockId
+	}
 
 	// Create notion writer
 	config, err := request.Integration.Config()
