@@ -284,7 +284,9 @@ func (j *transcriptionBlockJob) ValidateTranscription(txDao *daos.Dao) error {
 type ExportJobCommand string
 
 const (
-	CommandCreateVoiceNote ExportJobCommand = "create_voice_note"
+	// When adding a command, add to "validate" tag in ExportJobConfig
+	CommandCreateVoiceNote  ExportJobCommand = "create_voice_note"
+	CommandAddTranscription ExportJobCommand = "add_transcription"
 )
 
 type ExportBlockJob interface {
@@ -295,7 +297,7 @@ type ExportBlockJob interface {
 }
 
 type ExportJobConfig struct {
-	Command ExportJobCommand `json:"command" validate:"required,oneof=create_voice_note"`
+	Command ExportJobCommand `json:"command" validate:"required,oneof=create_voice_note add_transcription"`
 	Data    ExportJobData    `json:"data"    validate:"required"`
 }
 
