@@ -168,32 +168,36 @@ func (n *notionWriter) UpdatePage(
 	}
 
 	// Update page properties
-	client := notion.NewClient(n.accessToken)
-	_, err = client.UpdatePage(context.Background(), request.PageId, gonotion.UpdatePageParams{
-		// Title of child pages are updated using the "title" property, despite
-		// the struct property name here being 'database page properties'.
-		DatabasePageProperties: request.DatabaseProperties,
-	})
-	if err != nil {
-		return nil, err
+	if len(request.DatabaseProperties) > 0 {
+		client := notion.NewClient(n.accessToken)
+		_, err = client.UpdatePage(context.Background(), request.PageId, gonotion.UpdatePageParams{
+			// Title of child pages are updated using the "title" property, despite
+			// the struct property name here being 'database page properties'.
+			DatabasePageProperties: request.DatabaseProperties,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Append children
-	extendedClient := NewExtendedClient(n.accessToken)
-	childrenResp, err := extendedClient.AppendBlockChildren(
-		context.Background(),
-		request.PageId,
-		request.Children,
-		request.AfterId,
-	)
-	if err != nil {
-		slog.Error("Failed to append block children", "error", err)
-		return nil, err
-	}
-
 	var childIDs []string
-	for _, child := range childrenResp.Results {
-		childIDs = append(childIDs, child.ID())
+	if len(request.Children) > 0 {
+		extendedClient := NewExtendedClient(n.accessToken)
+		childrenResp, err := extendedClient.AppendBlockChildren(
+			context.Background(),
+			request.PageId,
+			request.Children,
+			request.AfterId,
+		)
+		if err != nil {
+			slog.Error("Failed to append block children", "error", err)
+			return nil, err
+		}
+
+		for _, child := range childrenResp.Results {
+			childIDs = append(childIDs, child.ID())
+		}
 	}
 
 	return &UpdatePageResponse{
