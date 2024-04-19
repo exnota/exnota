@@ -9,7 +9,3 @@ func ContentHash(input string) string {
 	hash := sha256.Sum256([]byte(input))
 	return hex.EncodeToString(hash[:])
 }
-
-func FileContentHash(collection, recordId, filename string) string {
-	return ContentHash(collection + recordId + filename)
-}
