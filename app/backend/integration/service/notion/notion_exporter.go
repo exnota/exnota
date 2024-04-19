@@ -176,7 +176,10 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 		config := &data.BlockMappingConfig{}
 
 		// Map file
-		s.addFileMapping(config, request, result.Children, request.File, now)
+		err = s.addFileMapping(config, request, result.Children, request.File, now)
+		if err != nil {
+			return nil, err
+		}
 
 		// Map audio, transcription in future
 
@@ -215,7 +218,10 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 		config := &data.BlockMappingConfig{}
 
 		// Map file
-		s.addFileMapping(config, request, result.Children, request.File, now)
+		err = s.addFileMapping(config, request, result.Children, request.File, now)
+		if err != nil {
+			return nil, err
+		}
 
 		// Map audio, transcription in future
 
@@ -263,42 +269,38 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 		return nil, err
 	}
 	props := gonotion.DatabasePageProperties{}
-	err = s.addTitleProperty(props, request, mappingConfig)
+	_, err = s.addTitleProperty(props, request, mappingConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	// Handle file (not supported)
+	// Handle file (updating not supported)
 	if request.File != nil {
 		return nil, fmt.Errorf("Updating file is not supported")
 	}
 
 	// Handle audio field (transcription)
-	transcriptionChildren, err := s.addTranscriptionChildren(
-		request.Id,
-		mappingConfig,
-		request,
-	)
+	updater, err := NewUpdater(*mappingConfig, mapping.ExternalBlock())
 	if err != nil {
 		return nil, err
 	}
-	// Get position to insert transcription children
-	var afterId *string
-	if len(mappingConfig.File) > 0 && len(transcriptionChildren) > 0 {
-		afterId = mappingConfig.File[0].ExternalBlockId
+	err = updater.UpdateAudio(request)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create notion writer
-	config, err := request.Integration.Config()
+	integrationConfig, err := request.Integration.Config()
 	if err != nil {
 		return nil, err
 	}
-	writer := NewNotionWriter(s.app, *config.Auth.AccessToken)
+	writer := NewNotionWriter(s.app, *integrationConfig.Auth.AccessToken)
 	_, err = writer.UpdatePage(UpdatePageRequest{
 		PageId:             mapping.ExternalBlock(),
 		DatabaseProperties: props,
-		Children:           transcriptionChildren,
-		AfterId:            afterId,
+		// TODO: UPdate to get ALL of these, not just the audio transcription ones
+		Children: updater.AudioTranscription.ChildrenToInsert,
+		AfterId:  updater.AudioTranscription.InsertChildrenAfterId,
 	})
 	if err != nil {
 		return nil, err
@@ -350,8 +352,17 @@ func (s *notionExporter) addFileMapping(
 	request NoteRequest,
 	childrenIds []string,
 	file *string,
-	now time.Time) {
+	now time.Time) error {
 	if file != nil {
+		contentHash, err := BlockFileToContentHash(FileContentHashInput{
+			Collection: lib_block.CollectionBlock,
+			RecordId:   request.Id,
+			Filename:   *request.File,
+		})
+		if err != nil {
+			slog.Error("Failed to generate content hash", "err", err)
+			return fmt.Errorf("Failed to generate content hash")
+		}
 		if len(childrenIds) != 1 {
 			slog.Error(
 				"Expected one child block. Skipping mapping.",
@@ -360,28 +371,20 @@ func (s *notionExporter) addFileMapping(
 			)
 			config.File = []data.NotionMapping{
 				{
-					TargetType: data.MappingTargetTypeBlock,
-					Status:     data.BlockMappingStatusError,
-					ContentHash: util.FileContentHash(
-						lib_block.CollectionBlock,
-						request.Id,
-						*request.File,
-					),
-					Created: now,
-					Updated: now,
+					TargetType:  data.MappingTargetTypeBlock,
+					Status:      data.BlockMappingStatusError,
+					ContentHash: contentHash,
+					Created:     now,
+					Updated:     now,
 					// No ExternalBlockId,
 				},
 			}
 		} else {
 			config.File = []data.NotionMapping{
 				{
-					TargetType: data.MappingTargetTypeBlock,
-					Status:     data.BlockMappingStatusMapped,
-					ContentHash: util.FileContentHash(
-						lib_block.CollectionBlock,
-						request.Id,
-						*request.File,
-					),
+					TargetType:      data.MappingTargetTypeBlock,
+					Status:          data.BlockMappingStatusMapped,
+					ContentHash:     contentHash,
 					Created:         now,
 					Updated:         now,
 					ExternalBlockId: &childrenIds[0],
@@ -390,17 +393,23 @@ func (s *notionExporter) addFileMapping(
 
 		}
 	}
+	return nil
 }
 
+// Returns a mapping to be updated, or nil if either no mapping is required or
+// it does not need to be changed.
 func (s *notionExporter) addTitleProperty(
 	props gonotion.DatabasePageProperties,
 	request NoteRequest,
 	mappingConfig *data.BlockMappingConfig,
-) error {
+) ([]data.NotionMapping, error) {
 	if request.Title == nil {
-		return nil
+		return nil, nil
 	}
 	title := *request.Title
+	// TODO: This function I added a return type [] but did not go through and
+	// make sure it's being returned correctly on every return statement
+	// because I'm pretty sure I'm going to refactor and not use it anymore
 
 	// If title not mapped, proceed
 	if mappingConfig.Title == nil {
@@ -408,7 +417,8 @@ func (s *notionExporter) addTitleProperty(
 			Type:  gonotion.DBPropTypeTitle,
 			Title: util.TextToRichText(title),
 		}
-		return nil
+		mappingConfig.Title = nil
+		return nil, nil
 	}
 
 	// Update all mappings
@@ -416,7 +426,10 @@ func (s *notionExporter) addTitleProperty(
 		for _, titleMapping := range mappingConfig.Title {
 			// Only handle property mappings for now
 			if titleMapping.TargetType != data.MappingTargetTypeProperty {
-				return fmt.Errorf("Unimplemented mapping target type: %s", titleMapping.TargetType)
+				return nil, fmt.Errorf(
+					"Unimplemented mapping target type: %s",
+					titleMapping.TargetType,
+				)
 			}
 
 			// Skip if already mapped and content hash has not changed
@@ -434,7 +447,7 @@ func (s *notionExporter) addTitleProperty(
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (s *notionExporter) addTranscriptionChildren(
@@ -541,4 +554,230 @@ func (s *notionExporter) addTranscriptionChildren(
 		})
 	}
 	return children, nil
+}
+
+type Updater struct {
+	BlockId            string
+	AudioTranscription Updatable
+	File               Updatable
+}
+
+type Updatable struct {
+	PropertiesToUpdate    map[string]interface{}
+	ChildrenToInsert      []gonotion.Block
+	InsertChildrenAfterId *string
+
+	UnchangedPropertyMappings    []data.NotionMapping
+	NewOrUpdatedPropertyMappings []data.NotionMapping
+
+	UnchangedBlockMappings    []data.NotionMapping
+	NewOrUpdatedBlockMappings []data.NotionMapping
+}
+
+func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater, error) {
+	if len(mappingConfig.File) > 1 {
+		slog.Error("Multiple file mappings are not supported yet")
+		return nil, fmt.Errorf("Multiple file mappings are not supported yet")
+	}
+
+	updatableFile := Updatable{}
+	if len(mappingConfig.File) == 1 {
+		fileMapping := mappingConfig.File[0]
+
+		// Confirm file mapping is to a block
+		if fileMapping.TargetType != data.MappingTargetTypeBlock {
+			slog.Error(
+				"Unexpected mapping target type",
+				"targetType",
+				fileMapping.TargetType,
+			)
+			return nil, fmt.Errorf("Unexpected mapping target type")
+		}
+
+		// Add all children to unchanged array
+		unchangedBlockMappings := []data.NotionMapping{}
+		unchangedBlockMappings = append(unchangedBlockMappings, fileMapping)
+		updatableFile.UnchangedBlockMappings = unchangedBlockMappings
+	}
+
+	if len(mappingConfig.Audio) > 1 {
+		slog.Error("Multiple audio mappings are not supported yet")
+		return nil, fmt.Errorf("Multiple audio mappings are not supported yet")
+	}
+
+	// Confirm at least one audio mapping with one transcription
+	updatableAudio := Updatable{}
+	if len(mappingConfig.Audio) == 1 && len(mappingConfig.Audio[0].Transcription) > 0 {
+		audioMapping := mappingConfig.Audio[0]
+
+		// Confirm all transcriptions are mapped to blocks
+		for _, transcriptionMapping := range audioMapping.Transcription {
+			if transcriptionMapping.TargetType != data.MappingTargetTypeBlock {
+				slog.Error(
+					"Unexpected mapping target type",
+					"targetType",
+					transcriptionMapping.TargetType,
+				)
+				return nil, fmt.Errorf("Unexpected mapping target type")
+			}
+		}
+
+		// Add all transcriptions to unchanged array
+		unchangedBlockMappings := []data.NotionMapping{}
+		unchangedBlockMappings = append(unchangedBlockMappings, audioMapping.Transcription...)
+		updatableAudio.UnchangedBlockMappings = unchangedBlockMappings
+	}
+
+	return &Updater{
+		BlockId:            blockId,
+		File:               updatableFile,
+		AudioTranscription: updatableAudio,
+	}, nil
+}
+
+// TODO:
+func (u *Updater) UpdateAudio(request NoteRequest) error {
+	if request.Audio == nil || len(request.Audio.Transcription) == 0 {
+		return nil
+	}
+
+	// If no existing mappings, add transcription children and create mappings.
+	existingMappings := u.AudioTranscription.UnchangedBlockMappings
+	now := time.Now()
+	if len(existingMappings) == 0 {
+		// Add all children
+		children := []gonotion.Block{}
+		newMappings := []data.NotionMapping{}
+		for _, transcription := range request.Audio.Transcription {
+			children = append(children, gonotion.ParagraphBlock{
+				RichText: util.TextToRichText(transcription),
+			})
+			contentHash, err := BlockTitleToContentHash(TitleContentHashInput{
+				Title: transcription,
+			})
+			if err != nil {
+				return err
+			}
+			newMappings = append(newMappings, data.NotionMapping{
+				TargetType:  data.MappingTargetTypeBlock,
+				Status:      data.BlockMappingStatusMapped,
+				ContentHash: contentHash,
+				Created:     now,
+				Updated:     now,
+				// TODO: Need a way to add exterbak block ID later
+			})
+		}
+
+		// There shouldn't be any existing mappings or children
+		if len(u.AudioTranscription.ChildrenToInsert) > 0 ||
+			len(u.AudioTranscription.NewOrUpdatedBlockMappings) > 0 {
+			slog.Error(
+				"Unexpected existing mappings or children",
+				"num children",
+				len(u.AudioTranscription.ChildrenToInsert),
+				"num mappings",
+				len(u.AudioTranscription.NewOrUpdatedBlockMappings),
+				"blockId",
+				u.BlockId,
+			)
+			return fmt.Errorf("Unexpected existing mappings or children")
+		}
+
+		u.AudioTranscription.ChildrenToInsert = children
+		u.AudioTranscription.NewOrUpdatedBlockMappings = newMappings
+
+		// Get afterId from File mapping, if it exists
+		var afterId *string
+		if len(u.File.UnchangedBlockMappings) == 1 {
+			afterId = u.File.UnchangedBlockMappings[0].ExternalBlockId
+		}
+		u.AudioTranscription.InsertChildrenAfterId = afterId
+
+		return nil
+	}
+
+	// If there are existing mappings, validate that they are in the expected
+	// state:
+	// - The number of mappings matches the number of requested transcriptions
+	// - All mappings are to blocks.
+	// - Mappings have the same status: All successful or all errored.
+	if len(existingMappings) != len(request.Audio.Transcription) {
+		slog.Error(
+			"Mismatch between transcription mappings and request",
+			"num audioMapping transcriptions",
+			len(existingMappings),
+			"num request transcriptions",
+			len(request.Audio.Transcription),
+			"blockId",
+			u.BlockId,
+		)
+		return fmt.Errorf("Mismatch between transcription mappings and request")
+	}
+
+	if existingMappings[0].TargetType != data.MappingTargetTypeBlock {
+		slog.Error(
+			"Unexpected mapping target type",
+			"targetType",
+			existingMappings[0].TargetType,
+			"blockId",
+			u.BlockId,
+		)
+		return fmt.Errorf("Unexpected mapping target type")
+	}
+
+	successfulMappings := 0
+	for _, m := range existingMappings {
+		if m.Status == data.BlockMappingStatusMapped {
+			successfulMappings++
+		}
+	}
+	if successfulMappings > 0 && successfulMappings != len(request.Audio.Transcription) {
+		slog.Error(
+			"Unexpected number of successful mappings",
+			"num successful mappings",
+			successfulMappings,
+			"num request transcriptions",
+			len(request.Audio.Transcription),
+			"blockId",
+			u.BlockId,
+		)
+		return fmt.Errorf("Unexpected number of successful mappings")
+	}
+
+	// We don't support updating transcriptions yet, so do nothing if all
+	// successful.
+	if successfulMappings == len(request.Audio.Transcription) {
+		slog.Warn(
+			"Transcriptions already mapped." +
+				" Skipping content hash check and possible further updates.",
+		)
+		return nil
+	}
+
+	// At this point, there are the same number of mappings as transcriptions
+	// and they are all not successful.
+	//
+	// Add children and update mappings by moving from unchanged to new or
+	// updated.
+	children := []gonotion.Block{}
+	updatedMappings := make([]data.NotionMapping, len(request.Audio.Transcription))
+	for i, transcription := range request.Audio.Transcription {
+		children = append(children, gonotion.ParagraphBlock{
+			RichText: util.TextToRichText(transcription),
+		})
+
+		updatedMappings[i] = existingMappings[i]
+		updatedMappings[i].Status = data.BlockMappingStatusMapped
+	}
+	u.AudioTranscription.ChildrenToInsert = children
+	u.AudioTranscription.NewOrUpdatedBlockMappings = updatedMappings
+	u.AudioTranscription.UnchangedBlockMappings = []data.NotionMapping{}
+
+	var afterId *string
+	if len(u.File.UnchangedBlockMappings) == 1 {
+		afterId = u.File.UnchangedBlockMappings[0].ExternalBlockId
+	}
+	u.AudioTranscription.InsertChildrenAfterId = afterId
+
+	return nil
 }
