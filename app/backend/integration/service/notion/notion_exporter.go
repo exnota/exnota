@@ -284,7 +284,7 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	err = updater.HandleUpdatedAudio(request)
+	err = updater.UpdateAudio(request)
 	if err != nil {
 		return nil, err
 	}
@@ -298,9 +298,8 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	updatePageResp, err := writer.UpdatePage(UpdatePageRequest{
 		PageId:             mapping.ExternalBlock(),
 		DatabaseProperties: props,
-		// TODO: UPdate to get ALL of these, not just the audio transcription ones
-		Children: updater.AudioTranscription.ChildrenToInsert,
-		AfterId:  updater.AudioTranscription.InsertChildrenAfterId,
+		Children:           updater.AudioTranscription.ChildrenToInsert,
+		AfterId:            updater.AudioTranscription.InsertChildrenAfterId,
 	})
 	if err != nil {
 		return nil, err
@@ -579,7 +578,10 @@ func (s *notionExporter) addTranscriptionChildren(
 type Updater struct {
 	BlockId            string
 	AudioTranscription Updatable
-	File               Updatable
+	File               *struct {
+		// File is not expected to be updated
+		Mapping data.NotionMapping
+	}
 }
 
 type Updatable struct {
@@ -596,28 +598,27 @@ type Updatable struct {
 
 func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater, error) {
 	if len(mappingConfig.File) > 1 {
-		slog.Error("Multiple file mappings are not supported yet")
+		slog.Error("Multiple file mappings are not supported yet", "blockId", blockId)
 		return nil, fmt.Errorf("Multiple file mappings are not supported yet")
 	}
 
-	updatableFile := Updatable{}
+	updater := &Updater{}
 	if len(mappingConfig.File) == 1 {
-		fileMapping := mappingConfig.File[0]
+		updater.File = &struct {
+			Mapping data.NotionMapping
+		}{
+			Mapping: mappingConfig.File[0],
+		}
 
 		// Confirm file mapping is to a block
-		if fileMapping.TargetType != data.MappingTargetTypeBlock {
+		if updater.File.Mapping.TargetType != data.MappingTargetTypeBlock {
 			slog.Error(
 				"Unexpected mapping target type",
 				"targetType",
-				fileMapping.TargetType,
+				updater.File.Mapping.TargetType,
 			)
 			return nil, fmt.Errorf("Unexpected mapping target type")
 		}
-
-		// Add all children to unchanged array
-		unchangedBlockMappings := []data.NotionMapping{}
-		unchangedBlockMappings = append(unchangedBlockMappings, fileMapping)
-		updatableFile.UnchangedBlockMappings = unchangedBlockMappings
 	}
 
 	if len(mappingConfig.Audio) > 1 {
@@ -648,15 +649,10 @@ func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater
 		updatableAudio.UnchangedBlockMappings = unchangedBlockMappings
 	}
 
-	return &Updater{
-		BlockId:            blockId,
-		File:               updatableFile,
-		AudioTranscription: updatableAudio,
-	}, nil
+	return updater, nil
 }
 
-// TODO:
-func (u *Updater) HandleUpdatedAudio(request NoteRequest) error {
+func (u *Updater) UpdateAudio(request NoteRequest) error {
 	if request.Audio == nil || len(request.Audio.Transcription) == 0 {
 		return nil
 	}
@@ -684,7 +680,6 @@ func (u *Updater) HandleUpdatedAudio(request NoteRequest) error {
 				ContentHash: contentHash,
 				Created:     now,
 				Updated:     now,
-				// TODO: Need a way to add external block ID later
 			})
 		}
 
@@ -708,8 +703,8 @@ func (u *Updater) HandleUpdatedAudio(request NoteRequest) error {
 
 		// Get afterId from File mapping, if it exists
 		var afterId *string
-		if len(u.File.UnchangedBlockMappings) == 1 {
-			afterId = u.File.UnchangedBlockMappings[0].ExternalBlockId
+		if u.File != nil {
+			afterId = u.File.Mapping.ExternalBlockId
 		}
 		u.AudioTranscription.InsertChildrenAfterId = afterId
 
@@ -795,8 +790,8 @@ func (u *Updater) HandleUpdatedAudio(request NoteRequest) error {
 	u.AudioTranscription.UnchangedBlockMappings = []data.NotionMapping{}
 
 	var afterId *string
-	if len(u.File.UnchangedBlockMappings) == 1 {
-		afterId = u.File.UnchangedBlockMappings[0].ExternalBlockId
+	if u.File != nil {
+		afterId = u.File.Mapping.ExternalBlockId
 	}
 	u.AudioTranscription.InsertChildrenAfterId = afterId
 
@@ -828,14 +823,14 @@ func (u *Updater) SetAudioSuccess(childIds []string) error {
 func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 	config := &data.BlockMappingConfig{}
 
-	fileMappings := append(
-		u.File.UnchangedBlockMappings,
-		u.File.NewOrUpdatedBlockMappings...,
-	)
-	if len(fileMappings) > 0 {
-		config.File = fileMappings
+	// Add file mapping
+	if u.File != nil {
+		config.File = []data.NotionMapping{
+			u.File.Mapping,
+		}
 	}
 
+	// Add audio mappings
 	audioMappings := append(
 		u.AudioTranscription.UnchangedBlockMappings,
 		u.AudioTranscription.NewOrUpdatedBlockMappings...,
