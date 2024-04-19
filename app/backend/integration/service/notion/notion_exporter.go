@@ -284,7 +284,7 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	err = updater.UpdateAudio(request)
+	err = updater.HandleUpdatedAudio(request)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +295,7 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 		return nil, err
 	}
 	writer := NewNotionWriter(s.app, *integrationConfig.Auth.AccessToken)
-	_, err = writer.UpdatePage(UpdatePageRequest{
+	updatePageResp, err := writer.UpdatePage(UpdatePageRequest{
 		PageId:             mapping.ExternalBlock(),
 		DatabaseProperties: props,
 		// TODO: UPdate to get ALL of these, not just the audio transcription ones
@@ -306,8 +306,24 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 		return nil, err
 	}
 
-	// - TODO: update mapping
-	// - TODO: return response summary update
+	err = updater.SetAudioSuccess(updatePageResp.Children)
+	if err != nil {
+		slog.Error("Failed to set audio success", "err", err)
+	}
+
+	mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
+	updatedConfig := updater.GenerateConfig()
+	err = mappingWriter.Update(data.UpdateMappingRequest{
+		InternalBlock: request.Id,
+		Config:        updatedConfig,
+	})
+	if err != nil {
+		slog.Error("Failed to update mapping", "err", err)
+		return nil, err
+	}
+
+	// - TODO: return response summary update. This could be returned as a diff
+	// from 'updater', which just returns 'new or updated' mappings.
 
 	return nil, nil
 }
@@ -450,6 +466,7 @@ func (s *notionExporter) addTitleProperty(
 	return nil, nil
 }
 
+// TODO: Remove
 func (s *notionExporter) addTranscriptionChildren(
 	blockId string,
 	mappingConfig *data.BlockMappingConfig,
@@ -556,6 +573,9 @@ func (s *notionExporter) addTranscriptionChildren(
 	return children, nil
 }
 
+// TODO: Update this so the structure represents the current plan for how mappings
+// work (i.e. there's only one mapping and its either property or block).
+// This should simplify the code by a lot.
 type Updater struct {
 	BlockId            string
 	AudioTranscription Updatable
@@ -636,7 +656,7 @@ func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater
 }
 
 // TODO:
-func (u *Updater) UpdateAudio(request NoteRequest) error {
+func (u *Updater) HandleUpdatedAudio(request NoteRequest) error {
 	if request.Audio == nil || len(request.Audio.Transcription) == 0 {
 		return nil
 	}
@@ -664,7 +684,7 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 				ContentHash: contentHash,
 				Created:     now,
 				Updated:     now,
-				// TODO: Need a way to add exterbak block ID later
+				// TODO: Need a way to add external block ID later
 			})
 		}
 
@@ -768,6 +788,7 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 
 		updatedMappings[i] = existingMappings[i]
 		updatedMappings[i].Status = data.BlockMappingStatusMapped
+		updatedMappings[i].Updated = now
 	}
 	u.AudioTranscription.ChildrenToInsert = children
 	u.AudioTranscription.NewOrUpdatedBlockMappings = updatedMappings
@@ -781,3 +802,54 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 
 	return nil
 }
+
+func (u *Updater) SetAudioSuccess(childIds []string) error {
+	if len(u.AudioTranscription.NewOrUpdatedBlockMappings) != len(childIds) {
+		slog.Error(
+			"Mismatch between transcription mappings and child IDs",
+			"num mappings",
+			len(u.AudioTranscription.NewOrUpdatedBlockMappings),
+			"num child IDs",
+			len(childIds),
+			"blockId",
+			u.BlockId,
+		)
+		return fmt.Errorf("Mismatch between transcription mappings and child IDs")
+	}
+
+	// Assume order is the same
+	for i, childId := range childIds {
+		u.AudioTranscription.NewOrUpdatedBlockMappings[i].ExternalBlockId = &childId
+	}
+
+	return nil
+}
+
+func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
+	config := &data.BlockMappingConfig{}
+
+	fileMappings := append(
+		u.File.UnchangedBlockMappings,
+		u.File.NewOrUpdatedBlockMappings...,
+	)
+	if len(fileMappings) > 0 {
+		config.File = fileMappings
+	}
+
+	audioMappings := append(
+		u.AudioTranscription.UnchangedBlockMappings,
+		u.AudioTranscription.NewOrUpdatedBlockMappings...,
+	)
+	if len(audioMappings) > 0 {
+		config.Audio = []data.AudioMapping{
+			{
+				Transcription: audioMappings,
+			},
+		}
+	}
+
+	return config
+
+}
+
+// TODO: SetAudioError
