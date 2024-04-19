@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"runtime/debug"
 	"time"
 
 	"exnota.com/backend/job/data"
@@ -78,6 +79,11 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 }
 
 func (j *blockJobProcessor) handleError(job data.BlockJob, err error) {
+	stack := debug.Stack()
+	slog.Error("Stack trace for error", "error", err, "stack", stack)
+	// Also print to console because the slog output will be on one line.
+	fmt.Println(string(stack))
+
 	// The backoff logic below should progress like this (generate this using:
 	// https://go.dev/play/p/4Pn10aAcY3h):
 	//

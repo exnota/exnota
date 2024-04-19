@@ -577,23 +577,15 @@ func (s *notionExporter) addTranscriptionChildren(
 // This should simplify the code by a lot.
 type Updater struct {
 	BlockId            string
-	AudioTranscription Updatable
-	File               *struct {
-		// File is not expected to be updated
-		Mapping data.NotionMapping
+	AudioTranscription struct {
+		Mappings              []data.NotionMapping
+		ChildrenToInsert      []gonotion.Block
+		InsertChildrenAfterId *string
 	}
-}
-
-type Updatable struct {
-	PropertiesToUpdate    map[string]interface{}
-	ChildrenToInsert      []gonotion.Block
-	InsertChildrenAfterId *string
-
-	UnchangedPropertyMappings    []data.NotionMapping
-	NewOrUpdatedPropertyMappings []data.NotionMapping
-
-	UnchangedBlockMappings    []data.NotionMapping
-	NewOrUpdatedBlockMappings []data.NotionMapping
+	File struct {
+		// File is not expected to be updated
+		Mapping *data.NotionMapping
+	}
 }
 
 func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater, error) {
@@ -604,11 +596,7 @@ func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater
 
 	updater := &Updater{}
 	if len(mappingConfig.File) == 1 {
-		updater.File = &struct {
-			Mapping data.NotionMapping
-		}{
-			Mapping: mappingConfig.File[0],
-		}
+		updater.File.Mapping = &mappingConfig.File[0]
 
 		// Confirm file mapping is to a block
 		if updater.File.Mapping.TargetType != data.MappingTargetTypeBlock {
@@ -627,12 +615,11 @@ func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater
 	}
 
 	// Confirm at least one audio mapping with one transcription
-	updatableAudio := Updatable{}
 	if len(mappingConfig.Audio) == 1 && len(mappingConfig.Audio[0].Transcription) > 0 {
-		audioMapping := mappingConfig.Audio[0]
+		updater.AudioTranscription.Mappings = mappingConfig.Audio[0].Transcription
 
 		// Confirm all transcriptions are mapped to blocks
-		for _, transcriptionMapping := range audioMapping.Transcription {
+		for _, transcriptionMapping := range updater.AudioTranscription.Mappings {
 			if transcriptionMapping.TargetType != data.MappingTargetTypeBlock {
 				slog.Error(
 					"Unexpected mapping target type",
@@ -642,11 +629,6 @@ func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater
 				return nil, fmt.Errorf("Unexpected mapping target type")
 			}
 		}
-
-		// Add all transcriptions to unchanged array
-		unchangedBlockMappings := []data.NotionMapping{}
-		unchangedBlockMappings = append(unchangedBlockMappings, audioMapping.Transcription...)
-		updatableAudio.UnchangedBlockMappings = unchangedBlockMappings
 	}
 
 	return updater, nil
@@ -658,7 +640,7 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 	}
 
 	// If no existing mappings, add transcription children and create mappings.
-	existingMappings := u.AudioTranscription.UnchangedBlockMappings
+	existingMappings := u.AudioTranscription.Mappings
 	now := time.Now()
 	if len(existingMappings) == 0 {
 		// Add all children
@@ -683,27 +665,12 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 			})
 		}
 
-		// There shouldn't be any existing mappings or children
-		if len(u.AudioTranscription.ChildrenToInsert) > 0 ||
-			len(u.AudioTranscription.NewOrUpdatedBlockMappings) > 0 {
-			slog.Error(
-				"Unexpected existing mappings or children",
-				"num children",
-				len(u.AudioTranscription.ChildrenToInsert),
-				"num mappings",
-				len(u.AudioTranscription.NewOrUpdatedBlockMappings),
-				"blockId",
-				u.BlockId,
-			)
-			return fmt.Errorf("Unexpected existing mappings or children")
-		}
-
 		u.AudioTranscription.ChildrenToInsert = children
-		u.AudioTranscription.NewOrUpdatedBlockMappings = newMappings
+		u.AudioTranscription.Mappings = newMappings
 
 		// Get afterId from File mapping, if it exists
 		var afterId *string
-		if u.File != nil {
+		if u.File.Mapping != nil {
 			afterId = u.File.Mapping.ExternalBlockId
 		}
 		u.AudioTranscription.InsertChildrenAfterId = afterId
@@ -759,7 +726,7 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 		return fmt.Errorf("Unexpected number of successful mappings")
 	}
 
-	// We don't support updating transcriptions yet, so do nothing if all
+	// We don't support updating transcription data yet, so do nothing if all
 	// successful.
 	if successfulMappings == len(request.Audio.Transcription) {
 		slog.Warn(
@@ -773,7 +740,7 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 	// and they are all not successful.
 	//
 	// Add children and update mappings by moving from unchanged to new or
-	// updated.
+	// updated, and updating status and timestamp.
 	children := []gonotion.Block{}
 	updatedMappings := make([]data.NotionMapping, len(request.Audio.Transcription))
 	for i, transcription := range request.Audio.Transcription {
@@ -786,11 +753,11 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 		updatedMappings[i].Updated = now
 	}
 	u.AudioTranscription.ChildrenToInsert = children
-	u.AudioTranscription.NewOrUpdatedBlockMappings = updatedMappings
-	u.AudioTranscription.UnchangedBlockMappings = []data.NotionMapping{}
+	u.AudioTranscription.Mappings = updatedMappings
+	u.AudioTranscription.Mappings = []data.NotionMapping{}
 
 	var afterId *string
-	if u.File != nil {
+	if u.File.Mapping != nil {
 		afterId = u.File.Mapping.ExternalBlockId
 	}
 	u.AudioTranscription.InsertChildrenAfterId = afterId
@@ -798,23 +765,23 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 	return nil
 }
 
-func (u *Updater) SetAudioSuccess(childIds []string) error {
-	if len(u.AudioTranscription.NewOrUpdatedBlockMappings) != len(childIds) {
+func (u *Updater) SetAudioSuccess(externalChildBlockIds []string) error {
+	if len(u.AudioTranscription.Mappings) != len(externalChildBlockIds) {
 		slog.Error(
-			"Mismatch between transcription mappings and child IDs",
+			"Mismatch between transcription mappings and external child block IDs",
 			"num mappings",
-			len(u.AudioTranscription.NewOrUpdatedBlockMappings),
-			"num child IDs",
-			len(childIds),
+			len(u.AudioTranscription.Mappings),
+			"num external child block IDs",
+			len(externalChildBlockIds),
 			"blockId",
 			u.BlockId,
 		)
-		return fmt.Errorf("Mismatch between transcription mappings and child IDs")
+		return fmt.Errorf("Mismatch between transcription mappings and external child block IDs")
 	}
 
 	// Assume order is the same
-	for i, childId := range childIds {
-		u.AudioTranscription.NewOrUpdatedBlockMappings[i].ExternalBlockId = &childId
+	for i, childId := range externalChildBlockIds {
+		u.AudioTranscription.Mappings[i].ExternalBlockId = &childId
 	}
 
 	return nil
@@ -824,17 +791,14 @@ func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 	config := &data.BlockMappingConfig{}
 
 	// Add file mapping
-	if u.File != nil {
+	if u.File.Mapping != nil {
 		config.File = []data.NotionMapping{
-			u.File.Mapping,
+			*u.File.Mapping,
 		}
 	}
 
 	// Add audio mappings
-	audioMappings := append(
-		u.AudioTranscription.UnchangedBlockMappings,
-		u.AudioTranscription.NewOrUpdatedBlockMappings...,
-	)
+	audioMappings := u.AudioTranscription.Mappings
 	if len(audioMappings) > 0 {
 		config.Audio = []data.AudioMapping{
 			{
