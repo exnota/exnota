@@ -308,18 +308,20 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 		AfterId:            updater.AudioTranscription.InsertChildrenAfterId,
 	})
 	if err != nil {
+		slog.Warn("Failed to update page", "err", err, "blockId", request.Id)
 		return nil, err
 	}
 
-	// Update audio external block ID mappings
+	// Save audio transcription block mappings
 	err = updater.SetAudioSuccess(updatePageResp.Children)
 	if err != nil {
 		slog.Error("Failed to set audio success", "err", err)
+		return nil, err
 	}
 
 	// Save mappings
-	mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
 	updatedConfig := updater.GenerateConfig()
+	mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
 	err = mappingWriter.Update(data.UpdateMappingRequest{
 		InternalBlock: request.Id,
 		Config:        updatedConfig,
@@ -818,6 +820,27 @@ func (u *Updater) SetAudioSuccess(externalChildBlockIds []string) error {
 	return nil
 }
 
+// After writing this I've wondered: Is there a significant benefit to saving
+// an errored mapping? If the export job returns after an error calling the
+// Notion API, it can simply retry. If there was no mapping, it will create one
+// if it succeeds. If there was a mapping, the content hash will be out of date
+// and it will still call notion and update the mapping. The only benefit of an
+// errored mapping, I think, would be if we want the job to complete even when
+// some information has not been updated. But that's not needed for now.
+// func (u *Updater) SetAudioError() {
+// 	for i := range u.AudioTranscription.Mappings {
+// 		u.AudioTranscription.Mappings[i].Status = data.BlockMappingStatusError
+// 	}
+// 	return
+// }
+
+// After writing this I've wondered: Is there a significant benefit to saving
+// an errored mapping? If the export job returns after an error calling the
+// Notion API, it can simply retry. If there was no mapping, it will create one
+// if it succeeds. If there was a mapping, the content hash will be out of date
+// and it will still call notion and update the mapping. The only benefit of an
+// errored mapping, I think, would be if we want the job to complete even when
+// some information has not been updated. But that's not needed for now.
 func (u *Updater) UpdateTitle(request NoteRequest) error {
 	if request.Title == nil {
 		return nil
@@ -875,6 +898,20 @@ func (u *Updater) UpdateTitle(request NoteRequest) error {
 	return nil
 }
 
+// After writing this I've wondered: Is there a significant benefit to saving
+// an errored mapping? If the export job returns after an error calling the
+// Notion API, it can simply retry. If there was no mapping, it will create one
+// if it succeeds. If there was a mapping, the content hash will be out of date
+// and it will still call notion and update the mapping. The only benefit of an
+// errored mapping, I think, would be if we want the job to complete even when
+// some information has not been updated. But that's not needed for now.
+// func (u *Updater) SetTitleError() {
+// 	if u.Title.Mapping != nil {
+// 		u.Title.Mapping.Status = data.BlockMappingStatusError
+// 	}
+// 	return
+// }
+
 func (u *Updater) GenerateProperties() gonotion.DatabasePageProperties {
 	props := gonotion.DatabasePageProperties{}
 
@@ -917,5 +954,3 @@ func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 	return config
 
 }
-
-// TODO: SetAudioError
