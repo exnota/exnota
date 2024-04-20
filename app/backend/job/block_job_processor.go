@@ -44,6 +44,7 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 	// Handle panics from the runnable
 	defer func() {
 		if r := recover(); r != nil {
+			stack := debug.Stack()
 			// `err` is the named return variable of this method, so assiging
 			// the panic error to it will mean it can be returned from this
 			// method without an explicit return statement (which the defer()
@@ -56,13 +57,13 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 				err = fmt.Errorf("unknown panic caught of type: %T", r)
 			}
 
-			j.handleError(job, err)
+			j.handleError(job, err, &stack)
 		}
 	}()
 
 	summary, err := runnable.Run(job, j.app)
 	if err != nil {
-		j.handleError(job, err)
+		j.handleError(job, err, nil)
 		return err
 	}
 
@@ -78,11 +79,14 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 	return err
 }
 
-func (j *blockJobProcessor) handleError(job data.BlockJob, err error) {
-	stack := debug.Stack()
-	slog.Error("Stack trace for error", "error", err, "stack", stack)
+func (j *blockJobProcessor) handleError(job data.BlockJob, err error, stack *[]byte) {
+	if stack != nil {
+		slog.Error("Stack trace for error", "error", err, "stack", stack)
+		fmt.Println(string(*stack))
+	} else {
+		slog.Error("Stack trace for error", "error", err)
+	}
 	// Also print to console because the slog output will be on one line.
-	fmt.Println(string(stack))
 
 	// The backoff logic below should progress like this (generate this using:
 	// https://go.dev/play/p/4Pn10aAcY3h):
