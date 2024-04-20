@@ -72,7 +72,7 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 			}
 		}
 
-		exportResult, err := notionExporter.NoteExporter(exportRequest)
+		exportResult, err := notionExporter.Export(exportRequest)
 		if err != nil {
 			return nil, err
 		}
