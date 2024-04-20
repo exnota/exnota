@@ -14,6 +14,8 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+const titlePropertyId = "title"
+
 type NotionExporter interface {
 	NoteExporter(request NoteRequest) (*ExportResult, error)
 }
@@ -268,8 +270,11 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	props := gonotion.DatabasePageProperties{}
-	_, err = s.addTitleProperty(props, request, mappingConfig)
+	updater, err := NewUpdater(*mappingConfig, mapping.ExternalBlock())
+	if err != nil {
+		return nil, err
+	}
+	err = updater.UpdateTitle(request)
 	if err != nil {
 		return nil, err
 	}
@@ -280,20 +285,21 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	}
 
 	// Handle audio field (transcription)
-	updater, err := NewUpdater(*mappingConfig, mapping.ExternalBlock())
-	if err != nil {
-		return nil, err
-	}
 	err = updater.UpdateAudio(request)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create notion writer
+	// Get config for access token
 	integrationConfig, err := request.Integration.Config()
 	if err != nil {
 		return nil, err
 	}
+
+	// Get props
+	props := updater.GenerateProperties()
+
+	// Update page in Notion
 	writer := NewNotionWriter(s.app, *integrationConfig.Auth.AccessToken)
 	updatePageResp, err := writer.UpdatePage(UpdatePageRequest{
 		PageId:             mapping.ExternalBlock(),
@@ -305,11 +311,13 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 		return nil, err
 	}
 
+	// Update audio external block ID mappings
 	err = updater.SetAudioSuccess(updatePageResp.Children)
 	if err != nil {
 		slog.Error("Failed to set audio success", "err", err)
 	}
 
+	// Save mappings
 	mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
 	updatedConfig := updater.GenerateConfig()
 	err = mappingWriter.Update(data.UpdateMappingRequest{
@@ -428,7 +436,7 @@ func (s *notionExporter) addTitleProperty(
 
 	// If title not mapped, proceed
 	if mappingConfig.Title == nil {
-		props["title"] = gonotion.DatabasePageProperty{
+		props[titlePropertyId] = gonotion.DatabasePageProperty{
 			Type:  gonotion.DBPropTypeTitle,
 			Title: util.TextToRichText(title),
 		}
@@ -455,7 +463,7 @@ func (s *notionExporter) addTitleProperty(
 				}
 			}
 
-			props["title"] = gonotion.DatabasePageProperty{
+			props[titlePropertyId] = gonotion.DatabasePageProperty{
 				Type:  gonotion.DBPropTypeTitle,
 				Title: util.TextToRichText(title),
 			}
@@ -586,14 +594,18 @@ type Updater struct {
 		// File is not expected to be updated
 		Mapping *data.NotionMapping
 	}
+	Title struct {
+		Mapping          *data.NotionMapping
+		PropertyToUpdate *gonotion.DatabasePageProperty
+	}
 }
 
 func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater, error) {
+	// File
 	if len(mappingConfig.File) > 1 {
 		slog.Error("Multiple file mappings are not supported yet", "blockId", blockId)
 		return nil, fmt.Errorf("Multiple file mappings are not supported yet")
 	}
-
 	updater := &Updater{}
 	if len(mappingConfig.File) == 1 {
 		updater.File.Mapping = &mappingConfig.File[0]
@@ -609,11 +621,11 @@ func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater
 		}
 	}
 
+	// Audio
 	if len(mappingConfig.Audio) > 1 {
 		slog.Error("Multiple audio mappings are not supported yet")
 		return nil, fmt.Errorf("Multiple audio mappings are not supported yet")
 	}
-
 	// Confirm at least one audio mapping with one transcription
 	if len(mappingConfig.Audio) == 1 && len(mappingConfig.Audio[0].Transcription) > 0 {
 		updater.AudioTranscription.Mappings = mappingConfig.Audio[0].Transcription
@@ -628,6 +640,25 @@ func NewUpdater(mappingConfig data.BlockMappingConfig, blockId string) (*Updater
 				)
 				return nil, fmt.Errorf("Unexpected mapping target type")
 			}
+		}
+	}
+
+	// Title
+	if len(mappingConfig.Title) > 1 {
+		slog.Error("Multiple title mappings are not supported yet")
+		return nil, fmt.Errorf("Multiple title mappings are not supported yet")
+	}
+	if len(mappingConfig.Title) == 1 {
+		updater.Title.Mapping = &mappingConfig.Title[0]
+
+		// Confirm title mapping is to a property
+		if updater.Title.Mapping.TargetType != data.MappingTargetTypeProperty {
+			slog.Error(
+				"Unexpected mapping target type",
+				"targetType",
+				updater.Title.Mapping.TargetType,
+			)
+			return nil, fmt.Errorf("Unexpected mapping target type")
 		}
 	}
 
@@ -787,6 +818,75 @@ func (u *Updater) SetAudioSuccess(externalChildBlockIds []string) error {
 	return nil
 }
 
+func (u *Updater) UpdateTitle(request NoteRequest) error {
+	if request.Title == nil {
+		return nil
+	}
+
+	// If no existing mapping, add title property and create mapping.
+	if u.Title.Mapping == nil {
+		u.Title.PropertyToUpdate = &gonotion.DatabasePageProperty{
+			Type:  gonotion.DBPropTypeTitle,
+			Title: util.TextToRichText(*request.Title),
+		}
+		contentHash, err := BlockTitleToContentHash(TitleContentHashInput{
+			Title: *request.Title,
+		})
+		if err != nil {
+			return err
+		}
+		now := time.Now()
+		externalPropertyId := titlePropertyId
+		u.Title.Mapping = &data.NotionMapping{
+			TargetType:         data.MappingTargetTypeProperty,
+			Status:             data.BlockMappingStatusMapped,
+			ContentHash:        contentHash,
+			Created:            now,
+			Updated:            now,
+			ExternalPropertyId: &externalPropertyId,
+		}
+		return nil
+	}
+
+	// If there is an existing mapping, validate that it is in the expected
+	// state:
+	// - It is to a property.
+	// - It is not successful.
+	if u.Title.Mapping.TargetType != data.MappingTargetTypeProperty {
+		slog.Error(
+			"Unexpected mapping target type",
+			"targetType",
+			u.Title.Mapping.TargetType,
+			"blockId",
+			u.BlockId,
+		)
+		return fmt.Errorf("Unexpected mapping target type")
+	}
+
+	if u.Title.Mapping.Status == data.BlockMappingStatusMapped {
+		slog.Warn("Title has already been mapped")
+		return nil
+	}
+
+	// Update mapping to successful
+	u.Title.Mapping.Status = data.BlockMappingStatusMapped
+	u.Title.Mapping.Updated = time.Now()
+
+	return nil
+}
+
+func (u *Updater) GenerateProperties() gonotion.DatabasePageProperties {
+	props := gonotion.DatabasePageProperties{}
+
+	// Add title
+	if u.Title.PropertyToUpdate != nil {
+		id := u.Title.Mapping.ExternalPropertyId
+		props[*id] = *u.Title.PropertyToUpdate
+	}
+
+	return props
+}
+
 func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 	config := &data.BlockMappingConfig{}
 
@@ -804,6 +904,13 @@ func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 			{
 				Transcription: audioMappings,
 			},
+		}
+	}
+
+	// Add title mapping
+	if u.Title.Mapping != nil {
+		config.Title = []data.NotionMapping{
+			*u.Title.Mapping,
 		}
 	}
 
