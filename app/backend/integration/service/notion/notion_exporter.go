@@ -501,14 +501,16 @@ func (u *Updater) SetFileSuccess(externalChildBlockIds []string) error {
 	}
 
 	if len(externalChildBlockIds) != 1 {
-		slog.Error(
+		// Don't return an error as the job doesn't need to be retried just
+		// because we don't have accurate child mappings.
+		slog.Info(
 			"Unexpected number of external child block IDs",
 			"num external child block IDs",
 			len(externalChildBlockIds),
 			"blockId",
 			u.BlockId,
 		)
-		return fmt.Errorf("Unexpected number of external child block IDs")
+		return nil
 	}
 
 	u.File.Mapping.ExternalBlockId = &externalChildBlockIds[0]

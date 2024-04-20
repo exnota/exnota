@@ -83,6 +83,7 @@ func (n *notionWriter) CreateDatabasePage(
 		ParentType:             notion.ParentTypeDatabase,
 		ParentID:               request.DatabaseId,
 		DatabasePageProperties: properties,
+		Children:               request.Children,
 		// DatabasePageProperties: &notion.DatabasePageProperties{
 		// 	"Name": notion.DatabasePageProperty{
 		// 		Type: notion.DBPropTypeTitle,
@@ -102,14 +103,19 @@ func (n *notionWriter) CreateDatabasePage(
 	}
 
 	pageId := page.ID
-	children, err := client.AppendBlockChildren(context.Background(), pageId, request.Children)
+	notionFetcher := NewNotionFetcher(n.app)
+	children, err := notionFetcher.FetchPageChildren(pageId, n.accessToken)
 	if err != nil {
-		slog.Error("Failed to append block children", "error", err)
-		return nil, err
+		slog.Error(
+			"Failed to fetch page children. Swallowing error as the job shouldn't be retried just because we're missing mappings.",
+			"error",
+			err,
+		)
+		children = []notion.Block{}
 	}
 
 	var childIDs []string
-	for _, child := range children.Results {
+	for _, child := range children {
 		childIDs = append(childIDs, child.ID())
 	}
 
@@ -135,20 +141,26 @@ func (n *notionWriter) CreateChildPage(
 		ParentType: notion.ParentTypePage,
 		ParentID:   request.ParentId,
 		Title:      title,
+		Children:   request.Children,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	pageId := page.ID
-	children, err := client.AppendBlockChildren(context.Background(), pageId, request.Children)
+	notionFetcher := NewNotionFetcher(n.app)
+	children, err := notionFetcher.FetchPageChildren(pageId, n.accessToken)
 	if err != nil {
-		slog.Error("Failed to append block children", "error", err)
-		return nil, err
+		slog.Error(
+			"Failed to fetch page children. Swallowing error as the job shouldn't be retried just because we're missing mappings.",
+			"error",
+			err,
+		)
+		children = []notion.Block{}
 	}
 
 	var childIDs []string
-	for _, child := range children.Results {
+	for _, child := range children {
 		childIDs = append(childIDs, child.ID())
 	}
 
