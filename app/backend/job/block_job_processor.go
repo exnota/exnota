@@ -81,12 +81,12 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 
 func (j *blockJobProcessor) handleError(job data.BlockJob, err error, stack *[]byte) {
 	if stack != nil {
-		slog.Error("Stack trace for error", "error", err, "stack", stack)
+		slog.Error("Stack trace for error", "error", err, "stack", string(*stack))
+		// Also print to console because the slog output will be on one line.
 		fmt.Println(string(*stack))
 	} else {
 		slog.Error("Stack trace for error", "error", err)
 	}
-	// Also print to console because the slog output will be on one line.
 
 	// The backoff logic below should progress like this (generate this using:
 	// https://go.dev/play/p/4Pn10aAcY3h):
