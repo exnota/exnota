@@ -97,7 +97,14 @@ const (
 type BlockMappingStatus string
 
 const (
-	BlockMappingStatusMapped  BlockMappingStatus = "mapped"
+	BlockMappingStatusMapped BlockMappingStatus = "mapped"
+	// After writing this I've wondered: Is there a significant benefit to saving
+	// an errored or missing mapping? If the export job returns after an error calling the
+	// Notion API, it can simply retry. If there was no mapping, it will create one
+	// if it succeeds. If there was a mapping, the content hash will be out of date
+	// and it will still call notion and update the mapping. The only benefit of an
+	// errored mapping, I think, would be if we want the job to complete even when
+	// some information has not been updated. But that's not needed for now.
 	BlockMappingStatusError   BlockMappingStatus = "error"
 	BlockMappingStatusMissing BlockMappingStatus = "missing"
 )
