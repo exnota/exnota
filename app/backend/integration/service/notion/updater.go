@@ -31,6 +31,7 @@ type Updater struct {
 		ChildToInsert *gonotion.AudioBlock
 	}
 	Title struct {
+		InitialMapping   *data.NotionMapping
 		Mapping          *data.NotionMapping
 		PropertyToUpdate *gonotion.DatabasePageProperty
 	}
@@ -104,14 +105,15 @@ func NewUpdater(
 		return nil, fmt.Errorf("Multiple title mappings are not supported yet")
 	}
 	if len(mappingConfig.Title) == 1 {
-		updater.Title.Mapping = &mappingConfig.Title[0]
+		mappingCopy := mappingConfig.Title[0]
+		updater.Title.InitialMapping = &mappingCopy
 
 		// Confirm title mapping is to a property
-		if updater.Title.Mapping.TargetType != data.MappingTargetTypeProperty {
+		if updater.Title.InitialMapping.TargetType != data.MappingTargetTypeProperty {
 			slog.Error(
 				"Unexpected mapping target type",
 				"targetType",
-				updater.Title.Mapping.TargetType,
+				updater.Title.InitialMapping.TargetType,
 			)
 			return nil, fmt.Errorf("Unexpected mapping target type")
 		}
@@ -383,7 +385,7 @@ func (u *Updater) UpdateTitle(request NoteRequest) error {
 	}
 
 	// If no existing mapping, add title property and create mapping.
-	if u.Title.Mapping == nil {
+	if u.Title.InitialMapping == nil {
 		u.Title.PropertyToUpdate = &gonotion.DatabasePageProperty{
 			Type:  gonotion.DBPropTypeTitle,
 			Title: util.TextToRichText(*request.Title),
@@ -407,29 +409,29 @@ func (u *Updater) UpdateTitle(request NoteRequest) error {
 		return nil
 	}
 
-	// If there is an existing mapping, validate that it is in the expected
-	// state:
-	// - It is to a property.
-	// - It is not successful.
-	if u.Title.Mapping.TargetType != data.MappingTargetTypeProperty {
-		slog.Error(
-			"Unexpected mapping target type",
-			"targetType",
-			u.Title.Mapping.TargetType,
-			"blockId",
-			u.BlockId,
-		)
-		return fmt.Errorf("Unexpected mapping target type")
+	// If there is an existing mapping, check if the content has been updated
+	contentHash, err := BlockTitleToContentHash(TitleContentHashInput{
+		Title: *request.Title,
+	})
+	if err != nil {
+		return err
 	}
-
-	if u.Title.Mapping.Status == data.BlockMappingStatusMapped {
-		slog.Warn("Title has already been mapped")
+	if u.Title.InitialMapping.ContentHash == contentHash {
+		slog.Warn("Title content hash has not changed", "blockId", u.BlockId)
 		return nil
 	}
 
-	// Update mapping to successful
+	// Create property object and update mapping
+	u.Title.PropertyToUpdate = &gonotion.DatabasePageProperty{
+		Type:  gonotion.DBPropTypeTitle,
+		Title: util.TextToRichText(*request.Title),
+	}
+
+	mappingCopy := *u.Title.InitialMapping
+	u.Title.Mapping = &mappingCopy
 	u.Title.Mapping.Status = data.BlockMappingStatusMapped
 	u.Title.Mapping.Updated = time.Now()
+	u.Title.Mapping.ContentHash = contentHash
 
 	return nil
 }
@@ -484,6 +486,10 @@ func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 	if u.Title.Mapping != nil {
 		config.Title = []data.NotionMapping{
 			*u.Title.Mapping,
+		}
+	} else if u.Title.InitialMapping != nil {
+		config.Title = []data.NotionMapping{
+			*u.Title.InitialMapping,
 		}
 	}
 
