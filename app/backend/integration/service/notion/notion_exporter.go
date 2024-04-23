@@ -1,6 +1,7 @@
 package notion
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -72,13 +73,13 @@ func (s *notionExporter) Export(request NoteRequest) (*ExportResult, error) {
 
 	switch request.Type {
 	case BlockTypeVoiceNote:
-		return s.voiceNoteExporter(request)
+		return s.exportVoiceNote(request)
 	default:
 		return nil, fmt.Errorf("Invalid export block type: %s", request.Type)
 	}
 }
 
-func (s *notionExporter) voiceNoteExporter(request NoteRequest) (*ExportResult, error) {
+func (s *notionExporter) exportVoiceNote(request NoteRequest) (*ExportResult, error) {
 	switch request.Command {
 	case CommandCreateVoiceNote:
 		return s.createNote(request)
@@ -286,42 +287,79 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	// Get props
 	props := updater.GenerateProperties()
 
-	// Update page in Notion
+	// Update page properties in Notion
 	writer := NewNotionWriter(s.app, *integrationConfig.Auth.AccessToken)
-	updatePageResp, err := writer.UpdatePage(UpdatePageRequest{
+	err = writer.UpdatePageProperties(UpdatePagePropertiesRequest{
 		PageId:             mapping.ExternalBlock(),
 		DatabaseProperties: props,
-		Children:           updater.AudioTranscription.ChildrenToInsert,
-		AfterId:            updater.AudioTranscription.InsertChildrenAfterId,
 	})
 	if err != nil {
-		slog.Warn("Failed to update page", "err", err, "blockId", request.Id)
+		// Return without updating mappings, because no changes have actually
+		// been exported to Notion.
+
+		slog.Warn("Failed to update page properties", "err", err, "blockId", request.Id)
 		return nil, err
 	}
 
-	// Save audio transcription block mappings
-	err = updater.SetAudioSuccess(updatePageResp.Children)
-	if err != nil {
-		slog.Error("Failed to set audio success", "err", err)
-		return nil, err
-	}
-
-	// Save mappings
-	updatedConfig := updater.GenerateConfig()
-	mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
-	err = mappingWriter.Update(data.UpdateMappingRequest{
-		InternalBlock: request.Id,
-		Config:        updatedConfig,
+	// Append page children in Notion
+	appendResp, appendErr := writer.AppendPageChildren(AppendPageChildrenRequest{
+		PageId:   mapping.ExternalBlock(),
+		Children: updater.AudioTranscription.ChildrenToInsert,
+		AfterId:  updater.AudioTranscription.InsertChildrenAfterId,
 	})
-	if err != nil {
-		slog.Error("Failed to update mapping", "err", err)
-		return nil, err
+	if appendErr != nil {
+		slog.Error(
+			"Failed to append page children",
+			"err",
+			appendErr,
+			"pageId",
+			mapping.ExternalBlock(),
+			"blockId",
+			request.Id,
+		)
+
+		// Clear failed append mappings
+		updater.ResetAudioMappings()
+
+		// Save successful property mappings
+		updatedConfig := updater.GenerateConfig()
+		mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
+		err = mappingWriter.Update(data.UpdateMappingRequest{
+			InternalBlock: request.Id,
+			Config:        updatedConfig,
+		})
+		if err != nil {
+			slog.Error("Failed to update mapping", "err", err)
+			return nil, errors.Join(appendErr, err)
+		}
+
+		// Return the error so the job can be retried
+		return nil, appendErr
+	} else {
+		// Update audio block mappings
+		err = updater.SetAudioSuccess(appendResp.Children)
+		if err != nil {
+			slog.Error("Failed to set audio success", "err", err)
+			return nil, err
+		}
+
+		// Save mappings
+		updatedConfig := updater.GenerateConfig()
+		mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
+		err = mappingWriter.Update(data.UpdateMappingRequest{
+			InternalBlock: request.Id,
+			Config:        updatedConfig,
+		})
+		if err != nil {
+			slog.Error("Failed to update mapping", "err", err)
+			return nil, err
+		}
+
+		// - TODO: return response summary update. This could be returned as a diff
+		// from 'updater', which just returns 'new or updated' mappings.
+
+		return nil, nil
 	}
-
-	// - TODO: return response summary update. This could be returned as a diff
-	// from 'updater', which just returns 'new or updated' mappings.
-
-	return nil, nil
 }
 
 func (s *notionExporter) getNotionObjectInternalId(destinationId string) (string, error) {

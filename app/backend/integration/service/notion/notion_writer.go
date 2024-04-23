@@ -10,29 +10,11 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-type CreateDatabasePageRequest struct {
-	DatabaseId         string `validate:"required"`
-	DatabaseProperties *gonotion.DatabasePageProperties
-	Children           []gonotion.Block
-}
-
-type CreateChildPageRequest struct {
-	ParentId string `validate:"required"`
-	Title    []gonotion.RichText
-	Children []gonotion.Block
-}
-
-type UpdatePageRequest struct {
-	PageId             string `validate:"required"`
-	DatabaseProperties gonotion.DatabasePageProperties
-	Children           []gonotion.Block `validate:"required"`
-	AfterId            *string
-}
-
 type NotionWriter interface {
 	CreateDatabasePage(request CreateDatabasePageRequest) (*CreateDatabasePageResponse, error)
 	CreateChildPage(request CreateChildPageRequest) (*CreateChildPageResponse, error)
-	UpdatePage(request UpdatePageRequest) (*UpdatePageResponse, error)
+	UpdatePageProperties(request UpdatePagePropertiesRequest) error
+	AppendPageChildren(request AppendPageChildrenRequest) (*AppendPageChildrenResponse, error)
 }
 
 type notionWriter struct {
@@ -44,24 +26,16 @@ func NewNotionWriter(app core.App, accessToken string) NotionWriter {
 	return &notionWriter{app, accessToken}
 }
 
+type CreateDatabasePageRequest struct {
+	DatabaseId         string `validate:"required"`
+	DatabaseProperties *gonotion.DatabasePageProperties
+	Children           []gonotion.Block
+}
+
 type CreateDatabasePageResponse struct {
 	PageId   string
 	Children []string
 	Url      string
-}
-
-type CreateChildPageResponse struct {
-	// New page ID
-	PageId string
-	// Ids of inserted child blocks
-	Children []string
-	// Page URL in Notion
-	Url string
-}
-
-type UpdatePageResponse struct {
-	// Ids of inserted child blocks
-	Children []string
 }
 
 func (n *notionWriter) CreateDatabasePage(
@@ -104,7 +78,7 @@ func (n *notionWriter) CreateDatabasePage(
 
 	pageId := page.ID
 	notionFetcher := NewNotionFetcher(n.app)
-	children, err := notionFetcher.FetchPageChildren(pageId, n.accessToken)
+	children, err := notionFetcher.FetchPageChildrenWithAccessToken(pageId, n.accessToken)
 	if err != nil {
 		slog.Error(
 			"Failed to fetch page children. Swallowing error as the job shouldn't be retried just because we're missing mappings.",
@@ -124,6 +98,20 @@ func (n *notionWriter) CreateDatabasePage(
 		Children: childIDs,
 		Url:      page.URL,
 	}, nil
+}
+
+type CreateChildPageRequest struct {
+	ParentId string `validate:"required"`
+	Title    []gonotion.RichText
+	Children []gonotion.Block
+}
+type CreateChildPageResponse struct {
+	// New page ID
+	PageId string
+	// Ids of inserted child blocks
+	Children []string
+	// Page URL in Notion
+	Url string
 }
 
 func (n *notionWriter) CreateChildPage(
@@ -171,12 +159,17 @@ func (n *notionWriter) CreateChildPage(
 	}, nil
 }
 
-func (n *notionWriter) UpdatePage(
-	request UpdatePageRequest,
-) (*UpdatePageResponse, error) {
+type UpdatePagePropertiesRequest struct {
+	PageId             string `validate:"required"`
+	DatabaseProperties gonotion.DatabasePageProperties
+}
+
+func (n *notionWriter) UpdatePageProperties(
+	request UpdatePagePropertiesRequest,
+) error {
 	err := validate.Struct(request)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Update page properties
@@ -188,8 +181,30 @@ func (n *notionWriter) UpdatePage(
 			DatabasePageProperties: request.DatabaseProperties,
 		})
 		if err != nil {
-			return nil, err
+			return err
 		}
+	}
+
+	return nil
+}
+
+type AppendPageChildrenRequest struct {
+	PageId   string           `validate:"required"`
+	Children []gonotion.Block `validate:"required"`
+	AfterId  *string
+}
+
+type AppendPageChildrenResponse struct {
+	// Ids of inserted child blocks
+	Children []string
+}
+
+func (n *notionWriter) AppendPageChildren(
+	request AppendPageChildrenRequest,
+) (*AppendPageChildrenResponse, error) {
+	err := validate.Struct(request)
+	if err != nil {
+		return nil, err
 	}
 
 	// Append children
@@ -212,7 +227,7 @@ func (n *notionWriter) UpdatePage(
 		}
 	}
 
-	return &UpdatePageResponse{
+	return &AppendPageChildrenResponse{
 		Children: childIDs,
 	}, nil
 }

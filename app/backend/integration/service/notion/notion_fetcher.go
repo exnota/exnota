@@ -11,6 +11,7 @@ import (
 type NotionFetcher interface {
 	FetchPage(pageID string, integrationID string) (*notion.Page, error)
 	FetchPageChildren(pageID string, integrationID string) ([]notion.Block, error)
+	FetchPageChildrenWithAccessToken(pageID string, accessToken string) ([]notion.Block, error)
 	FetchDatabase(databaseID string, integrationID string) (*notion.Database, error) // Added method
 }
 
@@ -46,6 +47,19 @@ func (f *notionFetcher) FetchPageChildren(
 		return nil, err
 	}
 
+	client := notion.NewClient(accessToken)
+	result, err := client.FindBlockChildrenByID(context.Background(), pageID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Results, nil
+}
+
+func (f *notionFetcher) FetchPageChildrenWithAccessToken(
+	pageID string,
+	accessToken string,
+) ([]notion.Block, error) {
 	client := notion.NewClient(accessToken)
 	result, err := client.FindBlockChildrenByID(context.Background(), pageID, nil)
 	if err != nil {
