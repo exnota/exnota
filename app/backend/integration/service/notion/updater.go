@@ -410,5 +410,29 @@ func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 	}
 
 	return config
+}
 
+func (u *Updater) GenerateConfigDiff() *data.BlockMappingConfig {
+	config := &data.BlockMappingConfig{}
+	// Add updated file mapping
+	if u.File.UpdatedMapping != nil {
+		config.File = []data.NotionMapping{
+			*u.File.UpdatedMapping,
+		}
+	}
+	// Add updated audio mappings
+	if len(u.AudioTranscription.UpdatedMappings) > 0 {
+		config.Audio = []data.AudioMapping{
+			{
+				Transcription: u.AudioTranscription.UpdatedMappings,
+			},
+		}
+	}
+	// Add updated title mapping
+	if u.Title.UpdatedMapping != nil {
+		config.Title = []data.NotionMapping{
+			*u.Title.UpdatedMapping,
+		}
+	}
+	return config
 }

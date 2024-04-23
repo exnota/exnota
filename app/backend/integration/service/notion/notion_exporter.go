@@ -120,15 +120,6 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 		return nil, fmt.Errorf("No notion object found: %s", notionObjectInternalId)
 	}
 
-	// TODO: When needing to update title or other properties:
-	// - check mapping to see if it the property has already been mapped to
-	// - check template to see if it define a db property to map to
-	// - otherwise, find the title by parsing the notion object
-	// fallbackTitlePropertyId, err := destinationObject.DatabaseTitlePropertyId()
-	// if err != nil {
-	// 	return err
-	// }
-
 	// Handle title
 	if request.Title != nil {
 		return nil, fmt.Errorf("Title is not supported on page create yet")
@@ -347,9 +338,16 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 		return nil, errors.Join(appendChildrenErr, err)
 	}
 
-	// TODO Return data in result
-	// Return the error so the job can be retried
-	return nil, appendChildrenErr
+	// Note: If the job completes a partial mapping on the first attempt, on the
+	// second attempt the diff will only show the latest changes and not the
+	// change that was part of the first attempt.
+	configUpdateDiff := updater.GenerateConfigDiff()
+	return &ExportResult{
+			Message:      "Updated page",
+			ConfigUpdate: configUpdateDiff,
+		},
+		// Return the append children error so the job can be retried
+		appendChildrenErr
 }
 
 func (s *notionExporter) getNotionObjectInternalId(destinationId string) (string, error) {
