@@ -29,7 +29,7 @@ func (j *blockJobWorkflow) ApplyHooks() {
 func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 	j.app.OnModelAfterCreate(block_data.CollectionBlock).Add(func(e *core.ModelEvent) error {
 		blockRecord := e.Model.(*models.Record)
-		block, err := block_data.NewBlock(blockRecord)
+		block, err := block_data.LoadBlock(blockRecord, j.app)
 		if err != nil {
 			return err
 		}

@@ -21,7 +21,7 @@ func (f *blockFetcher) FetchById(id string) (Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	block, err := NewBlock(record)
+	block, err := LoadBlock(record, f.app)
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,7 @@ func TestAudioBlockSetters(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		block, err := NewVoiceNoteBlock(rec, app)
+		block, err := LoadVoiceNoteBlock(rec, app)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -50,7 +50,7 @@ func TestAudioBlockSetters(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		block, err := NewVoiceNoteBlock(rec, app)
+		block, err := LoadVoiceNoteBlock(rec, app)
 		if err != nil {
 			t.Fatal(err)
 		}
