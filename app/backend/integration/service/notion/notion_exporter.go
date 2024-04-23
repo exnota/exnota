@@ -286,19 +286,20 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 
 	// Get props
 	props := updater.GenerateProperties()
-
-	// Update page properties in Notion
 	writer := NewNotionWriter(s.app, *integrationConfig.Auth.AccessToken)
-	err = writer.UpdatePageProperties(UpdatePagePropertiesRequest{
-		PageId:             mapping.ExternalBlock(),
-		DatabaseProperties: props,
-	})
-	if err != nil {
-		// Return without updating mappings, because no changes have actually
-		// been exported to Notion.
+	if len(props) != 0 {
+		// Update page properties in Notion
+		err = writer.UpdatePageProperties(UpdatePagePropertiesRequest{
+			PageId:             mapping.ExternalBlock(),
+			DatabaseProperties: props,
+		})
+		if err != nil {
+			// Return without updating mappings, because no changes have actually
+			// been exported to Notion.
 
-		slog.Warn("Failed to update page properties", "err", err, "blockId", request.Id)
-		return nil, err
+			slog.Warn("Failed to update page properties", "err", err, "blockId", request.Id)
+			return nil, err
+		}
 	}
 
 	// Append page children in Notion
