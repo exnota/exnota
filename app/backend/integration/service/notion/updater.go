@@ -18,6 +18,9 @@ type Updater struct {
 
 	BlockId            string
 	AudioTranscription struct {
+		// Original mapping, used for resetting
+		InitialMappings []data.NotionMapping
+		// Latest mappings (same as initial until changed)
 		Mappings              []data.NotionMapping
 		ChildrenToInsert      []gonotion.Block
 		InsertChildrenAfterId *string
@@ -43,7 +46,7 @@ func NewUpdater(
 		BlockId: blockId,
 	}
 
-	// File
+	// Save file mapping to struct
 	if len(mappingConfig.File) > 1 {
 		slog.Error("Multiple file mappings are not supported yet", "blockId", blockId)
 		return nil, fmt.Errorf("Multiple file mappings are not supported yet")
@@ -62,17 +65,14 @@ func NewUpdater(
 		}
 	}
 
-	// Audio
+	// Save audio mappings to struct
 	if len(mappingConfig.Audio) > 1 {
 		slog.Error("Multiple audio mappings are not supported yet")
 		return nil, fmt.Errorf("Multiple audio mappings are not supported yet")
 	}
-	// Confirm at least one audio mapping with one transcription
 	if len(mappingConfig.Audio) == 1 && len(mappingConfig.Audio[0].Transcription) > 0 {
-		updater.AudioTranscription.Mappings = mappingConfig.Audio[0].Transcription
-
 		// Confirm all transcriptions are mapped to blocks
-		for _, transcriptionMapping := range updater.AudioTranscription.Mappings {
+		for _, transcriptionMapping := range mappingConfig.Audio[0].Transcription {
 			if transcriptionMapping.TargetType != data.MappingTargetTypeBlock {
 				slog.Error(
 					"Unexpected mapping target type",
@@ -82,9 +82,23 @@ func NewUpdater(
 				return nil, fmt.Errorf("Unexpected mapping target type")
 			}
 		}
+
+		updater.AudioTranscription.Mappings = make(
+			[]data.NotionMapping,
+			len(mappingConfig.Audio[0].Transcription),
+		)
+		updater.AudioTranscription.InitialMappings = make(
+			[]data.NotionMapping,
+			len(mappingConfig.Audio[0].Transcription),
+		)
+
+		// A quick test on go playground shows `copy` should be sufficient
+		// for keeping the two slices separate.
+		copy(updater.AudioTranscription.Mappings, mappingConfig.Audio[0].Transcription)
+		copy(updater.AudioTranscription.InitialMappings, mappingConfig.Audio[0].Transcription)
 	}
 
-	// Title
+	// Save title mapping to struct
 	if len(mappingConfig.Title) > 1 {
 		slog.Error("Multiple title mappings are not supported yet")
 		return nil, fmt.Errorf("Multiple title mappings are not supported yet")
@@ -332,6 +346,14 @@ func (u *Updater) SetAudioSuccess(externalChildBlockIds []string) error {
 	}
 
 	return nil
+}
+
+func (u *Updater) ResetAudioMappings() {
+	u.AudioTranscription.Mappings = make(
+		[]data.NotionMapping,
+		len(u.AudioTranscription.InitialMappings),
+	)
+	copy(u.AudioTranscription.Mappings, u.AudioTranscription.InitialMappings)
 }
 
 // After writing this I've wondered: Is there a significant benefit to saving
