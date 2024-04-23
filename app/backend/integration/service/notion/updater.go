@@ -21,7 +21,7 @@ type Updater struct {
 		// Original mapping, used for resetting
 		InitialMappings []data.NotionMapping
 		// Latest mappings (same as initial until changed)
-		Mappings              []data.NotionMapping
+		UpdatedMappings       []data.NotionMapping
 		ChildrenToInsert      []gonotion.Block
 		InsertChildrenAfterId *string
 	}
@@ -32,7 +32,7 @@ type Updater struct {
 	}
 	Title struct {
 		InitialMapping   *data.NotionMapping
-		Mapping          *data.NotionMapping
+		UpdatedMapping   *data.NotionMapping
 		PropertyToUpdate *gonotion.DatabasePageProperty
 	}
 }
@@ -47,7 +47,7 @@ func NewUpdater(
 		BlockId: blockId,
 	}
 
-	// Save file mapping to struct
+	// Save current file mapping to struct
 	if len(mappingConfig.File) > 1 {
 		slog.Error("Multiple file mappings are not supported yet", "blockId", blockId)
 		return nil, fmt.Errorf("Multiple file mappings are not supported yet")
@@ -66,14 +66,15 @@ func NewUpdater(
 		}
 	}
 
-	// Save audio mappings to struct
+	// Save current audio mappings to struct
 	if len(mappingConfig.Audio) > 1 {
 		slog.Error("Multiple audio mappings are not supported yet")
 		return nil, fmt.Errorf("Multiple audio mappings are not supported yet")
 	}
 	if len(mappingConfig.Audio) == 1 && len(mappingConfig.Audio[0].Transcription) > 0 {
+		audioMapping := mappingConfig.Audio[0]
 		// Confirm all transcriptions are mapped to blocks
-		for _, transcriptionMapping := range mappingConfig.Audio[0].Transcription {
+		for _, transcriptionMapping := range audioMapping.Transcription {
 			if transcriptionMapping.TargetType != data.MappingTargetTypeBlock {
 				slog.Error(
 					"Unexpected mapping target type",
@@ -84,22 +85,16 @@ func NewUpdater(
 			}
 		}
 
-		updater.AudioTranscription.Mappings = make(
-			[]data.NotionMapping,
-			len(mappingConfig.Audio[0].Transcription),
-		)
 		updater.AudioTranscription.InitialMappings = make(
 			[]data.NotionMapping,
-			len(mappingConfig.Audio[0].Transcription),
+			len(audioMapping.Transcription),
 		)
-
 		// A quick test on go playground shows `copy` should be sufficient
 		// for keeping the two slices separate.
-		copy(updater.AudioTranscription.Mappings, mappingConfig.Audio[0].Transcription)
-		copy(updater.AudioTranscription.InitialMappings, mappingConfig.Audio[0].Transcription)
+		copy(updater.AudioTranscription.InitialMappings, audioMapping.Transcription)
 	}
 
-	// Save title mapping to struct
+	// Save current title mapping to struct
 	if len(mappingConfig.Title) > 1 {
 		slog.Error("Multiple title mappings are not supported yet")
 		return nil, fmt.Errorf("Multiple title mappings are not supported yet")
@@ -202,123 +197,43 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 		return nil
 	}
 
-	// If no existing mappings, add transcription children and create mappings.
-	existingMappings := u.AudioTranscription.Mappings
-	now := time.Now()
-	if len(existingMappings) == 0 {
-		// Add all children
-		children := []gonotion.Block{}
-		newMappings := []data.NotionMapping{}
-		for _, transcription := range request.Audio.Transcription {
-			children = append(children, gonotion.ParagraphBlock{
-				RichText: util.TextToRichText(transcription),
-			})
-			contentHash, err := BlockTitleToContentHash(TitleContentHashInput{
-				Title: transcription,
-			})
-			if err != nil {
-				return err
-			}
-			newMappings = append(newMappings, data.NotionMapping{
-				TargetType:  data.MappingTargetTypeBlock,
-				Status:      data.BlockMappingStatusMapped,
-				ContentHash: contentHash,
-				Created:     now,
-				Updated:     now,
-			})
-		}
-
-		u.AudioTranscription.ChildrenToInsert = children
-		u.AudioTranscription.Mappings = newMappings
-
-		// Get afterId from File mapping, if it exists
-		var afterId *string
-		if u.File.Mapping != nil {
-			afterId = u.File.Mapping.ExternalBlockId
-		}
-		u.AudioTranscription.InsertChildrenAfterId = afterId
-
-		return nil
-	}
-
-	// If there are existing mappings, validate that they are in the expected
-	// state:
-	// - The number of mappings matches the number of requested transcriptions
-	// - All mappings are to blocks.
-	// - Mappings have the same status: All successful or all errored.
-	if len(existingMappings) != len(request.Audio.Transcription) {
-		slog.Error(
-			"Mismatch between transcription mappings and request",
-			"num audioMapping transcriptions",
-			len(existingMappings),
-			"num request transcriptions",
-			len(request.Audio.Transcription),
-			"blockId",
-			u.BlockId,
-		)
-		return fmt.Errorf("Mismatch between transcription mappings and request")
-	}
-
-	if existingMappings[0].TargetType != data.MappingTargetTypeBlock {
-		slog.Error(
-			"Unexpected mapping target type",
-			"targetType",
-			existingMappings[0].TargetType,
-			"blockId",
-			u.BlockId,
-		)
-		return fmt.Errorf("Unexpected mapping target type")
-	}
-
-	successfulMappings := 0
-	for _, m := range existingMappings {
-		if m.Status == data.BlockMappingStatusMapped {
-			successfulMappings++
-		}
-	}
-	if successfulMappings > 0 && successfulMappings != len(request.Audio.Transcription) {
-		slog.Error(
-			"Unexpected number of successful mappings",
-			"num successful mappings",
-			successfulMappings,
-			"num request transcriptions",
-			len(request.Audio.Transcription),
-			"blockId",
-			u.BlockId,
-		)
-		return fmt.Errorf("Unexpected number of successful mappings")
-	}
-
-	// We don't support updating transcription data yet, so do nothing if all
-	// successful.
-	if successfulMappings == len(request.Audio.Transcription) {
+	// Ignore if there are existing mappings
+	if len(u.AudioTranscription.InitialMappings) > 0 {
 		slog.Warn(
-			"Transcriptions already mapped." +
-				" Skipping content hash check and possible further updates.",
+			"Transcriptions already mapped.",
+			"blockId",
+			u.BlockId,
 		)
 		return nil
 	}
 
-	// At this point, there are the same number of mappings as transcriptions
-	// and they are all not successful.
-	//
-	// Add children and update mappings by moving from unchanged to new or
-	// updated, and updating status and timestamp.
+	// Add all children
 	children := []gonotion.Block{}
-	updatedMappings := make([]data.NotionMapping, len(request.Audio.Transcription))
-	for i, transcription := range request.Audio.Transcription {
+	newMappings := []data.NotionMapping{}
+	now := time.Now()
+	for _, transcription := range request.Audio.Transcription {
 		children = append(children, gonotion.ParagraphBlock{
 			RichText: util.TextToRichText(transcription),
 		})
-
-		updatedMappings[i] = existingMappings[i]
-		updatedMappings[i].Status = data.BlockMappingStatusMapped
-		updatedMappings[i].Updated = now
+		contentHash, err := BlockTitleToContentHash(TitleContentHashInput{
+			Title: transcription,
+		})
+		if err != nil {
+			return err
+		}
+		newMappings = append(newMappings, data.NotionMapping{
+			TargetType:  data.MappingTargetTypeBlock,
+			Status:      data.BlockMappingStatusMapped,
+			ContentHash: contentHash,
+			Created:     now,
+			Updated:     now,
+		})
 	}
-	u.AudioTranscription.ChildrenToInsert = children
-	u.AudioTranscription.Mappings = updatedMappings
-	u.AudioTranscription.Mappings = []data.NotionMapping{}
 
+	u.AudioTranscription.ChildrenToInsert = children
+	u.AudioTranscription.UpdatedMappings = newMappings
+
+	// Get afterId from File mapping, if it exists
 	var afterId *string
 	if u.File.Mapping != nil {
 		afterId = u.File.Mapping.ExternalBlockId
@@ -326,14 +241,15 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 	u.AudioTranscription.InsertChildrenAfterId = afterId
 
 	return nil
+
 }
 
 func (u *Updater) SetAudioSuccess(externalChildBlockIds []string) error {
-	if len(u.AudioTranscription.Mappings) != len(externalChildBlockIds) {
+	if len(u.AudioTranscription.UpdatedMappings) != len(externalChildBlockIds) {
 		slog.Error(
 			"Mismatch between transcription mappings and external child block IDs",
 			"num mappings",
-			len(u.AudioTranscription.Mappings),
+			len(u.AudioTranscription.UpdatedMappings),
 			"num external child block IDs",
 			len(externalChildBlockIds),
 			"blockId",
@@ -344,41 +260,20 @@ func (u *Updater) SetAudioSuccess(externalChildBlockIds []string) error {
 
 	// Assume order is the same
 	for i, childId := range externalChildBlockIds {
-		u.AudioTranscription.Mappings[i].ExternalBlockId = &childId
+		u.AudioTranscription.UpdatedMappings[i].ExternalBlockId = &childId
 	}
 
 	return nil
 }
 
 func (u *Updater) ResetAudioMappings() {
-	u.AudioTranscription.Mappings = make(
+	u.AudioTranscription.UpdatedMappings = make(
 		[]data.NotionMapping,
 		len(u.AudioTranscription.InitialMappings),
 	)
-	copy(u.AudioTranscription.Mappings, u.AudioTranscription.InitialMappings)
+	copy(u.AudioTranscription.UpdatedMappings, u.AudioTranscription.InitialMappings)
 }
 
-// After writing this I've wondered: Is there a significant benefit to saving
-// an errored mapping? If the export job returns after an error calling the
-// Notion API, it can simply retry. If there was no mapping, it will create one
-// if it succeeds. If there was a mapping, the content hash will be out of date
-// and it will still call notion and update the mapping. The only benefit of an
-// errored mapping, I think, would be if we want the job to complete even when
-// some information has not been updated. But that's not needed for now.
-// func (u *Updater) SetAudioError() {
-// 	for i := range u.AudioTranscription.Mappings {
-// 		u.AudioTranscription.Mappings[i].Status = data.BlockMappingStatusError
-// 	}
-// 	return
-// }
-
-// After writing this I've wondered: Is there a significant benefit to saving
-// an errored mapping? If the export job returns after an error calling the
-// Notion API, it can simply retry. If there was no mapping, it will create one
-// if it succeeds. If there was a mapping, the content hash will be out of date
-// and it will still call notion and update the mapping. The only benefit of an
-// errored mapping, I think, would be if we want the job to complete even when
-// some information has not been updated. But that's not needed for now.
 func (u *Updater) UpdateTitle(request NoteRequest) error {
 	if request.Title == nil {
 		return nil
@@ -398,7 +293,7 @@ func (u *Updater) UpdateTitle(request NoteRequest) error {
 		}
 		now := time.Now()
 		externalPropertyId := titlePropertyId
-		u.Title.Mapping = &data.NotionMapping{
+		u.Title.UpdatedMapping = &data.NotionMapping{
 			TargetType:         data.MappingTargetTypeProperty,
 			Status:             data.BlockMappingStatusMapped,
 			ContentHash:        contentHash,
@@ -428,10 +323,10 @@ func (u *Updater) UpdateTitle(request NoteRequest) error {
 	}
 
 	mappingCopy := *u.Title.InitialMapping
-	u.Title.Mapping = &mappingCopy
-	u.Title.Mapping.Status = data.BlockMappingStatusMapped
-	u.Title.Mapping.Updated = time.Now()
-	u.Title.Mapping.ContentHash = contentHash
+	u.Title.UpdatedMapping = &mappingCopy
+	u.Title.UpdatedMapping.Status = data.BlockMappingStatusMapped
+	u.Title.UpdatedMapping.Updated = time.Now()
+	u.Title.UpdatedMapping.ContentHash = contentHash
 
 	return nil
 }
@@ -455,7 +350,7 @@ func (u *Updater) GenerateProperties() gonotion.DatabasePageProperties {
 
 	// Add title
 	if u.Title.PropertyToUpdate != nil {
-		id := u.Title.Mapping.ExternalPropertyId
+		id := u.Title.UpdatedMapping.ExternalPropertyId
 		props[*id] = *u.Title.PropertyToUpdate
 	}
 
@@ -473,19 +368,24 @@ func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 	}
 
 	// Add audio mappings
-	audioMappings := u.AudioTranscription.Mappings
-	if len(audioMappings) > 0 {
+	if len(u.AudioTranscription.UpdatedMappings) > 0 {
 		config.Audio = []data.AudioMapping{
 			{
-				Transcription: audioMappings,
+				Transcription: u.AudioTranscription.UpdatedMappings,
+			},
+		}
+	} else if len(u.AudioTranscription.InitialMappings) > 0 {
+		config.Audio = []data.AudioMapping{
+			{
+				Transcription: u.AudioTranscription.InitialMappings,
 			},
 		}
 	}
 
 	// Add title mapping
-	if u.Title.Mapping != nil {
+	if u.Title.UpdatedMapping != nil {
 		config.Title = []data.NotionMapping{
-			*u.Title.Mapping,
+			*u.Title.UpdatedMapping,
 		}
 	} else if u.Title.InitialMapping != nil {
 		config.Title = []data.NotionMapping{
