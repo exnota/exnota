@@ -254,11 +254,11 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	}
 
 	// Handle title
-	mappingConfig, err := mapping.Config()
+	previousMappingConfig, err := mapping.Config()
 	if err != nil {
 		return nil, err
 	}
-	updater, err := NewUpdater(*mappingConfig, mapping.ExternalBlock(), s.app)
+	updater, err := NewUpdater(*previousMappingConfig, mapping.ExternalBlock(), s.app)
 	if err != nil {
 		return nil, err
 	}
@@ -284,11 +284,10 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 		return nil, err
 	}
 
-	// Get props
+	// Get and export properties
 	props := updater.GenerateProperties()
 	writer := NewNotionWriter(s.app, *integrationConfig.Auth.AccessToken)
 	if len(props) != 0 {
-		// Update page properties in Notion
 		err = writer.UpdatePageProperties(UpdatePagePropertiesRequest{
 			PageId:             mapping.ExternalBlock(),
 			DatabaseProperties: props,
@@ -302,65 +301,55 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 		}
 	}
 
-	// Append page children in Notion
-	appendResp, appendErr := writer.AppendPageChildren(AppendPageChildrenRequest{
-		PageId:   mapping.ExternalBlock(),
-		Children: updater.AudioTranscription.ChildrenToInsert,
-		AfterId:  updater.AudioTranscription.InsertChildrenAfterId,
-	})
-	if appendErr != nil {
-		slog.Error(
-			"Failed to append page children",
-			"err",
-			appendErr,
-			"pageId",
-			mapping.ExternalBlock(),
-			"blockId",
-			request.Id,
-		)
-
-		// Clear failed append mappings
-		updater.ResetAudioMappings()
-
-		// Save successful property mappings
-		updatedConfig := updater.GenerateConfig()
-		mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
-		err = mappingWriter.Update(data.UpdateMappingRequest{
-			InternalBlock: request.Id,
-			Config:        updatedConfig,
+	// Get and export children
+	children := updater.AudioTranscription.ChildrenToInsert
+	afterId := updater.AudioTranscription.InsertChildrenAfterId
+	var appendChildrenErr error
+	if len(children) > 0 {
+		var appendResp *AppendPageChildrenResponse
+		appendResp, appendChildrenErr = writer.AppendPageChildren(AppendPageChildrenRequest{
+			PageId:   mapping.ExternalBlock(),
+			Children: children,
+			AfterId:  afterId,
 		})
-		if err != nil {
-			slog.Error("Failed to update mapping", "err", err)
-			return nil, errors.Join(appendErr, err)
+		if appendChildrenErr != nil {
+			slog.Error(
+				"Failed to append page children",
+				"err",
+				appendChildrenErr,
+				"pageId",
+				mapping.ExternalBlock(),
+				"blockId",
+				request.Id,
+			)
+			// Clear mappings that didn't take place
+			updater.ResetAudioMappings()
+		} else {
+			// Update audio block mappings
+			err = updater.SetAudioSuccess(appendResp.Children)
+			if err != nil {
+				slog.Error("Failed to set audio success", "err", err)
+				return nil, err
+			}
 		}
-
-		// Return the error so the job can be retried
-		return nil, appendErr
-	} else {
-		// Update audio block mappings
-		err = updater.SetAudioSuccess(appendResp.Children)
-		if err != nil {
-			slog.Error("Failed to set audio success", "err", err)
-			return nil, err
-		}
-
-		// Save mappings
-		updatedConfig := updater.GenerateConfig()
-		mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
-		err = mappingWriter.Update(data.UpdateMappingRequest{
-			InternalBlock: request.Id,
-			Config:        updatedConfig,
-		})
-		if err != nil {
-			slog.Error("Failed to update mapping", "err", err)
-			return nil, err
-		}
-
-		// - TODO: return response summary update. This could be returned as a diff
-		// from 'updater', which just returns 'new or updated' mappings.
-
-		return nil, nil
 	}
+
+	// Save mappings. Even if children failed to append, the properties may
+	// have been updated.
+	updatedMappingConfig := updater.GenerateConfig()
+	mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
+	err = mappingWriter.Update(data.UpdateMappingRequest{
+		InternalBlock: request.Id,
+		Config:        updatedMappingConfig,
+	})
+	if err != nil {
+		slog.Error("Failed to update mapping", "err", err)
+		return nil, errors.Join(appendChildrenErr, err)
+	}
+
+	// TODO Return data in result
+	// Return the error so the job can be retried
+	return nil, appendChildrenErr
 }
 
 func (s *notionExporter) getNotionObjectInternalId(destinationId string) (string, error) {
