@@ -168,7 +168,7 @@ func (j *transcriptionJobRunner) saveTranscription(
 			return err
 		}
 
-		block, err := block_data.NewVoiceNoteBlock(blockRecord, j.app)
+		block, err := block_data.LoadVoiceNoteBlock(blockRecord, j.app)
 		if err != nil {
 			return err
 		}

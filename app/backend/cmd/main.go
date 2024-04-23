@@ -9,6 +9,7 @@ import (
 	"exnota.com/backend/api"
 	block_api "exnota.com/backend/block/api"
 	block_data "exnota.com/backend/block/data"
+	block_event "exnota.com/backend/block/event"
 	"exnota.com/backend/cmd/config"
 	integ_api "exnota.com/backend/integration/api"
 	integ_data "exnota.com/backend/integration/data"
@@ -128,8 +129,9 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	block_data.NewDestinationDataRules(app).ApplyHooks()
 	block_data.NewBlockDataRules(app).ApplyHooks()
 
-	// Job workflow
+	// Event workflows
 	job.NewBlockJobWorkflow(app).ApplyHooks()
+	block_event.NewBlockStatusListener(app).ApplyHooks()
 
 	// API rules
 	integ_api.NewIntegrationRequestHooks(app, integ_api.NotionCredentials{
@@ -168,68 +170,75 @@ func setGlobalDeleteRules(app core.App) {
 
 func setBlockJobInvariants(app core.App) {
 	// type cannot be changed
-	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK_JOB).Add(func(e *core.RecordUpdateEvent) error {
-		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
-		if err != nil {
-			return err
-		}
+	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK_JOB).
+		Add(func(e *core.RecordUpdateEvent) error {
+			existingRecord, err := app.Dao().
+				FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
+			if err != nil {
+				return err
+			}
 
-		newType := e.Record.GetString(BLOCK_JOB_FIELD_TYPE)
+			newType := e.Record.GetString(BLOCK_JOB_FIELD_TYPE)
 
-		if newType != existingRecord.GetString(BLOCK_JOB_FIELD_TYPE) {
-			return apis.NewBadRequestError("Cannot change block job type", nil)
-		}
+			if newType != existingRecord.GetString(BLOCK_JOB_FIELD_TYPE) {
+				return apis.NewBadRequestError("Cannot change block job type", nil)
+			}
 
-		return nil
-	})
+			return nil
+		})
 
 	// user cannot be changed
-	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK_JOB).Add(func(e *core.RecordUpdateEvent) error {
-		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
-		if err != nil {
-			return err
-		}
+	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK_JOB).
+		Add(func(e *core.RecordUpdateEvent) error {
+			existingRecord, err := app.Dao().
+				FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
+			if err != nil {
+				return err
+			}
 
-		newUserId := e.Record.GetString(BLOCK_JOB_FIELD_USER)
+			newUserId := e.Record.GetString(BLOCK_JOB_FIELD_USER)
 
-		if newUserId != existingRecord.GetString(BLOCK_JOB_FIELD_USER) {
-			return apis.NewBadRequestError("Cannot change block job user", nil)
-		}
+			if newUserId != existingRecord.GetString(BLOCK_JOB_FIELD_USER) {
+				return apis.NewBadRequestError("Cannot change block job user", nil)
+			}
 
-		return nil
-	})
+			return nil
+		})
 
 	// block cannot be changed
-	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK_JOB).Add(func(e *core.RecordUpdateEvent) error {
-		existingRecord, err := app.Dao().FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
-		if err != nil {
-			return err
-		}
+	app.OnRecordBeforeUpdateRequest(COLLECTION_BLOCK_JOB).
+		Add(func(e *core.RecordUpdateEvent) error {
+			existingRecord, err := app.Dao().
+				FindRecordById(e.Record.Collection().Id, e.Record.Id, nil)
+			if err != nil {
+				return err
+			}
 
-		newBlockId := e.Record.GetString(BLOCK_JOB_FIELD_BLOCK)
+			newBlockId := e.Record.GetString(BLOCK_JOB_FIELD_BLOCK)
 
-		if newBlockId != existingRecord.GetString(BLOCK_JOB_FIELD_BLOCK) {
-			return apis.NewBadRequestError("Cannot change block job block", nil)
-		}
+			if newBlockId != existingRecord.GetString(BLOCK_JOB_FIELD_BLOCK) {
+				return apis.NewBadRequestError("Cannot change block job block", nil)
+			}
 
-		return nil
-	})
+			return nil
+		})
 
 	// user must match block's user
-	app.OnRecordBeforeCreateRequest(COLLECTION_BLOCK_JOB).Add(func(e *core.RecordCreateEvent) error {
-		blockId := e.Record.GetString(BLOCK_JOB_FIELD_BLOCK)
-		block, err := app.Dao().FindRecordById(COLLECTION_BLOCK, blockId, nil)
-		if err != nil {
-			return err
-		}
+	app.OnRecordBeforeCreateRequest(COLLECTION_BLOCK_JOB).
+		Add(func(e *core.RecordCreateEvent) error {
+			blockId := e.Record.GetString(BLOCK_JOB_FIELD_BLOCK)
+			block, err := app.Dao().FindRecordById(COLLECTION_BLOCK, blockId, nil)
+			if err != nil {
+				return err
+			}
 
-		blockUserId := block.GetString(BLOCK_FIELD_USER)
-		jobUserId := e.Record.GetString(BLOCK_JOB_FIELD_USER)
+			blockUserId := block.GetString(BLOCK_FIELD_USER)
+			jobUserId := e.Record.GetString(BLOCK_JOB_FIELD_USER)
 
-		if blockUserId != jobUserId {
-			return apis.NewBadRequestError("Block job user must match block user", nil)
-		}
+			if blockUserId != jobUserId {
+				return apis.NewBadRequestError("Block job user must match block user", nil)
+			}
 
-		return nil
-	})
+			return nil
+		})
 }

@@ -26,7 +26,7 @@ func (r *blockDataRules) ApplyHooks() {
 func (r *blockDataRules) relationRules() {
 	// user must match destination's user
 	r.app.OnModelBeforeCreate(CollectionBlock).Add(func(e *core.ModelEvent) error {
-		block, err := NewBlockFromModel(e.Model)
+		block, err := LoadBlockFromModel(e.Model, r.app)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func (r *blockDataRules) relationRules() {
 func (r *blockDataRules) immutableRules() {
 	// type cannot be changed
 	r.app.OnModelBeforeUpdate(CollectionBlock).Add(func(e *core.ModelEvent) error {
-		updated, err := NewBlockFromModel(e.Model)
+		updated, err := LoadBlockFromModel(e.Model, r.app)
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ func (r *blockDataRules) immutableRules() {
 
 	// user cannot be changed
 	r.app.OnModelBeforeUpdate(CollectionBlock).Add(func(e *core.ModelEvent) error {
-		updated, err := NewBlockFromModel(e.Model)
+		updated, err := LoadBlockFromModel(e.Model, r.app)
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func (r *blockDataRules) immutableRules() {
 	// file cannot be changed
 	// If file is changed, PocketBase will delete the previous one.
 	r.app.OnModelBeforeUpdate(CollectionBlock).Add(func(e *core.ModelEvent) error {
-		updated, err := NewBlockFromModel(e.Model)
+		updated, err := LoadBlockFromModel(e.Model, r.app)
 		if err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ func (r *blockDataRules) immutableRules() {
 
 	// user must match destination's user
 	r.app.OnModelBeforeCreate(CollectionBlock).Add(func(e *core.ModelEvent) error {
-		block, err := NewBlockFromModel(e.Model)
+		block, err := LoadBlockFromModel(e.Model, r.app)
 		if err != nil {
 			return err
 		}
