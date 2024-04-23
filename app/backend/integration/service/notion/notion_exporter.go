@@ -144,7 +144,7 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	err = updater.SetFile(request)
+	err = updater.UpdateFile(request)
 	if err != nil {
 		return nil, err
 	}
