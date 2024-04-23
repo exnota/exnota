@@ -84,26 +84,90 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 }
 
 func (j *blockJobWorkflow) createAddTranscriptionJob() {
-	// On transcription job completion, create an export job
+	// Create add transcription export job when both transcription job and
+	// create voice note export job are completed.
 	j.app.OnModelAfterUpdate(data.CollectionBlockJob).Add(func(e *core.ModelEvent) error {
-		// Transcription jobs only
 		updatedJob, err := data.NewBlockJob(e.Model.(*models.Record), j.app)
 		if err != nil {
 			return err
 		}
-		if updatedJob.Type() != data.BlockJobTypeTranscription {
-			return nil
-		}
 
-		// Job complete events only
-		if updatedJob.Status() != data.BlockJobStatusComplete {
-			return nil
-		}
-		prevUpdatedJob, err := data.NewBlockJob(updatedJob.Record().OriginalCopy(), j.app)
-		if err != nil {
-			return err
-		}
-		if prevUpdatedJob.Status() == data.BlockJobStatusComplete {
+		switch updatedJob.Type() {
+		case data.BlockJobTypeTranscription:
+			// Option 1: This is a transcription job completion event, and an export
+			// job for creating a voice note has already been completed.
+
+			// Ignore non-job completion events
+			if updatedJob.Status() != data.BlockJobStatusComplete {
+				return nil
+			}
+			prevUpdatedJob, err := data.NewBlockJob(updatedJob.Record().OriginalCopy(), j.app)
+			if err != nil {
+				return err
+			}
+			if prevUpdatedJob.Status() == data.BlockJobStatusComplete {
+				return nil
+			}
+
+			// Ensure export job with command CommandCreateVoiceNote has been
+			// completed
+			blockJobFetcher := data.NewBlockJobFetcher(j.app)
+			jobs, err := blockJobFetcher.ListExportJobs(data.ListExportJobsRequest{
+				BlockId: updatedJob.Block(),
+				UserId:  updatedJob.User(),
+				Command: data.CommandCreateVoiceNote,
+				Status:  data.BlockJobStatusComplete,
+			})
+			if err != nil {
+				return err
+			}
+			if len(jobs) == 0 {
+				return nil
+			}
+		case data.BlockJobTypeExport:
+			// Option 2: This is an export job completion event for creating a
+			// voice note, and transcription job is already complete.
+
+			// Ignore other export job command types
+			exportJob, err := data.LoadExportBlockJob(updatedJob.Record(), j.app)
+			if err != nil {
+				return err
+			}
+			config, err := exportJob.Config()
+			if err != nil {
+				return err
+			}
+			if config.Command != data.CommandCreateVoiceNote {
+				return nil
+			}
+
+			// Ignore non-job completion events
+			if exportJob.Status() != data.BlockJobStatusComplete {
+				return nil
+			}
+			prevExportJob, err := data.NewBlockJob(exportJob.Record().OriginalCopy(), j.app)
+			if err != nil {
+				return err
+			}
+			if prevExportJob.Status() == data.BlockJobStatusComplete {
+				return nil
+			}
+
+			// Ensure transcription job has been completed
+			blockJobFetcher := data.NewBlockJobFetcher(j.app)
+			jobs, err := blockJobFetcher.ListJobs(data.ListJobsRequest{
+				BlockId: updatedJob.Block(),
+				UserId:  updatedJob.User(),
+				Type:    data.BlockJobTypeTranscription,
+				Status:  data.BlockJobStatusComplete,
+			})
+			if err != nil {
+				return err
+			}
+			if len(jobs) == 0 {
+				return nil
+			}
+		default:
 			return nil
 		}
 

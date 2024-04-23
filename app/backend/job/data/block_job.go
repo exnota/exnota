@@ -26,6 +26,9 @@ const (
 	BlockJobFieldNextRunAt  = "next_run_at"
 	BlockJobFieldErrorCount = "error_count"
 	BlockJobFieldConfig     = "config"
+
+	// Export job config JSON fields
+	BlockJobExportConfigCommand = "config.command"
 )
 
 type BlockJobStatus string
