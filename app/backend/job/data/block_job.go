@@ -71,7 +71,7 @@ type BlockJob interface {
 	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
-func NewBlockJob(r *models.Record, app core.App) (BlockJob, error) {
+func LoadBlockJob(r *models.Record, app core.App) (BlockJob, error) {
 	switch BlockJobType(r.GetString(BlockJobFieldType)) {
 	case BlockJobTypeTranscription:
 		return NewTranscriptionBlockJob(r, app)

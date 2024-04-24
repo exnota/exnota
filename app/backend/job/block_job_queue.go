@@ -63,7 +63,7 @@ func (j *blockJobQueue) Start() error {
 
 		blockJobFetcher := data.NewBlockJobFetcher(j.app)
 		for range ticker.C {
-			jobs, err := blockJobFetcher.ListJobsToProcess(MAX_ERROR_COUNT)
+			jobs, err := blockJobFetcher.ListJobsToProcess()
 			if err != nil {
 				slog.Error("Error fetching jobs to process", "error", err)
 				continue
@@ -94,36 +94,88 @@ func (j *blockJobQueue) Start() error {
 
 func exportWorker(id int, jobs <-chan data.BlockJob, _ chan<- string, app core.App) {
 	for j := range jobs {
-		slog.Info("[export worker] Received job", "worker id", id, "block job id", j.ID(), "block id", j.Block())
+		slog.Info(
+			"[export worker] Received job",
+			"worker id",
+			id,
+			"block job id",
+			j.ID(),
+			"block id",
+			j.Block(),
+		)
 
 		// The processor handles the status and panics of the runner
 		processor := NewBlockJobProcessor(app)
 		exportRunner := NewExportJobRunner(app)
 		err := processor.Process(j, exportRunner)
 		if err != nil {
-			slog.Warn("[export worker] Job errored", "worker id", id, "block job id", j.ID(), "block id", j.Block(), "error", err)
+			slog.Warn(
+				"[export worker] Job errored",
+				"worker id",
+				id,
+				"block job id",
+				j.ID(),
+				"block id",
+				j.Block(),
+				"error",
+				err,
+			)
 			continue
 		}
 
 		// results <- "done"
-		slog.Info("[export worker] Job completed", "worker id", id, "block job id", j.ID(), "block id", j.Block())
+		slog.Info(
+			"[export worker] Job completed",
+			"worker id",
+			id,
+			"block job id",
+			j.ID(),
+			"block id",
+			j.Block(),
+		)
 	}
 }
 
 func transcriptionWorker(id int, jobs <-chan data.BlockJob, _ chan<- string, app core.App) {
 	for j := range jobs {
-		slog.Info("[transcription worker] Received job", "worker id", id, "block job id", j.ID(), "block id", j.Block())
+		slog.Info(
+			"[transcription worker] Received job",
+			"worker id",
+			id,
+			"block job id",
+			j.ID(),
+			"block id",
+			j.Block(),
+		)
 
 		// The processor handles the status and panics of the runner
 		processor := NewBlockJobProcessor(app)
 		transcriptionRunner := NewTranscriptionJobRunner(app)
 		err := processor.Process(j, transcriptionRunner)
 		if err != nil {
-			slog.Warn("[transcription worker] Job errored", "worker id", id, "block job id", j.ID(), "block id", j.Block(), "error", err)
+			slog.Warn(
+				"[transcription worker] Job errored",
+				"worker id",
+				id,
+				"block job id",
+				j.ID(),
+				"block id",
+				j.Block(),
+				"error",
+				err,
+			)
 			continue
 		}
 
 		// results <- "done"
-		slog.Info("[transcription worker] Job completed", "worker id", id, "block job id", j.ID(), "block id", j.Block())
+		slog.Info(
+			"[transcription worker] Job completed",
+			"worker id",
+			id,
+			"block job id",
+			j.ID(),
+			"block id",
+			j.Block(),
+		)
 	}
 }

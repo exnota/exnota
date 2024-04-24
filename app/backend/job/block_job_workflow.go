@@ -87,7 +87,7 @@ func (j *blockJobWorkflow) createAddTranscriptionJob() {
 	// Create add transcription export job when both transcription job and
 	// create voice note export job are completed.
 	j.app.OnModelAfterUpdate(data.CollectionBlockJob).Add(func(e *core.ModelEvent) error {
-		updatedJob, err := data.NewBlockJob(e.Model.(*models.Record), j.app)
+		updatedJob, err := data.LoadBlockJob(e.Model.(*models.Record), j.app)
 		if err != nil {
 			return err
 		}
@@ -101,7 +101,7 @@ func (j *blockJobWorkflow) createAddTranscriptionJob() {
 			if updatedJob.Status() != data.BlockJobStatusComplete {
 				return nil
 			}
-			prevUpdatedJob, err := data.NewBlockJob(updatedJob.Record().OriginalCopy(), j.app)
+			prevUpdatedJob, err := data.LoadBlockJob(updatedJob.Record().OriginalCopy(), j.app)
 			if err != nil {
 				return err
 			}
@@ -145,7 +145,7 @@ func (j *blockJobWorkflow) createAddTranscriptionJob() {
 			if exportJob.Status() != data.BlockJobStatusComplete {
 				return nil
 			}
-			prevExportJob, err := data.NewBlockJob(exportJob.Record().OriginalCopy(), j.app)
+			prevExportJob, err := data.LoadBlockJob(exportJob.Record().OriginalCopy(), j.app)
 			if err != nil {
 				return err
 			}
@@ -155,11 +155,13 @@ func (j *blockJobWorkflow) createAddTranscriptionJob() {
 
 			// Ensure transcription job has been completed
 			blockJobFetcher := data.NewBlockJobFetcher(j.app)
+			jobTranscription := data.BlockJobTypeTranscription
+			jobComplete := data.BlockJobStatusComplete
 			jobs, err := blockJobFetcher.ListJobs(data.ListJobsRequest{
 				BlockId: updatedJob.Block(),
 				UserId:  updatedJob.User(),
-				Type:    data.BlockJobTypeTranscription,
-				Status:  data.BlockJobStatusComplete,
+				Type:    &jobTranscription,
+				Status:  &jobComplete,
 			})
 			if err != nil {
 				return err

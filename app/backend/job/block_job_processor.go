@@ -79,15 +79,31 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 	return err
 }
 
-func (j *blockJobProcessor) handleError(job data.BlockJob, err error, stack *[]byte) {
+func (j *blockJobProcessor) handleError(job data.BlockJob, jobErr error, stack *[]byte) {
 	if stack != nil {
-		slog.Error("Stack trace for error", "error", err, "stack", string(*stack))
+		slog.Error("Stack trace for error", "error", jobErr, "stack", string(*stack))
 		// Also print to console because the slog output will be on one line.
 		fmt.Println(string(*stack))
 	} else {
-		slog.Error("Stack trace for error", "error", err)
+		slog.Error("Stack trace for error", "error", jobErr)
 	}
 
+	// Job should not be retried, if error count has reached the maximum.
+	errorCount := job.ErrorCount()
+	if errorCount+1 >= MAX_ERROR_COUNT {
+		writer := data.NewBlockJobWriter(j.app)
+		err := writer.SetStatusError(job.ID(), jobErr)
+		if err != nil {
+			slog.Error("error updating status", "error", err)
+			// Panic because any issues setting job status need to be resolved
+			// ASAP.
+			panic(err)
+		}
+		return
+	}
+
+	// Job should be retried.
+	//
 	// The backoff logic below should progress like this (generate this using:
 	// https://go.dev/play/p/4Pn10aAcY3h):
 	//
@@ -101,12 +117,13 @@ func (j *blockJobProcessor) handleError(job data.BlockJob, err error, stack *[]b
 	// 1h49m21s
 	// 5h28m3s
 	// 16h24m9s
-	errorCount := job.ErrorCount()
 	nextRunAt := time.Now().Add(time.Duration(math.Pow(3, float64(errorCount+1))) * 1 * time.Second)
-
 	writer := data.NewBlockJobWriter(j.app)
-	statusErr := writer.SetStatusError(job.ID(), nextRunAt, err)
-	if statusErr != nil {
-		slog.Error("error updating status", "error", statusErr)
+	err := writer.SetStatusWaitingIncrementError(job.ID(), nextRunAt, jobErr)
+	if err != nil {
+		slog.Error("error updating status", "error", err)
+		// Panic because any issues setting job status need to be resolved
+		// ASAP.
+		panic(err)
 	}
 }

@@ -16,8 +16,9 @@ type BlockJobWriter interface {
 
 	ResetRunningJobs() error
 	SetStatusWaiting(id string) error
+	SetStatusWaitingIncrementError(id string, nextRunAt time.Time, err error) error
 	SetStatusRunning(id string) error
-	SetStatusError(id string, nextRunAt time.Time, err error) error
+	SetStatusError(id string, err error) error
 	SetStatusComplete(id string, summary Summary) error
 }
 
@@ -130,7 +131,7 @@ func (b *blockJobWriter) ResetRunningJobs() error {
 	}
 
 	for _, r := range records {
-		blockJob, err := NewBlockJob(r, b.app)
+		blockJob, err := LoadBlockJob(r, b.app)
 		if err != nil {
 			slog.Error("Error creating block job",
 				"id", r.Id,
@@ -158,7 +159,7 @@ func (b *blockJobWriter) SetStatusWaiting(id string) error {
 		if err != nil {
 			return err
 		}
-		blockJob, err := NewBlockJob(record, b.app)
+		blockJob, err := LoadBlockJob(record, b.app)
 		if err != nil {
 			return err
 		}
@@ -172,13 +173,38 @@ func (b *blockJobWriter) SetStatusWaiting(id string) error {
 	})
 }
 
+func (b *blockJobWriter) SetStatusWaitingIncrementError(
+	id string,
+	nextRunAt time.Time,
+	statusError error,
+) error {
+	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		record, err := txDao.FindRecordById(CollectionBlockJob, id)
+		if err != nil {
+			return err
+		}
+		blockJob, err := LoadBlockJob(record, b.app)
+		if err != nil {
+			return err
+		}
+		blockJob.SetStatus(BlockJobStatusWaiting)
+		err = blockJob.SetSummary(NewSummaryError(statusError))
+		if err != nil {
+			return err
+		}
+		blockJob.IncrementErrorCount()
+		blockJob.SetNextRunAt(nextRunAt)
+		return blockJob.ValidateAndSubmit(txDao)
+	})
+}
+
 func (b *blockJobWriter) SetStatusRunning(id string) error {
 	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
 		record, err := txDao.FindRecordById(CollectionBlockJob, id)
 		if err != nil {
 			return err
 		}
-		blockJob, err := NewBlockJob(record, b.app)
+		blockJob, err := LoadBlockJob(record, b.app)
 		if err != nil {
 			return err
 		}
@@ -191,13 +217,13 @@ func (b *blockJobWriter) SetStatusRunning(id string) error {
 	})
 }
 
-func (b *blockJobWriter) SetStatusError(id string, nextRunAt time.Time, statusError error) error {
+func (b *blockJobWriter) SetStatusError(id string, statusError error) error {
 	return b.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
 		record, err := txDao.FindRecordById(CollectionBlockJob, id)
 		if err != nil {
 			return err
 		}
-		blockJob, err := NewBlockJob(record, b.app)
+		blockJob, err := LoadBlockJob(record, b.app)
 		if err != nil {
 			return err
 		}
@@ -207,7 +233,6 @@ func (b *blockJobWriter) SetStatusError(id string, nextRunAt time.Time, statusEr
 			return err
 		}
 		blockJob.IncrementErrorCount()
-		blockJob.SetNextRunAt(nextRunAt)
 		return blockJob.ValidateAndSubmit(txDao)
 	})
 }
@@ -218,7 +243,7 @@ func (b *blockJobWriter) SetStatusComplete(id string, summary Summary) error {
 		if err != nil {
 			return err
 		}
-		blockJob, err := NewBlockJob(record, b.app)
+		blockJob, err := LoadBlockJob(record, b.app)
 		if err != nil {
 			return err
 		}
