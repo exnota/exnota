@@ -131,6 +131,10 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 
 	// Event workflows
 	job.NewBlockJobWorkflow(app).ApplyHooks()
+	// Block status listener should go after job workflow, as it should have
+	// access to new jobs that are created in sequence. E.g. it should
+	// know about the second export job, otherwise it may think all exporting
+	// is complete.
 	block_event.NewBlockStatusListener(app).ApplyHooks()
 
 	// API rules

@@ -3,18 +3,10 @@ package event
 import (
 	"exnota.com/backend/block/data"
 	notion_mapping_data "exnota.com/backend/integration/data"
+	block_job_data "exnota.com/backend/job/data"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
 )
-
-// TODO: Plan
-// - Listen to block job events
-//   - if it's a status change
-//   - get all jobs for the same block
-//   - separate 'error' into 'error-no-retry' and 'error-will-retry'
-//   - if all complete -> external.exportStatus = complete
-//   - if all either error-will-retry, complete, or waiting -> external.exportStatus = in progress
-//   - if at least one is error-no-retry -> external.exportStatus = error
 
 type BlockStatusListener interface {
 	ApplyHooks()
@@ -31,10 +23,11 @@ func NewBlockStatusListener(app core.App) BlockStatusListener {
 }
 
 func (l *blockStatusListener) ApplyHooks() {
-	l.setExternalUrl()
+	l.applyHooksToUpdateExternalUrl()
+	l.applyHooksToUpdateExternalExportStatus()
 }
 
-func (l *blockStatusListener) setExternalUrl() {
+func (l *blockStatusListener) applyHooksToUpdateExternalUrl() {
 	// On Notion mapping create, update external URL if already set
 	l.app.OnModelAfterCreate(
 		notion_mapping_data.CollectionIntegrationBlockNotionMapping).Add(
@@ -88,4 +81,87 @@ func (l *blockStatusListener) setExternalUrl() {
 			return nil
 		},
 	)
+}
+
+func (l *blockStatusListener) applyHooksToUpdateExternalExportStatus() {
+	l.app.OnModelAfterCreate(
+		block_job_data.CollectionBlockJob).Add(
+		func(e *core.ModelEvent) error {
+			record := e.Model.(*models.Record)
+			job, err := block_job_data.LoadBlockJob(record, l.app)
+			if err != nil {
+				return err
+			}
+
+			return l.updateExternalStatus(job)
+		},
+	)
+
+	l.app.OnModelAfterUpdate(
+		block_job_data.CollectionBlockJob).Add(
+		func(e *core.ModelEvent) error {
+			record := e.Model.(*models.Record)
+			job, err := block_job_data.LoadBlockJob(record, l.app)
+			if err != nil {
+				return err
+			}
+
+			prevJob, err := block_job_data.LoadBlockJob(record.OriginalCopy(), l.app)
+			if err != nil {
+				return err
+			}
+			if job.Status() == prevJob.Status() {
+				return nil
+			}
+
+			return l.updateExternalStatus(job)
+
+		},
+	)
+}
+
+func (l *blockStatusListener) updateExternalStatus(
+	job block_job_data.BlockJob,
+) error {
+	// Get jobs
+	fetcher := block_job_data.NewBlockJobFetcher(l.app)
+	jobs, err := fetcher.ListJobs(block_job_data.ListJobsRequest{
+		BlockId: job.Block(),
+		UserId:  job.User(),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Get statuses of jobs.
+	var hasError bool
+	var nonCompleteCount int
+	for _, j := range jobs {
+		if j.Status() == block_job_data.BlockJobStatusError {
+			hasError = true
+			break
+		}
+		if j.Status() != block_job_data.BlockJobStatusComplete {
+			nonCompleteCount++
+		}
+	}
+
+	// Consolidate job status to block export status
+	//
+	// - If at least one error -> error
+	// - Else if at least one non-complete -> in-progress
+	// - Else -> complete
+	var exportStatus data.ExportStatus
+	if hasError {
+		exportStatus = data.ExportStatusError
+	} else if nonCompleteCount > 0 {
+		exportStatus = data.ExportStatusInProgress
+	} else {
+		exportStatus = data.ExportStatusComplete
+	}
+
+	// Save
+	writer := data.NewBlockWriter(l.app)
+	err = writer.SetExternalExportStatus(job.Block(), exportStatus)
+	return err
 }

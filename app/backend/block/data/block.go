@@ -48,6 +48,7 @@ type Block interface {
 
 	SetTitle(string)
 	SetExternalUrl(string) error
+	SetExternalExportStatus(ExportStatus) error
 
 	ValidateAndSubmit(txDao *daos.Dao) error
 }
@@ -109,8 +110,18 @@ func (b *block) Destination() string {
 }
 
 type External struct {
-	Url string `json:"url,omitempty"`
+	Url          string       `json:"url,omitempty"`
+	ExportStatus ExportStatus `json:"export_status,omitempty" validate:"omitempty,oneof=complete in-progress error"`
 }
+
+type ExportStatus string
+
+const (
+	// If modifying this, update the validate tag in External struct.
+	ExportStatusComplete   ExportStatus = "complete"
+	ExportStatusInProgress ExportStatus = "in-progress"
+	ExportStatusError      ExportStatus = "error"
+)
 
 func (b *block) External() (*External, error) {
 	// Detect if nil.
@@ -153,6 +164,33 @@ func (b *block) SetExternalUrl(url string) error {
 		external = &External{}
 	}
 	external.Url = url
+
+	// Validate
+	err = validate.Struct(external)
+	if err != nil {
+		return err
+	}
+
+	// Save
+	configBytes, err := json.Marshal(external)
+	if err != nil {
+		slog.Error("Error marshalling block external field", "err", err, "id", b.Id())
+		return err
+	}
+	b.record.Set(BlockFieldExternal, string(configBytes))
+	return nil
+}
+
+func (b *block) SetExternalExportStatus(status ExportStatus) error {
+	// Update 'external' field
+	external, err := b.External()
+	if err != nil {
+		return err
+	}
+	if external == nil {
+		external = &External{}
+	}
+	external.ExportStatus = status
 
 	// Validate
 	err = validate.Struct(external)

@@ -6,6 +6,7 @@ import (
 )
 
 type BlockWriter interface {
+	SetExternalExportStatus(id string, status ExportStatus) error
 	SetExternalUrl(id string, url string) error
 }
 
@@ -29,6 +30,25 @@ func (f *blockWriter) SetExternalUrl(id string, url string) error {
 		}
 
 		err = block.SetExternalUrl(url)
+		if err != nil {
+			return err
+		}
+		return block.ValidateAndSubmit(txDao)
+	})
+}
+
+func (f *blockWriter) SetExternalExportStatus(id string, status ExportStatus) error {
+	return f.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		record, err := f.app.Dao().FindRecordById(CollectionBlock, id)
+		if err != nil {
+			return err
+		}
+		block, err := LoadBlock(record, f.app)
+		if err != nil {
+			return err
+		}
+
+		err = block.SetExternalExportStatus(status)
 		if err != nil {
 			return err
 		}
