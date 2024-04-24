@@ -9,7 +9,7 @@ import (
 )
 
 type BlockJobFetcher interface {
-	ListJobsToProcess(maxErrorCount int) ([]BlockJob, error)
+	ListJobsToProcess() ([]BlockJob, error)
 	ListExportJobs(request ListExportJobsRequest) ([]BlockJob, error)
 	ListJobs(request ListJobsRequest) ([]BlockJob, error)
 }
@@ -22,8 +22,9 @@ func NewBlockJobFetcher(app core.App) BlockJobFetcher {
 	return &blockJobFetcher{app}
 }
 
-func (f *blockJobFetcher) ListJobsToProcess(maxErrorCount int) ([]BlockJob, error) {
-	waitingFilter, err := filter.CreateAndFilter(
+func (f *blockJobFetcher) ListJobsToProcess() ([]BlockJob, error) {
+	// Jobs that are waiting or have errored less than their max error count
+	filter, err := filter.CreateAndFilter(
 		filter.Field{
 			Name:  BlockJobFieldStatus,
 			Op:    filter.OpEquals,
@@ -39,39 +40,13 @@ func (f *blockJobFetcher) ListJobsToProcess(maxErrorCount int) ([]BlockJob, erro
 		return nil, err
 	}
 
-	errorFilter, err := filter.CreateAndFilter(
-		filter.Field{
-			Name:  BlockJobFieldStatus,
-			Op:    filter.OpEquals,
-			Value: string(BlockJobStatusError),
-		},
-		filter.Field{
-			Name:        BlockJobFieldNextRunAt,
-			Op:          filter.OpLessThanEquals,
-			ValuePreset: filter.ValuePresetNow,
-		},
-		filter.Field{
-			Name:     BlockJobFieldErrorCount,
-			Op:       filter.OpLessThan,
-			ValueInt: &maxErrorCount,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	combinedFilter, err := filter.GroupFiltersWithOr(waitingFilter, errorFilter)
-	if err != nil {
-		return nil, err
-	}
-
 	records, err := f.app.Dao().FindRecordsByFilter(
 		CollectionBlockJob,
-		combinedFilter.Filter,
+		filter.Filter,
 		"+"+field.DefaultFieldCreated,
 		0,
 		0,
-		combinedFilter.Params,
+		filter.Params,
 	)
 	if err != nil {
 		return nil, err
@@ -79,7 +54,7 @@ func (f *blockJobFetcher) ListJobsToProcess(maxErrorCount int) ([]BlockJob, erro
 
 	var blocks []BlockJob
 	for _, r := range records {
-		blockJob, err := NewBlockJob(r, f.app)
+		blockJob, err := LoadBlockJob(r, f.app)
 		if err != nil {
 			slog.Error("Error creating block job",
 				"id", r.Id,
@@ -147,7 +122,7 @@ func (f *blockJobFetcher) ListExportJobs(request ListExportJobsRequest) ([]Block
 
 	var blocks []BlockJob
 	for _, r := range records {
-		blockJob, err := NewBlockJob(r, f.app)
+		blockJob, err := LoadBlockJob(r, f.app)
 		if err != nil {
 			slog.Error("Error creating block job",
 				"id", r.Id,
@@ -162,10 +137,10 @@ func (f *blockJobFetcher) ListExportJobs(request ListExportJobsRequest) ([]Block
 }
 
 type ListJobsRequest struct {
-	BlockId string         `validate:"required"`
-	UserId  string         `validate:"required"`
-	Type    BlockJobType   `validate:"required"`
-	Status  BlockJobStatus `validate:"required"`
+	BlockId string `validate:"required"`
+	UserId  string `validate:"required"`
+	Type    *BlockJobType
+	Status  *BlockJobStatus
 }
 
 func (f *blockJobFetcher) ListJobs(request ListJobsRequest) ([]BlockJob, error) {
@@ -174,28 +149,33 @@ func (f *blockJobFetcher) ListJobs(request ListJobsRequest) ([]BlockJob, error) 
 		return nil, err
 	}
 
-	filter, err := filter.CreateAndFilter(
-		filter.Field{
+	filters := []filter.Field{
+		{
 			Name:  BlockJobFieldBlock,
 			Op:    filter.OpEquals,
 			Value: request.BlockId,
 		},
-		filter.Field{
+		{
 			Name:  BlockJobFieldUser,
 			Op:    filter.OpEquals,
 			Value: request.UserId,
 		},
-		filter.Field{
+	}
+	if request.Type != nil {
+		filters = append(filters, filter.Field{
 			Name:  BlockJobFieldType,
 			Op:    filter.OpEquals,
-			Value: string(request.Type),
-		},
-		filter.Field{
+			Value: string(*request.Type),
+		})
+	}
+	if request.Status != nil {
+		filters = append(filters, filter.Field{
 			Name:  BlockJobFieldStatus,
 			Op:    filter.OpEquals,
-			Value: string(request.Status),
-		},
-	)
+			Value: string(*request.Status),
+		})
+	}
+	filter, err := filter.CreateAndFilter(filters...)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +194,7 @@ func (f *blockJobFetcher) ListJobs(request ListJobsRequest) ([]BlockJob, error) 
 
 	var blocks []BlockJob
 	for _, r := range records {
-		blockJob, err := NewBlockJob(r, f.app)
+		blockJob, err := LoadBlockJob(r, f.app)
 		if err != nil {
 			slog.Error("Error creating block job",
 				"id", r.Id,

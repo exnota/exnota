@@ -46,14 +46,14 @@ func TestNewExportBlockJob(t *testing.T) {
 			unknownTypeRecord.Set("error_count", 0)
 			unknownTypeRecord.Set("config", nil)
 
-			_, err := NewBlockJob(unknownTypeRecord, app)
+			_, err := LoadBlockJob(unknownTypeRecord, app)
 			if err == nil {
 				t.Errorf("NewExportBlockJob() did not return an error")
 			}
 		})
 
 		t.Run("Id can be read", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -63,7 +63,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		})
 
 		t.Run("Type can be read", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -77,7 +77,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		})
 
 		t.Run("Status can be read", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -91,7 +91,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		})
 
 		t.Run("Summary can be read", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -112,7 +112,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		})
 
 		t.Run("Block can be read", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -126,7 +126,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		})
 
 		t.Run("User can be read", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -140,7 +140,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		})
 
 		t.Run("NextRunAt can be read", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -155,7 +155,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		})
 
 		t.Run("ErrorCount can be read", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -187,7 +187,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		record.Set("config", nil)
 
 		t.Run("NewBlockJob factory returns a TranscriptionBlockJob", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -240,7 +240,7 @@ func TestNewExportBlockJob(t *testing.T) {
 		)
 
 		t.Run("NewBlockJob factory returns an ExportBlockJob", func(t *testing.T) {
-			job, err := NewBlockJob(record, app)
+			job, err := LoadBlockJob(record, app)
 			if err != nil {
 				t.Fatal(err)
 			}
