@@ -67,6 +67,11 @@ Content-Type: application/json
     "userCreated": "{{$datetime iso8601}}"
 }
 
+### Get notion integration
+GET {{baseUrl}}/collections/integration/records
+  ?filter=type = "notion"
+Authorization: {{auth_token}}
+
 ### Auth with password
 ###
 ### Use token from response for auth_token variable.
