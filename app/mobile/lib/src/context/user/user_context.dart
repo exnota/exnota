@@ -138,7 +138,8 @@ Future<String?> activeUserId(ActiveUserIdRef ref) async {
 class UserContext with _$UserContext {
   const factory UserContext({
     required PocketBase pocketBase,
-    UserAuth? userAuth,
+    required UserAuth? userAuth,
+    required User? user,
     String? error,
   }) = _UserContext;
 }
@@ -155,12 +156,23 @@ class UserContextService extends _$UserContextService {
     final userAuthRepo = ref.watch(userAuthRepoProvider);
 
     return await transaction(() async {
+      // Get user auth
       final userAuth = await userAuthRepo.getActive();
       if (userAuth == null) {
-        _log.info('build: Creating user context with no user auth');
+        _log.info(
+            'build: No active user auth. Creating user context with no user auth or user');
 
         final pb = PocketBase(baseUrl.toString());
-        return UserContext(pocketBase: pb);
+        return UserContext(pocketBase: pb, user: null, userAuth: null);
+      }
+
+      // Get user
+      final user = await ref.watch(userRepoProvider).get(id: userAuth.userId);
+      if (user == null) {
+        _log.error(
+            'build: User not found for active user auth. User id: ${userAuth.userId}');
+        throw StateError(
+            'User not found for active user auth. User id: ${userAuth.userId}');
       }
 
       final authStore = AuthStore();
@@ -173,11 +185,10 @@ class UserContextService extends _$UserContextService {
       }
 
       _log.info('build: Creating user context with user auth');
-      Isolate.current.hashCode == Isolate.current.debugName;
       return UserContext(
-        pocketBase: PocketBase(baseUrl.toString(), authStore: authStore),
-        userAuth: userAuth,
-      );
+          pocketBase: PocketBase(baseUrl.toString(), authStore: authStore),
+          userAuth: userAuth,
+          user: user);
     });
   }
 
