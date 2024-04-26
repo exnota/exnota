@@ -48,6 +48,8 @@ class LoginScreenController extends _$LoginScreenController {
       state = state.copyWith(status: LoginStatus.errorLogin);
       return;
     }
+
+    // Have not tested this path
     if (userContext.user?.verified == false) {
       _log.debug('loginGoogle: User not verified');
       state = state.copyWith(status: LoginStatus.unverified);
@@ -57,19 +59,6 @@ class LoginScreenController extends _$LoginScreenController {
     _log.debug('loginGoogle: User verified');
     ref.read(routerProvider.notifier).go(Screen.notes);
     state = state.copyWith(status: LoginStatus.awaitingLogin);
-
-    // TODO: If verified, redirect to notes
-    // - Done?
-
-    // TODO: If not verified, set that status
-    // - Done?
-    // - How to test? Manually change on server? Maybe can't for now? Can set 'verified to be manual?
-
-    // TODO: Update login screen to be split based on status
-    // TODO: Update screen to support not verified status
-    // TODO: Add method for refetching user to check if verified, on user service
-    // TODO: Add controller method here to call that, and update status accordingly
-    // TODO: Test error case... e.g. if user context has an error, display that.
   }
 }
 
@@ -98,76 +87,86 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     _log.debug('Building');
-    final environment = ref.watch(environmentServiceSyncProvider);
     final loginScreenState = ref.watch(loginScreenControllerProvider);
 
     return Scaffold(
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Align(
-                alignment: FractionalOffset.bottomCenter,
-                child: MaterialButton(
-                  onPressed: () => {},
-                  child: const SizedBox(),
-                ),
-              ),
+          child: switch (loginScreenState.status) {
+        LoginStatus.awaitingLogin => const AwaitingLogin(),
+        LoginStatus.loggingIn => const CircularProgressIndicator(),
+        LoginStatus.errorLogin => const Text('Error logging in'),
+        LoginStatus.checkingVerified => const CircularProgressIndicator(),
+        LoginStatus.unverified => const Text('User not verified'),
+        LoginStatus.fetchingUserData => const CircularProgressIndicator(),
+        LoginStatus.errorUserData => const Text('Error fetching user data'),
+      }),
+    );
+  }
+}
+
+class AwaitingLogin extends ConsumerWidget {
+  const AwaitingLogin({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final environment = ref.watch(environmentServiceSyncProvider);
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Align(
+            alignment: FractionalOffset.bottomCenter,
+            child: MaterialButton(
+              onPressed: () => {},
+              child: const SizedBox(),
             ),
-            ElevatedButton(
-              onPressed: () {
-                ref.read(loginScreenControllerProvider.notifier).loginGoogle();
-              },
-              child: switch (loginScreenState.status) {
-                LoginStatus.awaitingLogin => const Text('Google login'),
-                LoginStatus.loggingIn => const CircularProgressIndicator(),
-                // TODO: Update
-                _ => const Text('Error'),
-              },
-            ),
-            Expanded(
-              child: Align(
-                alignment: FractionalOffset.bottomCenter,
-                child: MaterialButton(
-                  onPressed: () => {},
-                  child: Visibility(
-                    visible: kDebugMode,
-                    replacement: const SizedBox(),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        DropdownMenu<Environment>(
-                          inputDecorationTheme: const InputDecorationTheme(
-                            border: null,
-                          ),
-                          initialSelection: environment,
-                          onSelected: (newEnvironment) {
-                            ref
-                                .read(environmentServiceSyncProvider.notifier)
-                                .setEnvironment(newEnvironment);
-                          },
-                          dropdownMenuEntries: [
-                            Environment.prod,
-                            Environment.local
-                          ].map<DropdownMenuEntry<Environment>>(
-                              (Environment value) {
-                            return DropdownMenuEntry<Environment>(
-                                value: value, label: value.toString());
-                          }).toList(),
-                        ),
-                        const SizedBox(
-                          height: 20,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        ElevatedButton(
+          onPressed: () {
+            ref.read(loginScreenControllerProvider.notifier).loginGoogle();
+          },
+          child: const Text('Google login'),
+        ),
+        Expanded(
+          child: Align(
+            alignment: FractionalOffset.bottomCenter,
+            child: MaterialButton(
+              onPressed: () => {},
+              child: Visibility(
+                visible: kDebugMode,
+                replacement: const SizedBox(),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    DropdownMenu<Environment>(
+                      inputDecorationTheme: const InputDecorationTheme(
+                        border: null,
+                      ),
+                      initialSelection: environment,
+                      onSelected: (newEnvironment) {
+                        ref
+                            .read(environmentServiceSyncProvider.notifier)
+                            .setEnvironment(newEnvironment);
+                      },
+                      dropdownMenuEntries: [Environment.prod, Environment.local]
+                          .map<DropdownMenuEntry<Environment>>(
+                              (Environment value) {
+                        return DropdownMenuEntry<Environment>(
+                            value: value, label: value.toString());
+                      }).toList(),
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

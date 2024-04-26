@@ -134,14 +134,49 @@ Future<String?> activeUserId(ActiveUserIdRef ref) async {
   return userContext.userAuth!.userId;
 }
 
-@freezed
+@Freezed(
+  // UserAuth and User properties should both exist or both be null. Disable
+  // copyWith to prevent forgetting to update the other
+  copyWith: false,
+)
 class UserContext with _$UserContext {
+  // Required to add custom methods
+  const UserContext._();
+
   const factory UserContext({
     required PocketBase pocketBase,
     required UserAuth? userAuth,
     required User? user,
     String? error,
   }) = _UserContext;
+
+  UserContext copyWithError(String error) {
+    return UserContext(
+      pocketBase: pocketBase,
+      userAuth: userAuth,
+      user: user,
+      error: error,
+    );
+  }
+
+  UserContext copyWithUserInfo(
+      {required UserAuth userAuth, required User user}) {
+    return UserContext(
+      pocketBase: pocketBase,
+      userAuth: userAuth,
+      user: user,
+      error: null,
+    );
+  }
+
+  UserContext copyWithoutUserInfo() {
+    return UserContext(
+      pocketBase: pocketBase,
+      userAuth: null,
+      user: null,
+      error: error,
+    );
+  }
 }
 
 @Riverpod()
@@ -210,13 +245,13 @@ class UserContextService extends _$UserContextService {
     } on ClientException catch (e) {
       _log.warn('loginGoogle: Client exception logging in with Google',
           error: e);
-      state = AsyncData(
-          userContext.copyWith(error: 'Error logging in with Google'));
+      state =
+          AsyncData(userContext.copyWithError('Error logging in with Google'));
       return;
     } catch (e) {
       _log.warn('loginGoogle: Error logging in with Google', error: e);
-      state = AsyncData(
-          userContext.copyWith(error: 'Error logging in with Google'));
+      state =
+          AsyncData(userContext.copyWithError('Error logging in with Google'));
       return;
     }
     _log.info('loginGoogle: Closing in app web view');
@@ -229,7 +264,7 @@ class UserContextService extends _$UserContextService {
       if (userRecord == null) {
         _log.info('loginGoogle: No user record in auth response');
         // Assume auth error (have not verified if this is true)
-        state = AsyncData(userContext.copyWith(error: 'Auth error'));
+        state = AsyncData(userContext.copyWithError('Auth error'));
         return;
       }
       _log.info('loginGoogle: Creating or updating user');
@@ -258,7 +293,8 @@ class UserContextService extends _$UserContextService {
       }
 
       _log.info('loginGoogle: Updating user context');
-      state = AsyncData(userContext.copyWith(userAuth: userAuth, error: null));
+      state = AsyncData(
+          userContext.copyWithUserInfo(userAuth: userAuth, user: user));
       return;
     });
   }
@@ -267,13 +303,13 @@ class UserContextService extends _$UserContextService {
     _log.info('logout: Logging out');
     final now = Clock().now();
     final userAuthRepo = ref.read(userAuthRepoProvider);
-    final userAuth = await userAuthRepo.logoutActive(updated: now);
+    await userAuthRepo.logoutActive(updated: now);
 
     final userContext = await future;
     userContext.pocketBase.authStore.clear();
 
     _log.info('logout: Updating user context');
-    state = AsyncData(userContext.copyWith(userAuth: userAuth, error: null));
+    state = AsyncData(userContext.copyWithoutUserInfo());
 
     _log.info('logout: Logging out complete');
   }
