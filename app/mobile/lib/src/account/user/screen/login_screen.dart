@@ -38,11 +38,38 @@ class LoginScreenController extends _$LoginScreenController {
   }
 
   Future<void> loginGoogle() async {
-    _log.debug('Logging in with Google');
+    _log.debug('loginGoogle: Logging in with Google');
     state = state.copyWith(status: LoginStatus.loggingIn);
     await ref.read(userContextServiceSyncProvider.notifier).loginGoogle();
+
+    final userContext = ref.read(userContextServiceSyncProvider);
+    if (userContext.user == null) {
+      _log.error('loginGoogle: Error logging in');
+      state = state.copyWith(status: LoginStatus.errorLogin);
+      return;
+    }
+    if (userContext.user?.verified == false) {
+      _log.debug('loginGoogle: User not verified');
+      state = state.copyWith(status: LoginStatus.unverified);
+      return;
+    }
+
+    _log.debug('loginGoogle: User verified');
     ref.read(routerProvider.notifier).go(Screen.notes);
     state = state.copyWith(status: LoginStatus.awaitingLogin);
+
+    // TODO: If verified, redirect to notes
+    // - Done?
+
+    // TODO: If not verified, set that status
+    // - Done?
+    // - How to test? Manually change on server? Maybe can't for now? Can set 'verified to be manual?
+
+    // TODO: Update login screen to be split based on status
+    // TODO: Update screen to support not verified status
+    // TODO: Add method for refetching user to check if verified, on user service
+    // TODO: Add controller method here to call that, and update status accordingly
+    // TODO: Test error case... e.g. if user context has an error, display that.
   }
 }
 
