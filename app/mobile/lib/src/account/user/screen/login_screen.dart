@@ -11,11 +11,20 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'login_screen.g.dart';
 part 'login_screen.freezed.dart';
 
-// freezed model with one property called 'loggingIn' (boolean)
+enum LoginStatus {
+  awaitingLogin,
+  loggingIn,
+  errorLogin,
+  checkingVerified,
+  unverified,
+  fetchingUserData,
+  errorUserData,
+}
+
 @freezed
 class LoginState with _$LoginState {
   const factory LoginState({
-    @Default(false) bool loggingIn,
+    @Default(LoginStatus.awaitingLogin) LoginStatus status,
   }) = _LoginState;
 }
 
@@ -30,10 +39,10 @@ class LoginScreenController extends _$LoginScreenController {
 
   Future<void> loginGoogle() async {
     _log.debug('Logging in with Google');
-    state = state.copyWith(loggingIn: true);
+    state = state.copyWith(status: LoginStatus.loggingIn);
     await ref.read(userContextServiceSyncProvider.notifier).loginGoogle();
     ref.read(routerProvider.notifier).go(Screen.notes);
-    state = state.copyWith(loggingIn: false);
+    state = state.copyWith(status: LoginStatus.awaitingLogin);
   }
 }
 
@@ -83,9 +92,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               onPressed: () {
                 ref.read(loginScreenControllerProvider.notifier).loginGoogle();
               },
-              child: switch (loginScreenState.loggingIn) {
-                false => const Text('Google login'),
-                true => const CircularProgressIndicator(),
+              child: switch (loginScreenState.status) {
+                LoginStatus.awaitingLogin => const Text('Google login'),
+                LoginStatus.loggingIn => const CircularProgressIndicator(),
+                // TODO: Update
+                _ => const Text('Error'),
               },
             ),
             Expanded(

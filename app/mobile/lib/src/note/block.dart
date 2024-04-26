@@ -89,10 +89,10 @@ class Block with _$Block {
 
     switch (type) {
       case BlockType.audio:
-        body['type'] = 'audio';
+        body['type'] = 'voice-note';
         break;
       case BlockType.text:
-        body['type'] = 'text';
+        body['type'] = 'text-note';
         break;
       case BlockType.unknown:
         throw Exception('Unknown block type');
