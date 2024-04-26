@@ -11,7 +11,7 @@ class BlockTable extends Table {
   // Allow any value in case of future expansion
   TextColumn get type => text()();
 
-// Allow any value in case of future expansion
+  // Allow any value in case of future expansion
   TextColumn get external => text().nullable()();
 
   // Filename, generated server-side. Path can be generated from the filename,
