@@ -22,19 +22,6 @@ GET {{baseUrl}}/collections/{{block_collection_id}}/records HTTP/1.1
 content-type: application/json
 Authorization: {{auth_token}}
 
-### Create waiting Block Job
-POST {{baseUrl}}/collections/{{block_job_collection_id}}/records HTTP/1.1
-content-type: application/json
-Authorization: {{auth_token}}
-
-{
-    "status": "waiting",
-    "type": "transcription",
-    "block": "hyi1k9zhajjxxx8",
-    "user": "{{user_id}}",
-    "summary": ["initial value"]
-}
-
 ### Create voice note
 POST {{baseUrl}}/collections/{{block_collection_id}}/records HTTP/1.1
 Authorization: {{auth_token}}
@@ -45,11 +32,6 @@ Content-Disposition: form-data; name="type"
 Content-Type: application/json
 
 voice-note
---boundary
-Content-Disposition: form-data; name="title"
-Content-Type: application/json
-
-block title
 --boundary
 Content-Disposition: form-data; name="destination"
 Content-Type: application/json
@@ -148,11 +130,12 @@ curl -X POST 'https://api.notion.com/v1/search' \
   }'
 
 ### blocks - append file block
-curl -X PATCH 'https://api.notion.com/v1/blocks/f98cf2533cf04ab1ba14dda5a0ee6380/children' \
+curl -X PATCH 'https://api.notion.com/v1/blocks/18f8ea6881a443908fed7aa4f6b767af/children' \
   -H 'Authorization: Bearer '"{{notionAccessToken}}"'' \
   -H "Content-Type: application/json" \
   -H "Notion-Version: 2022-06-28" \
   --data '{
+  "after": "9d0d04fe364048e2b844ac308fdd627a",
 	"children": [
 		{
 			"object": "block",
@@ -185,7 +168,7 @@ curl -X PATCH 'https://api.notion.com/v1/blocks/f98cf2533cf04ab1ba14dda5a0ee6380
 	]
 }'
 
-### Update page title
+### Update page title (database or child)
 curl -X PATCH 'https://api.notion.com/v1/pages/70d0b23b3b6a4532aaff672ac655894d' \
   -H 'Authorization: Bearer '"{{notionAccessToken}}"'' \
   -H 'Content-Type: application/json' \
@@ -196,7 +179,7 @@ curl -X PATCH 'https://api.notion.com/v1/pages/70d0b23b3b6a4532aaff672ac655894d'
 			"title": [
 				{
 					"text": {
-						"content": "One level below root page UPDATED"
+						"content": "One level below root page UPDATED 2"
 					}
 				}
 			]
@@ -206,7 +189,7 @@ curl -X PATCH 'https://api.notion.com/v1/pages/70d0b23b3b6a4532aaff672ac655894d'
 
 
 ### Fetch page (doesn't include children)
-curl 'https://api.notion.com/v1/pages/70d0b23b3b6a4532aaff672ac655894d' \
+curl 'https://api.notion.com/v1/pages/881db3d4d93f4a518d38d048930f9591' \
   -H 'Notion-Version: 2022-06-28' \
   -H 'Authorization: Bearer '"{{notionAccessToken}}"''
 
@@ -216,14 +199,78 @@ curl 'https://api.notion.com/v1/blocks/58f88d962c5c4f3a8d02278090b17844/children
   -H "Notion-Version: 2022-06-28"
 
 ### Fetch block
-curl 'https://api.notion.com/v1/blocks/58f88d962c5c4f3a8d02278090b17844' \
+curl 'https://api.notion.com/v1/blocks/9d93cd05-5f0d-4e67-ae8c-a3d66d0a0715' \
   -H 'Authorization: Bearer '"{{notionAccessToken}}"'' \
   -H 'Notion-Version: 2022-06-28'
 
 ### Fetch database
-curl 'https://api.notion.com/v1/databases/a69c3757f7dd420c9818a5f661e23f9b' \
+curl 'https://api.notion.com/v1/databases/b4e76e989a734853be432baca901299d' \
   -H 'Authorization: Bearer '"{{notionAccessToken}}"'' \
   -H 'Notion-Version: 2022-06-28'
+
+### Update database
+curl --location --request PATCH 'https://api.notion.com/v1/databases/b4e76e989a734853be432baca901299d' \
+--header 'Authorization: Bearer '"{{notionAccessToken}}"'' \
+--header 'Content-Type: application/json' \
+--header 'Notion-Version: 2022-06-28' \
+--data '{
+  "properties": {
+    "parent 1": {
+      "name": "parent 1",
+      "type": "relation",
+      "relation": {
+        "database_id": "b4e76e98-9a73-4853-be43-2baca901299d",
+        "type": "single_property",
+        "single_property": {}
+      }
+    }
+  }
+}'
+
+
+### Create database page
+curl 'https://api.notion.com/v1/pages' \
+  -H 'Authorization: Bearer '"{{notionAccessToken}}"'' \
+  -H "Content-Type: application/json" \
+  -H "Notion-Version: 2022-06-28" \
+  --data '{
+	"parent": { "database_id": "b77407e655b242fab5556307371cb3f6" },
+	"properties": {
+		"Name": {
+			"title": [
+				{
+					"text": {
+						"content": "a title"
+					}
+				}
+			]
+		}
+	},
+	"children": [
+		{
+			"object": "block",
+			"type": "heading_2",
+			"heading_2": {
+				"rich_text": [{ "type": "text", "text": { "content": "Lacinato kale" } }]
+			}
+		},
+		{
+			"object": "block",
+			"type": "paragraph",
+			"paragraph": {
+				"rich_text": [
+					{
+						"type": "text",
+						"text": {
+							"content": "Lacinato kale is a variety of kale with a long tradition in Italian cuisine, especially that of Tuscany. It is also known as Tuscan kale, Italian kale, dinosaur kale, kale, flat back kale, palm tree kale, or black Tuscan palm.",
+							"link": { "url": "https://en.wikipedia.org/wiki/Lacinato_kale" }
+						}
+					}
+				]
+			}
+		}
+	]
+}'
 
 ### ----------------------------------------------------
 ### OpenAI Whisper
