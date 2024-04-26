@@ -1,4 +1,5 @@
 import 'package:drift_db_viewer/drift_db_viewer.dart';
+import 'package:exnota/src/account/user/screen/setup_integration_screen.dart';
 import 'package:exnota/src/context/app/local_settings.dart';
 import 'package:exnota/src/context/environment/environment.dart';
 import 'package:exnota/src/context/user/user_context.dart';
@@ -51,13 +52,22 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SettingsSection(title: const Text('Account'), tiles: [
               SettingsTile(
-                  title: const Text('Sign out'),
-                  leading: const Icon(Icons.exit_to_app),
-                  onPressed: (BuildContext context) async {
-                    await ref
-                        .read(userContextServiceSyncProvider.notifier)
-                        .logout();
-                  })
+                title: const Text('Configure workspace'),
+                leading: const Icon(Icons.source),
+                onPressed: (BuildContext context) {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const SetupIntegrationScreen()));
+                },
+              ),
+              SettingsTile(
+                title: const Text('Sign out'),
+                leading: const Icon(Icons.exit_to_app),
+                onPressed: (BuildContext context) async {
+                  await ref
+                      .read(userContextServiceSyncProvider.notifier)
+                      .logout();
+                },
+              ),
             ]),
             SettingsSection(title: const Text('Developer'), tiles: [
               SettingsTile(
