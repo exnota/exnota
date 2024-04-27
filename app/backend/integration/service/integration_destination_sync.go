@@ -34,9 +34,9 @@ func (s *integrationDestinationSync) Sync(request block.DestinationSyncRequest) 
 	var destinationResult *block.DestinationSyncResult
 	switch integration.Type() {
 	case data.TypeNotion:
-		notionSync := notion.NewNotionSync(s.app)
+		notionSync := notion.NewNotionDestinationSync(s.app)
 		var externalRecord *models.Record
-		destinationResult, externalRecord, err = notionSync.SyncDestination(notion.NotionSyncDestinationRequest{
+		destinationResult, externalRecord, err = notionSync.Sync(notion.NotionDestinationSyncRequest{
 			DestinationId: request.DestinationId,
 			Config:        request.Config,
 			User:          request.User,
