@@ -45,7 +45,7 @@ func (h *integrationRequestHooks) Apply() {
 
 func (h *integrationRequestHooks) preventFieldUpdates() {
 	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
-		updated, err := castToNotionIntegration(e.Record)
+		updated, err := castToNotionIntegration(e.Record, h.app)
 		if err != nil {
 			return err
 		}
@@ -54,7 +54,7 @@ func (h *integrationRequestHooks) preventFieldUpdates() {
 		if err != nil {
 			return err
 		}
-		existing, err := castToNotionIntegration(existingRecord)
+		existing, err := castToNotionIntegration(existingRecord, h.app)
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ func (h *integrationRequestHooks) preventFieldUpdates() {
 
 func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 	h.app.OnRecordBeforeCreateRequest(data.CollectionIntegration).Add(func(e *core.RecordCreateEvent) error {
-		integration, err := data.NewIntegration(e.Record)
+		integration, err := data.LoadIntegration(e.Record, h.app)
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 
 func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
-		updated, err := castToNotionIntegration(e.Record)
+		updated, err := castToNotionIntegration(e.Record, h.app)
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 		if err != nil {
 			return err
 		}
-		existing, err := castToNotionIntegration(existingRecord)
+		existing, err := castToNotionIntegration(existingRecord, h.app)
 		if err != nil {
 			return err
 		}
@@ -163,8 +163,8 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 	})
 }
 
-func castToNotionIntegration(record *models.Record) (data.NotionIntegration, error) {
-	integration, err := data.NewIntegration(record)
+func castToNotionIntegration(record *models.Record, app core.App) (data.NotionIntegration, error) {
+	integration, err := data.LoadIntegration(record, app)
 	if err != nil {
 		return nil, err
 	}

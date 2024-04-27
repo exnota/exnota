@@ -3,6 +3,9 @@ package data
 import (
 	"errors"
 
+	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/daos"
+	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/tools/types"
 )
@@ -29,22 +32,34 @@ const (
 type IntegrationStatus string
 
 const (
-	StatusConnected     IntegrationStatus = "connected"
-	StatusAccessRevoked IntegrationStatus = "access-revoked"
+	// If updating, also update ValidatedStatus `oneof` options
+	IntegrationStatusConnected     IntegrationStatus = "connected"
+	IntegrationStatusAccessRevoked IntegrationStatus = "access-revoked"
 )
+
+// Shared wrapper struct so that we can keep all 'oneof' validation logic in
+// one place.
+type ValidatedIntegrationStatus struct {
+	Status IntegrationStatus `validate:"oneof=connected access-revoked"`
+}
 
 type Integration interface {
 	Id() string
 	Type() IntegrationType
 	User() string
+
+	SetStatus(status IntegrationStatus)
+
+	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
-func NewIntegration(r *models.Record) (Integration, error) {
+func LoadIntegration(r *models.Record, app core.App) (Integration, error) {
 	blockType := r.GetString(IntegrationFieldType)
 	switch blockType {
 	case IntegrationTypeNotion:
 		var b NotionIntegration = &notionIntegration{
 			record: r,
+			app:    app,
 		}
 		return b, nil
 	}
@@ -52,12 +67,13 @@ func NewIntegration(r *models.Record) (Integration, error) {
 }
 
 // Returns error if not of type notion.
-func NewNotionIntegration(r *models.Record) (NotionIntegration, error) {
+func LoadNotionIntegration(r *models.Record, app core.App) (NotionIntegration, error) {
 	blockType := r.GetString(IntegrationFieldType)
 	switch blockType {
 	case IntegrationTypeNotion:
 		var b NotionIntegration = &notionIntegration{
 			record: r,
+			app:    app,
 		}
 		return b, nil
 	}
@@ -82,6 +98,7 @@ type NotionIntegration interface {
 
 type notionIntegration struct {
 	record *models.Record
+	app    core.App
 }
 
 type notionIntegrationConfig struct {
@@ -130,6 +147,10 @@ func (i notionIntegration) Config() (*notionIntegrationConfig, error) {
 	return &config, nil
 }
 
+func (i notionIntegration) SetStatus(status IntegrationStatus) {
+	i.record.Set(IntegrationFieldStatus, string(status))
+}
+
 func (i notionIntegration) SetSuccessfulAuth(auth SuccessfulNotionIntegrationAuth) error {
 	config, err := i.Config()
 	if err != nil {
@@ -146,4 +167,13 @@ func (i notionIntegration) SetSuccessfulAuth(auth SuccessfulNotionIntegrationAut
 	}
 	i.record.Set(IntegrationFieldConfig, config)
 	return nil
+}
+
+func (i *notionIntegration) ValidateAndSubmit(txDao *daos.Dao) error {
+	form := forms.NewRecordUpsert(i.app, i.record)
+	form.SetDao(txDao)
+
+	// TODO: After this commit, put shared methods on an 'integration' struct as per other files
+	// Submit calls validate internally
+	return form.Submit()
 }

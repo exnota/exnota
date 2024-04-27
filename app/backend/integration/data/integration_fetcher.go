@@ -25,7 +25,7 @@ func (f *integrationFetcher) FetchById(id string, userId string) (Integration, e
 	if err != nil {
 		return nil, err
 	}
-	integration, err := NewIntegration(record)
+	integration, err := LoadIntegration(record, f.app)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (f *integrationFetcher) FetchNotionIntegration(id string) (NotionIntegratio
 		return nil, err
 	}
 
-	integration, err := NewNotionIntegration(record)
+	integration, err := LoadNotionIntegration(record, f.app)
 	if err != nil {
 		slog.Error("Error creating notion integration", "err", err)
 		return nil, err

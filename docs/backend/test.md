@@ -2,6 +2,7 @@
 
 ## Troubleshooting
 
+* Unexpected record/collection behaviour: Test data might need updating.
 * Test fails with: `Failed to load the submitted data due to invalid formatting.`
   * Can occur when re-using the Reader/Buffer passed to `Body` of `tests.ApiScenario` across multiple scenarios. Generate new objects for each scenario.
 
