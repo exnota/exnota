@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"exnota.com/backend/integration/data"
+	"exnota.com/backend/integration/service/notion/api"
 	gonotion "github.com/dstotijn/go-notion"
 	"github.com/go-playground/validator/v10"
 	"github.com/pocketbase/pocketbase/core"
@@ -145,7 +146,7 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	writer := NewNotionWriter(s.app, *config.Auth.AccessToken)
+	writer := api.NewNotionWriter(s.app, *config.Auth.AccessToken)
 
 	// Gather children
 	fileChildren := []gonotion.Block{}
@@ -155,7 +156,7 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 	switch destinationObject.Type() {
 	case data.IntegrationNotionObjectTypeDatabase:
 		databaseId := destinationObject.ExternalId()
-		result, err := writer.CreateDatabasePage(CreateDatabasePageRequest{
+		result, err := writer.CreateDatabasePage(api.CreateDatabasePageRequest{
 			DatabaseId: databaseId,
 			Children:   fileChildren,
 		})
@@ -191,7 +192,7 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 		}, nil
 	case data.IntegrationNotionObjectTypePage:
 		parentId := destinationObject.ExternalId()
-		result, err := writer.CreateChildPage(CreateChildPageRequest{
+		result, err := writer.CreateChildPage(api.CreateChildPageRequest{
 			ParentId: parentId,
 			Children: fileChildren,
 		})
@@ -277,9 +278,9 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 
 	// Get and export properties
 	props := updater.GenerateProperties()
-	writer := NewNotionWriter(s.app, *integrationConfig.Auth.AccessToken)
+	writer := api.NewNotionWriter(s.app, *integrationConfig.Auth.AccessToken)
 	if len(props) != 0 {
-		err = writer.UpdatePageProperties(UpdatePagePropertiesRequest{
+		err = writer.UpdatePageProperties(api.UpdatePagePropertiesRequest{
 			PageId:             mapping.ExternalBlock(),
 			DatabaseProperties: props,
 		})
@@ -297,8 +298,8 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 	afterId := updater.AudioTranscription.InsertChildrenAfterId
 	var appendChildrenErr error
 	if len(children) > 0 {
-		var appendResp *AppendPageChildrenResponse
-		appendResp, appendChildrenErr = writer.AppendPageChildren(AppendPageChildrenRequest{
+		var appendResp *api.AppendPageChildrenResponse
+		appendResp, appendChildrenErr = writer.AppendPageChildren(api.AppendPageChildrenRequest{
 			PageId:   mapping.ExternalBlock(),
 			Children: children,
 			AfterId:  afterId,
