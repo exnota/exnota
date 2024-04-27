@@ -2,7 +2,6 @@ package notion
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"exnota.com/backend/integration/data"
@@ -26,8 +25,6 @@ type VerifyIntegrationRequest struct {
 	IntegrationId string `validate:"min=1"`
 	UserID        string `validate:"min=1"`
 }
-
-var ErrAccessRevoked = fmt.Errorf("no access")
 
 func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) (bool, error) {
 	err := validate.Struct(request)
@@ -61,6 +58,32 @@ func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) (bool, 
 	}
 
 	// 	// TODO: update a status on both the workspace and integration that it is not accessible
+	integrationWriter := data.NewIntegrationWriter(s.app)
+	if !verified {
+		err = integrationWriter.SetStatus(data.SetStatusRequest{
+			Id:     notionIntegration.Id(),
+			UserId: notionIntegration.User(),
+			Status: data.IntegrationStatusAccessRevoked,
+		})
+		if err != nil {
+			slog.Error("Error setting status", "err", err)
+			return false, err
+		}
+		return false, nil
+	}
+
+	err = integrationWriter.SetStatus(data.SetStatusRequest{
+		Id:     notionIntegration.Id(),
+		UserId: notionIntegration.User(),
+		Status: data.IntegrationStatusConnected,
+	})
+	if err != nil {
+		slog.Error("Error setting status", "err", err)
+		return false, err
+	}
+
+	return true, nil
+
 	// 	//   - maybe a data rule: When integration status changes, workspace status changes
 	// 	// TODO: If access, get all destinations belonging to it.
 	// 	// TODO: Ping them all to verify we have access
@@ -71,5 +94,4 @@ func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) (bool, 
 	// 	// TODO: It's returning just "success"? What about {result:success}?
 	// 	// ...does it work with other custom endpoints? Maybe needs to be a pointer?
 	// 	//...ahh it's probably the Marshal function TODO: Fix that.
-	return verified, nil
 }
