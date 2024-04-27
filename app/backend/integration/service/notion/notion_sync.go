@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"exnota.com/backend/integration/data"
+	"exnota.com/backend/integration/service/notion/api"
 	"exnota.com/backend/integration/util"
 	"exnota.com/backend/lib/block"
 	gonotion "github.com/dstotijn/go-notion"
@@ -16,7 +17,7 @@ import (
 	"github.com/pocketbase/pocketbase/models"
 )
 
-type NotionSyncRequest struct {
+type NotionSyncDestinationRequest struct {
 	DestinationId string
 	IntegrationId string
 	Config        map[string]interface{}
@@ -36,7 +37,7 @@ const (
 )
 
 type NotionSync interface {
-	SyncDestination(NotionSyncRequest) (result *block.DestinationSyncResult, record *models.Record, err error)
+	SyncDestination(NotionSyncDestinationRequest) (result *block.DestinationSyncResult, record *models.Record, err error)
 	VerifyIntegration(request VerifyIntegrationRequest) error
 }
 
@@ -48,17 +49,22 @@ func NewNotionSync(app core.App) NotionSync {
 	return &notionSync{app}
 }
 
-func (s *notionSync) SyncDestination(request NotionSyncRequest) (result *block.DestinationSyncResult, record *models.Record, err error) {
+func (s *notionSync) SyncDestination(request NotionSyncDestinationRequest) (result *block.DestinationSyncResult, record *models.Record, err error) {
 	var config NotionSyncConfig
 	err = mapstructure.Decode(request.Config, &config)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	notionFetcher := NewNotionFetcher(s.app)
+	accessToken, err := s.accessToken(request.IntegrationId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	notionFetcher := api.NewNotionFetcher(accessToken)
 	switch config.Object {
 	case NotionSyncConfigObjectDatabase:
-		database, err := notionFetcher.FetchDatabase(config.Id, request.IntegrationId)
+		database, err := notionFetcher.FetchDatabase(config.Id)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -87,7 +93,7 @@ func (s *notionSync) SyncDestination(request NotionSyncRequest) (result *block.D
 		}, record, nil
 
 	case NotionSyncConfigObjectPage:
-		page, err := notionFetcher.FetchPage(config.Id, request.IntegrationId)
+		page, err := notionFetcher.FetchPage(config.Id)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -196,4 +202,18 @@ func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) error {
 	// 	// ...does it work with other custom endpoints? Maybe needs to be a pointer?
 	// 	//...ahh it's probably the Marshal function TODO: Fix that.
 	return nil
+}
+
+func (s *notionSync) accessToken(integrationID string) (string, error) {
+	integrationFetcher := data.NewIntegrationFetcher(s.app)
+	integration, err := integrationFetcher.FetchNotionIntegration(integrationID)
+	if err != nil {
+		return "", err
+	}
+
+	config, err := integration.Config()
+	if err != nil {
+		return "", err
+	}
+	return *config.Auth.AccessToken, nil
 }

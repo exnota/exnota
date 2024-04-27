@@ -1,4 +1,4 @@
-package notion
+package api
 
 import (
 	"context"
@@ -77,8 +77,8 @@ func (n *notionWriter) CreateDatabasePage(
 	}
 
 	pageId := page.ID
-	notionFetcher := NewNotionFetcher(n.app)
-	children, err := notionFetcher.FetchPageChildrenWithAccessToken(pageId, n.accessToken)
+	notionFetcher := NewNotionFetcher(n.accessToken)
+	children, err := notionFetcher.FetchPageChildrenWithAccessToken(pageId)
 	if err != nil {
 		slog.Error(
 			"Failed to fetch page children. Swallowing error as the job shouldn't be retried just because we're missing mappings.",
@@ -136,8 +136,8 @@ func (n *notionWriter) CreateChildPage(
 	}
 
 	pageId := page.ID
-	notionFetcher := NewNotionFetcher(n.app)
-	children, err := notionFetcher.FetchPageChildren(pageId, n.accessToken)
+	notionFetcher := NewNotionFetcher(n.accessToken)
+	children, err := notionFetcher.FetchPageChildren(pageId)
 	if err != nil {
 		slog.Error(
 			"Failed to fetch page children. Swallowing error as the job shouldn't be retried just because we're missing mappings.",
