@@ -1,18 +1,17 @@
 package notion
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 
 	"exnota.com/backend/integration/data"
-	gonotion "github.com/dstotijn/go-notion"
+	"exnota.com/backend/integration/service/notion/api"
 	"github.com/pocketbase/pocketbase/core"
 )
 
 type NotionSync interface {
-	VerifyIntegration(request VerifyIntegrationRequest) error
+	VerifyIntegration(request VerifyIntegrationRequest) (bool, error)
 }
 
 func NewNotionSync(app core.App) NotionSync {
@@ -30,59 +29,36 @@ type VerifyIntegrationRequest struct {
 
 var ErrAccessRevoked = fmt.Errorf("no access")
 
-func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) error {
+func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) (bool, error) {
 	err := validate.Struct(request)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	integrationFetcher := data.NewIntegrationFetcher(s.app)
 	integration, err := integrationFetcher.FetchById(request.IntegrationId, request.UserID)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	notionIntegration, ok := integration.(data.NotionIntegration)
 	if !ok {
 		slog.Error("Invalid integration type", "type", integration.Type())
-		return errors.New("integration is not of type NotionIntegration")
+		return false, errors.New("integration is not of type NotionIntegration")
 	}
 
 	config, err := notionIntegration.Config()
 	if err != nil {
 		slog.Error("Error getting notion integration config", "err", err)
-		return err
+		return false, err
 	}
 
-	// Verify access
-	client := gonotion.NewClient(*config.Auth.AccessToken)
-	opts := &gonotion.SearchOpts{
-		Query:    "",
-		PageSize: 1,
-	}
-
-	// The Notion API returns the same error whether then user revokes access in
-	// Notion > Settings > My connections, or if the token is modified. This can
-	// be useful for testing, as we can append a character to the token to
-	// simulate a revoked token.
-	//
-	// If the user removes all shared pages/databases, no error will be returned
-	// from the Notion API. It will just return an empty list of results.
-	searchResponse, err := client.Search(context.Background(), opts)
+	fetcher := api.NewNotionFetcher(*config.Auth.AccessToken)
+	verified, err := fetcher.VerifyAccess()
 	if err != nil {
-		if errors.Unwrap(errors.Unwrap(err)) == gonotion.ErrUnauthorized {
-			slog.Info("Unauthorized")
-			return ErrAccessRevoked
-		}
-		slog.Error("Error doing verify search of notion", "err", err)
-		return err
+		slog.Error("Error verifying access", "err", err)
+		return false, err
 	}
-	// TODO: Remove this
-	slog.Info("Notion search response", "response", searchResponse)
-
-	// 	// TODO: MOve all this into a service that can be called from a cron
-	// 	// job or whatever in the future. Easier to move it now I think since
-	// 	// we have to test that it works
 
 	// 	// TODO: update a status on both the workspace and integration that it is not accessible
 	// 	//   - maybe a data rule: When integration status changes, workspace status changes
@@ -95,5 +71,5 @@ func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) error {
 	// 	// TODO: It's returning just "success"? What about {result:success}?
 	// 	// ...does it work with other custom endpoints? Maybe needs to be a pointer?
 	// 	//...ahh it's probably the Marshal function TODO: Fix that.
-	return nil
+	return verified, nil
 }

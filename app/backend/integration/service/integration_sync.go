@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -42,15 +41,11 @@ func (s *integrationSync) UpdateStatus(request UpdateStatusRequest) (success boo
 	switch integration.Type() {
 	case data.IntegrationTypeNotion:
 		notionSync := notion.NewNotionSync(s.app)
-		err = notionSync.VerifyIntegration(notion.VerifyIntegrationRequest{
+		verified, err := notionSync.VerifyIntegration(notion.VerifyIntegrationRequest{
 			IntegrationId: request.IntegrationId,
 			UserID:        request.UserID,
 		})
-		if errors.Is(err, notion.ErrAccessRevoked) {
-			// TODO: Set integration and workspace status to "no-access"
-
-			return false, nil
-		} else if err != nil {
+		if err != nil {
 			return false, err
 		}
 
@@ -65,7 +60,7 @@ func (s *integrationSync) UpdateStatus(request UpdateStatusRequest) (success boo
 		// return c.JSON(http.StatusOK, VerifyIntegrationAccessResponse{
 		// 	Result: Success,
 		// })
-		return true, nil
+		return verified, nil
 	default:
 		slog.Error("Unknown integration type", "type", integration.Type())
 		return false, fmt.Errorf("Unknown integration type: %s", integration.Type())
