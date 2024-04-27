@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"exnota.com/backend/integration/data"
+	"exnota.com/backend/integration/service"
 	"exnota.com/backend/integration/util"
 	"github.com/dstotijn/go-notion"
 	"github.com/labstack/echo/v5"
@@ -39,25 +41,28 @@ func NewIntegrationEndpointHooks(app core.App, config IntegrationEndpointConfig)
 }
 
 func (h *integrationEndpointHooks) Apply() {
-	h.mobileCodeRequestPath()
-	h.mobileRedirect()
+	h.notionMobileCodeRequestPath()
+	h.notionMobileRedirect()
 	h.notionSearch()
+	h.integrationVerifyAccess()
 }
 
 const (
 	// Use '/api' for consistent base paths and '/api/exnota' to avoid
 	// collisions with future PocketBase URLs.
-	mobileCodeRequestPath = "/api/exnota/integration/notion/mobile-code-request-path"
-	mobileRedirectPath    = "/api/exnota/integration/notion/mobile-code-redirect"
+	notionMobileCodeRequestPath = "/api/exnota/integration/notion/mobile-code-request-path"
+	notionMobileRedirectPath    = "/api/exnota/integration/notion/mobile-code-redirect"
+	notionSearchPath            = "/api/exnota/integration/notion/search"
+	integrationVerifyAccess     = "/api/exnota/integration/verify-access"
 )
 
 // Returns the URL the mobile app should use for getting a Notion auth code. Is
 // specific for mobile because the redirect_uri points to mobileRedirect() which
 // will redirect to an exnota:// scheme.
-func (h *integrationEndpointHooks) mobileCodeRequestPath() {
+func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(mobileCodeRequestPath, func(c echo.Context) error {
-			redirectUri, err := url.JoinPath(h.config.BasePath, mobileRedirectPath)
+		e.Router.GET(notionMobileCodeRequestPath, func(c echo.Context) error {
+			redirectUri, err := url.JoinPath(h.config.BasePath, notionMobileRedirectPath)
 			if err != nil {
 				return err
 			}
@@ -79,9 +84,9 @@ func (h *integrationEndpointHooks) mobileCodeRequestPath() {
 }
 
 // Redirects to an exnota:// scheme for the mobile app to capture and read.
-func (h *integrationEndpointHooks) mobileRedirect() {
+func (h *integrationEndpointHooks) notionMobileRedirect() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(mobileRedirectPath, func(c echo.Context) error {
+		e.Router.GET(notionMobileRedirectPath, func(c echo.Context) error {
 			code := c.QueryParam("code")
 			return c.Redirect(302, "exnota://integration/notion/mobile-code-redirect?code="+code)
 		})
@@ -124,7 +129,7 @@ const (
 
 func (h *integrationEndpointHooks) notionSearch() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/api/exnota/integration/notion/search", func(c echo.Context) error {
+		e.Router.GET(notionSearchPath, func(c echo.Context) error {
 
 			searchRequest := new(SearchRequest)
 			if err := c.Bind(searchRequest); err != nil {
@@ -285,4 +290,67 @@ func (h *integrationEndpointHooks) mapParent(parent notion.Parent) (parentType P
 		slog.Warn("Unknown parent type")
 	}
 	return
+}
+
+type VerifyIntegrationAccessRequest struct {
+	IntegrationId string `json:"integration_id"`
+}
+
+type VerifyIntegrationAccessResponse struct {
+	Result VerifyIntegrationAccessResult
+}
+
+type VerifyIntegrationAccessResult string
+
+const (
+	Success      VerifyIntegrationAccessResult = "success"
+	InvalidToken VerifyIntegrationAccessResult = "invalid-token"
+)
+
+func (r VerifyIntegrationAccessResponse) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Result string `json:"result"`
+	}{
+		Result: string(r.Result),
+	})
+}
+
+func (h *integrationEndpointHooks) integrationVerifyAccess() {
+
+	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.GET(integrationVerifyAccess, func(c echo.Context) error {
+			verifyRequest := new(VerifyIntegrationAccessRequest)
+			if err := c.Bind(verifyRequest); err != nil {
+				return c.String(http.StatusBadRequest, "bad request")
+			}
+
+			if strings.TrimSpace(verifyRequest.IntegrationId) == "" {
+				return c.JSON(http.StatusBadRequest, nil)
+			}
+
+			requestInfo := apis.RequestInfo(c)
+			loggedInUserId := requestInfo.AuthRecord.Id
+
+			integrationSync := service.NewIntegrationSync(h.app)
+			success, err := integrationSync.UpdateStatus(service.UpdateStatusRequest{
+				IntegrationId: verifyRequest.IntegrationId,
+				UserID:        loggedInUserId,
+			})
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, nil)
+			}
+
+			if success {
+				return c.JSON(http.StatusOK, VerifyIntegrationAccessResponse{
+					Result: Success,
+				})
+			} else {
+				return c.JSON(http.StatusOK, VerifyIntegrationAccessResponse{
+					Result: InvalidToken,
+				})
+			}
+
+		})
+		return nil
+	})
 }
