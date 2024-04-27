@@ -16,12 +16,21 @@ const (
 
 	IntegrationFieldType  = "type"
 	IntegrationTypeNotion = "notion"
+
+	IntegrationFieldStatus = "status"
 )
 
 type IntegrationType string
 
 const (
 	TypeNotion IntegrationType = IntegrationTypeNotion
+)
+
+type IntegrationStatus string
+
+const (
+	StatusConnected     IntegrationStatus = "connected"
+	StatusAccessRevoked IntegrationStatus = "access-revoked"
 )
 
 type Integration interface {
