@@ -58,47 +58,55 @@ func LoadIntegration(r *models.Record, app core.App) (Integration, error) {
 	switch blockType {
 	case IntegrationTypeNotion:
 		var b NotionIntegration = &notionIntegration{
-			record: r,
-			app:    app,
+			integration: integration{
+				record: r,
+				app:    app,
+			},
 		}
 		return b, nil
 	}
 	return nil, errors.New("Unknown integration type")
 }
 
-// Returns error if not of type notion.
-func LoadNotionIntegration(r *models.Record, app core.App) (NotionIntegration, error) {
-	blockType := r.GetString(IntegrationFieldType)
-	switch blockType {
-	case IntegrationTypeNotion:
-		var b NotionIntegration = &notionIntegration{
-			record: r,
-			app:    app,
-		}
-		return b, nil
-	}
-	return nil, errors.New("Not a notion integration")
+type integration struct {
+	record *models.Record
+	app    core.App
 }
 
-type SuccessfulNotionIntegrationAuth struct {
-	AccessToken          string
-	BotID                string
-	DuplicatedTemplateID *string
-	OwnerUserId          *string
-	WorkspaceIcon        string
-	WorkspaceID          string
-	WorkspaceName        string
+func (i integration) Id() string {
+	return i.record.Id
+}
+
+func (i integration) Type() IntegrationType {
+	return TypeNotion
+}
+
+func (i integration) User() string {
+	return i.record.GetString(IntegrationFieldUser)
+}
+
+func (i integration) SetStatus(status IntegrationStatus) {
+	i.record.Set(IntegrationFieldStatus, string(status))
+}
+
+func (i *integration) ValidateAndSubmit(txDao *daos.Dao) error {
+	form := forms.NewRecordUpsert(i.app, i.record)
+	form.SetDao(txDao)
+
+	// Submit calls validate internally
+	return form.Submit()
 }
 
 type NotionIntegration interface {
 	Integration
+
 	Config() (*notionIntegrationConfig, error)
+
 	SetSuccessfulAuth(auth SuccessfulNotionIntegrationAuth) error
 }
 
 type notionIntegration struct {
-	record *models.Record
-	app    core.App
+	integration
 }
 
 type notionIntegrationConfig struct {
@@ -116,16 +124,30 @@ type NotionIntegrationAuthConfig struct {
 	WorkspaceName        *string `json:"workspace_name"`
 }
 
-func (i notionIntegration) Id() string {
-	return i.record.Id
+// Returns error if not of type notion.
+func LoadNotionIntegration(r *models.Record, app core.App) (NotionIntegration, error) {
+	blockType := r.GetString(IntegrationFieldType)
+	switch blockType {
+	case IntegrationTypeNotion:
+		var b NotionIntegration = &notionIntegration{
+			integration: integration{
+				record: r,
+				app:    app,
+			},
+		}
+		return b, nil
+	}
+	return nil, errors.New("Not a notion integration")
 }
 
-func (i notionIntegration) Type() IntegrationType {
-	return TypeNotion
-}
-
-func (i notionIntegration) User() string {
-	return i.record.GetString(IntegrationFieldUser)
+type SuccessfulNotionIntegrationAuth struct {
+	AccessToken          string
+	BotID                string
+	DuplicatedTemplateID *string
+	OwnerUserId          *string
+	WorkspaceIcon        string
+	WorkspaceID          string
+	WorkspaceName        string
 }
 
 func (i notionIntegration) Config() (*notionIntegrationConfig, error) {
@@ -147,10 +169,6 @@ func (i notionIntegration) Config() (*notionIntegrationConfig, error) {
 	return &config, nil
 }
 
-func (i notionIntegration) SetStatus(status IntegrationStatus) {
-	i.record.Set(IntegrationFieldStatus, string(status))
-}
-
 func (i notionIntegration) SetSuccessfulAuth(auth SuccessfulNotionIntegrationAuth) error {
 	config, err := i.Config()
 	if err != nil {
@@ -167,13 +185,4 @@ func (i notionIntegration) SetSuccessfulAuth(auth SuccessfulNotionIntegrationAut
 	}
 	i.record.Set(IntegrationFieldConfig, config)
 	return nil
-}
-
-func (i *notionIntegration) ValidateAndSubmit(txDao *daos.Dao) error {
-	form := forms.NewRecordUpsert(i.app, i.record)
-	form.SetDao(txDao)
-
-	// TODO: After this commit, put shared methods on an 'integration' struct as per other files
-	// Submit calls validate internally
-	return form.Submit()
 }
