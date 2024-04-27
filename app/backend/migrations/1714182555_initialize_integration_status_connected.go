@@ -25,7 +25,7 @@ func init() {
 		for _, record := range records {
 			// set individual fields
 			// or bulk load with record.Load(map[string]any{...})
-			record.Set(data.IntegrationFieldStatus, string(data.StatusConnected))
+			record.Set(data.IntegrationFieldStatus, string(data.IntegrationStatusConnected))
 
 			if err := dao.SaveRecord(record); err != nil {
 				return err

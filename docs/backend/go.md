@@ -1,5 +1,12 @@
 # Go
 
+- [Upgrading version](#upgrading-version)
+- [Patterns](#patterns)
+	- [Validation](#validation)
+	- [Enum for types](#enum-for-types)
+- [Other](#other)
+
+
 ## Upgrading version
 
 1. Skim release notes.
@@ -8,6 +15,13 @@
 4. Rebuild local Dev Container
 
 ## Patterns
+
+
+### Validation
+
+- Select field values are validated by `form.Submit()`
+  - So enums to be persisted don't need to have their values validated if this will be called.
+  - This is important since Go enums aren't strongly typed (see [Enum for types](#enum-for-types)).
 
 ### Enum for types
 

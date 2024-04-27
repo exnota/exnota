@@ -177,7 +177,7 @@ func (h *integrationEndpointHooks) executeNotionSearch(query string, object Obje
 	if err != nil {
 		return nil, err
 	}
-	integration, err := data.NewNotionIntegration(integrationRecord)
+	integration, err := data.LoadNotionIntegration(integrationRecord, h.app)
 	if err != nil {
 		return nil, err
 	}
