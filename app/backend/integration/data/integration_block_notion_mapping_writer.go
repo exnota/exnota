@@ -92,7 +92,7 @@ func (w *integrationBlockNotionMappingWriter) Update(
 			return err
 		}
 
-		mappings, err := w.app.Dao().FindRecordsByFilter(
+		mappings, err := txDao.FindRecordsByFilter(
 			CollectionIntegrationBlockNotionMapping,
 			filter.Filter,
 			"-created", 1, 0,

@@ -100,7 +100,7 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 	}
 
 	// Get workspace for destination
-	workspaceFetcher := block_data.NewWorkspaceFetcher(j.app)
+	workspaceFetcher := block_data.NewWorkspaceFetcher(j.app, j.app.Dao())
 	workspace, err := workspaceFetcher.FetchById(destination.Workspace())
 	if err != nil {
 		slog.Error(

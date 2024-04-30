@@ -26,7 +26,7 @@ func (r *workspaceDataRules) ApplyHooks() {
 
 func (r *workspaceDataRules) relationRules() {
 	r.app.OnModelBeforeCreate(CollectionWorkspace).Add(func(e *core.ModelEvent) error {
-		workspace, err := NewWorkspace(e.Model)
+		workspace, err := LoadWorkspace(e.Model, r.app)
 		if err != nil {
 			return err
 		}
@@ -52,12 +52,12 @@ func (r *workspaceDataRules) relationRules() {
 
 func (r *workspaceDataRules) immutableRules() {
 	r.app.OnModelBeforeUpdate(CollectionWorkspace).Add(func(e *core.ModelEvent) error {
-		updated, err := NewWorkspace(e.Model)
+		updated, err := LoadWorkspace(e.Model, r.app)
 		if err != nil {
 			return err
 		}
 
-		fetcher := NewWorkspaceFetcher(r.app)
+		fetcher := NewWorkspaceFetcher(r.app, r.app.Dao())
 		existing, err := fetcher.FetchById(updated.Id())
 		if err != nil {
 			return err

@@ -99,6 +99,15 @@ Authorization: {{auth_token}}
   "object": "database"
 }
 
+### Verify integration
+POST {{baseUrl}}/exnota/integration/verify-access
+content-type: application/json
+Authorization: {{auth_token}}
+
+{
+  "integration_id": "{{integration}}"
+}
+
 ### ----------------------------------------------------
 ### Notion API
 ###

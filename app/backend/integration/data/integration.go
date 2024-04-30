@@ -46,6 +46,7 @@ type ValidatedIntegrationStatus struct {
 type Integration interface {
 	Id() string
 	Type() IntegrationType
+	Status() IntegrationStatus
 	User() string
 
 	SetStatus(status IntegrationStatus)
@@ -79,6 +80,10 @@ func (i integration) Id() string {
 
 func (i integration) Type() IntegrationType {
 	return TypeNotion
+}
+
+func (i integration) Status() IntegrationStatus {
+	return IntegrationStatus(i.record.GetString(IntegrationFieldStatus))
 }
 
 func (i integration) User() string {

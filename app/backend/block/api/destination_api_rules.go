@@ -58,7 +58,7 @@ func (h *destinationApiRules) createIntegrationRelations() {
 		}
 
 		// Get integration ID from workspace
-		workspaceFetcher := data.NewWorkspaceFetcher(h.app)
+		workspaceFetcher := data.NewWorkspaceFetcher(h.app, h.app.Dao())
 		workspace, err := workspaceFetcher.FetchById(destination.Workspace())
 		if err != nil {
 			return err

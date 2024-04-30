@@ -40,7 +40,7 @@ func (s *integrationSync) UpdateStatus(request UpdateStatusRequest) (success boo
 
 	switch integration.Type() {
 	case data.IntegrationTypeNotion:
-		notionSync := notion.NewNotionSync(s.app)
+		notionSync := notion.NewNotionSync(s.app, notion.NotionCredentials{})
 		verified, err := notionSync.VerifyIntegration(notion.VerifyIntegrationRequest{
 			IntegrationId: request.IntegrationId,
 			UserID:        request.UserID,
