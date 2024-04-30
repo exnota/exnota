@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 
+	"exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service"
 	"exnota.com/backend/integration/util"
@@ -47,22 +48,13 @@ func (h *integrationEndpointHooks) Apply() {
 	h.integrationVerifyAccess()
 }
 
-const (
-	// Use '/api' for consistent base paths and '/api/exnota' to avoid
-	// collisions with future PocketBase URLs.
-	notionMobileCodeRequestPath = "/api/exnota/integration/notion/mobile-code-request-path"
-	notionMobileRedirectPath    = "/api/exnota/integration/notion/mobile-code-redirect"
-	notionSearchPath            = "/api/exnota/integration/notion/search"
-	integrationVerifyAccess     = "/api/exnota/integration/verify-access"
-)
-
 // Returns the URL the mobile app should use for getting a Notion auth code. Is
 // specific for mobile because the redirect_uri points to mobileRedirect() which
 // will redirect to an exnota:// scheme.
 func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(notionMobileCodeRequestPath, func(c echo.Context) error {
-			redirectUri, err := url.JoinPath(h.config.BasePath, notionMobileRedirectPath)
+		e.Router.GET(integration.NotionMobileCodeRequestPath, func(c echo.Context) error {
+			redirectUri, err := url.JoinPath(h.config.BasePath, integration.NotionMobileRedirectPath)
 			if err != nil {
 				return err
 			}
@@ -86,7 +78,7 @@ func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 // Redirects to an exnota:// scheme for the mobile app to capture and read.
 func (h *integrationEndpointHooks) notionMobileRedirect() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(notionMobileRedirectPath, func(c echo.Context) error {
+		e.Router.GET(integration.NotionMobileRedirectPath, func(c echo.Context) error {
 			code := c.QueryParam("code")
 			return c.Redirect(302, "exnota://integration/notion/mobile-code-redirect?code="+code)
 		})
@@ -129,7 +121,7 @@ const (
 
 func (h *integrationEndpointHooks) notionSearch() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(notionSearchPath, func(c echo.Context) error {
+		e.Router.GET(integration.NotionSearchPath, func(c echo.Context) error {
 
 			searchRequest := new(SearchRequest)
 			if err := c.Bind(searchRequest); err != nil {
@@ -154,6 +146,9 @@ func (h *integrationEndpointHooks) notionSearch() {
 			}
 
 			requestInfo := apis.RequestInfo(c)
+			if requestInfo.AuthRecord == nil {
+				return c.String(http.StatusUnauthorized, "Not logged in")
+			}
 			userId := requestInfo.AuthRecord.Id
 
 			response, err := h.executeNotionSearch(searchRequest.Query, object, userId)
@@ -316,9 +311,8 @@ func (r VerifyIntegrationAccessResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (h *integrationEndpointHooks) integrationVerifyAccess() {
-
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(integrationVerifyAccess, func(c echo.Context) error {
+		e.Router.POST(integration.IntegrationVerifyAccess, func(c echo.Context) error {
 			verifyRequest := new(VerifyIntegrationAccessRequest)
 			if err := c.Bind(verifyRequest); err != nil {
 				return c.String(http.StatusBadRequest, "bad request")
@@ -329,6 +323,9 @@ func (h *integrationEndpointHooks) integrationVerifyAccess() {
 			}
 
 			requestInfo := apis.RequestInfo(c)
+			if requestInfo.AuthRecord == nil {
+				return c.String(http.StatusUnauthorized, "Not logged in")
+			}
 			loggedInUserId := requestInfo.AuthRecord.Id
 
 			integrationSync := service.NewIntegrationSync(h.app)

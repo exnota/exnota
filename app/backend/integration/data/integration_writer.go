@@ -12,11 +12,12 @@ type IntegrationWriter interface {
 }
 
 type integrationWriter struct {
-	app core.App
+	app   core.App
+	txDao *daos.Dao
 }
 
-func NewIntegrationWriter(app core.App) IntegrationWriter {
-	return &integrationWriter{app}
+func NewIntegrationWriter(app core.App, txDao *daos.Dao) IntegrationWriter {
+	return &integrationWriter{app, txDao}
 }
 
 type SetStatusRequest struct {
@@ -26,27 +27,25 @@ type SetStatusRequest struct {
 }
 
 func (w *integrationWriter) SetStatus(request SetStatusRequest) error {
-	return w.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		err := validate.Struct(request)
-		if err != nil {
-			return err
-		}
+	err := validate.Struct(request)
+	if err != nil {
+		return err
+	}
 
-		record, err := w.app.Dao().FindRecordById(CollectionIntegration, request.Id)
-		if err != nil {
-			return err
-		}
+	record, err := w.txDao.FindRecordById(CollectionIntegration, request.Id)
+	if err != nil {
+		return err
+	}
 
-		integration, err := LoadIntegration(record, w.app)
-		if err != nil {
-			return err
-		}
+	integration, err := LoadIntegration(record, w.app)
+	if err != nil {
+		return err
+	}
 
-		if integration.User() != request.UserId {
-			return errors.New("user does not own integration")
-		}
+	if integration.User() != request.UserId {
+		return errors.New("user does not own integration")
+	}
 
-		integration.SetStatus(request.Status)
-		return integration.ValidateAndSubmit(txDao)
-	})
+	integration.SetStatus(request.Status)
+	return integration.ValidateAndSubmit(w.txDao)
 }

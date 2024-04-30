@@ -20,7 +20,7 @@ func NewBlockWriter(app core.App) BlockWriter {
 
 func (f *blockWriter) SetExternalUrl(id string, url string) error {
 	return f.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		record, err := f.app.Dao().FindRecordById(CollectionBlock, id)
+		record, err := txDao.FindRecordById(CollectionBlock, id)
 		if err != nil {
 			return err
 		}
@@ -39,7 +39,7 @@ func (f *blockWriter) SetExternalUrl(id string, url string) error {
 
 func (f *blockWriter) SetExternalExportStatus(id string, status ExportStatus) error {
 	return f.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		record, err := f.app.Dao().FindRecordById(CollectionBlock, id)
+		record, err := txDao.FindRecordById(CollectionBlock, id)
 		if err != nil {
 			return err
 		}

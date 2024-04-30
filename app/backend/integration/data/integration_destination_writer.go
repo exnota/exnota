@@ -48,7 +48,7 @@ func (m *integrationDestinationWriter) Upsert(data IntegrationDestinationUpsertD
 		// Check if object already exists.
 		filter := IntegrationDestinationFieldExternalRecordId + "={:externalRecordId} && " +
 			IntegrationDestinationFieldExternalRecordType + "={:externalRecordType}"
-		existing, err := m.app.Dao().FindFirstRecordByFilter(CollectionIntegrationDestination,
+		existing, err := dao.FindFirstRecordByFilter(CollectionIntegrationDestination,
 			filter, dbx.Params{
 				"externalRecordId":   data.ExternalRecordId,
 				"externalRecordType": string(data.ExternalRecordType),

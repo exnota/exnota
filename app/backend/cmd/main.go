@@ -11,6 +11,7 @@ import (
 	block_data "exnota.com/backend/block/data"
 	block_event "exnota.com/backend/block/event"
 	"exnota.com/backend/cmd/config"
+	"exnota.com/backend/event"
 	integ_api "exnota.com/backend/integration/api"
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service"
@@ -121,6 +122,8 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	setGlobalDeleteRules(app)
 
 	// Data rules
+	//
+	// Same caveats as event workflows below, for some of these.
 	integ_data.NewIntegrationDataRules(app).ApplyHooks()
 	integ_data.NewIntegrationNotionObjectHooks(app).ApplyHooks()
 	integ_data.NewIntegrationDestinationDataRules(app).ApplyHooks()
@@ -130,12 +133,28 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	block_data.NewBlockDataRules(app).ApplyHooks()
 
 	// Event workflows
+	//
+	// Haven't figured out a pattern I like here yet. To use a PocketBase hook
+	// that's triggered in one domain and performs an action in another domain,
+	// you need to reference both domains, which adds a lot of
+	// cross-dependencies.
+	//
+	// But at the same time I don't want to spend a long time creating
+	// abstractions.
+	//
+	// I've taken different approaches below (and possibly elsewhere, e.g. in
+	// data rules). Hopefully I settle on a pattern soon and can refactor.
 	job.NewBlockJobWorkflow(app).ApplyHooks()
 	// Block status listener should go after job workflow, as it should have
 	// access to new jobs that are created in sequence. E.g. it should
 	// know about the second export job, otherwise it may think all exporting
 	// is complete.
 	block_event.NewBlockStatusListener(app).ApplyHooks()
+	// The idea with this pattern is to isolate coupling to a separate folder
+	// (i.e. the 'event' folder). This is basically the same approach as the
+	// block job workflow above. This would at least help developers know that
+	// changes to one domain will only affect that domain and the event folder.
+	event.NewIntegrationListener(app).ApplyHooks()
 
 	// API rules
 	integ_api.NewIntegrationRequestHooks(app, integ_api.NotionCredentials{
