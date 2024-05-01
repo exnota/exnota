@@ -19,6 +19,12 @@ class IntegrationResponse with _$IntegrationResponse {
   }) = _IntegrationResponse;
 }
 
+@freezed
+class VerifyResponse with _$VerifyResponse {
+  const factory VerifyResponse(
+      {required bool success, required String? error}) = _VerifyResponse;
+}
+
 @riverpod
 class IntegrationFetcher extends _$IntegrationFetcher {
   final _log = Logger(context: 'IntegrationFetcher');
@@ -71,6 +77,28 @@ class IntegrationFetcher extends _$IntegrationFetcher {
 
     return completor.future;
   }
+
+  Future<VerifyResponse> verify(String integrationId) async {
+    final completor = Completer<VerifyResponse>();
+    final request = VerifyIntegrationRequest(integrationId: integrationId);
+    await ref.read(requestHandlerProvider.notifier).submit(
+          request: request,
+          onSuccess: (success) {
+            _log.debug('verify: Integration verification returned $success');
+            completor.complete(
+              VerifyResponse(success: success, error: null),
+            );
+          },
+          onError: (error) {
+            _log.error('verify: Error verifying integration', exception: error);
+            completor.complete(
+              VerifyResponse(success: false, error: error.toString()),
+            );
+          },
+        );
+
+    return completor.future;
+  }
 }
 
 class FetchIntegrationRequest extends HandledRequest<List<RecordModel>> {
@@ -87,5 +115,23 @@ class FetchIntegrationRequest extends HandledRequest<List<RecordModel>> {
     return await pb.collection(collectionIntegration).getFullList(
           filter: '$integrationFieldType = "${type.fieldName}"',
         );
+  }
+}
+
+class VerifyIntegrationRequest extends HandledRequest<bool> {
+  final Logger _log = Logger(context: 'VerifyIntegrationRequest');
+
+  final String integrationId;
+
+  VerifyIntegrationRequest({required this.integrationId}) : super();
+
+  @override
+  Future<bool> request({required PocketBase pb, required Ref ref}) async {
+    _log.debug('Verifying status for id $integrationId');
+    final result = await pb.send('/api/exnota/integration/verify-access',
+        method: 'POST', body: {'integration_id': integrationId});
+    final resultStr =
+        (result as Map<String, dynamic>? ?? {})['result'] as String;
+    return resultStr == 'success';
   }
 }
