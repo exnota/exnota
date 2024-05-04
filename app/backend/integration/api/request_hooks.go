@@ -121,6 +121,18 @@ func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 			if err != nil {
 				return err
 			}
+
+			// Check if bot ID already exists
+			integrationFetcher := data.NewIntegrationFetcher(h.app)
+			sameBotId, err := integrationFetcher.ListByNotionBotId(accessResponse.BotId)
+			if err != nil {
+				return err
+			}
+			if len(sameBotId) > 0 {
+				return apis.NewBadRequestError("Bot ID already exists", nil)
+			}
+
+			// Set config with notion's response
 			err = notionIntegration.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
 				AccessToken:          accessResponse.AccessToken,
 				BotID:                accessResponse.BotId,
@@ -222,6 +234,7 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 					return apis.NewBadRequestError("New Notion OAuth code not provided", nil)
 				}
 
+				// Send request to Notion
 				notionSync := notion.NewNotionSync(h.app, notion.NotionCredentials{
 					ClientId: h.credentials.ClientId,
 					Secret:   h.credentials.Secret,
@@ -230,6 +243,13 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 				if err != nil {
 					return err
 				}
+
+				// Ensure new botId matches existing
+				if accessResponse.BotId != *existingConfig.Auth.BotID {
+					return apis.NewBadRequestError("Bot ID mismatch", nil)
+				}
+
+				// Set config with notion's response
 				err = updated.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
 					AccessToken:          accessResponse.AccessToken,
 					BotID:                accessResponse.BotId,
@@ -248,6 +268,22 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 
 			// Use case 2: Archive/unarchive
 			// (side effects handled in workspace_updater.go)
+			if archivedChanged {
+				// If unarchiving, ensure botId doesn't exist
+				if updated.Archived().IsZero() {
+					integrationFetcher := data.NewIntegrationFetcher(h.app)
+					sameBotId, err := integrationFetcher.ListByNotionBotId(
+						*updatedConfig.Auth.BotID,
+					)
+					if err != nil {
+						return err
+					}
+					if len(sameBotId) > 1 ||
+						(len(sameBotId) == 1 && sameBotId[0].Id() != updated.Id()) {
+						return apis.NewBadRequestError("Bot ID already exists", nil)
+					}
+				}
+			}
 
 			return nil
 		})
