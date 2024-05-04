@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"reflect"
 
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service/notion"
@@ -24,7 +25,10 @@ type NotionCredentials struct {
 	Secret   string
 }
 
-func NewIntegrationRequestHooks(app core.App, credentials NotionCredentials) IntegrationRequestHooks {
+func NewIntegrationRequestHooks(
+	app core.App,
+	credentials NotionCredentials,
+) IntegrationRequestHooks {
 	return &integrationRequestHooks{app: app, credentials: credentials}
 }
 
@@ -38,132 +42,169 @@ func (h *integrationRequestHooks) Apply() {
 }
 
 func (h *integrationRequestHooks) preventFieldUpdates() {
-	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
-		updated, err := castToNotionIntegration(e.Record, h.app)
-		if err != nil {
-			return err
-		}
+	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).
+		Add(func(e *core.RecordUpdateEvent) error {
+			updated, err := castToNotionIntegration(e.Record, h.app)
+			if err != nil {
+				return err
+			}
 
-		existingRecord, err := h.app.Dao().FindRecordById(data.CollectionIntegration, updated.Id(), nil)
-		if err != nil {
-			return err
-		}
-		existing, err := castToNotionIntegration(existingRecord, h.app)
-		if err != nil {
-			return err
-		}
-		if updated.Type() != existing.Type() {
-			return apis.NewBadRequestError("Cannot update integration type", nil)
-		}
-		if updated.User() != existing.User() {
-			return apis.NewBadRequestError("Cannot update integration user", nil)
-		}
-		return nil
-	})
+			existingRecord, err := h.app.Dao().
+				FindRecordById(data.CollectionIntegration, updated.Id(), nil)
+			if err != nil {
+				return err
+			}
+			existing, err := castToNotionIntegration(existingRecord, h.app)
+			if err != nil {
+				return err
+			}
+			if updated.Type() != existing.Type() {
+				return apis.NewBadRequestError("Cannot update integration type", nil)
+			}
+			if updated.User() != existing.User() {
+				return apis.NewBadRequestError("Cannot update integration user", nil)
+			}
+			if updated.Status() != existing.Status() {
+				return apis.NewBadRequestError("Cannot update integration status", nil)
+			}
+			return nil
+		})
 }
 
 func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
-	h.app.OnRecordBeforeCreateRequest(data.CollectionIntegration).Add(func(e *core.RecordCreateEvent) error {
-		integration, err := data.LoadIntegration(e.Record, h.app)
-		if err != nil {
-			return err
-		}
-		var notionIntegration data.NotionIntegration
-		switch i := integration.(type) {
-		case data.NotionIntegration:
-			notionIntegration = i
-		default:
-			return apis.NewBadRequestError("Invalid integration type", nil)
-		}
+	h.app.OnRecordBeforeCreateRequest(data.CollectionIntegration).
+		Add(func(e *core.RecordCreateEvent) error {
+			integration, err := data.LoadIntegration(e.Record, h.app)
+			if err != nil {
+				return err
+			}
+			var notionIntegration data.NotionIntegration
+			switch i := integration.(type) {
+			case data.NotionIntegration:
+				notionIntegration = i
+			default:
+				return apis.NewBadRequestError("Invalid integration type", nil)
+			}
 
-		config, err := notionIntegration.Config()
-		if err != nil {
-			return err
-		}
-		if config.Auth.Code == nil {
-			return apis.NewBadRequestError("Missing Notion OAuth code", nil)
-		}
+			if notionIntegration.Status() != data.IntegrationStatusConnected {
+				return apis.NewBadRequestError("Integration status must be connected", nil)
+			}
+			if !notionIntegration.Archived().IsZero() {
+				return apis.NewBadRequestError("Archived cannot be set on create", nil)
+			}
 
-		notionSync := notion.NewNotionSync(h.app, notion.NotionCredentials{
-			ClientId: h.credentials.ClientId,
-			Secret:   h.credentials.Secret,
+			config, err := notionIntegration.Config()
+			if err != nil {
+				return err
+			}
+			if config.Auth.Code == nil {
+				return apis.NewBadRequestError("Missing Notion OAuth code", nil)
+			}
+
+			notionSync := notion.NewNotionSync(h.app, notion.NotionCredentials{
+				ClientId: h.credentials.ClientId,
+				Secret:   h.credentials.Secret,
+			})
+			accessResponse, err := notionSync.GetAuthToken(*config.Auth.Code)
+			if err != nil {
+				return err
+			}
+			err = notionIntegration.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
+				AccessToken:          accessResponse.AccessToken,
+				BotID:                accessResponse.BotId,
+				DuplicatedTemplateID: &accessResponse.DuplicatedTemplateId,
+				OwnerUserId:          &accessResponse.Owner.User.Id,
+				WorkspaceIcon:        accessResponse.WorkspaceIcon,
+				WorkspaceID:          accessResponse.WorkspaceId,
+				WorkspaceName:        accessResponse.WorkspaceName,
+			})
+			if err != nil {
+				return err
+			}
+
+			return nil
 		})
-		accessResponse, err := notionSync.GetAuthToken(*config.Auth.Code)
-		if err != nil {
-			return err
-		}
-		err = notionIntegration.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
-			AccessToken:          accessResponse.AccessToken,
-			BotID:                accessResponse.BotId,
-			DuplicatedTemplateID: &accessResponse.DuplicatedTemplateId,
-			OwnerUserId:          &accessResponse.Owner.User.Id,
-			WorkspaceIcon:        accessResponse.WorkspaceIcon,
-			WorkspaceID:          accessResponse.WorkspaceId,
-			WorkspaceName:        accessResponse.WorkspaceName,
-		})
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
 }
 
 func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
-	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).Add(func(e *core.RecordUpdateEvent) error {
-		updated, err := castToNotionIntegration(e.Record, h.app)
-		if err != nil {
-			return err
-		}
-		updatedCode, err := codeFromNotionIntegration(updated)
-		if err != nil {
-			return err
-		}
+	// Two main update update use cases:
+	// 1. Update config
+	// 2. Archive/unarchive
+	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).
+		Add(func(e *core.RecordUpdateEvent) error {
+			updated, err := castToNotionIntegration(e.Record, h.app)
+			if err != nil {
+				return err
+			}
+			updatedConfig, err := configFromNotionIntegration(updated)
+			if err != nil {
+				return err
+			}
 
-		existingRecord, err := h.app.Dao().FindRecordById(data.CollectionIntegration, updated.Id(), nil)
-		if err != nil {
-			return err
-		}
-		existing, err := castToNotionIntegration(existingRecord, h.app)
-		if err != nil {
-			return err
-		}
-		existingCode, err := codeFromNotionIntegration(existing)
-		if err != nil {
-			return err
-		}
+			existingRecord, err := h.app.Dao().
+				FindRecordById(data.CollectionIntegration, updated.Id(), nil)
+			if err != nil {
+				return err
+			}
+			existing, err := castToNotionIntegration(existingRecord, h.app)
+			if err != nil {
+				return err
+			}
+			existingConfig, err := configFromNotionIntegration(existing)
+			if err != nil {
+				return err
+			}
 
-		if updatedCode == nil {
-			return apis.NewBadRequestError("Missing Notion OAuth code", nil)
-		}
-		if updatedCode == existingCode {
-			return apis.NewBadRequestError("New Notion OAuth code not provided", nil)
-		}
+			// Keep the use cases separate to simplify side effect logic
+			configChanged := !reflect.DeepEqual(updatedConfig, existingConfig)
+			archivedChanged := updated.Archived() != existing.Archived()
+			if configChanged && archivedChanged {
+				return apis.NewBadRequestError(
+					"Cannot update config and archived at the same time",
+					nil,
+				)
+			}
 
-		notionSync := notion.NewNotionSync(h.app, notion.NotionCredentials{
-			ClientId: h.credentials.ClientId,
-			Secret:   h.credentials.Secret,
+			// Use case 1: Update config and re-connect.
+			//
+			// Config only expected to change when re-authorizing
+			if configChanged {
+				if updatedConfig == nil {
+					return apis.NewBadRequestError("Missing Notion OAuth code", nil)
+				}
+				if updatedConfig == existingConfig {
+					return apis.NewBadRequestError("New Notion OAuth code not provided", nil)
+				}
+
+				notionSync := notion.NewNotionSync(h.app, notion.NotionCredentials{
+					ClientId: h.credentials.ClientId,
+					Secret:   h.credentials.Secret,
+				})
+				accessResponse, err := notionSync.GetAuthToken(*updatedConfig.Auth.Code)
+				if err != nil {
+					return err
+				}
+				err = updated.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
+					AccessToken:          accessResponse.AccessToken,
+					BotID:                accessResponse.BotId,
+					DuplicatedTemplateID: &accessResponse.DuplicatedTemplateId,
+					OwnerUserId:          &accessResponse.Owner.User.Id,
+					WorkspaceIcon:        accessResponse.WorkspaceIcon,
+					WorkspaceID:          accessResponse.WorkspaceId,
+					WorkspaceName:        accessResponse.WorkspaceName,
+				})
+				if err != nil {
+					return err
+				}
+				updated.SetStatus(data.IntegrationStatusConnected)
+				return nil
+			}
+
+			// Use case 2: Archive/unarchive
+			// (side effects handled in workspace_updater.go)
+
+			return nil
 		})
-		accessResponse, err := notionSync.GetAuthToken(*updatedCode)
-		if err != nil {
-			return err
-		}
-		err = updated.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
-			AccessToken:          accessResponse.AccessToken,
-			BotID:                accessResponse.BotId,
-			DuplicatedTemplateID: &accessResponse.DuplicatedTemplateId,
-			OwnerUserId:          &accessResponse.Owner.User.Id,
-			WorkspaceIcon:        accessResponse.WorkspaceIcon,
-			WorkspaceID:          accessResponse.WorkspaceId,
-			WorkspaceName:        accessResponse.WorkspaceName,
-		})
-		updated.SetStatus(data.IntegrationStatusConnected)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
 }
 
 func castToNotionIntegration(record *models.Record, app core.App) (data.NotionIntegration, error) {
@@ -180,11 +221,13 @@ func castToNotionIntegration(record *models.Record, app core.App) (data.NotionIn
 	}
 }
 
-func codeFromNotionIntegration(integration data.NotionIntegration) (*string, error) {
+func configFromNotionIntegration(
+	integration data.NotionIntegration,
+) (*data.NotionIntegrationConfig, error) {
 	config, err := integration.Config()
 	if err != nil {
 		return nil, err
 	}
 
-	return config.Auth.Code, nil
+	return config, nil
 }
