@@ -6,6 +6,7 @@ import (
 
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service/notion"
+	"exnota.com/backend/lib/data/filter"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
@@ -93,6 +94,17 @@ func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 				return apis.NewBadRequestError("Archived cannot be set on create", nil)
 			}
 
+			// Check if user has Notion integration before requesting a token
+			// from Notion, otherwise Notion will invalidate the code and any
+			// subsequent attempts will fail.
+			userHasNotionIntegration, err := h.userHasNotionIntegration(notionIntegration)
+			if err != nil {
+				return err
+			}
+			if userHasNotionIntegration {
+				return apis.NewBadRequestError("User already has a Notion integration", nil)
+			}
+
 			config, err := notionIntegration.Config()
 			if err != nil {
 				return err
@@ -124,6 +136,40 @@ func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 
 			return nil
 		})
+}
+
+func (h *integrationRequestHooks) userHasNotionIntegration(
+	integration data.NotionIntegration,
+) (bool, error) {
+	filter, err := filter.CreateAndFilter(
+		filter.Field{
+			Name:  data.IntegrationFieldUser,
+			Op:    filter.OpEquals,
+			Value: integration.User(),
+		},
+		filter.Field{
+			Name:  data.IntegrationFieldType,
+			Op:    filter.OpEquals,
+			Value: data.IntegrationTypeNotion,
+		},
+		filter.Field{
+			Name:        data.IntegrationFieldArchived,
+			Op:          filter.OpEquals,
+			ValuePreset: filter.ValuePresetNull,
+		},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	existingRecord, err := h.app.Dao().FindRecordsByFilter(
+		data.CollectionIntegration, filter.Filter, "-created", 1, 0,
+		filter.Params)
+	if err != nil {
+		return false, err
+	}
+
+	return len(existingRecord) > 0, nil
 }
 
 func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {

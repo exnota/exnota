@@ -53,15 +53,21 @@ class _SetupIntegrationScreenState
       if (prevCode != nextCode) {
         ref
             .read(setupIntegrationScreenControllerProvider.notifier)
-            .transitionStatus(newStatus: IntegrationSetupStatus.processingCode);
+            .transitionStatus(
+                newStatus: IntegrationSetupStatus.handlingNotionAuthResponse);
 
         // Close manually, otherwise browser stays open in iOS
         await closeInAppWebView();
       }
     });
 
+    // On status change, trigger the appropriate action
     ref.listen(setupIntegrationScreenControllerProvider,
         (prevState, nextState) {
+      // Flows:
+      // Load -> (found) -> Verify -> (connected) -> Confirmed
+      // Load -> (found) -> Verify -> (disconnected) -> Update -> Confirmed
+      // Load -> (not found) -> Create
       switch (nextState.status) {
         case IntegrationSetupStatus.loadingIntegration:
           ref
@@ -73,37 +79,51 @@ class _SetupIntegrationScreenState
               .read(setupIntegrationScreenControllerProvider.notifier)
               .verifyIntegration();
           break;
-        case IntegrationSetupStatus.processingCode:
+        case IntegrationSetupStatus.runningNotionAuthFlow:
           ref
               .read(setupIntegrationScreenControllerProvider.notifier)
-              .processCode();
+              .startNotionAuthFlow();
+          break;
+        case IntegrationSetupStatus.handlingNotionAuthResponse:
+          ref
+              .read(setupIntegrationScreenControllerProvider.notifier)
+              .handleNotionAuthResponse();
         case IntegrationSetupStatus.confirmedNotionIntegration:
           // TODO: Redirect to other screen
-          break;
-        case IntegrationSetupStatus.updatingNotionIntegration:
-          // TODO: Start update flow
-          ref
-              .read(setupIntegrationScreenControllerProvider.notifier)
-              .updateIntegration();
           break;
         default:
         // TODO:
       }
     });
 
-    // TODO: Do a basic switch here showing the state it can be tested
     return Scaffold(
       body: Center(
         child: Container(
           child: switch (setupState.status) {
-            IntegrationSetupStatus.processingCode =>
-              const Text('Processing code'),
+            IntegrationSetupStatus.handlingNotionAuthResponse =>
+              const Text('Handling notion auth response'),
             IntegrationSetupStatus.loadingIntegration =>
               const Text('Loading integration'),
             IntegrationSetupStatus.verifyingIntegration =>
               const Text('Verifying integration'),
-            IntegrationSetupStatus.createNotionIntegration =>
-              const Text('Create Notion integration'),
+            IntegrationSetupStatus.createNotionIntegration => Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Create Notion integration'),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref
+                          .read(
+                              setupIntegrationScreenControllerProvider.notifier)
+                          .transitionStatus(
+                            newStatus:
+                                IntegrationSetupStatus.runningNotionAuthFlow,
+                          );
+                    },
+                    child: const Text('Connect'),
+                  ),
+                ],
+              ),
             IntegrationSetupStatus.notionDisconnected => Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -114,8 +134,8 @@ class _SetupIntegrationScreenState
                           .read(
                               setupIntegrationScreenControllerProvider.notifier)
                           .transitionStatus(
-                            newStatus: IntegrationSetupStatus
-                                .updatingNotionIntegration,
+                            newStatus:
+                                IntegrationSetupStatus.runningNotionAuthFlow,
                           );
                     },
                     child: const Text('Reconnect Notion'),
@@ -124,8 +144,8 @@ class _SetupIntegrationScreenState
               ),
             IntegrationSetupStatus.creatingNotionIntegration =>
               const Text('Creating Notion integration'),
-            IntegrationSetupStatus.updatingNotionIntegration =>
-              const Text('Updating Notion integration'),
+            IntegrationSetupStatus.runningNotionAuthFlow =>
+              const Text('Running notion auth flow'),
             IntegrationSetupStatus.confirmedNotionIntegration =>
               const Text('Confirmed Notion integration'),
             IntegrationSetupStatus.loadingIntegrationError => SetupErrorMessage(
@@ -190,10 +210,10 @@ enum IntegrationSetupStatus {
   verifyingIntegrationError,
   createNotionIntegration,
   notionDisconnected,
-  processingCode,
+  handlingNotionAuthResponse,
   creatingNotionIntegration,
   createNotionIntegrationError,
-  updatingNotionIntegration,
+  runningNotionAuthFlow,
   updatingNotionIntegrationError,
   confirmedNotionIntegration,
 }
@@ -215,6 +235,7 @@ class SetupIntegrationScreenController
 
   @override
   IntegrationSetupState build() {
+    _log.debug('build: Initializing state with status loadingIntegration');
     return const IntegrationSetupState(
       status: IntegrationSetupStatus.loadingIntegration,
       integration: null,
@@ -271,36 +292,34 @@ class SetupIntegrationScreenController
     );
   }
 
-  Future<void> processCode() async {
+  Future<void> handleNotionAuthResponse() async {
     final code = ref.read(notionAuthProvider).code;
-    // TODO: Implement
-    _log.debug('processCode: 😄😄😄 Processing code');
 
     // If there's an integration, update it
     if (state.integration != null) {
-      _log.debug('processCode: Updating integration');
+      _log.debug('handleNotionCode: Updating integration');
       switch (state.integration!.type) {
         case IntegrationType.notion:
-          final createResult = await ref
+          final updateResult = await ref
               .read(notionAuthServiceProvider.notifier)
               .updateIntegration(
                 integrationId: state.integration!.id,
                 code: code!,
               );
-          if (createResult.error != null) {
+          if (updateResult.error != null) {
             _log.error(
-                'processCode: Error creating integration: ${createResult.error}');
+                'handleNotionCode: Error creating integration: ${updateResult.error}');
             state = IntegrationSetupState(
               status: IntegrationSetupStatus.createNotionIntegrationError,
               integration: state.integration,
-              error: createResult.error,
+              error: updateResult.error,
               errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
             );
             return;
           }
 
           // TODO: Move on to next step?
-          _log.debug('processCode: Integration updated');
+          _log.debug('handleNotionCode: Integration updated');
           state = IntegrationSetupState(
             status: IntegrationSetupStatus.confirmedNotionIntegration,
             integration: state.integration,
@@ -309,7 +328,7 @@ class SetupIntegrationScreenController
           );
           break;
         default:
-          _log.error('processCode: Unsupported integration type');
+          _log.error('handleNotionCode: Unsupported integration type');
           state = IntegrationSetupState(
             status: IntegrationSetupStatus.createNotionIntegrationError,
             integration: state.integration,
@@ -322,13 +341,13 @@ class SetupIntegrationScreenController
     }
 
     // If there's no integration, create it
-    _log.debug('processCode: Creating integration');
+    _log.debug('handleNotionCode: Creating integration');
     final createResult = await ref
         .read(notionAuthServiceProvider.notifier)
         .createIntegration(code: code!);
     if (createResult.error != null) {
       _log.error(
-          'processCode: Error creating integration: ${createResult.error}');
+          'handleNotionCode: Error creating integration: ${createResult.error}');
       state = IntegrationSetupState(
         status: IntegrationSetupStatus.createNotionIntegrationError,
         integration: null,
@@ -338,7 +357,7 @@ class SetupIntegrationScreenController
       return;
     }
 
-    _log.debug('processCode: Integration created');
+    _log.debug('handleNotionCode: Integration created');
     state = IntegrationSetupState(
       status: IntegrationSetupStatus.confirmedNotionIntegration,
       integration: createResult.result,
@@ -398,58 +417,37 @@ class SetupIntegrationScreenController
     );
   }
 
-  Future<void> updateIntegration() async {
-    if (state.integration == null) {
-      _log.error('updateIntegration: No integration found');
-      state = const IntegrationSetupState(
+  Future<void> startNotionAuthFlow() async {
+    final authUrlResponse =
+        await ref.read(notionAuthServiceProvider.notifier).getAuthUrl();
+
+    if (authUrlResponse.error != null) {
+      _log.error('updateIntegration: Error getting auth url');
+      state = IntegrationSetupState(
         status: IntegrationSetupStatus.updatingNotionIntegrationError,
-        integration: null,
-        error: 'Something went wrong',
+        integration: state.integration,
+        error: authUrlResponse.error,
         errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
       );
       return;
     }
 
-    if (state.integration!.type == IntegrationType.notion) {
-      final authUrlResponse =
-          await ref.read(notionAuthServiceProvider.notifier).getAuthUrl();
-
-      if (authUrlResponse.error != null) {
-        _log.error('updateIntegration: Error getting auth url');
-        state = IntegrationSetupState(
-          status: IntegrationSetupStatus.updatingNotionIntegrationError,
-          integration: state.integration,
-          error: authUrlResponse.error,
-          errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
-        );
-        return;
-      }
-
-      final url = authUrlResponse.result;
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        _log.debug('updateIntegration: Opening browser for uri $uri');
-        // Defaults to web view. If `mode: LaunchMode.externalApplication` is used
-        // instead it would avoid requiring Notion login for users already logged
-        // in in their default browser. However after finishing auth, it will ask
-        // "Open this page in "Exnota"" before going back to the app. Might be
-        // able to avoid this if we used universal links instead of deep links.
-        await launchUrl(uri);
-      } else {
-        _log.error('updateIntegration: Error opening browser');
-        state = IntegrationSetupState(
-          status: IntegrationSetupStatus.updatingNotionIntegrationError,
-          integration: state.integration,
-          error: 'Error opening browser',
-          errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
-        );
-      }
+    final url = authUrlResponse.result;
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      _log.debug('updateIntegration: Opening browser for uri $uri');
+      // Defaults to web view. If `mode: LaunchMode.externalApplication` is used
+      // instead it would avoid requiring Notion login for users already logged
+      // in in their default browser. However after finishing auth, it will ask
+      // "Open this page in "Exnota"" before going back to the app. Might be
+      // able to avoid this if we used universal links instead of deep links.
+      await launchUrl(uri);
     } else {
-      _log.error('updateIntegration: Unsupported integration type');
+      _log.error('updateIntegration: Error opening browser');
       state = IntegrationSetupState(
         status: IntegrationSetupStatus.updatingNotionIntegrationError,
         integration: state.integration,
-        error: 'Unsupported integration type',
+        error: 'Error opening browser',
         errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
       );
     }

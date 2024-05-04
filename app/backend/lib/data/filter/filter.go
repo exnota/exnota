@@ -33,7 +33,8 @@ const (
 type ValuePreset string
 
 const (
-	ValuePresetNow ValuePreset = "@now"
+	ValuePresetNow  ValuePreset = "@now"
+	ValuePresetNull ValuePreset = "null"
 )
 
 var validate = validator.New(validator.WithRequiredStructEnabled())
