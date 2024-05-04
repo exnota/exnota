@@ -136,6 +136,8 @@ type NotionIntegrationAuthConfig struct {
 	WorkspaceName        *string `json:"workspace_name"`
 }
 
+const FilterConfigBotId = IntegrationFieldConfig + ".auth.bot_id"
+
 // Returns error if not of type notion.
 func LoadNotionIntegration(r *models.Record, app core.App) (NotionIntegration, error) {
 	blockType := r.GetString(IntegrationFieldType)
