@@ -26,7 +26,8 @@
         "yzhang.markdown-all-in-one",
         "golang.go",
         "padjon.save-and-run-ext",
-        "ldez.ignore-files"
+        "ldez.ignore-files",
+        "emeraldwalk.RunOnSave"
       ]
     }
   }

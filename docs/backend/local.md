@@ -34,13 +34,12 @@ To restart:
 
 ### Extensions
 
-* Line formatter
+* Line formatter (wrapper)
   * The Run On Save extension executes `golines` which is installed in `Dockerfile` as defined in `backend.code-workspace`
 * Reload on save
   * Had previously setup delve to restart on save using the Save And Run (different to Run On Save!) extension.
   * See commented-out `saveAndRunExt` settings in `backend.code-workspace`
   * IIRC it wasn't always what I wanted so I toggled the extension on and off using the command `Save and Run Ext: Enabled/Disable`.
-
 
 ### Dev container in VS Code
 

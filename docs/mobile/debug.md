@@ -15,6 +15,6 @@ If there's already an app version on, it may error trying to uninstall. Retry - 
 To use a local server when connected via USB:
 
 1. `adb devices` to find the device ID
-2. `adb -s <device id> reverse tcp:3000 tcp:3000` to forward the port ID
+2. `adb -s <device id> reverse tcp:8080 tcp:8080` to forward the port ID
 
 To use a local server over Wifi I think it's necessary to use your computer's network IP or ngrok. The app doesn't have a way to provide this yet.
