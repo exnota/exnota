@@ -1,5 +1,11 @@
 # Architecture
 
+## UPDATE as of 2024-05-01
+
+Miro has an updated architecture plan:
+
+![alt text](architecture-updated.png)
+
 ## State context layers
 
 ### References

@@ -24,7 +24,7 @@ dependencies:
   path_provider: ^2.0.0
   path: ^1.8.3
   riverpod_annotation: ^2.2.0
-  url_launcher: ^6.1.14
+  url_launcher: ^6.2.6
   # Use this specific commit otherwise an APK cannot be built due to no
   # `namespace` in build.gradle.
   audio_waveforms:
