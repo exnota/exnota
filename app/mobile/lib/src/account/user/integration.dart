@@ -5,6 +5,8 @@ part 'integration.freezed.dart';
 
 const collectionIntegration = 'integration';
 const integrationFieldType = 'type';
+const integrationFieldConfig = 'config';
+const integrationFieldUser = 'user';
 
 enum IntegrationType {
   notion(fieldName: 'notion'),
@@ -25,6 +27,8 @@ class Integration with _$Integration {
     required IntegrationType type,
   }) = _Integration;
 
+  const Integration._();
+
   factory Integration.fromRecord(RecordModel record) {
     final data = record.data;
     final type = IntegrationType.values.firstWhere(
@@ -36,5 +40,37 @@ class Integration with _$Integration {
       id: record.id,
       type: type,
     );
+  }
+
+  static Map<String, dynamic> createNotionIntegrationRequestBody({
+    required IntegrationType type,
+    required String code,
+    required String userId,
+  }) {
+    Map<String, dynamic> body = {
+      integrationFieldType: type.toString(),
+      integrationFieldConfig: {
+        'auth': {
+          'code': code,
+        }
+      },
+      integrationFieldUser: userId,
+    };
+
+    return body;
+  }
+
+  static Map<String, dynamic> updateNotionIntegrationRequestBody({
+    required String code,
+  }) {
+    Map<String, dynamic> body = {
+      integrationFieldConfig: {
+        'auth': {
+          'code': code,
+        }
+      },
+    };
+
+    return body;
   }
 }

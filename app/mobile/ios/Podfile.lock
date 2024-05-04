@@ -177,7 +177,7 @@ SPEC CHECKSUMS:
   PromisesSwift: 28dca69a9c40779916ac2d6985a0192a5cb4a265
   SQLCipher: 838309284f29953a28ad2e81d87d55ea6b7c74fd
   sqlcipher_flutter_libs: 4fe3b0fd930942b8e4fe31c68a029e0a1e467169
-  url_launcher_ios: 08a3dfac5fb39e8759aeb0abbd5d9480f30fc8b4
+  url_launcher_ios: 6116280ddcfe98ab8820085d8d76ae7449447586
 
 PODFILE CHECKSUM: d6dc64ccf6035ba570c06177fda7caba7578152c
 
