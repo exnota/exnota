@@ -7,6 +7,7 @@ const collectionIntegration = 'integration';
 const integrationFieldType = 'type';
 const integrationFieldConfig = 'config';
 const integrationFieldUser = 'user';
+const integrationFieldStatus = 'status';
 
 enum IntegrationType {
   notion(fieldName: 'notion'),
@@ -19,6 +20,8 @@ enum IntegrationType {
   @override
   String toString() => fieldName;
 }
+
+const integrationStatusConnected = 'connected';
 
 @freezed
 class Integration with _$Integration {
@@ -55,6 +58,7 @@ class Integration with _$Integration {
         }
       },
       integrationFieldUser: userId,
+      integrationFieldStatus: integrationStatusConnected,
     };
 
     return body;

@@ -124,7 +124,6 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// Data rules
 	//
 	// Same caveats as event workflows below, for some of these.
-	integ_data.NewIntegrationDataRules(app).ApplyHooks()
 	integ_data.NewIntegrationNotionObjectHooks(app).ApplyHooks()
 	integ_data.NewIntegrationDestinationDataRules(app).ApplyHooks()
 	block_data.NewWorkspaceDataRules(app).ApplyHooks()
