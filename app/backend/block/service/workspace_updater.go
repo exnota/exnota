@@ -9,6 +9,7 @@ import (
 type WorkspaceUpdaterService interface {
 	SetConnectedForIntegration(request StatusForIntegrationRequest) error
 	SetDisconnectedForIntegration(request StatusForIntegrationRequest) error
+	SetArchivedForIntegration(request StatusForIntegrationRequest) error
 }
 
 type workspaceUpdaterService struct {
@@ -71,6 +72,39 @@ func (w *workspaceUpdaterService) SetDisconnectedForIntegration(request StatusFo
 
 		for _, workspace := range workspaces {
 			err = workspace.SetExternalStatus(data.WorkspaceExternalStatusDisconnected)
+			if err != nil {
+				return err
+			}
+
+			err = workspace.ValidateAndSubmit(txDao)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (w *workspaceUpdaterService) SetArchivedForIntegration(request StatusForIntegrationRequest) error {
+	err := validate.Struct(request)
+	if err != nil {
+		return err
+	}
+
+	err = w.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		workspaceFetcher := data.NewWorkspaceFetcher(w.app, txDao)
+		workspaces, err := workspaceFetcher.FetchByIntegrationId(request.IntegrationId)
+		if err != nil {
+			return err
+		}
+
+		for _, workspace := range workspaces {
+			err = workspace.SetExternalStatus(data.WorkspaceExternalStatusArchived)
 			if err != nil {
 				return err
 			}

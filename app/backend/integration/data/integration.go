@@ -2,6 +2,7 @@ package data
 
 import (
 	"errors"
+	"time"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -20,7 +21,8 @@ const (
 	IntegrationFieldType  = "type"
 	IntegrationTypeNotion = "notion"
 
-	IntegrationFieldStatus = "status"
+	IntegrationFieldStatus   = "status"
+	IntegrationFieldArchived = "archived"
 )
 
 type IntegrationType string
@@ -48,6 +50,7 @@ type Integration interface {
 	Type() IntegrationType
 	Status() IntegrationStatus
 	User() string
+	Archived() time.Time
 
 	SetStatus(status IntegrationStatus)
 
@@ -90,6 +93,10 @@ func (i integration) User() string {
 	return i.record.GetString(IntegrationFieldUser)
 }
 
+func (i integration) Archived() time.Time {
+	return i.record.GetDateTime(IntegrationFieldArchived).Time()
+}
+
 func (i integration) SetStatus(status IntegrationStatus) {
 	i.record.Set(IntegrationFieldStatus, string(status))
 }
@@ -105,7 +112,7 @@ func (i *integration) ValidateAndSubmit(txDao *daos.Dao) error {
 type NotionIntegration interface {
 	Integration
 
-	Config() (*notionIntegrationConfig, error)
+	Config() (*NotionIntegrationConfig, error)
 
 	SetSuccessfulAuth(auth SuccessfulNotionIntegrationAuth) error
 }
@@ -114,7 +121,7 @@ type notionIntegration struct {
 	integration
 }
 
-type notionIntegrationConfig struct {
+type NotionIntegrationConfig struct {
 	Auth NotionIntegrationAuthConfig `json:"auth,omitempty"`
 }
 
@@ -155,17 +162,17 @@ type SuccessfulNotionIntegrationAuth struct {
 	WorkspaceName        string
 }
 
-func (i notionIntegration) Config() (*notionIntegrationConfig, error) {
+func (i notionIntegration) Config() (*NotionIntegrationConfig, error) {
 	rawConfig := i.record.Get(IntegrationFieldConfig).(types.JsonRaw)
 	val, err := rawConfig.Value()
 	if err != nil {
 		return nil, err
 	}
 	if val == nil {
-		return &notionIntegrationConfig{}, nil
+		return &NotionIntegrationConfig{}, nil
 	}
 
-	var config notionIntegrationConfig
+	var config NotionIntegrationConfig
 	err = i.record.UnmarshalJSONField(IntegrationFieldConfig, &config)
 	if err != nil {
 		return nil, err

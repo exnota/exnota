@@ -64,7 +64,7 @@ func (w *workspace) Integration() string {
 }
 
 type WorkspaceExternal struct {
-	Status WorkspaceExternalStatus `json:"status,omitempty" validate:"omitempty,oneof=connected disconnected"`
+	Status WorkspaceExternalStatus `json:"status,omitempty" validate:"omitempty,oneof=connected disconnected archived"`
 }
 
 type WorkspaceExternalStatus string
@@ -73,6 +73,7 @@ const (
 	// If modifying this, update the validate tag in WorkspaceExternal struct.
 	WorkspaceExternalStatusConnected    WorkspaceExternalStatus = "connected"
 	WorkspaceExternalStatusDisconnected WorkspaceExternalStatus = "disconnected"
+	WorkspaceExternalStatusArchived     WorkspaceExternalStatus = "archived"
 )
 
 func (w *workspace) External() (*WorkspaceExternal, error) {

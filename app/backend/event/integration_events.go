@@ -1,8 +1,6 @@
 package event
 
 import (
-	"fmt"
-
 	"exnota.com/backend/block/service"
 	integration_data "exnota.com/backend/integration/data"
 	"github.com/pocketbase/pocketbase/core"
@@ -44,29 +42,55 @@ func (l *integrationListener) applyOnUpdateHooks() {
 				return err
 			}
 
-			if prevIntegration.Status() != newIntegration.Status() {
-				switch newIntegration.Status() {
-				case integration_data.IntegrationStatusConnected:
+			archived := prevIntegration.Archived().IsZero() && !newIntegration.Archived().IsZero()
+			unarchived := !prevIntegration.Archived().IsZero() && newIntegration.Archived().IsZero()
+			if newIntegration.Status() == integration_data.IntegrationStatusConnected {
+				// If status changed to connected, or if the integration was
+				// unarchived while having a connected status.
+				// Then set workspaces to connected.
+				if prevIntegration.Status() != integration_data.IntegrationStatusConnected ||
+					unarchived {
+					// Status changed to connected - cascade to workspaces
 					workspaceUpdaterService := service.NewWorkspaceUpdaterService(l.app)
-					err = workspaceUpdaterService.SetConnectedForIntegration(service.StatusForIntegrationRequest{
-						IntegrationId: newIntegration.Id(),
-					})
-
+					err = workspaceUpdaterService.SetConnectedForIntegration(
+						service.StatusForIntegrationRequest{
+							IntegrationId: newIntegration.Id(),
+						},
+					)
 					if err != nil {
 						return err
 					}
-				case integration_data.IntegrationStatusAccessRevoked:
-					workspaceUpdaterService := service.NewWorkspaceUpdaterService(l.app)
-					err = workspaceUpdaterService.SetDisconnectedForIntegration(service.StatusForIntegrationRequest{
-						IntegrationId: newIntegration.Id(),
-					})
-					if err != nil {
-						return err
-					}
-				default:
-					return fmt.Errorf("Unknown integration status: %s", newIntegration.Status())
 				}
-
+			} else if newIntegration.Status() == integration_data.IntegrationStatusAccessRevoked {
+				// If status changed to access-revoked, or if the integration
+				// was unarchived while having an access-revoked status.
+				// Then set workspaces to disconnected.
+				if prevIntegration.Status() != integration_data.IntegrationStatusAccessRevoked ||
+					unarchived {
+					// Status changed to access-revoked - cascade to workspaces
+					workspaceUpdaterService := service.NewWorkspaceUpdaterService(l.app)
+					err = workspaceUpdaterService.SetDisconnectedForIntegration(
+						service.StatusForIntegrationRequest{
+							IntegrationId: newIntegration.Id(),
+						},
+					)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			if archived {
+				// If the integration was archived, then set workspaces to
+				// archived.
+				workspaceUpdaterService := service.NewWorkspaceUpdaterService(l.app)
+				err = workspaceUpdaterService.SetArchivedForIntegration(
+					service.StatusForIntegrationRequest{
+						IntegrationId: newIntegration.Id(),
+					},
+				)
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil
