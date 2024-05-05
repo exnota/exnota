@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:exnota/src/account/user/integration.dart';
 import 'package:exnota/src/context/sync/request_handler.dart';
+import 'package:exnota/src/integration/integration.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';

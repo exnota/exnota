@@ -1,6 +1,6 @@
-import 'package:exnota/src/account/user/integration.dart';
-import 'package:exnota/src/account/user/service/integration_fetcher.dart';
-import 'package:exnota/src/account/user/service/notion_auth_service.dart';
+import 'package:exnota/src/integration/integration.dart';
+import 'package:exnota/src/integration/service/integration_fetcher.dart';
+import 'package:exnota/src/integration/service/notion_auth_service.dart';
 import 'package:exnota/src/integration/widget/notion_listener.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
