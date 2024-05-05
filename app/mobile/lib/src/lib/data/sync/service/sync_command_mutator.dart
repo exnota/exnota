@@ -3,7 +3,7 @@ import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
-import 'package:exnota/src/note/repo/drift/block_repo.dart';
+import 'package:exnota/src/block/repo/drift/block_repo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SyncCommandMutator {

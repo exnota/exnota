@@ -8,7 +8,7 @@ import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/file/local_file.dart';
 import 'package:exnota/src/lib/file/service/local_file_fetcher.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/block.dart';
+import 'package:exnota/src/block/block.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pocketbase/pocketbase.dart';

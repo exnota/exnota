@@ -1,6 +1,6 @@
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/block.dart';
-import 'package:exnota/src/note/repo/drift/block_repo.dart';
+import 'package:exnota/src/block/block.dart';
+import 'package:exnota/src/block/repo/drift/block_repo.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

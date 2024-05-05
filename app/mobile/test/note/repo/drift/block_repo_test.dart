@@ -1,7 +1,7 @@
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/note/block.dart';
-import 'package:exnota/src/note/repo/drift/block_repo.dart';
+import 'package:exnota/src/block/block.dart';
+import 'package:exnota/src/block/repo/drift/block_repo.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

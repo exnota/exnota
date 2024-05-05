@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/block.dart';
-import 'package:exnota/src/note/repo/drift/block_repo_mapper.dart';
+import 'package:exnota/src/block/block.dart';
+import 'package:exnota/src/block/repo/drift/block_repo_mapper.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'block_repo.g.dart';
