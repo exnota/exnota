@@ -15,6 +15,7 @@ class WorkspaceImporter extends _$WorkspaceImporter {
     // No-op
   }
 
+  // Does not catch errors
   Future<void> import(RecordModel? record) async {
     if (record == null) {
       _log.warn('No workspace record to import');
@@ -28,10 +29,11 @@ class WorkspaceImporter extends _$WorkspaceImporter {
 
       _log.debug('Upserting workspace ${workspace.id}');
       await repo.upsert(workspace);
+      _log.debug('Imported workspace ${record.id}');
     } catch (e) {
       _log.error('Error importing workspace ${record.id}', exception: e);
+      rethrow;
     }
-    _log.debug('Imported workspace ${record.id}');
   }
 
   Future<void> importAll(List<RecordModel> records) async {

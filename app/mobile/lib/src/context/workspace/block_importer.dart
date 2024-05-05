@@ -28,10 +28,10 @@ class BlockImporter extends _$BlockImporter {
 
       _log.debug('Upserting block ${block.id}');
       await repo.upsert(block);
+      _log.debug('Imported block ${record.id}');
     } catch (e) {
       _log.error('Error importing block ${record.id}', exception: e);
     }
-    _log.debug('Imported block ${record.id}');
   }
 
   Future<void> importAll(List<RecordModel> records) async {

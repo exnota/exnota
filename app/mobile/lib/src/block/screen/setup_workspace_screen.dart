@@ -1,6 +1,7 @@
 import 'package:exnota/src/block/repo/drift/workspace_importer.dart';
 import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/context/sync/request_handler.dart';
+import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,8 +71,27 @@ class _SetupWorkspaceScreenState extends ConsumerState<SetupWorkspaceScreen> {
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
               ),
-            WorkspaceSetupStatus.createWorkspace =>
-              const Text('Create workspace'),
+            WorkspaceSetupStatus.createWorkspace => Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      ref
+                          .read(setupWorkspaceScreenControllerProvider.notifier)
+                          .createWorkspace(type: WorkspaceType.database);
+                    },
+                    child: const Text('I use a note database'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref
+                          .read(setupWorkspaceScreenControllerProvider.notifier)
+                          .createWorkspace(type: WorkspaceType.custom);
+                    },
+                    child: const Text('I don\'t use a note database'),
+                  ),
+                ],
+              ),
             WorkspaceSetupStatus.creatingWorkspace =>
               const Text('Creating workspace'),
             WorkspaceSetupStatus.creatingWorkspaceError => SetupErrorMessage(
@@ -160,7 +180,7 @@ class SetupWorkspaceScreenController extends _$SetupWorkspaceScreenController {
 
   // Fetches workspace from backend and saves to this provider's state
   Future<void> loadOrRefreshWorkspace() async {
-    _log.debug('loadWorkspace: Loading workspace');
+    _log.debug('loadOrRefreshWorkspace: Loading workspace');
     // TODO:
     // - Send request for existing workspace
     // - If it exists, import
@@ -168,9 +188,9 @@ class SetupWorkspaceScreenController extends _$SetupWorkspaceScreenController {
     await ref.read(requestHandlerProvider.notifier).submit(
         request: request,
         onSuccess: (numWorkspaces) {
-          _log.debug('loadWorkspace: Success');
+          _log.debug('loadOrRefreshWorkspace: Success');
           if (numWorkspaces == 0) {
-            _log.debug('loadWorkspace: No workspace found');
+            _log.debug('loadOrRefreshWorkspace: No workspace found');
             state = const WorkspaceSetupState(
               status: WorkspaceSetupStatus.createWorkspace,
               error: null,
@@ -179,7 +199,7 @@ class SetupWorkspaceScreenController extends _$SetupWorkspaceScreenController {
             return;
           }
 
-          _log.debug('loadWorkspace: Workspace found');
+          _log.debug('loadOrRefreshWorkspace: Workspace found');
           state = const WorkspaceSetupState(
             status: WorkspaceSetupStatus.workspaceReady,
             error: null,
@@ -187,11 +207,35 @@ class SetupWorkspaceScreenController extends _$SetupWorkspaceScreenController {
           );
         },
         onError: (err) {
-          _log.error('loadWorkspace: Failed with error: $err');
+          _log.error('loadOrRefreshWorkspace: Failed with error: $err');
           state = WorkspaceSetupState(
             status: WorkspaceSetupStatus.loadingWorkspaceError,
             error: err.toString(),
             errorRetryStatus: WorkspaceSetupStatus.loadingWorkspace,
+          );
+        });
+  }
+
+  Future<void> createWorkspace({required WorkspaceType type}) async {
+    _log.debug('createWorkspace: Creating workspace of type $type');
+    final activeUserId = ref.read(activeUserIdOrThrowSyncProvider);
+    final request = CreateWorkspaceRequest(type: type, userId: activeUserId);
+    await ref.read(requestHandlerProvider.notifier).submit(
+        request: request,
+        onSuccess: (_) {
+          _log.debug('createWorkspace: Success');
+          state = const WorkspaceSetupState(
+            status: WorkspaceSetupStatus.workspaceReady,
+            error: null,
+            errorRetryStatus: null,
+          );
+        },
+        onError: (err) {
+          _log.error('createWorkspace: Failed with error: $err');
+          state = WorkspaceSetupState(
+            status: WorkspaceSetupStatus.creatingWorkspaceError,
+            error: err.toString(),
+            errorRetryStatus: WorkspaceSetupStatus.createWorkspace,
           );
         });
   }
@@ -202,13 +246,35 @@ class WorkspaceImportRequest extends HandledRequest<int> {
 
   @override
   Future<int> request({required PocketBase pb, required Ref ref}) async {
-    _log.debug('Clearing previous subscribe attempts');
+    _log.debug('request: Importing workspace records');
 
     final records = await pb.collection(collectionWorkspace).getFullList();
 
-    _log.debug('Importing ${records.length} workspace records');
+    _log.debug('request: Importing ${records.length} workspace records');
     await ref.read(workspaceImporterProvider.notifier).importAll(records);
 
     return records.length;
+  }
+}
+
+class CreateWorkspaceRequest extends HandledRequest<void> {
+  final Logger _log = Logger(context: 'CreateWorkspaceRequest');
+
+  final WorkspaceType type;
+  final String userId;
+
+  CreateWorkspaceRequest({required this.type, required this.userId});
+
+  @override
+  Future<void> request({required PocketBase pb, required Ref ref}) async {
+    _log.debug('request: Creating workspace');
+    final body =
+        Workspace.createRequestBodyWithoutId(type: type, userId: userId);
+    final response =
+        await pb.collection(collectionWorkspace).create(body: body);
+    _log.debug('request: Created workspace ${response.id}');
+
+    // Import the newly created workspace
+    await ref.read(workspaceImporterProvider.notifier).import(response);
   }
 }
