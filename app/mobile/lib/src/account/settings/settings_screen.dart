@@ -1,4 +1,5 @@
 import 'package:drift_db_viewer/drift_db_viewer.dart';
+import 'package:exnota/src/block/screen/setup_workspace_screen.dart';
 import 'package:exnota/src/context/app/local_settings.dart';
 import 'package:exnota/src/context/environment/environment.dart';
 import 'package:exnota/src/context/user/user_context.dart';
@@ -54,6 +55,14 @@ class SettingsScreen extends ConsumerWidget {
               SettingsTile(
                 title: const Text('Configure workspace'),
                 leading: const Icon(Icons.source),
+                onPressed: (BuildContext context) {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const SetupWorkspaceScreen()));
+                },
+              ),
+              SettingsTile(
+                title: const Text('Configure integration'),
+                leading: const Icon(Icons.import_export),
                 onPressed: (BuildContext context) {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) => const SetupIntegrationScreen()));
