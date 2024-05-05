@@ -108,6 +108,19 @@ class RequestHandler extends _$RequestHandler {
       _log.error('(${request.runtimeType}) Other error processing request: $e');
       _log.debug('(${request.runtimeType}) Calling onError');
       onError?.call(e);
+    } on TypeError catch (e) {
+      // This path isn't expected for request errors, as PocketBase wraps
+      // exceptions. It will likely be issues in this codebase.
+      _log.error('(${request.runtimeType}) Type error processing request: $e');
+      _log.debug('(${request.runtimeType}) Calling onError');
+      onError?.call(e);
+    } catch (e) {
+      // This path isn't expected for request errors, as PocketBase wraps
+      // exceptions. It will likely be issues in this codebase.
+      _log.error(
+          '(${request.runtimeType}) Unexpected error processing request: $e');
+      _log.debug('(${request.runtimeType}) Calling onError');
+      onError?.call(e);
     }
   }
 }

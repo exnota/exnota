@@ -53,19 +53,16 @@ class Workspace with _$Workspace {
       userId: model.data['user'],
       created: DateTime.tryParse(model.created),
       updated: DateTime.tryParse(model.updated),
-      archived: DateTime.tryParse(model.data['archived']),
+      // TODO: archived not currently in model
+      archived: DateTime.tryParse(model.data['archived'] ?? ''),
     );
   }
 
-  Map<String, dynamic> toCreateRequestBody() {
-    Map<String, dynamic> body = {
-      'id': id,
-    };
-
-    if (name != null) {
-      body['name'] = name;
-    }
-
+  static Map<String, dynamic> createRequestBodyWithoutId({
+    required WorkspaceType type,
+    required String userId,
+  }) {
+    Map<String, dynamic> body = {};
     switch (type) {
       case WorkspaceType.database:
         body['type'] = 'database';
@@ -77,13 +74,7 @@ class Workspace with _$Workspace {
         throw Exception('Unknown workspace type');
     }
 
-    body['integration'] = integrationId;
-
-    // Ignore external field. It won't be initialized locally.
     body['user'] = userId;
-    if (archived != null) {
-      body['archived'] = archived!.toIso8601String();
-    }
 
     return body;
   }
