@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:exnota/src/block/repo/drift/workspace_table.dart';
 import 'package:exnota/src/context/device/local_file_path_service.dart';
 import 'package:exnota/src/lib/data/secure/secure_storage.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_table.dart';
@@ -44,6 +45,7 @@ AppDatabase initDatabase({required LocalPathGenerator files}) {
   SyncCommandTable,
   UserAuthTable,
   UserTable,
+  WorkspaceTable,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase({required String path}) : super(_openConnection(path: path));
