@@ -99,6 +99,7 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 		return nil, fmt.Errorf("Destination not found")
 	}
 
+	// #156: TODO: Handle block jobs when workspace archived
 	// Get workspace for destination
 	workspaceFetcher := block_data.NewWorkspaceFetcher(j.app, j.app.Dao())
 	workspace, err := workspaceFetcher.FetchById(destination.Workspace())
