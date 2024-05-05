@@ -3,6 +3,7 @@ import 'package:exnota/src/block/service/workspace_lister.dart';
 import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/context/user/user_context.dart';
+import 'package:exnota/src/integration/screen/setup_integration_screen.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,16 +50,22 @@ class _SetupWorkspaceScreenState extends ConsumerState<SetupWorkspaceScreen> {
     // On status change, trigger the appropriate action
     ref.listen(setupWorkspaceScreenControllerProvider, (prevState, nextState) {
       // Flows:
-      // - Load -> Update locally
-      // - Load -> Create remotely -> Create locally
+      // - Load -> (found) -> Update locally
+      // - Load -> (not found) -> Create remotely and locally
       switch (nextState.status) {
         case WorkspaceSetupStatus.loadingWorkspace:
           ref
               .read(setupWorkspaceScreenControllerProvider.notifier)
               .loadOrRefreshWorkspace();
           break;
+        case WorkspaceSetupStatus.workspaceReady:
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const SetupIntegrationScreen(),
+            ),
+          );
         default:
-        // TODO:
+        // Do nothing
       }
     });
 
@@ -182,9 +189,6 @@ class SetupWorkspaceScreenController extends _$SetupWorkspaceScreenController {
   // Fetches workspace from backend and saves to this provider's state
   Future<void> loadOrRefreshWorkspace() async {
     _log.debug('loadOrRefreshWorkspace: Loading workspace');
-    // TODO:
-    // - Send request for existing workspace
-    // - If it exists, import
     final request = WorkspaceImportRequest();
     await ref.read(requestHandlerProvider.notifier).submit(
         request: request,
