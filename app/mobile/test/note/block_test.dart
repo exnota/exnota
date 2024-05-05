@@ -1,4 +1,4 @@
-import 'package:exnota/src/note/block.dart';
+import 'package:exnota/src/block/block.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pocketbase/pocketbase.dart';
 

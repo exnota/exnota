@@ -2,7 +2,7 @@ import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:exnota/src/account/user/screen/login_screen.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/screen/block_list_screen.dart';
+import 'package:exnota/src/block/screen/block_list_screen.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';

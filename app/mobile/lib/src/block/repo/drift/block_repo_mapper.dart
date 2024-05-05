@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:exnota/src/lib/data/drift/database.dart';
-import 'package:exnota/src/note/block.dart';
+import 'package:exnota/src/block/block.dart';
 
 class BlockRepoMapper {
   static Block fromRepo(BlockTableData repo) {

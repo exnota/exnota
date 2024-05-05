@@ -106,6 +106,9 @@ class Block with _$Block {
       body['archived'] = archived!.toIso8601String();
     }
 
+    // // TODO: Remove, testing only
+    // body['destination'] = '123qweasdzxcvb2';
+
     return body;
   }
 }

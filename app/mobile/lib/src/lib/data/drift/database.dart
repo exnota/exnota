@@ -5,7 +5,7 @@ import 'package:exnota/src/lib/data/secure/secure_storage.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_table.dart';
 import 'package:exnota/src/lib/file/repo/drift/local_file_table.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/note/repo/drift/block_table.dart';
+import 'package:exnota/src/block/repo/drift/block_table.dart';
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 import 'dart:io';
 
