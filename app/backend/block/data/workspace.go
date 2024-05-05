@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -20,6 +21,7 @@ const (
 	WorkspaceFieldExternal    = "external"
 	WorkspaceFieldIcon        = "icon"
 	WorkspaceFieldUser        = "user"
+	WorkspaceFieldArchived    = "archived"
 )
 
 type WorkspaceType string
@@ -35,9 +37,11 @@ type Workspace interface {
 	External() (*WorkspaceExternal, error)
 	Type() WorkspaceType
 	User() string
+	Archived() time.Time
 
 	SetExternalStatus(status WorkspaceExternalStatus) error
 
+	Record() *models.Record
 	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
@@ -86,7 +90,9 @@ func (w *workspace) External() (*WorkspaceExternal, error) {
 	if err != nil {
 		return nil, err
 	}
-	if val == nil {
+	// The Admin UI sends "null". To make comparisons easier, treat this the
+	// same as nil.
+	if val == nil || val == "null" {
 		return nil, nil
 	}
 
@@ -105,6 +111,10 @@ func (w *workspace) Type() WorkspaceType {
 
 func (w *workspace) User() string {
 	return w.record.GetString(WorkspaceFieldUser)
+}
+
+func (i *workspace) Archived() time.Time {
+	return i.record.GetDateTime(WorkspaceFieldArchived).Time()
 }
 
 func (w *workspace) SetExternalStatus(status WorkspaceExternalStatus) error {
@@ -132,6 +142,10 @@ func (w *workspace) SetExternalStatus(status WorkspaceExternalStatus) error {
 	}
 	w.record.Set(WorkspaceFieldExternal, string(configBytes))
 	return nil
+}
+
+func (w *workspace) Record() *models.Record {
+	return w.record
 }
 
 func (w *workspace) ValidateAndSubmit(txDao *daos.Dao) error {

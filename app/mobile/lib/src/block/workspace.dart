@@ -53,8 +53,7 @@ class Workspace with _$Workspace {
       userId: model.data['user'],
       created: DateTime.tryParse(model.created),
       updated: DateTime.tryParse(model.updated),
-      // TODO: archived not currently in model
-      archived: DateTime.tryParse(model.data['archived'] ?? ''),
+      archived: DateTime.tryParse(model.data['archived']),
     );
   }
 

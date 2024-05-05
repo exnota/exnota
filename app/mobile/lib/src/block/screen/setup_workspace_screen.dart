@@ -1,4 +1,5 @@
 import 'package:exnota/src/block/repo/drift/workspace_importer.dart';
+import 'package:exnota/src/block/service/workspace_lister.dart';
 import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/context/user/user_context.dart';
@@ -187,9 +188,12 @@ class SetupWorkspaceScreenController extends _$SetupWorkspaceScreenController {
     final request = WorkspaceImportRequest();
     await ref.read(requestHandlerProvider.notifier).submit(
         request: request,
-        onSuccess: (numWorkspaces) {
+        onSuccess: (_) async {
           _log.debug('loadOrRefreshWorkspace: Success');
-          if (numWorkspaces == 0) {
+
+          // Use the workspace lister because it filters out archived workspaces.
+          final workspaces = await ref.read(workspaceListerProvider.future);
+          if (workspaces.isEmpty) {
             _log.debug('loadOrRefreshWorkspace: No workspace found');
             state = const WorkspaceSetupState(
               status: WorkspaceSetupStatus.createWorkspace,
@@ -241,19 +245,21 @@ class SetupWorkspaceScreenController extends _$SetupWorkspaceScreenController {
   }
 }
 
-class WorkspaceImportRequest extends HandledRequest<int> {
+class WorkspaceImportRequest extends HandledRequest<void> {
   final Logger _log = Logger(context: 'WorkspaceImportRequest');
 
   @override
-  Future<int> request({required PocketBase pb, required Ref ref}) async {
+  Future<void> request({required PocketBase pb, required Ref ref}) async {
     _log.debug('request: Importing workspace records');
 
+    // This deliberately includes archived workspaces so they can be updated in
+    // the local databse.
     final records = await pb.collection(collectionWorkspace).getFullList();
 
     _log.debug('request: Importing ${records.length} workspace records');
     await ref.read(workspaceImporterProvider.notifier).importAll(records);
 
-    return records.length;
+    return;
   }
 }
 

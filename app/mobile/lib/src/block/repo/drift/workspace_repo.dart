@@ -18,6 +18,12 @@ class WorkspaceRepo {
 
   WorkspaceRepo(this.db);
 
+  Future<List<Workspace>> listUnarchived() async {
+    final query = db.select(db.workspaceTable)
+      ..where((tbl) => tbl.archived.isNull());
+    return await query.map(WorkspaceRepoMapper.fromRepo).get();
+  }
+
   Future<void> upsert(Workspace workspace) async {
     _log.debug('Upsert: Starting for workspace ${workspace.id}');
     await db.transaction(() async {

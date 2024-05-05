@@ -9,6 +9,7 @@ import (
 type WorkspaceFetcher interface {
 	FetchById(id string) (Workspace, error)
 	FetchByIntegrationId(integrationId string) ([]Workspace, error)
+	ListUnarchived(userId string) ([]Workspace, error)
 }
 
 type workspaceFetcher struct {
@@ -49,6 +50,46 @@ func (f *workspaceFetcher) FetchByIntegrationId(integrationId string) ([]Workspa
 		0,
 		0,
 		integFilter.Params,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaces := make([]Workspace, 0, len(records))
+	for _, record := range records {
+		workspace, err := LoadWorkspace(record, f.app)
+		if err != nil {
+			return nil, err
+		}
+		workspaces = append(workspaces, workspace)
+	}
+	return workspaces, nil
+}
+
+func (f *workspaceFetcher) ListUnarchived(userId string) ([]Workspace, error) {
+	archivedFilter, err := filter.CreateAndFilter(
+		filter.Field{
+			Name:        WorkspaceFieldArchived,
+			Op:          filter.OpEquals,
+			ValuePreset: filter.ValuePresetNull,
+		},
+		filter.Field{
+			Name:  WorkspaceFieldUser,
+			Op:    filter.OpEquals,
+			Value: userId,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	records, err := f.txDao.FindRecordsByFilter(
+		CollectionWorkspace,
+		archivedFilter.Filter,
+		"",
+		0,
+		0,
+		archivedFilter.Params,
 	)
 	if err != nil {
 		return nil, err
