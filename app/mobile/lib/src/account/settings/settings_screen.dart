@@ -1,8 +1,8 @@
 import 'package:drift_db_viewer/drift_db_viewer.dart';
-import 'package:exnota/src/account/user/screen/setup_integration_screen.dart';
 import 'package:exnota/src/context/app/local_settings.dart';
 import 'package:exnota/src/context/environment/environment.dart';
 import 'package:exnota/src/context/user/user_context.dart';
+import 'package:exnota/src/integration/screen/setup_integration_screen.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
