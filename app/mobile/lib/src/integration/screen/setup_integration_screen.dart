@@ -86,12 +86,12 @@ class _SetupIntegrationScreenState
         case IntegrationSetupStatus.runningNotionAuthCodeFlow:
           ref
               .read(setupIntegrationScreenControllerProvider.notifier)
-              .startNotionAuthFlow();
+              .runNotionAuthCodeFlow();
           break;
         case IntegrationSetupStatus.exchangingNotionCodeForToken:
           ref
               .read(setupIntegrationScreenControllerProvider.notifier)
-              .handleNotionAuthResponse();
+              .exchangeNotionCodeForToken();
         case IntegrationSetupStatus.confirmedNotionIntegration:
           // TODO: Redirect to other screen
           break;
@@ -303,7 +303,7 @@ class SetupIntegrationScreenController
     );
   }
 
-  Future<void> handleNotionAuthResponse() async {
+  Future<void> exchangeNotionCodeForToken() async {
     final code = ref.read(notionAuthProvider).code;
 
     // If there's an integration, update it
@@ -427,7 +427,7 @@ class SetupIntegrationScreenController
     );
   }
 
-  Future<void> startNotionAuthFlow() async {
+  Future<void> runNotionAuthCodeFlow() async {
     final authUrlResponse =
         await ref.read(notionAuthServiceProvider.notifier).getAuthUrl();
 
