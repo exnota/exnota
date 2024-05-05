@@ -271,6 +271,18 @@ class SetupIntegrationScreenController
       return;
     }
 
+    final notionAuth = ref.read(notionAuthProvider);
+    if (notionAuth.code != null) {
+      _log.debug('loadIntegration: Code found');
+      state = IntegrationSetupState(
+        status: IntegrationSetupStatus.handlingNotionAuthResponse,
+        integration: result.integration,
+        error: null,
+        errorRetryStatus: null,
+      );
+      return;
+    }
+
     if (result.integration == null) {
       _log.debug('loadIntegration: No integration found');
       state = const IntegrationSetupState(
