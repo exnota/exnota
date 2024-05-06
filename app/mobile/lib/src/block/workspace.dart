@@ -8,6 +8,7 @@ part 'workspace.freezed.dart';
 part 'workspace.g.dart';
 
 const collectionWorkspace = 'workspace';
+const workspaceFieldIntegration = 'integration';
 
 @freezed
 class Workspace with _$Workspace {

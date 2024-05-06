@@ -127,7 +127,7 @@ class AuthUrlRequest extends HandledRequest<String> {
 }
 
 class CreateNotionIntegrationRequest extends HandledRequest<Integration> {
-  final Logger _log = Logger(context: 'CreateNotionIntegration');
+  final Logger _log = Logger(context: 'CreateNotionIntegrationRequest');
 
   late final String code;
 

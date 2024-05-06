@@ -13,8 +13,6 @@ part 'notion_listener.freezed.dart';
 @freezed
 class NotionAuthState with _$NotionAuthState {
   const factory NotionAuthState({
-    required bool waitingForCode,
-    required String? integrationId,
     required String? code,
   }) = _NotionAuthState;
 }
@@ -26,8 +24,6 @@ class NotionAuth extends _$NotionAuth {
   @override
   NotionAuthState build() {
     return const NotionAuthState(
-      waitingForCode: false,
-      integrationId: null,
       code: null,
     );
   }
@@ -35,6 +31,11 @@ class NotionAuth extends _$NotionAuth {
   void saveCode({required String code}) {
     _log.debug('Saving code: $code');
     state = state.copyWith(code: code);
+  }
+
+  void clearCode() {
+    _log.debug('Clearing code');
+    state = state.copyWith(code: null);
   }
 }
 
