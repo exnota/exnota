@@ -1,3 +1,5 @@
+import 'package:exnota/src/common/basic_response.dart';
+import 'package:exnota/src/common/block/workspace_service.dart';
 import 'package:exnota/src/integration/integration.dart';
 import 'package:exnota/src/integration/service/integration_fetcher.dart';
 import 'package:exnota/src/integration/service/notion_auth_service.dart';
@@ -92,6 +94,10 @@ class _SetupIntegrationScreenState
           ref
               .read(setupIntegrationScreenControllerProvider.notifier)
               .exchangeNotionCodeForToken();
+        case IntegrationSetupStatus.connectingToWorkspace:
+          ref
+              .read(setupIntegrationScreenControllerProvider.notifier)
+              .connectToWorkspace();
         case IntegrationSetupStatus.confirmedNotionIntegration:
           // TODO: Redirect to other screen
           break;
@@ -105,7 +111,7 @@ class _SetupIntegrationScreenState
         child: Container(
           child: switch (setupState.status) {
             IntegrationSetupStatus.exchangingNotionCodeForToken =>
-              const Text('Handling notion auth response'),
+              const Text('Exchanging code for token'),
             IntegrationSetupStatus.loadingIntegration =>
               const Text('Loading integration'),
             IntegrationSetupStatus.verifyingIntegration =>
@@ -131,7 +137,7 @@ class _SetupIntegrationScreenState
             IntegrationSetupStatus.updateNotionIntegration => Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Notion disconnected'),
+                  const Text('Update notion integration'),
                   ElevatedButton(
                     onPressed: () {
                       ref
@@ -148,6 +154,8 @@ class _SetupIntegrationScreenState
               ),
             IntegrationSetupStatus.runningNotionAuthCodeFlow =>
               const Text('Running notion auth flow'),
+            IntegrationSetupStatus.connectingToWorkspace =>
+              const Text('Connecting to workspace'),
             IntegrationSetupStatus.confirmedNotionIntegration =>
               const Text('Confirmed Notion integration'),
             IntegrationSetupStatus.loadingIntegrationError => SetupErrorMessage(
@@ -165,6 +173,11 @@ class _SetupIntegrationScreenState
                 errorRetryStatus: setupState.errorRetryStatus,
               ),
             IntegrationSetupStatus.exchangingNotionCodeForTokenError =>
+              SetupErrorMessage(
+                error: setupState.error!,
+                errorRetryStatus: setupState.errorRetryStatus,
+              ),
+            IntegrationSetupStatus.connectingToWorkspaceError =>
               SetupErrorMessage(
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
@@ -192,6 +205,12 @@ class SetupErrorMessage extends ConsumerWidget {
         if (errorRetryStatus != null)
           ElevatedButton(
             onPressed: () {
+              // Clear token. This is a bit of a hack to ensure the flow truly
+              // starts from the beginning. It shouldn't go in the loading
+              // integration method because we may load this screen with a valid
+              // code ready to go.
+              ref.read(notionAuthProvider.notifier).clearCode();
+
               ref
                   .read(setupIntegrationScreenControllerProvider.notifier)
                   .transitionStatus(newStatus: errorRetryStatus!);
@@ -214,6 +233,8 @@ enum IntegrationSetupStatus {
   runningNotionAuthCodeFlowError,
   exchangingNotionCodeForToken, // Create/update integration from auth response
   exchangingNotionCodeForTokenError,
+  connectingToWorkspace, // Add the integration to the workspace
+  connectingToWorkspaceError,
   confirmedNotionIntegration, // Integration successfully created/updated
 }
 
@@ -308,9 +329,11 @@ class SetupIntegrationScreenController
 
     // If there's an integration, update it
     if (state.integration != null) {
-      _log.debug('handleNotionCode: Updating integration');
+      _log.debug('exchangeNotionCodeForToken: Updating integration');
       switch (state.integration!.type) {
         case IntegrationType.notion:
+          // TODO: If code is invalid, backend should return a code for that and
+          // we should clear it from the provider.
           final updateResult = await ref
               .read(notionAuthServiceProvider.notifier)
               .updateIntegration(
@@ -319,7 +342,7 @@ class SetupIntegrationScreenController
               );
           if (updateResult.error != null) {
             _log.error(
-                'handleNotionCode: Error creating integration: ${updateResult.error}');
+                'exchangeNotionCodeForToken: Error creating integration: ${updateResult.error}');
             state = IntegrationSetupState(
               status: IntegrationSetupStatus.exchangingNotionCodeForTokenError,
               integration: state.integration,
@@ -329,17 +352,23 @@ class SetupIntegrationScreenController
             return;
           }
 
+          ref.read(notionAuthProvider.notifier).clearCode();
+
           // TODO: Move on to next step?
-          _log.debug('handleNotionCode: Integration updated');
+          _log.debug('exchangeNotionCodeForToken: Integration updated');
+          // Transition to connecting to workspace in case there was an issue
+          // and an error occurred between creating the integration and
+          // connecting it to the workspace.
           state = IntegrationSetupState(
-            status: IntegrationSetupStatus.confirmedNotionIntegration,
+            status: IntegrationSetupStatus.connectingToWorkspace,
             integration: state.integration,
             error: null,
             errorRetryStatus: null,
           );
           break;
         default:
-          _log.error('handleNotionCode: Unsupported integration type');
+          _log.error(
+              'exchangeNotionCodeForToken: Unsupported integration type');
           state = IntegrationSetupState(
             status: IntegrationSetupStatus.exchangingNotionCodeForTokenError,
             integration: state.integration,
@@ -351,14 +380,32 @@ class SetupIntegrationScreenController
       return;
     }
 
-    // If there's no integration, create it
-    _log.debug('handleNotionCode: Creating integration');
+    // If there's no integration, create it.
+    //
+    // Get workspace for creating integration
+    _log.debug('exchangeNotionCodeForToken: Creating integration');
+    final workspace = await ref.read(activeWorkspaceProvider.future);
+    if (workspace == null) {
+      _log.error('exchangeNotionCodeForToken: No workspace found');
+      state = const IntegrationSetupState(
+        status: IntegrationSetupStatus.exchangingNotionCodeForTokenError,
+        integration: null,
+        error: 'No workspace found',
+        errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
+      );
+      return;
+    }
+
+    // Create integration
+    //
+    // TODO: If code is invalid, backend should return a code for that and
+    // we should clear it from the provider.
     final createResult = await ref
         .read(notionAuthServiceProvider.notifier)
         .createIntegration(code: code!);
     if (createResult.error != null) {
       _log.error(
-          'handleNotionCode: Error creating integration: ${createResult.error}');
+          'exchangeNotionCodeForToken: Error creating integration: ${createResult.error}');
       state = IntegrationSetupState(
         status: IntegrationSetupStatus.exchangingNotionCodeForTokenError,
         integration: null,
@@ -368,9 +415,11 @@ class SetupIntegrationScreenController
       return;
     }
 
-    _log.debug('handleNotionCode: Integration created');
+    ref.read(notionAuthProvider.notifier).clearCode();
+
+    _log.debug('exchangeNotionCodeForToken: Integration created');
     state = IntegrationSetupState(
-      status: IntegrationSetupStatus.confirmedNotionIntegration,
+      status: IntegrationSetupStatus.connectingToWorkspace,
       integration: createResult.result,
       error: null,
       errorRetryStatus: null,
@@ -420,7 +469,7 @@ class SetupIntegrationScreenController
 
     _log.debug('verifyIntegration: Integration verified');
     state = IntegrationSetupState(
-      status: IntegrationSetupStatus.confirmedNotionIntegration,
+      status: IntegrationSetupStatus.connectingToWorkspace,
       integration: integration,
       error: null,
       errorRetryStatus: null,
@@ -460,6 +509,70 @@ class SetupIntegrationScreenController
         error: 'Error opening browser',
         errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
       );
+    }
+  }
+
+  Future<void> connectToWorkspace() async {
+    if (state.integration == null) {
+      _log.error('connectToWorkspace: No integration found');
+      state = const IntegrationSetupState(
+        status: IntegrationSetupStatus.connectingToWorkspaceError,
+        integration: null,
+        error: 'No integration found',
+        errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
+      );
+      return;
+    }
+
+    final integrationId = state.integration!.id;
+    final workspace = await ref.read(activeWorkspaceProvider.future);
+    if (workspace == null) {
+      _log.error('connectToWorkspace: No workspace found');
+      state = IntegrationSetupState(
+        status: IntegrationSetupStatus.connectingToWorkspaceError,
+        integration: state.integration,
+        error: 'No workspace found',
+        errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
+      );
+      return;
+    }
+
+    if (workspace.integrationId == integrationId) {
+      _log.debug('connectToWorkspace: Already connected to workspace');
+      state = IntegrationSetupState(
+        status: IntegrationSetupStatus.confirmedNotionIntegration,
+        integration: state.integration,
+        error: null,
+        errorRetryStatus: null,
+      );
+      return;
+    }
+
+    final response =
+        await ref.read(workspaceServiceProvider.notifier).setIntegration(
+              workspaceId: workspace.id,
+              integrationId: integrationId,
+            );
+
+    switch (response) {
+      case SuccessResponse():
+        _log.debug('connectToWorkspace: Integration connected');
+        state = IntegrationSetupState(
+          status: IntegrationSetupStatus.confirmedNotionIntegration,
+          integration: state.integration,
+          error: null,
+          errorRetryStatus: null,
+        );
+        break;
+      case ErrorResponse(:final error):
+        _log.error('connectToWorkspace: Error connecting integration');
+        state = IntegrationSetupState(
+          status: IntegrationSetupStatus.connectingToWorkspaceError,
+          integration: state.integration,
+          error: error,
+          errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
+        );
+        break;
     }
   }
 }

@@ -66,8 +66,7 @@ func (r *workspaceDataRules) immutableRules() {
 		if existing.Type() != updated.Type() {
 			return errors.New("Cannot change workspace type")
 		}
-		// TODO: Allow adding an integration, but not removing/changing.
-		if existing.Integration() != updated.Integration() {
+		if existing.Integration() != updated.Integration() && existing.Integration() != "" {
 			return errors.New("Cannot change workspace integration")
 		}
 		if existing.User() != updated.User() {

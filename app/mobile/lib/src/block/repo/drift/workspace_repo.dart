@@ -18,9 +18,10 @@ class WorkspaceRepo {
 
   WorkspaceRepo(this.db);
 
-  Future<List<Workspace>> listUnarchived() async {
+  Future<List<Workspace>> listUnarchived({required String userId}) async {
     final query = db.select(db.workspaceTable)
-      ..where((tbl) => tbl.archived.isNull());
+      ..where((tbl) => tbl.archived.isNull())
+      ..where((tbl) => tbl.user.equals(userId));
     return await query.map(WorkspaceRepoMapper.fromRepo).get();
   }
 
