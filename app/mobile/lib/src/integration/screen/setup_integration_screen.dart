@@ -24,24 +24,15 @@ class SetupIntegrationScreen extends ConsumerStatefulWidget {
 
 class _SetupIntegrationScreenState
     extends ConsumerState<SetupIntegrationScreen> {
+  final _log = Logger(context: 'SetupIntegrationScreen');
+
   @override
   void initState() {
     super.initState();
 
-    // TODO: If there's a code, skip to validation/processing step
-    // TODO: If there's no workspace ready, go back to workspace screen
-
-    // Set state for consistency with above, even though at time of writing this
-    // is the default state
-    //
     // Need to wrap in Future to avoid provider throwing an error that its
     // state was modified during the widget's lifecycle.
     Future(() {
-      ref
-          .read(setupIntegrationScreenControllerProvider.notifier)
-          .transitionStatus(
-            newStatus: IntegrationSetupStatus.loadingIntegration,
-          );
       ref
           .read(setupIntegrationScreenControllerProvider.notifier)
           .loadIntegration();
@@ -56,7 +47,7 @@ class _SetupIntegrationScreenState
     ref.listen(notionAuthProvider, (prevAuth, nextAuth) async {
       final prevCode = prevAuth?.code ?? '';
       final nextCode = nextAuth.code ?? '';
-      if (prevCode != nextCode) {
+      if (prevCode != nextCode && nextCode.isNotEmpty) {
         ref
             .read(setupIntegrationScreenControllerProvider.notifier)
             .transitionStatus(
