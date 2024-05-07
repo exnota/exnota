@@ -20,8 +20,25 @@
     }
     ```
 
+### Possible UI flows
+
+Authorizing Exnota to use Notion should succeed in all these cases:
+
+a. Auth completed with Exnota still on setup screen.
+    1. notion.so auth page opened.
+    2. Complete auth.
+b. Auth complete when Exnota no longer on setup screen.
+    1. notion.so auth page opened.
+    2. Navigate back to Exnota.
+    3. Change screen.
+    4. Go back to notion.so auth page and complete.
+c. Auth completed when Exnota is closed.
+    1. notion.so auth page opened.
+    2. Close Exnota.
+    3. Go back to notion.so auth page and complete.
+
 ## Removing Notion auth
 
-1. In Notion: Settings & Members > My Connections > (three dots) > Disconnect Account 
+1. In Notion: Settings & Members > My Connections > (three dots) > Disconnect Account
 2. Call verify endpoint with integration ID: GET {{baseUrl}}/exnota/integration/verify-access
-3. 
+3.
