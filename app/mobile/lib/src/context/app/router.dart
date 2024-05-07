@@ -1,6 +1,7 @@
 import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:exnota/src/account/user/screen/login_screen.dart';
 import 'package:exnota/src/context/user/user_context.dart';
+import 'package:exnota/src/integration/screen/setup_integration_screen.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/block/screen/block_list_screen.dart';
 import 'package:flutter/widgets.dart';
@@ -12,6 +13,42 @@ part 'router.g.dart';
 // ----------------------------------------------------------------------------
 // Public providers, where state is assumed loaded.
 // ----------------------------------------------------------------------------
+
+/// Allows navigating to a screen when the router may not have been initialized
+/// yet, but either setting the initial value or pushing it if the router
+/// exists.
+///
+/// Bug: You can't press the back button if the screen was set as the initial
+/// screen. GoRouter apparently doesn't support stacking multiple screens which
+/// would be a solution (i.e. push Notes then the initialized screen so the back
+/// button goes back to Notes).
+@Riverpod(keepAlive: true)
+class InitializeOrPushscreen extends _$InitializeOrPushscreen {
+  final Logger _log = Logger(context: 'InitializeOrPushscreen');
+  Screen? _initial;
+
+  @override
+  void build() {
+    // no-op
+  }
+
+  void initOrPush(Screen screen) {
+    if (ref.exists(routerProvider)) {
+      _log.debug('Router exists, pushing screen: $screen');
+      ref.read(routerProvider.notifier).push(screen);
+    } else {
+      _log.debug('Router does not exist, initializing with screen: $screen');
+      _initial = screen;
+      // ref.read(initialScreenProvider.notifier).set(screen);
+    }
+  }
+
+  Screen? popInitialScreen() {
+    final initial = _initial;
+    _initial = null;
+    return initial;
+  }
+}
 
 /// GoRouter instance.
 ///
@@ -32,6 +69,11 @@ class Router extends _$Router {
   @override
   GoRouter build() {
     _log.debug('Building');
+    // This isn't intended to be reactive. It's just a one-time setup.
+    final initialScreen =
+        ref.read(initializeOrPushscreenProvider.notifier).popInitialScreen() ??
+            Screen.notes;
+
     final initialHasActiveUser = ref.read(hasActiveUserSyncProvider);
     final loginStatus = RouterLoginStatus(active: initialHasActiveUser);
     ref.listen(hasActiveUserSyncProvider, (bool? oldActive, bool newActive) {
@@ -40,7 +82,7 @@ class Router extends _$Router {
     });
 
     final router = GoRouter(
-        initialLocation: _routeNotes,
+        initialLocation: to(initialScreen),
         navigatorKey: navigatorKey,
         routes: [
           GoRoute(
@@ -50,6 +92,10 @@ class Router extends _$Router {
           GoRoute(
             path: _routeSettings,
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: _routeSettingsSetupIntegration,
+            builder: (context, state) => const SetupIntegrationScreen(),
           ),
           GoRoute(
             path: _routeLogin,
@@ -102,6 +148,11 @@ class Router extends _$Router {
     _log.debug('Pushing screen: $screen');
     state.push(to(screen));
   }
+
+  void pushReplacement(Screen screen) {
+    _log.debug('Pushing replacement screen: $screen');
+    state.pushReplacement(to(screen));
+  }
 }
 
 /// Login status notifier to pass to GoRouter instance.
@@ -127,11 +178,13 @@ final navigatorKey = GlobalKey<NavigatorState>();
 enum Screen {
   notes,
   settings,
+  settingsSetupIntegration,
   login,
 }
 
 const _routeNotes = '/notes';
 const _routeSettings = '/settings';
+const _routeSettingsSetupIntegration = '/settings/setup/integration';
 const _routeLogin = '/login';
 
 /// BuildContext helper, for getting a route string.
@@ -143,6 +196,8 @@ String to(Screen route) {
       return _routeNotes;
     case Screen.settings:
       return _routeSettings;
+    case Screen.settingsSetupIntegration:
+      return _routeSettingsSetupIntegration;
     case Screen.login:
       return _routeLogin;
   }
