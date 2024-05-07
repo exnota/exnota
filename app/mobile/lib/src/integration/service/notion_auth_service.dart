@@ -80,7 +80,7 @@ class NotionAuthService extends _$NotionAuthService {
       integrationId: integrationId,
       code: code,
     );
-    await ref.read(requestHandlerProvider.notifier).submit(
+    unawaited(ref.read(requestHandlerProvider.notifier).submit(
           request: request,
           onSuccess: (success) {
             if (!success) {
@@ -105,7 +105,7 @@ class NotionAuthService extends _$NotionAuthService {
               BasicResponse(result: false, error: error.toString()),
             );
           },
-        );
+        ));
     return completor.future;
   }
 }
