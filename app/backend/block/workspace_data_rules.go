@@ -1,4 +1,4 @@
-package data
+package block
 
 import (
 	"errors"
@@ -12,11 +12,12 @@ type WorkspaceDataRules interface {
 }
 
 type workspaceDataRules struct {
-	app core.App
+	app              core.App
+	workspaceFetcher WorkspaceFetcher
 }
 
-func NewWorkspaceDataRules(app core.App) WorkspaceDataRules {
-	return &workspaceDataRules{app}
+func NewWorkspaceDataRules(app core.App, workspaceFetcher WorkspaceFetcher) WorkspaceDataRules {
+	return &workspaceDataRules{app, workspaceFetcher}
 }
 
 func (r *workspaceDataRules) ApplyHooks() {
@@ -57,8 +58,7 @@ func (r *workspaceDataRules) immutableRules() {
 			return err
 		}
 
-		fetcher := NewWorkspaceFetcher(r.app, r.app.Dao())
-		existing, err := fetcher.FetchById(updated.Id())
+		existing, err := r.workspaceFetcher.FetchById(updated.Id())
 		if err != nil {
 			return err
 		}

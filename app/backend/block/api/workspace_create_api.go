@@ -1,7 +1,7 @@
 package api
 
 import (
-	"exnota.com/backend/block/data"
+	"exnota.com/backend/block"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -11,22 +11,26 @@ type WorkspaceCreateAPI interface {
 }
 
 type workspaceCreateAPI struct {
-	app core.App
+	app              core.App
+	workspaceFetcher block.WorkspaceFetcher
 }
 
-func NewWorkspaceCreateAPI(app core.App) WorkspaceCreateAPI {
-	return &workspaceCreateAPI{app}
+func NewWorkspaceCreateAPI(
+	app core.App,
+	workspaceFetcher block.WorkspaceFetcher,
+) WorkspaceCreateAPI {
+	return &workspaceCreateAPI{app, workspaceFetcher}
 }
 
 func (r *workspaceCreateAPI) ApplyHooks() {
-	r.app.OnRecordBeforeCreateRequest(data.CollectionWorkspace).
+	r.app.OnRecordBeforeCreateRequest(block.CollectionWorkspace).
 		Add(func(e *core.RecordCreateEvent) error {
-			newWorkspace, err := data.LoadWorkspace(e.Record, r.app)
+			newWorkspace, err := block.LoadWorkspace(e.Record, r.app)
 			if err != nil {
 				return err
 			}
 
-			if newWorkspace.Record().GetString(data.WorkspaceFieldExternal) != "" {
+			if newWorkspace.Record().GetString(block.WorkspaceFieldExternal) != "" {
 				return apis.NewBadRequestError("Cannot change external on workspace update", nil)
 			}
 
@@ -35,8 +39,7 @@ func (r *workspaceCreateAPI) ApplyHooks() {
 			}
 
 			// Only one non-archived workspace allowed for now
-			fetcher := data.NewWorkspaceFetcher(r.app, r.app.Dao())
-			workspaces, err := fetcher.ListUnarchived(newWorkspace.User())
+			workspaces, err := r.workspaceFetcher.ListUnarchived(newWorkspace.User())
 			if err != nil {
 				return err
 			}

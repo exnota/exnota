@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"reflect"
 
+	"exnota.com/backend/block"
 	block_data "exnota.com/backend/block/data"
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/service/notion"
@@ -18,13 +19,12 @@ type ExportJobRunner interface {
 }
 
 type exportJobRunnerConfig struct {
-	app core.App
+	app              core.App
+	workspaceFetcher block.WorkspaceFetcher
 }
 
-func NewExportJobRunner(app core.App) ExportJobRunner {
-	return &exportJobRunnerConfig{
-		app: app,
-	}
+func NewExportJobRunner(app core.App, workspaceFetcher block.WorkspaceFetcher) ExportJobRunner {
+	return &exportJobRunnerConfig{app, workspaceFetcher}
 }
 
 func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (data.Summary, error) {
@@ -101,8 +101,7 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 
 	// #156: TODO: Handle block jobs when workspace archived
 	// Get workspace for destination
-	workspaceFetcher := block_data.NewWorkspaceFetcher(j.app, j.app.Dao())
-	workspace, err := workspaceFetcher.FetchById(destination.Workspace())
+	workspace, err := j.workspaceFetcher.FetchById(destination.Workspace())
 	if err != nil {
 		slog.Error(
 			"Error fetching workspace by destination id",

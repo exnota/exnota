@@ -3,7 +3,7 @@ package api
 import (
 	"reflect"
 
-	"exnota.com/backend/block/data"
+	"exnota.com/backend/block"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -13,17 +13,21 @@ type WorkspaceUpdateAPI interface {
 }
 
 type workspaceUpdateAPI struct {
-	app core.App
+	app              core.App
+	workspaceFetcher block.WorkspaceFetcher
 }
 
-func NewWorkspaceUpdateAPI(app core.App) WorkspaceUpdateAPI {
-	return &workspaceUpdateAPI{app}
+func NewWorkspaceUpdateAPI(
+	app core.App,
+	workspaceFetcher block.WorkspaceFetcher,
+) WorkspaceUpdateAPI {
+	return &workspaceUpdateAPI{app, workspaceFetcher}
 }
 
 func (r *workspaceUpdateAPI) ApplyHooks() {
-	r.app.OnRecordBeforeUpdateRequest(data.CollectionWorkspace).
+	r.app.OnRecordBeforeUpdateRequest(block.CollectionWorkspace).
 		Add(func(e *core.RecordUpdateEvent) error {
-			updatedWorkspace, err := data.LoadWorkspace(e.Record, r.app)
+			updatedWorkspace, err := block.LoadWorkspace(e.Record, r.app)
 			if err != nil {
 				return err
 			}
@@ -32,8 +36,7 @@ func (r *workspaceUpdateAPI) ApplyHooks() {
 				return err
 			}
 
-			fetcher := data.NewWorkspaceFetcher(r.app, r.app.Dao())
-			existingWorkspace, err := fetcher.FetchById(updatedWorkspace.Id())
+			existingWorkspace, err := r.workspaceFetcher.FetchById(updatedWorkspace.Id())
 			if err != nil {
 				return err
 			}
@@ -53,8 +56,7 @@ func (r *workspaceUpdateAPI) ApplyHooks() {
 
 			// Only one non-archived workspace allowed for now
 			if !existingWorkspace.Archived().IsZero() && updatedWorkspace.Archived().IsZero() {
-				fetcher := data.NewWorkspaceFetcher(r.app, r.app.Dao())
-				workspaces, err := fetcher.ListUnarchived(updatedWorkspace.User())
+				workspaces, err := r.workspaceFetcher.ListUnarchived(updatedWorkspace.User())
 				if err != nil {
 					return err
 				}
