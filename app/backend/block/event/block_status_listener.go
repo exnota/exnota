@@ -1,6 +1,7 @@
 package event
 
 import (
+	"exnota.com/backend/block"
 	"exnota.com/backend/block/data"
 	notion_mapping_data "exnota.com/backend/integration/data"
 	block_job_data "exnota.com/backend/job/data"
@@ -151,13 +152,13 @@ func (l *blockStatusListener) updateExternalStatus(
 	// - If at least one error -> error
 	// - Else if at least one non-complete -> in-progress
 	// - Else -> complete
-	var exportStatus data.ExportStatus
+	var exportStatus block.ExportStatus
 	if hasError {
-		exportStatus = data.ExportStatusError
+		exportStatus = block.ExportStatusError
 	} else if nonCompleteCount > 0 {
-		exportStatus = data.ExportStatusInProgress
+		exportStatus = block.ExportStatusInProgress
 	} else {
-		exportStatus = data.ExportStatusComplete
+		exportStatus = block.ExportStatusComplete
 	}
 
 	// Save

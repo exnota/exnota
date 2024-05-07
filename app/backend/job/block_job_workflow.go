@@ -1,6 +1,7 @@
 package job
 
 import (
+	"exnota.com/backend/block"
 	block_data "exnota.com/backend/block/data"
 	"exnota.com/backend/job/data"
 	"github.com/pocketbase/pocketbase/core"
@@ -27,29 +28,29 @@ func (j *blockJobWorkflow) ApplyHooks() {
 }
 
 func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
-	j.app.OnModelAfterCreate(block_data.CollectionBlock).Add(func(e *core.ModelEvent) error {
+	j.app.OnModelAfterCreate(block.CollectionBlock).Add(func(e *core.ModelEvent) error {
 		blockRecord := e.Model.(*models.Record)
-		block, err := block_data.LoadBlock(blockRecord, j.app)
+		b, err := block.LoadBlock(blockRecord, j.app)
 		if err != nil {
 			return err
 		}
 
-		if block.Type() == block_data.BlockTypeVoiceNote {
+		if b.Type() == block.BlockTypeVoiceNote {
 			blockJobWriter := data.NewBlockJobWriter(j.app)
 
 			// Create transcription job
 			err := blockJobWriter.CreateTranscriptionJob(
-				block.Id(),
-				block.User(),
+				b.Id(),
+				b.User(),
 			)
 			if err != nil {
 				return err
 			}
 
 			// Create export job
-			file := block.File()
+			file := b.File()
 			var audio *data.AudioField
-			if audioBlock, ok := block.(block_data.VoiceNoteBlock); ok {
+			if audioBlock, ok := b.(block.VoiceNoteBlock); ok {
 				blockAudio, err := audioBlock.Audio()
 				if err != nil {
 					return err
@@ -61,16 +62,16 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 				}
 			}
 			err = blockJobWriter.CreateExportJob(data.CreateCreateVoiceNoteRequest{
-				BlockId: block.Id(),
-				UserId:  block.User(),
+				BlockId: b.Id(),
+				UserId:  b.User(),
 				Config: data.ExportJobConfig{
 					Command: data.CommandCreateVoiceNote,
 					Data: data.ExportJobData{
-						Id:          block.Id(),
+						Id:          b.Id(),
 						Type:        data.BlockTypeVoiceNote,
-						Destination: block.Destination(),
+						Destination: b.Destination(),
 						File:        &file,
-						Title:       block.Title(),
+						Title:       b.Title(),
 						Audio:       audio,
 					},
 				},
@@ -175,14 +176,14 @@ func (j *blockJobWorkflow) createAddTranscriptionJob() {
 
 		// Create export job
 		blockJobFetcher := block_data.NewBlockFetcher(j.app)
-		block, err := blockJobFetcher.FetchById(updatedJob.Block())
+		b, err := blockJobFetcher.FetchById(updatedJob.Block())
 		if err != nil {
 			return err
 		}
 
 		// get transcription
 		var audio *data.AudioField
-		if audioBlock, ok := block.(block_data.VoiceNoteBlock); ok {
+		if audioBlock, ok := b.(block.VoiceNoteBlock); ok {
 			blockAudio, err := audioBlock.Audio()
 			if err != nil {
 				return err
@@ -193,18 +194,18 @@ func (j *blockJobWorkflow) createAddTranscriptionJob() {
 		}
 		blockJobWriter := data.NewBlockJobWriter(j.app)
 		err = blockJobWriter.CreateExportJob(data.CreateCreateVoiceNoteRequest{
-			BlockId: block.Id(),
-			UserId:  block.User(),
+			BlockId: b.Id(),
+			UserId:  b.User(),
 			Config: data.ExportJobConfig{
 				Command: data.CommandAddTranscription,
 				Data: data.ExportJobData{
 					// Mandatory fields
-					Id:          block.Id(),
+					Id:          b.Id(),
 					Type:        data.BlockTypeVoiceNote,
-					Destination: block.Destination(),
+					Destination: b.Destination(),
 
 					// Updated fields
-					Title: block.Title(),
+					Title: b.Title(),
 					Audio: audio,
 				},
 			},

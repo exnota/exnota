@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"exnota.com/backend/api"
+	"exnota.com/backend/block"
 	block_api "exnota.com/backend/block/api"
 	block_data "exnota.com/backend/block/data"
 	block_event "exnota.com/backend/block/event"
@@ -123,7 +124,10 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	block_data.NewWorkspaceDataRules(app).ApplyHooks()
 	integrationDestinationSync := service.NewIntegrationDestinationSync(app)
 	block_data.NewDestinationDataRules(app).ApplyHooks()
-	block_data.NewBlockDataRules(app).ApplyHooks()
+	block.NewBlockDataRules(app,
+		block_data.NewBlockFetcher(app),
+		block_data.NewDestinationFetcher(app),
+	).ApplyHooks()
 
 	// Event workflows
 	//

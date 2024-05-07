@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	block_data "exnota.com/backend/block/data"
+	"exnota.com/backend/block"
 	"exnota.com/backend/job/data"
 	whisper "exnota.com/backend/lib"
 	"exnota.com/backend/lib/pb_file"
@@ -168,7 +168,7 @@ func (j *transcriptionJobRunner) saveTranscription(
 			return err
 		}
 
-		block, err := block_data.LoadVoiceNoteBlock(blockRecord, j.app)
+		b, err := block.LoadVoiceNoteBlock(blockRecord, j.app)
 		if err != nil {
 			return err
 		}
@@ -178,12 +178,12 @@ func (j *transcriptionJobRunner) saveTranscription(
 			transcription += result.Transcription[i].Text
 		}
 		transcription = strings.Trim(transcription, " ")
-		err = block.SetTranscription([]string{transcription})
+		err = b.SetTranscription([]string{transcription})
 		if err != nil {
 			return err
 		}
 
-		err = block.ValidateAndSubmit(txDao)
+		err = b.ValidateAndSubmit(txDao)
 		if err != nil {
 			return err
 		}

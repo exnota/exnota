@@ -22,7 +22,7 @@ service/api/block_create (tweak data, useecase specific logic)
 service/api/block_update
 service/api/block_read
 service/api/block_custom_endpoint
-service/event/block_integration_updates (triggered from other domains, or same domain but decoupledd)
+service/listeners/block_integration_updates (triggered from other domains, or same domain but decoupledd)
 usecase/workspace_updater (usecases that aren't API CRUD operations, called from custom endpoints and event consumers)
 repo/block_fetcher|writer
 model/block_create  (record validation, cascading (things that ALWAYS happen))

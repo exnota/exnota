@@ -1,4 +1,4 @@
-package data
+package block
 
 import (
 	"errors"
@@ -11,11 +11,17 @@ type BlockDataRules interface {
 }
 
 type blockDataRules struct {
-	app core.App
+	app                core.App
+	blockFetcher       BlockFetcher
+	destinationFetcher DestinationFetcher
 }
 
-func NewBlockDataRules(app core.App) BlockDataRules {
-	return &blockDataRules{app}
+func NewBlockDataRules(
+	app core.App,
+	blockFetcher BlockFetcher,
+	destinationFetcher DestinationFetcher,
+) BlockDataRules {
+	return &blockDataRules{app, blockFetcher, destinationFetcher}
 }
 
 func (r *blockDataRules) ApplyHooks() {
@@ -31,7 +37,7 @@ func (r *blockDataRules) relationRules() {
 			return err
 		}
 
-		destination, err := NewDestinationFetcher(r.app).FetchById(block.Destination())
+		destination, err := r.destinationFetcher.FetchById(block.Destination())
 		if err != nil {
 			return err
 		}
@@ -52,7 +58,7 @@ func (r *blockDataRules) immutableRules() {
 			return err
 		}
 
-		existing, err := NewBlockFetcher(r.app).FetchById(updated.Id())
+		existing, err := r.blockFetcher.FetchById(updated.Id())
 		if err != nil {
 			return err
 		}
@@ -71,7 +77,7 @@ func (r *blockDataRules) immutableRules() {
 			return err
 		}
 
-		existing, err := NewBlockFetcher(r.app).FetchById(updated.Id())
+		existing, err := r.blockFetcher.FetchById(updated.Id())
 		if err != nil {
 			return err
 		}
@@ -91,7 +97,7 @@ func (r *blockDataRules) immutableRules() {
 			return err
 		}
 
-		existing, err := NewBlockFetcher(r.app).FetchById(updated.Id())
+		existing, err := r.blockFetcher.FetchById(updated.Id())
 		if err != nil {
 			return err
 		}
@@ -110,7 +116,7 @@ func (r *blockDataRules) immutableRules() {
 			return err
 		}
 
-		destination, err := NewDestinationFetcher(r.app).FetchById(block.Destination())
+		destination, err := r.destinationFetcher.FetchById(block.Destination())
 		if err != nil {
 			return err
 		}

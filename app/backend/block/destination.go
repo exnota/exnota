@@ -1,4 +1,4 @@
-package data
+package block
 
 import (
 	"errors"

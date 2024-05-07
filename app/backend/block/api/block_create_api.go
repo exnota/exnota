@@ -1,7 +1,7 @@
 package api
 
 import (
-	"exnota.com/backend/block/data"
+	"exnota.com/backend/block"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -24,16 +24,16 @@ func NewBlockCreateAPI(app core.App) BlockCreateAPI {
 
 func (h *blockCreateAPI) ApplyHooks() {
 	// voice note must have a file
-	h.app.OnRecordBeforeCreateRequest(data.CollectionBlock).
+	h.app.OnRecordBeforeCreateRequest(block.CollectionBlock).
 		Add(func(e *core.RecordCreateEvent) error {
-			block, err := data.LoadBlock(e.Record, h.app)
+			b, err := block.LoadBlock(e.Record, h.app)
 			if err != nil {
 				return err
 			}
 
 			// voice note must have a file
-			if block.Type() == data.BlockTypeVoiceNote {
-				files := e.UploadedFiles[data.BlockFieldFile]
+			if b.Type() == block.BlockTypeVoiceNote {
+				files := e.UploadedFiles[block.BlockFieldFile]
 				if len(files) != 1 {
 					return apis.NewBadRequestError("Voice note block must have exactly 1 file", nil)
 				}
@@ -54,7 +54,7 @@ func (h *blockCreateAPI) ApplyHooks() {
 					return err
 				}
 			} else {
-				files := e.UploadedFiles[data.BlockFieldFile]
+				files := e.UploadedFiles[block.BlockFieldFile]
 				if len(files) != 0 {
 					return apis.NewBadRequestError("Non-voice note block cannot have a file", nil)
 				}

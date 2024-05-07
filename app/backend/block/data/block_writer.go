@@ -1,12 +1,13 @@
 package data
 
 import (
+	"exnota.com/backend/block"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
 
 type BlockWriter interface {
-	SetExternalExportStatus(id string, status ExportStatus) error
+	SetExternalExportStatus(id string, status block.ExportStatus) error
 	SetExternalUrl(id string, url string) error
 }
 
@@ -20,11 +21,11 @@ func NewBlockWriter(app core.App) BlockWriter {
 
 func (f *blockWriter) SetExternalUrl(id string, url string) error {
 	return f.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		record, err := txDao.FindRecordById(CollectionBlock, id)
+		record, err := txDao.FindRecordById(block.CollectionBlock, id)
 		if err != nil {
 			return err
 		}
-		block, err := LoadBlock(record, f.app)
+		block, err := block.LoadBlock(record, f.app)
 		if err != nil {
 			return err
 		}
@@ -37,13 +38,13 @@ func (f *blockWriter) SetExternalUrl(id string, url string) error {
 	})
 }
 
-func (f *blockWriter) SetExternalExportStatus(id string, status ExportStatus) error {
+func (f *blockWriter) SetExternalExportStatus(id string, status block.ExportStatus) error {
 	return f.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		record, err := txDao.FindRecordById(CollectionBlock, id)
+		record, err := txDao.FindRecordById(block.CollectionBlock, id)
 		if err != nil {
 			return err
 		}
-		block, err := LoadBlock(record, f.app)
+		block, err := block.LoadBlock(record, f.app)
 		if err != nil {
 			return err
 		}

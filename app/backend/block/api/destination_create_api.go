@@ -1,6 +1,7 @@
 package api
 
 import (
+	"exnota.com/backend/block"
 	"exnota.com/backend/block/data"
 	lib_block "exnota.com/backend/lib/block"
 	"github.com/pocketbase/pocketbase/apis"
@@ -27,7 +28,7 @@ func NewDestinationCreateAPI(app core.App, destinationSync DestinationSync) Dest
 }
 
 func (h *destinationCreateAPI) ApplyHooks() {
-	h.app.OnRecordBeforeCreateRequest(data.CollectionDestination).
+	h.app.OnRecordBeforeCreateRequest(block.CollectionDestination).
 		Add(func(e *core.RecordCreateEvent) error {
 
 			// Validate early to avoid extra work if there's a simple validation
@@ -38,7 +39,7 @@ func (h *destinationCreateAPI) ApplyHooks() {
 				return err
 			}
 
-			destination, err := data.NewDestination(e.Record, h.app)
+			destination, err := block.NewDestination(e.Record, h.app)
 			if err != nil {
 				return err
 			}
