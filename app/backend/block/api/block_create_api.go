@@ -8,25 +8,21 @@ import (
 	"github.com/pocketbase/pocketbase/forms/validators"
 )
 
-type BlockApiRules interface {
+type BlockCreateAPI interface {
 	ApplyHooks()
 }
 
-type blockApiRules struct {
+type blockCreateAPI struct {
 	app core.App
 }
 
-func NewBlockApiRules(app core.App) BlockApiRules {
-	return &blockApiRules{
+func NewBlockCreateAPI(app core.App) BlockCreateAPI {
+	return &blockCreateAPI{
 		app: app,
 	}
 }
 
-func (h *blockApiRules) ApplyHooks() {
-	h.fileRules()
-}
-
-func (h *blockApiRules) fileRules() {
+func (h *blockCreateAPI) ApplyHooks() {
 	// voice note must have a file
 	h.app.OnRecordBeforeCreateRequest(data.CollectionBlock).
 		Add(func(e *core.RecordCreateEvent) error {
