@@ -65,12 +65,6 @@ func main() {
 }
 
 const (
-	COLLECTION_BLOCK  = "block"
-	BLOCK_FIELD_TYPE  = "type"
-	BLOCK_FIELD_USER  = "user"
-	BLOCK_FIELD_TITLE = "title"
-	BLOCK_FIELD_FILE  = "file"
-
 	COLLECTION_BLOCK_JOB         = "block_job"
 	BLOCK_JOB_FIELD_TYPE         = "type"
 	BLOCK_JOB_TYPE_TRANSCRIPTION = "transcription"
@@ -251,12 +245,12 @@ func setBlockJobInvariants(app core.App) {
 	app.OnRecordBeforeCreateRequest(COLLECTION_BLOCK_JOB).
 		Add(func(e *core.RecordCreateEvent) error {
 			blockId := e.Record.GetString(BLOCK_JOB_FIELD_BLOCK)
-			block, err := app.Dao().FindRecordById(COLLECTION_BLOCK, blockId, nil)
+			block, err := app.Dao().FindRecordById("block", blockId, nil)
 			if err != nil {
 				return err
 			}
 
-			blockUserId := block.GetString(BLOCK_FIELD_USER)
+			blockUserId := block.GetString("user")
 			jobUserId := e.Record.GetString(BLOCK_JOB_FIELD_USER)
 
 			if blockUserId != jobUserId {
