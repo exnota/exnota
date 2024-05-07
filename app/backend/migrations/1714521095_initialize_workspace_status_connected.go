@@ -3,7 +3,7 @@ package migrations
 import (
 	"log/slog"
 
-	"exnota.com/backend/block/data"
+	"exnota.com/backend/block"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/daos"
 	m "github.com/pocketbase/pocketbase/migrations"
@@ -14,7 +14,7 @@ func init() {
 	m.Register(func(db dbx.Builder) error {
 		// up - set all workspaces to 'connected'
 		dao := daos.New(db)
-		query := dao.RecordQuery(data.CollectionWorkspace)
+		query := dao.RecordQuery(block.CollectionWorkspace)
 
 		records := []*models.Record{}
 		if err := query.All(&records); err != nil {
@@ -25,7 +25,7 @@ func init() {
 		for _, record := range records {
 			// set individual fields
 			// or bulk load with record.Load(map[string]any{...})
-			workspace, err := data.LoadWorkspace(record, nil)
+			workspace, err := block.LoadWorkspace(record, nil)
 			if err != nil {
 				return err
 			}
@@ -34,7 +34,7 @@ func init() {
 				continue
 			}
 
-			err = workspace.SetExternalStatus(data.WorkspaceExternalStatusConnected)
+			err = workspace.SetExternalStatus(block.WorkspaceExternalStatusConnected)
 			if err != nil {
 				return err
 			}
@@ -49,7 +49,7 @@ func init() {
 	}, func(db dbx.Builder) error {
 		// down - set all workspace statuses as empty
 		dao := daos.New(db)
-		query := dao.RecordQuery(data.CollectionWorkspace)
+		query := dao.RecordQuery(block.CollectionWorkspace)
 
 		records := []*models.Record{}
 		if err := query.All(&records); err != nil {
@@ -60,7 +60,7 @@ func init() {
 		for _, record := range records {
 			// set individual fields
 			// or bulk load with record.Load(map[string]any{...})
-			workspace, err := data.LoadWorkspace(record, nil)
+			workspace, err := block.LoadWorkspace(record, nil)
 			if err != nil {
 				return err
 			}

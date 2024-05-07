@@ -2,7 +2,6 @@ package api
 
 import (
 	"exnota.com/backend/block"
-	"exnota.com/backend/block/data"
 	lib_block "exnota.com/backend/lib/block"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -14,16 +13,22 @@ type DestinationCreateAPI interface {
 }
 
 type destinationCreateAPI struct {
-	app             core.App
-	destinationSync DestinationSync
+	app              core.App
+	destinationSync  DestinationSync
+	workspaceFetcher block.WorkspaceFetcher
 }
 
 type DestinationSync func(request lib_block.DestinationSyncRequest) (result *lib_block.DestinationSyncResult, err error)
 
-func NewDestinationCreateAPI(app core.App, destinationSync DestinationSync) DestinationCreateAPI {
+func NewDestinationCreateAPI(
+	app core.App,
+	destinationSync DestinationSync,
+	workspaceFetcher block.WorkspaceFetcher,
+) DestinationCreateAPI {
 	return &destinationCreateAPI{
-		app:             app,
-		destinationSync: destinationSync,
+		app:              app,
+		destinationSync:  destinationSync,
+		workspaceFetcher: workspaceFetcher,
 	}
 }
 
@@ -45,8 +50,7 @@ func (h *destinationCreateAPI) ApplyHooks() {
 			}
 
 			// Get integration ID from workspace
-			workspaceFetcher := data.NewWorkspaceFetcher(h.app, h.app.Dao())
-			workspace, err := workspaceFetcher.FetchById(destination.Workspace())
+			workspace, err := h.workspaceFetcher.FetchById(destination.Workspace())
 			if err != nil {
 				return err
 			}

@@ -1,6 +1,7 @@
 package data
 
 import (
+	"exnota.com/backend/block"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
@@ -20,15 +21,15 @@ func NewWorkspaceWriter(app core.App, txDao *daos.Dao) WorkspaceWriter {
 
 type SetStatusRequest struct {
 	Id     string
-	Status WorkspaceExternalStatus
+	Status block.WorkspaceExternalStatus
 }
 
 func (f *workspaceWriter) SetExternalStatus(request SetStatusRequest) error {
-	record, err := f.txDao.FindRecordById(CollectionWorkspace, request.Id)
+	record, err := f.txDao.FindRecordById(block.CollectionWorkspace, request.Id)
 	if err != nil {
 		return err
 	}
-	workspace, err := LoadWorkspace(record, f.app)
+	workspace, err := block.LoadWorkspace(record, f.app)
 	if err != nil {
 		return err
 	}

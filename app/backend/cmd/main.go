@@ -121,7 +121,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// Same caveats as event workflows below, for some of these.
 	integ_data.NewIntegrationNotionObjectHooks(app).ApplyHooks()
 	integ_data.NewIntegrationDestinationDataRules(app).ApplyHooks()
-	block_data.NewWorkspaceDataRules(app).ApplyHooks()
+	block.NewWorkspaceDataRules(app, block_data.NewWorkspaceFetcher(app)).ApplyHooks()
 	integrationDestinationSync := service.NewIntegrationDestinationSync(app)
 	block_data.NewDestinationDataRules(app).ApplyHooks()
 	block.NewBlockDataRules(app,
@@ -160,10 +160,15 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	}).Apply()
 	integ_api.NewIntegrationNotionObjectApiRules(app).ApplyHooks()
 	integ_api.NewIntegrationDestinationApiRules(app).ApplyHooks()
-	block_api.NewDestinationCreateAPI(app, integrationDestinationSync.Sync).ApplyHooks()
+	workspaceFetcher := block_data.NewWorkspaceFetcher(app)
+	block_api.NewDestinationCreateAPI(
+		app,
+		integrationDestinationSync.Sync,
+		workspaceFetcher,
+	).ApplyHooks()
 	block_api.NewBlockCreateAPI(app).ApplyHooks()
-	block_api.NewWorkspaceCreateAPI(app).ApplyHooks()
-	block_api.NewWorkspaceUpdateAPI(app).ApplyHooks()
+	block_api.NewWorkspaceCreateAPI(app, workspaceFetcher).ApplyHooks()
+	block_api.NewWorkspaceUpdateAPI(app, workspaceFetcher).ApplyHooks()
 
 	// Custom endpoints
 	integ_api.NewIntegrationEndpointHooks(app, integ_api.IntegrationEndpointConfig{

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"exnota.com/backend/block/data"
 	"exnota.com/backend/block/service"
 	integration_data "exnota.com/backend/integration/data"
 	"github.com/pocketbase/pocketbase/core"
@@ -51,7 +52,10 @@ func (l *integrationListener) applyOnUpdateHooks() {
 				if prevIntegration.Status() != integration_data.IntegrationStatusConnected ||
 					unarchived {
 					// Status changed to connected - cascade to workspaces
-					workspaceUpdaterService := service.NewWorkspaceUpdaterService(l.app)
+					workspaceUpdaterService := service.NewWorkspaceUpdaterService(
+						l.app,
+						data.NewWorkspaceFetcher(l.app),
+					)
 					err = workspaceUpdaterService.SetConnectedForIntegration(
 						service.StatusForIntegrationRequest{
 							IntegrationId: newIntegration.Id(),
@@ -68,7 +72,7 @@ func (l *integrationListener) applyOnUpdateHooks() {
 				if prevIntegration.Status() != integration_data.IntegrationStatusAccessRevoked ||
 					unarchived {
 					// Status changed to access-revoked - cascade to workspaces
-					workspaceUpdaterService := service.NewWorkspaceUpdaterService(l.app)
+					workspaceUpdaterService := service.NewWorkspaceUpdaterService(l.app, data.NewWorkspaceFetcher(l.app))
 					err = workspaceUpdaterService.SetDisconnectedForIntegration(
 						service.StatusForIntegrationRequest{
 							IntegrationId: newIntegration.Id(),
@@ -82,7 +86,10 @@ func (l *integrationListener) applyOnUpdateHooks() {
 			if archived {
 				// If the integration was archived, then set workspaces to
 				// archived.
-				workspaceUpdaterService := service.NewWorkspaceUpdaterService(l.app)
+				workspaceUpdaterService := service.NewWorkspaceUpdaterService(
+					l.app,
+					data.NewWorkspaceFetcher(l.app),
+				)
 				err = workspaceUpdaterService.SetArchivedForIntegration(
 					service.StatusForIntegrationRequest{
 						IntegrationId: newIntegration.Id(),

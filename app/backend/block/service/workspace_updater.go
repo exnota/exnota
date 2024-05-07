@@ -1,7 +1,7 @@
 package service
 
 import (
-	"exnota.com/backend/block/data"
+	"exnota.com/backend/block"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
@@ -13,32 +13,37 @@ type WorkspaceUpdaterService interface {
 }
 
 type workspaceUpdaterService struct {
-	app core.App
+	app              core.App
+	workspaceFetcher block.WorkspaceFetcher
 }
 
-func NewWorkspaceUpdaterService(app core.App) WorkspaceUpdaterService {
-	return &workspaceUpdaterService{app}
+func NewWorkspaceUpdaterService(
+	app core.App,
+	workspaceFetcher block.WorkspaceFetcher,
+) WorkspaceUpdaterService {
+	return &workspaceUpdaterService{app, workspaceFetcher}
 }
 
 type StatusForIntegrationRequest struct {
 	IntegrationId string `validate:"min=1"`
 }
 
-func (w *workspaceUpdaterService) SetConnectedForIntegration(request StatusForIntegrationRequest) error {
+func (w *workspaceUpdaterService) SetConnectedForIntegration(
+	request StatusForIntegrationRequest,
+) error {
 	err := validate.Struct(request)
 	if err != nil {
 		return err
 	}
 
 	err = w.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		workspaceFetcher := data.NewWorkspaceFetcher(w.app, txDao)
-		workspaces, err := workspaceFetcher.FetchByIntegrationId(request.IntegrationId)
+		workspaces, err := w.workspaceFetcher.FetchByIntegrationIdInTx(request.IntegrationId, txDao)
 		if err != nil {
 			return err
 		}
 
 		for _, workspace := range workspaces {
-			err = workspace.SetExternalStatus(data.WorkspaceExternalStatusConnected)
+			err = workspace.SetExternalStatus(block.WorkspaceExternalStatusConnected)
 			if err != nil {
 				return err
 			}
@@ -57,21 +62,22 @@ func (w *workspaceUpdaterService) SetConnectedForIntegration(request StatusForIn
 	return nil
 }
 
-func (w *workspaceUpdaterService) SetDisconnectedForIntegration(request StatusForIntegrationRequest) error {
+func (w *workspaceUpdaterService) SetDisconnectedForIntegration(
+	request StatusForIntegrationRequest,
+) error {
 	err := validate.Struct(request)
 	if err != nil {
 		return err
 	}
 
 	err = w.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		workspaceFetcher := data.NewWorkspaceFetcher(w.app, txDao)
-		workspaces, err := workspaceFetcher.FetchByIntegrationId(request.IntegrationId)
+		workspaces, err := w.workspaceFetcher.FetchByIntegrationIdInTx(request.IntegrationId, txDao)
 		if err != nil {
 			return err
 		}
 
 		for _, workspace := range workspaces {
-			err = workspace.SetExternalStatus(data.WorkspaceExternalStatusDisconnected)
+			err = workspace.SetExternalStatus(block.WorkspaceExternalStatusDisconnected)
 			if err != nil {
 				return err
 			}
@@ -90,21 +96,22 @@ func (w *workspaceUpdaterService) SetDisconnectedForIntegration(request StatusFo
 	return nil
 }
 
-func (w *workspaceUpdaterService) SetArchivedForIntegration(request StatusForIntegrationRequest) error {
+func (w *workspaceUpdaterService) SetArchivedForIntegration(
+	request StatusForIntegrationRequest,
+) error {
 	err := validate.Struct(request)
 	if err != nil {
 		return err
 	}
 
 	err = w.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		workspaceFetcher := data.NewWorkspaceFetcher(w.app, txDao)
-		workspaces, err := workspaceFetcher.FetchByIntegrationId(request.IntegrationId)
+		workspaces, err := w.workspaceFetcher.FetchByIntegrationIdInTx(request.IntegrationId, txDao)
 		if err != nil {
 			return err
 		}
 
 		for _, workspace := range workspaces {
-			err = workspace.SetExternalStatus(data.WorkspaceExternalStatusArchived)
+			err = workspace.SetExternalStatus(block.WorkspaceExternalStatusArchived)
 			if err != nil {
 				return err
 			}
