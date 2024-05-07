@@ -162,10 +162,10 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	}).Apply()
 	integ_api.NewIntegrationNotionObjectApiRules(app).ApplyHooks()
 	integ_api.NewIntegrationDestinationApiRules(app).ApplyHooks()
-	block_api.NewDestinationApiRules(app, integrationDestinationSync.Sync).ApplyHooks()
+	block_api.NewDestinationCreateAPI(app, integrationDestinationSync.Sync).ApplyHooks()
 	block_api.NewBlockApiRules(app).ApplyHooks()
-	block_api.NewWorkspaceCreateApi(app).ApplyHooks()
-	block_api.NewWorkspaceUpdateApi(app).ApplyHooks()
+	block_api.NewWorkspaceCreateAPI(app).ApplyHooks()
+	block_api.NewWorkspaceUpdateAPI(app).ApplyHooks()
 
 	// Custom endpoints
 	integ_api.NewIntegrationEndpointHooks(app, integ_api.IntegrationEndpointConfig{

@@ -8,29 +8,25 @@ import (
 	"github.com/pocketbase/pocketbase/forms"
 )
 
-type DestinationApiRules interface {
+type DestinationCreateAPI interface {
 	ApplyHooks()
 }
 
-type destinationApiRules struct {
+type destinationCreateAPI struct {
 	app             core.App
 	destinationSync DestinationSync
 }
 
 type DestinationSync func(request lib_block.DestinationSyncRequest) (result *lib_block.DestinationSyncResult, err error)
 
-func NewDestinationApiRules(app core.App, destinationSync DestinationSync) DestinationApiRules {
-	return &destinationApiRules{
+func NewDestinationCreateAPI(app core.App, destinationSync DestinationSync) DestinationCreateAPI {
+	return &destinationCreateAPI{
 		app:             app,
 		destinationSync: destinationSync,
 	}
 }
 
-func (h *destinationApiRules) ApplyHooks() {
-	h.createIntegrationRelations()
-}
-
-func (h *destinationApiRules) createIntegrationRelations() {
+func (h *destinationCreateAPI) ApplyHooks() {
 	h.app.OnRecordBeforeCreateRequest(data.CollectionDestination).
 		Add(func(e *core.RecordCreateEvent) error {
 
