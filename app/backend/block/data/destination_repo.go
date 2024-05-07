@@ -1,27 +1,24 @@
 package data
 
 import (
+	"exnota.com/backend/block"
 	"github.com/pocketbase/pocketbase/core"
 )
-
-type DestinationFetcher interface {
-	FetchById(id string) (Destination, error)
-}
 
 type destinationFetcher struct {
 	app core.App
 }
 
-func NewDestinationFetcher(app core.App) DestinationFetcher {
+func NewDestinationFetcher(app core.App) block.DestinationFetcher {
 	return &destinationFetcher{app}
 }
 
-func (f *destinationFetcher) FetchById(id string) (Destination, error) {
-	record, err := f.app.Dao().FindRecordById(CollectionDestination, id)
+func (f *destinationFetcher) FetchById(id string) (block.Destination, error) {
+	record, err := f.app.Dao().FindRecordById(block.CollectionDestination, id)
 	if err != nil {
 		return nil, err
 	}
-	destination, err := NewDestination(record, f.app)
+	destination, err := block.NewDestination(record, f.app)
 	if err != nil {
 		return nil, err
 	}

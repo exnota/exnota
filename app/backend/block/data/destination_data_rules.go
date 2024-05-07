@@ -3,6 +3,7 @@ package data
 import (
 	"errors"
 
+	"exnota.com/backend/block"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -23,8 +24,8 @@ func (r *destinationDataRules) ApplyHooks() {
 }
 
 func (r *destinationDataRules) immutableRules() {
-	r.app.OnModelBeforeUpdate(CollectionDestination).Add(func(e *core.ModelEvent) error {
-		updated, err := NewDestination(e.Model, r.app)
+	r.app.OnModelBeforeUpdate(block.CollectionDestination).Add(func(e *core.ModelEvent) error {
+		updated, err := block.NewDestination(e.Model, r.app)
 		if err != nil {
 			return err
 		}
