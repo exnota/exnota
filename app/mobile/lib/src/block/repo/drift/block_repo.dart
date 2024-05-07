@@ -28,7 +28,6 @@ class BlockRepo {
   }
 
   Future<void> upsert(Block block) async {
-    _log.debug('Upsert: Starting for block ${block.id}');
     await db.transaction(() async {
       final query = db.select(db.blockTable)
         ..where((tbl) => tbl.id.equals(block.id));

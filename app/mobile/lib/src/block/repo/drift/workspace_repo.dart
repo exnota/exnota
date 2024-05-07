@@ -26,7 +26,6 @@ class WorkspaceRepo {
   }
 
   Future<void> upsert(Workspace workspace) async {
-    _log.debug('Upsert: Starting for workspace ${workspace.id}');
     await db.transaction(() async {
       final query = db.select(db.workspaceTable)
         ..where((tbl) => tbl.id.equals(workspace.id));

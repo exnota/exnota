@@ -23,7 +23,6 @@ class BlockImporter extends _$BlockImporter {
 
     final repo = ref.read(blockRepoProvider);
     try {
-      _log.debug('Mapping block record ${record.id}');
       final block = Block.fromRecord(record);
 
       _log.debug('Upserting block ${block.id}');

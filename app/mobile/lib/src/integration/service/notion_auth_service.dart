@@ -164,7 +164,7 @@ class UpdateNotionIntegration extends HandledRequest<bool> {
 
   @override
   Future<bool> request({required PocketBase pb, required Ref ref}) async {
-    _log.debug('Creating Notion integration');
+    _log.debug('Updating Notion integration');
     // TODO: Fix folder structure, e.g. this is integration but it's in
     // "user" folder
     await pb.collection(collectionIntegration).update(
