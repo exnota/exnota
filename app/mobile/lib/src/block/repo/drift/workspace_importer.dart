@@ -24,7 +24,6 @@ class WorkspaceImporter extends _$WorkspaceImporter {
 
     final repo = ref.read(workspaceRepoProvider);
     try {
-      _log.debug('Mapping workspace record ${record.id}');
       final workspace = Workspace.fromRecord(record);
 
       _log.debug('Upserting workspace ${workspace.id}');
