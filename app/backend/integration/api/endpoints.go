@@ -37,7 +37,10 @@ type IntegrationEndpointConfig struct {
 	NotionRedirectBasePath string
 }
 
-func NewIntegrationEndpointHooks(app core.App, config IntegrationEndpointConfig) IntegrationEndpointHooks {
+func NewIntegrationEndpointHooks(
+	app core.App,
+	config IntegrationEndpointConfig,
+) IntegrationEndpointHooks {
 	return &integrationEndpointHooks{app: app, config: config}
 }
 
@@ -54,7 +57,17 @@ func (h *integrationEndpointHooks) Apply() {
 func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET(integration.NotionMobileCodeRequestPath, func(c echo.Context) error {
-			redirectUri, err := url.JoinPath(h.config.BasePath, integration.NotionMobileRedirectPath)
+			slog.Info(
+				"Custom endpoint",
+				"method",
+				c.Request().Method,
+				"path",
+				integration.NotionMobileCodeRequestPath,
+			)
+			redirectUri, err := url.JoinPath(
+				h.config.BasePath,
+				integration.NotionMobileRedirectPath,
+			)
 			if err != nil {
 				return err
 			}
@@ -79,6 +92,13 @@ func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 func (h *integrationEndpointHooks) notionMobileRedirect() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET(integration.NotionMobileRedirectPath, func(c echo.Context) error {
+			slog.Info(
+				"Custom endpoint",
+				"method",
+				c.Request().Method,
+				"path",
+				integration.NotionMobileRedirectPath,
+			)
 			code := c.QueryParam("code")
 			return c.Redirect(302, "exnota://integration/notion/mobile-code-redirect?code="+code)
 		})
@@ -122,6 +142,13 @@ const (
 func (h *integrationEndpointHooks) notionSearch() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET(integration.NotionSearchPath, func(c echo.Context) error {
+			slog.Info(
+				"Custom endpoint",
+				"method",
+				c.Request().Method,
+				"path",
+				integration.NotionSearchPath,
+			)
 
 			searchRequest := new(SearchRequest)
 			if err := c.Bind(searchRequest); err != nil {
@@ -161,7 +188,11 @@ func (h *integrationEndpointHooks) notionSearch() {
 	})
 }
 
-func (h *integrationEndpointHooks) executeNotionSearch(query string, object ObjectType, userId string) (*SearchResponse, error) {
+func (h *integrationEndpointHooks) executeNotionSearch(
+	query string,
+	object ObjectType,
+	userId string,
+) (*SearchResponse, error) {
 	// Get integration
 	filter := data.IntegrationFieldUser + "={:user} && " +
 		data.IntegrationFieldType + "={:type}"
@@ -267,7 +298,9 @@ func (h *integrationEndpointHooks) executeNotionSearch(query string, object Obje
 	}, nil
 }
 
-func (h *integrationEndpointHooks) mapParent(parent notion.Parent) (parentType ParentType, parentId *string) {
+func (h *integrationEndpointHooks) mapParent(
+	parent notion.Parent,
+) (parentType ParentType, parentId *string) {
 	switch parent.Type {
 	case notion.ParentTypeDatabase:
 		parentType = ParentTypeDatabase
@@ -313,6 +346,14 @@ func (r VerifyIntegrationAccessResponse) MarshalJSON() ([]byte, error) {
 func (h *integrationEndpointHooks) integrationVerifyAccess() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.POST(integration.IntegrationVerifyAccess, func(c echo.Context) error {
+			slog.Info(
+				"Custom endpoint",
+				"method",
+				c.Request().Method,
+				"path",
+				integration.IntegrationVerifyAccess,
+			)
+
 			verifyRequest := new(VerifyIntegrationAccessRequest)
 			if err := c.Bind(verifyRequest); err != nil {
 				return c.String(http.StatusBadRequest, "bad request")
