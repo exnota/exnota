@@ -8,23 +8,19 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-type WorkspaceUpdateApi interface {
+type WorkspaceUpdateAPI interface {
 	ApplyHooks()
 }
 
-type workspaceUpdateApi struct {
+type workspaceUpdateAPI struct {
 	app core.App
 }
 
-func NewWorkspaceUpdateApi(app core.App) WorkspaceUpdateApi {
-	return &workspaceUpdateApi{app}
+func NewWorkspaceUpdateAPI(app core.App) WorkspaceUpdateAPI {
+	return &workspaceUpdateAPI{app}
 }
 
-func (r *workspaceUpdateApi) ApplyHooks() {
-	r.updateRules()
-}
-
-func (r *workspaceUpdateApi) updateRules() {
+func (r *workspaceUpdateAPI) ApplyHooks() {
 	r.app.OnRecordBeforeUpdateRequest(data.CollectionWorkspace).
 		Add(func(e *core.RecordUpdateEvent) error {
 			updatedWorkspace, err := data.LoadWorkspace(e.Record, r.app)

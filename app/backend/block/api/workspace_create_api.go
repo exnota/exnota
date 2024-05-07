@@ -6,23 +6,19 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-type WorkspaceCreateApi interface {
+type WorkspaceCreateAPI interface {
 	ApplyHooks()
 }
 
-type workspaceCreateApi struct {
+type workspaceCreateAPI struct {
 	app core.App
 }
 
-func NewWorkspaceCreateApi(app core.App) WorkspaceCreateApi {
-	return &workspaceCreateApi{app}
+func NewWorkspaceCreateAPI(app core.App) WorkspaceCreateAPI {
+	return &workspaceCreateAPI{app}
 }
 
-func (r *workspaceCreateApi) ApplyHooks() {
-	r.createRules()
-}
-
-func (r *workspaceCreateApi) createRules() {
+func (r *workspaceCreateAPI) ApplyHooks() {
 	r.app.OnRecordBeforeCreateRequest(data.CollectionWorkspace).
 		Add(func(e *core.RecordCreateEvent) error {
 			newWorkspace, err := data.LoadWorkspace(e.Record, r.app)
