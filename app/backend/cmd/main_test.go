@@ -89,7 +89,9 @@ func TestAppHooks(t *testing.T) {
 	// Some example API tests in Pocketbase repo: https://github.com/pocketbase/pocketbase/blob/9436efb7fd8b9726715b58eb949f12a634fcafa0/apis/record_crud_test.go
 	var requestScenarios []RequestScenario
 	requestScenarios = append(requestScenarios, generateBlockAuthScenarios(setupTestApp, tokens)...)
-	requestScenarios = append(requestScenarios, generateBlockInvariantScenarios(setupTestApp, tokens)...)
+	requestScenarios = append(
+		requestScenarios,
+		generateBlockInvariantScenarios(setupTestApp, tokens)...)
 
 	for _, scenario := range requestScenarios {
 		for _, authScenario := range scenario.AuthScenarios {
@@ -176,7 +178,10 @@ func getTokens(t *testing.T) Tokens {
 	return tokens
 }
 
-func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, tokens Tokens) []RequestScenario {
+func generateBlockAuthScenarios(
+	setupTestApp func(t *testing.T) *tests.TestApp,
+	tokens Tokens,
+) []RequestScenario {
 	return []RequestScenario{
 		{
 			Name:           "List blocks",
@@ -329,16 +334,19 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 					},
 					AfterTestFunc: func(t *testing.T, app *tests.TestApp, res *http.Response) {
 						// Find block that was just created
-						records, err := app.Dao().FindRecordsByExpr(COLLECTION_BLOCK,
-							dbx.HashExp{BLOCK_FIELD_TITLE: "new voice note block"},
-							dbx.HashExp{BLOCK_FIELD_TYPE: string(BlockTypeVoiceNote)},
-							dbx.HashExp{BLOCK_FIELD_USER: "user1-15char-id"},
+						records, err := app.Dao().FindRecordsByExpr("block",
+							dbx.HashExp{"title": "new voice note block"},
+							dbx.HashExp{"type": string(BlockTypeVoiceNote)},
+							dbx.HashExp{"user": "user1-15char-id"},
 						)
 						if err != nil {
 							t.Fatal(err)
 						}
 						if len(records) != 1 {
-							t.Fatalf("Expected to find 1 newly created block but found %v", len(records))
+							t.Fatalf(
+								"Expected to find 1 newly created block but found %v",
+								len(records),
+							)
 						}
 						block := records[0]
 
@@ -351,17 +359,41 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 						}
 
 						if len(jobs) != 1 {
-							t.Fatalf("Expected to find 1 newly created block job for block id %v but found %v", block.Id, len(jobs))
+							t.Fatalf(
+								"Expected to find 1 newly created block job for block id %v but found %v",
+								block.Id,
+								len(jobs),
+							)
 						}
 						job := jobs[0]
-						if job.GetString(BLOCK_JOB_FIELD_TYPE) != string(BLOCK_JOB_TYPE_TRANSCRIPTION) {
-							t.Errorf("Expected block job type to be %v but was %v", BLOCK_JOB_TYPE_TRANSCRIPTION, job.GetString(BLOCK_JOB_FIELD_TYPE))
+						if job.GetString(
+							BLOCK_JOB_FIELD_TYPE,
+						) != string(
+							BLOCK_JOB_TYPE_TRANSCRIPTION,
+						) {
+							t.Errorf(
+								"Expected block job type to be %v but was %v",
+								BLOCK_JOB_TYPE_TRANSCRIPTION,
+								job.GetString(BLOCK_JOB_FIELD_TYPE),
+							)
 						}
-						if job.GetString(BLOCK_JOB_FIELD_STATUS) != string(BLOCK_JOB_STATUS_WAITING) {
-							t.Errorf("Expected block job status to be %v but was %v", BLOCK_JOB_STATUS_WAITING, job.GetString(BLOCK_JOB_FIELD_STATUS))
+						if job.GetString(
+							BLOCK_JOB_FIELD_STATUS,
+						) != string(
+							BLOCK_JOB_STATUS_WAITING,
+						) {
+							t.Errorf(
+								"Expected block job status to be %v but was %v",
+								BLOCK_JOB_STATUS_WAITING,
+								job.GetString(BLOCK_JOB_FIELD_STATUS),
+							)
 						}
 						if job.GetString(BLOCK_JOB_FIELD_USER) != "user1-15char-id" {
-							t.Errorf("Expected block job user to be %v but was %v", "user1-15char-id", job.GetString(BLOCK_JOB_FIELD_USER))
+							t.Errorf(
+								"Expected block job user to be %v but was %v",
+								"user1-15char-id",
+								job.GetString(BLOCK_JOB_FIELD_USER),
+							)
 						}
 					},
 				},
@@ -470,7 +502,10 @@ func generateBlockAuthScenarios(setupTestApp func(t *testing.T) *tests.TestApp, 
 	}
 }
 
-func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.TestApp, tokens Tokens) []RequestScenario {
+func generateBlockInvariantScenarios(
+	setupTestApp func(t *testing.T) *tests.TestApp,
+	tokens Tokens,
+) []RequestScenario {
 	return []RequestScenario{
 		{
 			Name:   "Block invariant > Cannot update type",
@@ -486,8 +521,11 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 					RequestHeaders: map[string]string{
 						"Authorization": tokens.UserOne,
 					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Failed to update record.\""},
+					ExpectedStatus: 400,
+					ExpectedContent: []string{
+						"\"data\":{}",
+						"\"message\":\"Failed to update record.\"",
+					},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeUpdateRequest": 1,
 						"OnAfterApiError":             1,
@@ -511,8 +549,11 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 					RequestHeaders: map[string]string{
 						"Authorization": tokens.UserOne,
 					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Failed to update record.\""},
+					ExpectedStatus: 400,
+					ExpectedContent: []string{
+						"\"data\":{}",
+						"\"message\":\"Failed to update record.\"",
+					},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeUpdateRequest": 1,
 						"OnAfterApiError":             1,
@@ -540,8 +581,11 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 					RequestHeaders: map[string]string{
 						"Authorization": tokens.UserOne,
 					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Voice note block must have exactly 1 file.\""},
+					ExpectedStatus: 400,
+					ExpectedContent: []string{
+						"\"data\":{}",
+						"\"message\":\"Voice note block must have exactly 1 file.\"",
+					},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeCreateRequest": 1,
 					},
@@ -567,8 +611,11 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 					RequestHeaders: map[string]string{
 						"Authorization": tokens.UserOne,
 					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Voice note block must have a .wav or .mp3 file.\""},
+					ExpectedStatus: 400,
+					ExpectedContent: []string{
+						"\"data\":{}",
+						"\"message\":\"Voice note block must have a .wav or .mp3 file.\"",
+					},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeCreateRequest": 1,
 					},
@@ -594,8 +641,11 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 					RequestHeaders: map[string]string{
 						"Authorization": tokens.UserOne,
 					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Non-voice note block cannot have a file.\""},
+					ExpectedStatus: 400,
+					ExpectedContent: []string{
+						"\"data\":{}",
+						"\"message\":\"Non-voice note block cannot have a file.\"",
+					},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeCreateRequest": 1,
 					},
@@ -621,8 +671,11 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 					RequestHeaders: map[string]string{
 						"Authorization": tokens.Admin,
 					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Failed to update record.\""},
+					ExpectedStatus: 400,
+					ExpectedContent: []string{
+						"\"data\":{}",
+						"\"message\":\"Failed to update record.\"",
+					},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeUpdateRequest": 1,
 						"OnAfterApiError":             1,
@@ -635,8 +688,11 @@ func generateBlockInvariantScenarios(setupTestApp func(t *testing.T) *tests.Test
 					RequestHeaders: map[string]string{
 						"Authorization": tokens.UserOne,
 					},
-					ExpectedStatus:  400,
-					ExpectedContent: []string{"\"data\":{}", "\"message\":\"Failed to update record.\""},
+					ExpectedStatus: 400,
+					ExpectedContent: []string{
+						"\"data\":{}",
+						"\"message\":\"Failed to update record.\"",
+					},
 					ExpectedEvents: map[string]int{
 						"OnRecordBeforeUpdateRequest": 1,
 						"OnAfterApiError":             1,
@@ -679,7 +735,10 @@ type MockField struct {
 }
 
 // Copied and modified from Pocketbase source: tests/request.go->MockMultipartData
-func MockMultipartData(data map[string]string, fields ...MockField) (*bytes.Buffer, *multipart.Writer, error) {
+func MockMultipartData(
+	data map[string]string,
+	fields ...MockField,
+) (*bytes.Buffer, *multipart.Writer, error) {
 	body := new(bytes.Buffer)
 	mp := multipart.NewWriter(body)
 	defer mp.Close()
