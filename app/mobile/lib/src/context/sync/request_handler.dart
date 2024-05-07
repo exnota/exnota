@@ -4,6 +4,7 @@ import 'package:exnota/src/context/sync/network.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/log/logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:retry/retry.dart';
@@ -41,14 +42,19 @@ class RequestHandler extends _$RequestHandler {
       Function(Object)? onError}) async {
     _log.debug('(${request.runtimeType}) Submitting request');
 
+    final timeout = kDebugMode ? null : request.timeout;
     try {
       final result = await retry<T>(
-        () => request
-            .request(
-              pb: ref.read(userContextServiceSyncProvider).pocketBase,
-              ref: ref,
-            )
-            .timeout(request.timeout),
+        () {
+          Future<T> r = request.request(
+            pb: ref.read(userContextServiceSyncProvider).pocketBase,
+            ref: ref,
+          );
+          if (timeout != null) {
+            r = r.timeout(request.timeout);
+          }
+          return r;
+        },
         retryIf: (e) {
           if (request.stopRetrying) {
             _log.debug(
