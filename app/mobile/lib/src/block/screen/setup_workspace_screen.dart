@@ -26,17 +26,9 @@ class _SetupWorkspaceScreenState extends ConsumerState<SetupWorkspaceScreen> {
   @override
   void initState() {
     super.initState();
-    // Set state for consistency with above, even though at time of writing this
-    // is the default state
-    //
     // Need to wrap in Future to avoid provider throwing an error that its
     // state was modified during the widget's lifecycle.
     Future(() {
-      ref
-          .read(setupWorkspaceScreenControllerProvider.notifier)
-          .transitionStatus(
-            newStatus: WorkspaceSetupStatus.loadingWorkspace,
-          );
       ref
           .read(setupWorkspaceScreenControllerProvider.notifier)
           .loadOrRefreshWorkspace();
