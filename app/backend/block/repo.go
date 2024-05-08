@@ -8,6 +8,7 @@ type BlockFetcher interface {
 
 type DestinationFetcher interface {
 	FetchById(id string) (Destination, error)
+	ListIdsByIntegrationId(workspaceIntegrationId string) ([]string, error)
 }
 
 type WorkspaceFetcher interface {

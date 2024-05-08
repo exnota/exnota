@@ -25,8 +25,11 @@ func (f *integrationDestinationFetcher) FetchById(id string) (IntegrationDestina
 	return NewIntegrationDestination(record), nil
 }
 
-func (f *integrationDestinationFetcher) FetchByDestinationId(destinationId string) (IntegrationDestination, error) {
-	record, err := f.app.Dao().FindFirstRecordByData(CollectionIntegrationDestination, IntegrationDestinationFieldDestinationId, destinationId)
+func (f *integrationDestinationFetcher) FetchByDestinationId(
+	destinationId string,
+) (IntegrationDestination, error) {
+	record, err := f.app.Dao().
+		FindFirstRecordByData(CollectionIntegrationDestination, IntegrationDestinationFieldDestinationId, destinationId)
 	if err != nil {
 		return nil, err
 	}

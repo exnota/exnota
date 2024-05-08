@@ -6,6 +6,7 @@ import (
 
 	"exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
+	"exnota.com/backend/integration/usecase"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -15,13 +16,15 @@ type UpdateIntegrationDestinationAPI interface {
 }
 
 type updateIntegrationDestinationAPI struct {
-	app core.App
+	app                        core.App
+	integrationDestinationSync usecase.IntegrationDestinationSync
 }
 
 func NewUpdateIntegrationDestinationAPI(
 	app core.App,
+	integrationDestinationSync usecase.IntegrationDestinationSync,
 ) UpdateIntegrationDestinationAPI {
-	return &updateIntegrationDestinationAPI{app: app}
+	return &updateIntegrationDestinationAPI{app, integrationDestinationSync}
 }
 
 type UpdateIntegrationDestinationRequest struct {
@@ -50,21 +53,20 @@ func (h *updateIntegrationDestinationAPI) ApplyHooks() {
 			}
 
 			// Auth
-			auth := NewIntegrationAuth(h.app, data.NewIntegrationFetcher(h.app))
-			err = auth.ForIntegration(updateRequest.IntegrationId, c)
+			auth := NewIntegrationAuth(h.app, data.NewIntegrationFetcher(h.app), c)
+			err = auth.ForIntegration(updateRequest.IntegrationId)
 			if err != nil {
 				return err
 			}
 
 			// Update status
-			// integrationSync := service.NewIntegrationSync(h.app)
-			// err := integrationSync.UpdateDestinationStatus(service.UpdateDestinationStatusRequest{
-			// 	IntegrationId: updaterequest.IntegrationId,
-			// 	UserID:        loggedInUserId,
-			// })
-			// if err != nil {
-			// 	return c.JSON(http.StatusInternalServerError, nil)
-			// }
+			err = h.integrationDestinationSync.UpdateSync(usecase.UpdateSyncRequest{
+				IntegrationId: updateRequest.IntegrationId,
+				UserId:        auth.LoggedInUser(),
+			})
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, nil)
+			}
 
 			return nil
 		})

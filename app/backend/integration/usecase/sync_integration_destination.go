@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"log/slog"
 
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion"
@@ -16,21 +17,35 @@ type IntegrationDestinationSync interface {
 	CreateSync(
 		request block.CreateDestinationSyncRequest,
 	) (result *block.CreateDestinationSyncResult, err error)
+	UpdateSync(request UpdateSyncRequest) error
+}
+
+type DestinationFetcher interface {
+	ListIdsByIntegrationId(workspaceIntegrationId string) ([]string, error)
 }
 
 type integrationDestinationSync struct {
-	app core.App
+	app                core.App
+	integrationFetcher data.IntegrationFetcher
+	destinationFetcher DestinationFetcher
 }
 
-func NewIntegrationDestinationSync(app core.App) IntegrationDestinationSync {
-	return &integrationDestinationSync{app}
+func NewIntegrationDestinationSync(
+	app core.App,
+	integrationFetcher data.IntegrationFetcher,
+	destinationFetcher DestinationFetcher,
+) IntegrationDestinationSync {
+	return &integrationDestinationSync{
+		app,
+		integrationFetcher,
+		destinationFetcher,
+	}
 }
 
 func (s *integrationDestinationSync) CreateSync(
 	request block.CreateDestinationSyncRequest,
 ) (result *block.CreateDestinationSyncResult, err error) {
-	fetcher := data.NewIntegrationFetcher(s.app)
-	integration, err := fetcher.FetchById(data.FetchByIdRequest{
+	integration, err := s.integrationFetcher.FetchById(data.FetchByIdRequest{
 		IntegrationId: request.IntegrationId,
 		UserId:        request.User,
 	})
@@ -91,4 +106,54 @@ func (s *integrationDestinationSync) CreateSync(
 	}
 
 	return destinationResult, nil
+}
+
+type UpdateSyncRequest struct {
+	IntegrationId string `validate:"min=1"`
+	UserId        string `validate:"min=1"`
+}
+
+func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error {
+	err := validate.Struct(request)
+	if err != nil {
+		return err
+	}
+
+	integration, err := s.integrationFetcher.FetchById(data.FetchByIdRequest{
+		IntegrationId: request.IntegrationId,
+		UserId:        request.UserId,
+	})
+	if err != nil {
+		return err
+	}
+	if integration.Status() != data.IntegrationStatusConnected {
+		slog.Warn("Integration not connected", "integrationId", request.IntegrationId)
+		return nil
+	}
+
+	destinationIds, err := s.destinationFetcher.ListIdsByIntegrationId(request.IntegrationId)
+	if err != nil {
+		return err
+	}
+	if len(destinationIds) == 0 {
+		slog.Info("No destinations for integration", "integrationId", request.IntegrationId)
+		return nil
+	}
+
+	// TODO: Remove
+	slog.Info("Destination IDs", "destinationIds", destinationIds)
+
+	// switch integration.Type() {
+	// case data.TypeNotion:
+	// 	notionSync := notion.NewNotionDestinationSync(s.app)
+	// 	err = notionSync.UpdateSync(integrationId)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// default:
+	// 	return errors.New("Integration type not supported")
+	// }
+
+	return nil
+
 }
