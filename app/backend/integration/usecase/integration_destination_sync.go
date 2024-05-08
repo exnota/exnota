@@ -1,10 +1,10 @@
-package service
+package usecase
 
 import (
 	"errors"
 
 	"exnota.com/backend/integration/data"
-	"exnota.com/backend/integration/service/notion"
+	"exnota.com/backend/integration/usecase/notion"
 	"exnota.com/backend/lib/block"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"

@@ -11,7 +11,7 @@ import (
 
 	"exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
-	"exnota.com/backend/integration/service"
+	"exnota.com/backend/integration/usecase"
 	"exnota.com/backend/integration/util"
 	"github.com/dstotijn/go-notion"
 	"github.com/labstack/echo/v5"
@@ -370,8 +370,8 @@ func (h *integrationEndpointHooks) integrationVerifyAccess() {
 			}
 			loggedInUserId := requestInfo.AuthRecord.Id
 
-			integrationSync := service.NewIntegrationSync(h.app)
-			success, err := integrationSync.UpdateStatus(service.UpdateStatusRequest{
+			integrationSync := usecase.NewIntegrationSync(h.app)
+			success, err := integrationSync.UpdateStatus(usecase.UpdateStatusRequest{
 				IntegrationId: verifyRequest.IntegrationId,
 				UserID:        loggedInUserId,
 			})

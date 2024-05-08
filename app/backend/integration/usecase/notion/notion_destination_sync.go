@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"exnota.com/backend/integration/data"
-	"exnota.com/backend/integration/service/notion/api"
+	"exnota.com/backend/integration/usecase/notion/api"
 	"exnota.com/backend/integration/util"
 	"exnota.com/backend/lib/block"
 	"github.com/mitchellh/mapstructure"
@@ -21,7 +21,7 @@ type NotionDestinationSyncRequest struct {
 }
 
 type NotionDestinationSyncConfig struct {
-	Id     string                            `json:"id" validate:"required"`
+	Id     string                            `json:"id"     validate:"required"`
 	Object NotionDestinationSyncConfigObject `json:"object" validate:"required"`
 }
 
@@ -33,7 +33,9 @@ const (
 )
 
 type NotionDestinationSync interface {
-	Sync(NotionDestinationSyncRequest) (result *block.DestinationSyncResult, record *models.Record, err error)
+	Sync(
+		NotionDestinationSyncRequest,
+	) (result *block.DestinationSyncResult, record *models.Record, err error)
 }
 
 type notionDestinationSync struct {
@@ -44,7 +46,9 @@ func NewNotionDestinationSync(app core.App) NotionDestinationSync {
 	return &notionDestinationSync{app}
 }
 
-func (s *notionDestinationSync) Sync(request NotionDestinationSyncRequest) (result *block.DestinationSyncResult, record *models.Record, err error) {
+func (s *notionDestinationSync) Sync(
+	request NotionDestinationSyncRequest,
+) (result *block.DestinationSyncResult, record *models.Record, err error) {
 	var config NotionDestinationSyncConfig
 	err = mapstructure.Decode(request.Config, &config)
 	if err != nil {

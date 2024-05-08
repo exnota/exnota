@@ -8,7 +8,7 @@ import (
 	"exnota.com/backend/block"
 	block_data "exnota.com/backend/block/data"
 	integ_data "exnota.com/backend/integration/data"
-	"exnota.com/backend/integration/service/notion"
+	"exnota.com/backend/integration/usecase/notion"
 	"exnota.com/backend/job/data"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pocketbase/pocketbase/core"

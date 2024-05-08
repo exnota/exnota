@@ -1,11 +1,11 @@
-package service
+package usecase
 
 import (
 	"fmt"
 	"log/slog"
 
 	"exnota.com/backend/integration/data"
-	"exnota.com/backend/integration/service/notion"
+	"exnota.com/backend/integration/usecase/notion"
 	"github.com/pocketbase/pocketbase/core"
 )
 

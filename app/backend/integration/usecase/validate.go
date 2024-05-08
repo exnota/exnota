@@ -1,4 +1,4 @@
-package service
+package usecase
 
 import "github.com/go-playground/validator/v10"
 
