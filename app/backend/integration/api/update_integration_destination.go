@@ -3,7 +3,6 @@ package api
 import (
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
@@ -26,7 +25,7 @@ func NewUpdateIntegrationDestinationAPI(
 }
 
 type UpdateIntegrationDestinationRequest struct {
-	IntegrationId string `json:"integration_id"`
+	IntegrationId string `json:"integration_id" validate:"min=1"`
 }
 
 func (h *updateIntegrationDestinationAPI) ApplyHooks() {
@@ -40,18 +39,19 @@ func (h *updateIntegrationDestinationAPI) ApplyHooks() {
 				integration.IntegrationUpdateDestination,
 			)
 
-			// Parse request
+			// Parse and validate request
 			updateRequest := new(UpdateIntegrationDestinationRequest)
 			if err := c.Bind(updateRequest); err != nil {
 				return c.String(http.StatusBadRequest, "bad request")
 			}
-			if strings.TrimSpace(updateRequest.IntegrationId) == "" {
-				return c.JSON(http.StatusBadRequest, nil)
+			err := validate.Struct(updateRequest)
+			if err != nil {
+				return err
 			}
 
 			// Auth
 			auth := NewIntegrationAuth(h.app, data.NewIntegrationFetcher(h.app))
-			err := auth.ForIntegration(updateRequest.IntegrationId, c)
+			err = auth.ForIntegration(updateRequest.IntegrationId, c)
 			if err != nil {
 				return err
 			}
