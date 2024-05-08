@@ -6,51 +6,23 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-type BlockDataRules interface {
+type BlockUpdate interface {
 	ApplyHooks()
 }
 
-type blockDataRules struct {
-	app                core.App
-	blockFetcher       BlockFetcher
-	destinationFetcher DestinationFetcher
+type blockUpdate struct {
+	app          core.App
+	blockFetcher BlockFetcher
 }
 
-func NewBlockDataRules(
+func NewBlockUpdate(
 	app core.App,
 	blockFetcher BlockFetcher,
-	destinationFetcher DestinationFetcher,
-) BlockDataRules {
-	return &blockDataRules{app, blockFetcher, destinationFetcher}
+) BlockUpdate {
+	return &blockUpdate{app, blockFetcher}
 }
 
-func (r *blockDataRules) ApplyHooks() {
-	r.relationRules()
-	r.immutableRules()
-}
-
-func (r *blockDataRules) relationRules() {
-	// user must match destination's user
-	r.app.OnModelBeforeCreate(CollectionBlock).Add(func(e *core.ModelEvent) error {
-		block, err := LoadBlockFromModel(e.Model, r.app)
-		if err != nil {
-			return err
-		}
-
-		destination, err := r.destinationFetcher.FetchById(block.Destination())
-		if err != nil {
-			return err
-		}
-
-		if block.User() != destination.User() {
-			return errors.New("Block user does not match destination user")
-		}
-
-		return nil
-	})
-}
-
-func (r *blockDataRules) immutableRules() {
+func (r *blockUpdate) ApplyHooks() {
 	// type cannot be changed
 	r.app.OnModelBeforeUpdate(CollectionBlock).Add(func(e *core.ModelEvent) error {
 		updated, err := LoadBlockFromModel(e.Model, r.app)
@@ -108,24 +80,4 @@ func (r *blockDataRules) immutableRules() {
 
 		return nil
 	})
-
-	// user must match destination's user
-	r.app.OnModelBeforeCreate(CollectionBlock).Add(func(e *core.ModelEvent) error {
-		block, err := LoadBlockFromModel(e.Model, r.app)
-		if err != nil {
-			return err
-		}
-
-		destination, err := r.destinationFetcher.FetchById(block.Destination())
-		if err != nil {
-			return err
-		}
-
-		if block.User() != destination.User() {
-			return errors.New("Block user does not match destination user")
-		}
-
-		return nil
-	})
-
 }

@@ -125,10 +125,8 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	integrationDestinationSync := service.NewIntegrationDestinationSync(app)
 	destinationFetcher := block_data.NewDestinationFetcher(app)
 	block.NewDestinationUpdate(app, destinationFetcher).ApplyHooks()
-	block.NewBlockDataRules(app,
-		block_data.NewBlockFetcher(app),
-		destinationFetcher,
-	).ApplyHooks()
+	block.NewBlockCreate(app, destinationFetcher).ApplyHooks()
+	block.NewBlockUpdate(app, block_data.NewBlockFetcher(app)).ApplyHooks()
 
 	// Event workflows
 	//
