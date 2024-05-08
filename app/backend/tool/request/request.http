@@ -126,6 +126,16 @@ Authorization: {{auth_token}}
   "integration_id": "{{integration}}"
 }
 
+### Update integration destination
+POST {{baseUrl}}/exnota/integration/update-destination
+content-type: application/json
+Authorization: {{auth_token}}
+
+{
+  "integration_id": "{{integration}}"
+}
+
+
 ### ----------------------------------------------------
 ### Notion API
 ###
