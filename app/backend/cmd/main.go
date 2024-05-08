@@ -122,8 +122,12 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	integ_data.NewIntegrationNotionObjectHooks(app).ApplyHooks()
 	integ_data.NewIntegrationDestinationDataRules(app).ApplyHooks()
 	block.NewWorkspaceDataRules(app, block_data.NewWorkspaceFetcher(app)).ApplyHooks()
-	integrationDestinationSync := integration_usecase.NewIntegrationDestinationSync(app)
 	destinationFetcher := block_data.NewDestinationFetcher(app)
+	integrationDestinationSync := integration_usecase.NewIntegrationDestinationSync(
+		app,
+		integ_data.NewIntegrationFetcher(app),
+		destinationFetcher,
+	)
 	block.NewDestinationUpdate(app, destinationFetcher).ApplyHooks()
 	block.NewBlockCreate(app, destinationFetcher).ApplyHooks()
 	block.NewBlockUpdate(app, block_data.NewBlockFetcher(app)).ApplyHooks()
@@ -175,7 +179,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 		NotionClientID:         cfg.NotionOAuthClientID,
 		NotionRedirectBasePath: cfg.NotionRedirectBasePath,
 	}).Apply()
-	integ_api.NewUpdateIntegrationDestinationAPI(app).ApplyHooks()
+	integ_api.NewUpdateIntegrationDestinationAPI(app, integrationDestinationSync).ApplyHooks()
 
 	// Old rules, need extracting/refactoring
 	setBlockJobInvariants(app)
