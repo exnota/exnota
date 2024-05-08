@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"time"
 
+	block_data "exnota.com/backend/block/data"
 	"exnota.com/backend/job/data"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -106,7 +107,7 @@ func exportWorker(id int, jobs <-chan data.BlockJob, _ chan<- string, app core.A
 
 		// The processor handles the status and panics of the runner
 		processor := NewBlockJobProcessor(app)
-		exportRunner := NewExportJobRunner(app)
+		exportRunner := NewExportJobRunner(app, block_data.NewWorkspaceFetcher(app))
 		err := processor.Process(j, exportRunner)
 		if err != nil {
 			slog.Warn(

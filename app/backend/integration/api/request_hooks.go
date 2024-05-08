@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"exnota.com/backend/integration/data"
-	"exnota.com/backend/integration/service/notion"
+	"exnota.com/backend/integration/usecase/notion"
 	"exnota.com/backend/lib/data/filter"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"

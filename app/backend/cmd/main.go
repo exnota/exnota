@@ -15,7 +15,7 @@ import (
 	"exnota.com/backend/event"
 	integ_api "exnota.com/backend/integration/api"
 	integ_data "exnota.com/backend/integration/data"
-	"exnota.com/backend/integration/service"
+	integration_usecase "exnota.com/backend/integration/usecase"
 	"exnota.com/backend/job"
 	_ "exnota.com/backend/migrations"
 	user_api_hooks "exnota.com/backend/user/api"
@@ -122,7 +122,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	integ_data.NewIntegrationNotionObjectHooks(app).ApplyHooks()
 	integ_data.NewIntegrationDestinationDataRules(app).ApplyHooks()
 	block.NewWorkspaceDataRules(app, block_data.NewWorkspaceFetcher(app)).ApplyHooks()
-	integrationDestinationSync := service.NewIntegrationDestinationSync(app)
+	integrationDestinationSync := integration_usecase.NewIntegrationDestinationSync(app)
 	destinationFetcher := block_data.NewDestinationFetcher(app)
 	block.NewDestinationUpdate(app, destinationFetcher).ApplyHooks()
 	block.NewBlockCreate(app, destinationFetcher).ApplyHooks()

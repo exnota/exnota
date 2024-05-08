@@ -13,7 +13,7 @@ import (
 
 	"exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
-	"exnota.com/backend/integration/service/notion/api"
+	"exnota.com/backend/integration/usecase/notion/api"
 	"exnota.com/backend/lib/url"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"

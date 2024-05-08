@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"exnota.com/backend/integration/data"
-	"exnota.com/backend/integration/service/notion/api"
+	"exnota.com/backend/integration/usecase/notion/api"
 	gonotion "github.com/dstotijn/go-notion"
 	"github.com/go-playground/validator/v10"
 	"github.com/pocketbase/pocketbase/core"
