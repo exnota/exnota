@@ -13,7 +13,9 @@ import (
 )
 
 type IntegrationDestinationSync interface {
-	Sync(request block.DestinationSyncRequest) (result *block.DestinationSyncResult, err error)
+	CreateSync(
+		request block.CreateDestinationSyncRequest,
+	) (result *block.CreateDestinationSyncResult, err error)
 }
 
 type integrationDestinationSync struct {
@@ -24,9 +26,9 @@ func NewIntegrationDestinationSync(app core.App) IntegrationDestinationSync {
 	return &integrationDestinationSync{app}
 }
 
-func (s *integrationDestinationSync) Sync(
-	request block.DestinationSyncRequest,
-) (result *block.DestinationSyncResult, err error) {
+func (s *integrationDestinationSync) CreateSync(
+	request block.CreateDestinationSyncRequest,
+) (result *block.CreateDestinationSyncResult, err error) {
 	fetcher := data.NewIntegrationFetcher(s.app)
 	integration, err := fetcher.FetchById(data.FetchByIdRequest{
 		IntegrationId: request.IntegrationId,
@@ -36,13 +38,13 @@ func (s *integrationDestinationSync) Sync(
 		return nil, err
 	}
 
-	var destinationResult *block.DestinationSyncResult
+	var destinationResult *block.CreateDestinationSyncResult
 	switch integration.Type() {
 	case data.TypeNotion:
 		notionSync := notion.NewNotionDestinationSync(s.app)
 		var externalRecord *models.Record
-		destinationResult, externalRecord, err = notionSync.Sync(
-			notion.NotionDestinationSyncRequest{
+		destinationResult, externalRecord, err = notionSync.CreateSync(
+			notion.CreateNotionDestinationSyncRequest{
 				DestinationId: request.DestinationId,
 				Config:        request.Config,
 				User:          request.User,

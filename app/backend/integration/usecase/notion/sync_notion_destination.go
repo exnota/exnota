@@ -13,14 +13,28 @@ import (
 	"github.com/pocketbase/pocketbase/models"
 )
 
-type NotionDestinationSyncRequest struct {
+type NotionDestinationSync interface {
+	CreateSync(
+		CreateNotionDestinationSyncRequest,
+	) (result *block.CreateDestinationSyncResult, record *models.Record, err error)
+}
+
+type notionDestinationSync struct {
+	app core.App
+}
+
+func NewNotionDestinationSync(app core.App) NotionDestinationSync {
+	return &notionDestinationSync{app}
+}
+
+type CreateNotionDestinationSyncRequest struct {
 	DestinationId string
 	IntegrationId string
 	Config        map[string]interface{}
 	User          string
 }
 
-type NotionDestinationSyncConfig struct {
+type CreateNotionDestinationSyncConfig struct {
 	Id     string                            `json:"id"     validate:"required"`
 	Object NotionDestinationSyncConfigObject `json:"object" validate:"required"`
 }
@@ -32,24 +46,10 @@ const (
 	NotionSyncConfigObjectPage     NotionDestinationSyncConfigObject = "page"
 )
 
-type NotionDestinationSync interface {
-	Sync(
-		NotionDestinationSyncRequest,
-	) (result *block.DestinationSyncResult, record *models.Record, err error)
-}
-
-type notionDestinationSync struct {
-	app core.App
-}
-
-func NewNotionDestinationSync(app core.App) NotionDestinationSync {
-	return &notionDestinationSync{app}
-}
-
-func (s *notionDestinationSync) Sync(
-	request NotionDestinationSyncRequest,
-) (result *block.DestinationSyncResult, record *models.Record, err error) {
-	var config NotionDestinationSyncConfig
+func (s *notionDestinationSync) CreateSync(
+	request CreateNotionDestinationSyncRequest,
+) (result *block.CreateDestinationSyncResult, record *models.Record, err error) {
+	var config CreateNotionDestinationSyncConfig
 	err = mapstructure.Decode(request.Config, &config)
 	if err != nil {
 		return nil, nil, err
@@ -84,7 +84,7 @@ func (s *notionDestinationSync) Sync(
 			return nil, nil, err
 		}
 
-		return &block.DestinationSyncResult{
+		return &block.CreateDestinationSyncResult{
 			ExternalRecordId:   record.Id,
 			ExternalRecordType: block.DestinationExternalRecordTypeNotion,
 			DestinationId:      request.DestinationId,
@@ -117,7 +117,7 @@ func (s *notionDestinationSync) Sync(
 		if err != nil {
 			return nil, nil, err
 		}
-		return &block.DestinationSyncResult{
+		return &block.CreateDestinationSyncResult{
 			ExternalRecordId:   record.Id,
 			ExternalRecordType: block.DestinationExternalRecordTypeNotion,
 			DestinationId:      request.DestinationId,

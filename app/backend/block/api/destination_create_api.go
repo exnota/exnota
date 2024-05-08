@@ -13,22 +13,22 @@ type DestinationCreateAPI interface {
 }
 
 type destinationCreateAPI struct {
-	app              core.App
-	destinationSync  DestinationSync
-	workspaceFetcher block.WorkspaceFetcher
+	app                   core.App
+	createDestinationSync CreateDestinationSync
+	workspaceFetcher      block.WorkspaceFetcher
 }
 
-type DestinationSync func(request lib_block.DestinationSyncRequest) (result *lib_block.DestinationSyncResult, err error)
+type CreateDestinationSync func(request lib_block.CreateDestinationSyncRequest) (result *lib_block.CreateDestinationSyncResult, err error)
 
 func NewDestinationCreateAPI(
 	app core.App,
-	destinationSync DestinationSync,
+	createDestinationSync CreateDestinationSync,
 	workspaceFetcher block.WorkspaceFetcher,
 ) DestinationCreateAPI {
 	return &destinationCreateAPI{
-		app:              app,
-		destinationSync:  destinationSync,
-		workspaceFetcher: workspaceFetcher,
+		app:                   app,
+		createDestinationSync: createDestinationSync,
+		workspaceFetcher:      workspaceFetcher,
 	}
 }
 
@@ -71,7 +71,7 @@ func (h *destinationCreateAPI) ApplyHooks() {
 			}
 
 			// Sync data from remote destination
-			syncResult, err := h.destinationSync(lib_block.DestinationSyncRequest{
+			syncResult, err := h.createDestinationSync(lib_block.CreateDestinationSyncRequest{
 				DestinationId: destinationID,
 				IntegrationId: integration,
 				Config:        external.Config,
