@@ -124,7 +124,10 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 		return nil, nil
 	}
 	integrationFetcher := integ_data.NewIntegrationFetcher(j.app)
-	integration, err := integrationFetcher.FetchById(integrationId, userId)
+	integration, err := integrationFetcher.FetchById(integ_data.FetchByIdRequest{
+		IntegrationId: integrationId,
+		UserId:        userId,
+	})
 	if err != nil {
 		slog.Error("Error fetching integration by id", "integrationId", integrationId, "err", err)
 		return nil, err

@@ -50,7 +50,10 @@ func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) (bool, 
 	}
 
 	integrationFetcher := data.NewIntegrationFetcher(s.app)
-	integration, err := integrationFetcher.FetchById(request.IntegrationId, request.UserID)
+	integration, err := integrationFetcher.FetchById(data.FetchByIdRequest{
+		IntegrationId: request.IntegrationId,
+		UserId:        request.UserID,
+	})
 	if err != nil {
 		return false, err
 	}
@@ -151,11 +154,17 @@ func (s *notionSync) GetAuthToken(code string) (*NotionAccessTokenResponse, erro
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", "https://api.notion.com/v1/oauth/token", bytes.NewBuffer(bodyMarshalled))
+	req, err := http.NewRequest(
+		"POST",
+		"https://api.notion.com/v1/oauth/token",
+		bytes.NewBuffer(bodyMarshalled),
+	)
 	if err != nil {
 		return nil, err
 	}
-	auth := b64.StdEncoding.EncodeToString([]byte(s.credentials.ClientId + ":" + s.credentials.Secret))
+	auth := b64.StdEncoding.EncodeToString(
+		[]byte(s.credentials.ClientId + ":" + s.credentials.Secret),
+	)
 	req.Header.Set("Authorization", "Basic "+auth)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -175,7 +184,11 @@ func (s *notionSync) GetAuthToken(code string) (*NotionAccessTokenResponse, erro
 			"status", res.Status,
 			"body", string(jsonBlob),
 		)
-		return nil, fmt.Errorf("Notion API returned non-200 status code %d with body %s", res.StatusCode, string(jsonBlob))
+		return nil, fmt.Errorf(
+			"Notion API returned non-200 status code %d with body %s",
+			res.StatusCode,
+			string(jsonBlob),
+		)
 	}
 
 	defer res.Body.Close()

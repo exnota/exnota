@@ -9,7 +9,7 @@ import (
 )
 
 type IntegrationFetcher interface {
-	FetchById(id string, userId string) (Integration, error)
+	FetchById(request FetchByIdRequest) (Integration, error)
 	FetchNotionIntegration(id string) (NotionIntegration, error)
 	ListByNotionBotId(botId string) ([]NotionIntegration, error)
 }
@@ -22,8 +22,18 @@ func NewIntegrationFetcher(app core.App) IntegrationFetcher {
 	return &integrationFetcher{app}
 }
 
-func (f *integrationFetcher) FetchById(id string, userId string) (Integration, error) {
-	record, err := f.app.Dao().FindRecordById(CollectionIntegration, id)
+type FetchByIdRequest struct {
+	IntegrationId string `validate:"min=1"`
+	UserId        string `validate:"min=1"`
+}
+
+func (f *integrationFetcher) FetchById(request FetchByIdRequest) (Integration, error) {
+	err := validate.Struct(request)
+	if err != nil {
+		return nil, err
+	}
+
+	record, err := f.app.Dao().FindRecordById(CollectionIntegration, request.IntegrationId)
 	if err != nil {
 		return nil, err
 	}
@@ -32,13 +42,13 @@ func (f *integrationFetcher) FetchById(id string, userId string) (Integration, e
 		return nil, err
 	}
 
-	if integration.User() != userId {
+	if integration.User() != request.UserId {
 		slog.Error(
 			"Integration user id does not match",
 			"integration",
 			integration,
 			"userId",
-			userId,
+			request.UserId,
 		)
 		return nil, fmt.Errorf("Integration user id does not match")
 	}

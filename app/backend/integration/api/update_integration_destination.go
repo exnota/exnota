@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"exnota.com/backend/integration"
+	"exnota.com/backend/integration/data"
 	"github.com/labstack/echo/v5"
-	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -41,22 +41,20 @@ func (h *updateIntegrationDestinationAPI) ApplyHooks() {
 			)
 
 			// Parse request
-			updaterequest := new(UpdateIntegrationDestinationRequest)
-			if err := c.Bind(updaterequest); err != nil {
+			updateRequest := new(UpdateIntegrationDestinationRequest)
+			if err := c.Bind(updateRequest); err != nil {
 				return c.String(http.StatusBadRequest, "bad request")
 			}
-			if strings.TrimSpace(updaterequest.IntegrationId) == "" {
+			if strings.TrimSpace(updateRequest.IntegrationId) == "" {
 				return c.JSON(http.StatusBadRequest, nil)
 			}
 
-			// Get user
-			requestInfo := apis.RequestInfo(c)
-			if requestInfo.AuthRecord == nil {
-				return c.String(http.StatusUnauthorized, "Not logged in")
+			// Auth
+			auth := NewIntegrationAuth(h.app, data.NewIntegrationFetcher(h.app))
+			err := auth.ForIntegration(updateRequest.IntegrationId, c)
+			if err != nil {
+				return err
 			}
-			// loggedInUserId := requestInfo.AuthRecord.Id
-
-			// TODO: Verify user matches integration
 
 			// Update status
 			// integrationSync := service.NewIntegrationSync(h.app)
