@@ -162,7 +162,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	workspaceFetcher := block_data.NewWorkspaceFetcher(app)
 	block_api.NewDestinationCreateAPI(
 		app,
-		integrationDestinationSync.Sync,
+		integrationDestinationSync.CreateSync,
 		workspaceFetcher,
 	).ApplyHooks()
 	block_api.NewBlockCreateAPI(app).ApplyHooks()

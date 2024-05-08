@@ -2,7 +2,7 @@ package block
 
 // Interfaces shared between domains
 
-type DestinationSyncRequest struct {
+type CreateDestinationSyncRequest struct {
 	DestinationId string
 	IntegrationId string
 	Config        map[string]interface{}
@@ -15,7 +15,7 @@ const (
 	DestinationExternalRecordTypeNotion DestinationExternalRecordType = "notion"
 )
 
-type DestinationSyncResult struct {
+type CreateDestinationSyncResult struct {
 	DestinationId      string
 	DestinationName    string
 	ExternalRecordType DestinationExternalRecordType
