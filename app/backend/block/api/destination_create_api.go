@@ -35,7 +35,6 @@ func NewDestinationCreateAPI(
 func (h *destinationCreateAPI) ApplyHooks() {
 	h.app.OnRecordBeforeCreateRequest(block.CollectionDestination).
 		Add(func(e *core.RecordCreateEvent) error {
-
 			// Validate early to avoid extra work if there's a simple validation
 			// error
 			form := forms.NewRecordUpsert(h.app, e.Record)
@@ -61,6 +60,7 @@ func (h *destinationCreateAPI) ApplyHooks() {
 				return nil
 			}
 
+			// Validate: ID set client-side, external field set
 			destinationID := destination.Id()
 			if destinationID == "" {
 				return apis.NewBadRequestError("Destination ID is empty", nil)
