@@ -34,7 +34,10 @@ func (r *workspaceDataRules) relationRules() {
 
 		if workspace.Integration() != "" {
 			fetcher := integ_data.NewIntegrationFetcher(r.app)
-			integration, err := fetcher.FetchById(workspace.Integration(), workspace.User())
+			integration, err := fetcher.FetchById(integ_data.FetchByIdRequest{
+				IntegrationId: workspace.Integration(),
+				UserId:        workspace.User(),
+			})
 			if err != nil {
 				return err
 			}

@@ -11,6 +11,7 @@ import (
 
 type IntegrationSync interface {
 	UpdateStatus(request UpdateStatusRequest) (success bool, err error)
+	UpdateDestinationStatus(request UpdateDestinationStatusRequest) error
 }
 
 type integrationSync struct {
@@ -33,7 +34,10 @@ func (s *integrationSync) UpdateStatus(request UpdateStatusRequest) (success boo
 	}
 
 	integrationFetcher := data.NewIntegrationFetcher(s.app)
-	integration, err := integrationFetcher.FetchById(request.IntegrationId, request.UserID)
+	integration, err := integrationFetcher.FetchById(data.FetchByIdRequest{
+		IntegrationId: request.IntegrationId,
+		UserId:        request.UserID,
+	})
 	if err != nil {
 		return false, err
 	}
@@ -48,21 +52,33 @@ func (s *integrationSync) UpdateStatus(request UpdateStatusRequest) (success boo
 		if err != nil {
 			return false, err
 		}
-
-		// TODO: Set integration and workspace status to "success"
-
-		// notionIntegration, ok := integration.(data.NotionIntegration)
-		// if !ok {
-		// 	slog.Error("Invalid integration type", "type", integration.Type())
-		// 	return c.JSON(http.StatusInternalServerError, "Invalid integration type")
-		// }
-
-		// return c.JSON(http.StatusOK, VerifyIntegrationAccessResponse{
-		// 	Result: Success,
-		// })
 		return verified, nil
 	default:
 		slog.Error("Unknown integration type", "type", integration.Type())
 		return false, fmt.Errorf("Unknown integration type: %s", integration.Type())
 	}
+}
+
+type UpdateDestinationStatusRequest struct {
+	IntegrationId string `validate:"min=1"`
+	UserID        string `validate:"min=1"`
+}
+
+func (s *integrationSync) UpdateDestinationStatus(request UpdateDestinationStatusRequest) error {
+	err := validate.Struct(request)
+	if err != nil {
+		return err
+	}
+
+	// TODO:
+	// - Call a shared/common service to get all destinations by integration ID
+	// - For each destination, re-fetch the notion object.
+	// - Successful updates should, through events, update the destination object (e.g. name)
+	// - Updates should also update destination.external.status (options: access, no-access, remotely-deleted)
+
+	// TODO:
+	// - Can external.config in destinations be removed before persisting on
+	// success?
+
+	return nil
 }

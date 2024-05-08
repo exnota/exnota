@@ -24,9 +24,14 @@ func NewIntegrationDestinationSync(app core.App) IntegrationDestinationSync {
 	return &integrationDestinationSync{app}
 }
 
-func (s *integrationDestinationSync) Sync(request block.DestinationSyncRequest) (result *block.DestinationSyncResult, err error) {
+func (s *integrationDestinationSync) Sync(
+	request block.DestinationSyncRequest,
+) (result *block.DestinationSyncResult, err error) {
 	fetcher := data.NewIntegrationFetcher(s.app)
-	integration, err := fetcher.FetchById(request.IntegrationId, request.User)
+	integration, err := fetcher.FetchById(data.FetchByIdRequest{
+		IntegrationId: request.IntegrationId,
+		UserId:        request.User,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -36,12 +41,14 @@ func (s *integrationDestinationSync) Sync(request block.DestinationSyncRequest) 
 	case data.TypeNotion:
 		notionSync := notion.NewNotionDestinationSync(s.app)
 		var externalRecord *models.Record
-		destinationResult, externalRecord, err = notionSync.Sync(notion.NotionDestinationSyncRequest{
-			DestinationId: request.DestinationId,
-			Config:        request.Config,
-			User:          request.User,
-			IntegrationId: request.IntegrationId,
-		})
+		destinationResult, externalRecord, err = notionSync.Sync(
+			notion.NotionDestinationSyncRequest{
+				DestinationId: request.DestinationId,
+				Config:        request.Config,
+				User:          request.User,
+				IntegrationId: request.IntegrationId,
+			},
+		)
 		if err != nil {
 			return nil, err
 		}
