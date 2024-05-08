@@ -45,6 +45,7 @@ func NewIntegrationEndpointHooks(
 }
 
 func (h *integrationEndpointHooks) Apply() {
+	// TODO: Move each endpoint into its own file, like update_integration_destination.go
 	h.notionMobileCodeRequestPath()
 	h.notionMobileRedirect()
 	h.notionSearch()

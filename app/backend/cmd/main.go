@@ -175,6 +175,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 		NotionClientID:         cfg.NotionOAuthClientID,
 		NotionRedirectBasePath: cfg.NotionRedirectBasePath,
 	}).Apply()
+	integ_api.NewUpdateIntegrationDestinationAPI(app).ApplyHooks()
 
 	// Old rules, need extracting/refactoring
 	setBlockJobInvariants(app)
