@@ -1,40 +1,38 @@
 package data
 
 import (
+	integ "exnota.com/backend/integration"
 	"github.com/pocketbase/pocketbase/core"
 )
-
-type IntegrationNotionObjectFetcher interface {
-	FetchById(id string) (IntegrationNotionObject, error)
-	ListByIds(ids []string) ([]IntegrationNotionObject, error)
-}
 
 type integrationNotionObjectFetcher struct {
 	app core.App
 }
 
-func NewIntegrationNotionObjectFetcher(app core.App) IntegrationNotionObjectFetcher {
+func NewIntegrationNotionObjectFetcher(app core.App) integ.IntegrationNotionObjectFetcher {
 	return &integrationNotionObjectFetcher{app: app}
 }
 
-func (f *integrationNotionObjectFetcher) FetchById(id string) (IntegrationNotionObject, error) {
-	record, err := f.app.Dao().FindRecordById(CollectionIntegrationNotionObject, id)
+func (f *integrationNotionObjectFetcher) FetchById(
+	id string,
+) (integ.IntegrationNotionObject, error) {
+	record, err := f.app.Dao().FindRecordById(integ.CollectionIntegrationNotionObject, id)
 	if err != nil {
 		return nil, err
 	}
-	return LoadIntegrationNotionObject(record, f.app), nil
+	return integ.LoadIntegrationNotionObject(record, f.app), nil
 }
 
 func (f *integrationNotionObjectFetcher) ListByIds(
 	ids []string,
-) ([]IntegrationNotionObject, error) {
-	records, err := f.app.Dao().FindRecordsByIds(CollectionIntegrationNotionObject, ids)
+) ([]integ.IntegrationNotionObject, error) {
+	records, err := f.app.Dao().FindRecordsByIds(integ.CollectionIntegrationNotionObject, ids)
 	if err != nil {
 		return nil, err
 	}
-	objects := make([]IntegrationNotionObject, len(records))
+	objects := make([]integ.IntegrationNotionObject, len(records))
 	for i, record := range records {
-		objects[i] = LoadIntegrationNotionObject(record, f.app)
+		objects[i] = integ.LoadIntegrationNotionObject(record, f.app)
 	}
 	return objects, nil
 }

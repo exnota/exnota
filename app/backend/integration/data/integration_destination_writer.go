@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
+	integ "exnota.com/backend/integration"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -26,7 +27,7 @@ func NewIntegrationDestinationWriter(app core.App, txDao *daos.Dao) IntegrationD
 
 type IntegrationDestinationUpsertData struct {
 	DestinationId      string
-	ExternalRecordType IntegrationDestinationRecordType
+	ExternalRecordType integ.IntegrationDestinationRecordType
 	ExternalRecordId   string
 	User               string
 }
@@ -40,15 +41,17 @@ func (m *integrationDestinationWriter) Upsert(data IntegrationDestinationUpsertD
 	}
 
 	err := dao.RunInTransaction(func(dao *daos.Dao) error {
-		collection, err := dao.FindCollectionByNameOrId(CollectionIntegrationDestination)
+		collection, err := dao.FindCollectionByNameOrId(
+			integ.CollectionIntegrationDestination,
+		)
 		if err != nil {
 			return err
 		}
 
 		// Check if object already exists.
-		filter := IntegrationDestinationFieldExternalRecordId + "={:externalRecordId} && " +
-			IntegrationDestinationFieldExternalRecordType + "={:externalRecordType}"
-		existing, err := dao.FindFirstRecordByFilter(CollectionIntegrationDestination,
+		filter := integ.IntegrationDestinationFieldExternalRecordId + "={:externalRecordId} && " +
+			integ.IntegrationDestinationFieldExternalRecordType + "={:externalRecordType}"
+		existing, err := dao.FindFirstRecordByFilter(integ.CollectionIntegrationDestination,
 			filter, dbx.Params{
 				"externalRecordId":   data.ExternalRecordId,
 				"externalRecordType": string(data.ExternalRecordType),
@@ -64,14 +67,14 @@ func (m *integrationDestinationWriter) Upsert(data IntegrationDestinationUpsertD
 		} else {
 			// If it does exist but the requested user or destination are
 			// different, throw an error because that shouldn't happen.
-			if existing.GetString(IntegrationDestinationFieldDestinationId) != data.DestinationId {
+			if existing.GetString(integ.IntegrationDestinationFieldDestinationId) != data.DestinationId {
 				return errors.New("IntegrationDestinationUpsertData: Attempted to change destination from " +
-					existing.GetString(IntegrationDestinationFieldDestinationId) + " to " +
+					existing.GetString(integ.IntegrationDestinationFieldDestinationId) + " to " +
 					data.DestinationId)
 			}
-			if existing.Get(IntegrationDestinationFieldUser) != data.User {
+			if existing.Get(integ.IntegrationDestinationFieldUser) != data.User {
 				return errors.New("IntegrationDestinationUpsertData: Attempted to change user from " +
-					existing.GetString(IntegrationDestinationFieldUser) + " to " +
+					existing.GetString(integ.IntegrationDestinationFieldUser) + " to " +
 					data.User)
 			}
 
@@ -81,10 +84,13 @@ func (m *integrationDestinationWriter) Upsert(data IntegrationDestinationUpsertD
 
 		// Create new record
 		record := models.NewRecord(collection)
-		record.Set(IntegrationDestinationFieldDestinationId, data.DestinationId)
-		record.Set(IntegrationDestinationFieldExternalRecordType, string(data.ExternalRecordType))
-		record.Set(IntegrationDestinationFieldExternalRecordId, data.ExternalRecordId)
-		record.Set(IntegrationDestinationFieldUser, data.User)
+		record.Set(integ.IntegrationDestinationFieldDestinationId, data.DestinationId)
+		record.Set(
+			integ.IntegrationDestinationFieldExternalRecordType,
+			string(data.ExternalRecordType),
+		)
+		record.Set(integ.IntegrationDestinationFieldExternalRecordId, data.ExternalRecordId)
+		record.Set(integ.IntegrationDestinationFieldUser, data.User)
 
 		form := forms.NewRecordUpsert(m.app, record)
 		form.SetDao(dao)

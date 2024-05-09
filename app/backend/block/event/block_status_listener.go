@@ -3,7 +3,7 @@ package event
 import (
 	"exnota.com/backend/block"
 	"exnota.com/backend/block/data"
-	notion_mapping_data "exnota.com/backend/integration/data"
+	integ "exnota.com/backend/integration"
 	block_job_data "exnota.com/backend/job/data"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
@@ -31,10 +31,10 @@ func (l *blockStatusListener) ApplyHooks() {
 func (l *blockStatusListener) applyHooksToUpdateExternalUrl() {
 	// On Notion mapping create, update external URL if already set
 	l.app.OnModelAfterCreate(
-		notion_mapping_data.CollectionIntegrationBlockNotionMapping).Add(
+		integ.CollectionIntegrationBlockNotionMapping).Add(
 		func(e *core.ModelEvent) error {
 			record := e.Model.(*models.Record)
-			mapping, err := notion_mapping_data.LoadIntegrationBlockNotionMapping(record, l.app)
+			mapping, err := integ.LoadIntegrationBlockNotionMapping(record, l.app)
 			if err != nil {
 				return err
 			}
@@ -55,15 +55,15 @@ func (l *blockStatusListener) applyHooksToUpdateExternalUrl() {
 
 	// On Notion mapping update, update external URL if it has changed
 	l.app.OnModelAfterUpdate(
-		notion_mapping_data.CollectionIntegrationBlockNotionMapping).Add(
+		integ.CollectionIntegrationBlockNotionMapping).Add(
 		func(e *core.ModelEvent) error {
 			record := e.Model.(*models.Record)
-			newMapping, err := notion_mapping_data.LoadIntegrationBlockNotionMapping(record, l.app)
+			newMapping, err := integ.LoadIntegrationBlockNotionMapping(record, l.app)
 			if err != nil {
 				return err
 			}
 
-			prevMapping, err := notion_mapping_data.LoadIntegrationBlockNotionMapping(
+			prevMapping, err := integ.LoadIntegrationBlockNotionMapping(
 				record.OriginalCopy(),
 				l.app,
 			)

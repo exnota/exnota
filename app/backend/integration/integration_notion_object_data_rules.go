@@ -1,4 +1,4 @@
-package data
+package integration
 
 import (
 	"errors"
@@ -11,11 +11,15 @@ type IntegrationNotionObjectDataRules interface {
 }
 
 type integrationNotionObjectDataRules struct {
-	app core.App
+	app                            core.App
+	integrationNotionObjectFetcher IntegrationNotionObjectFetcher
 }
 
-func NewIntegrationNotionObjectHooks(app core.App) IntegrationNotionObjectDataRules {
-	return &integrationNotionObjectDataRules{app: app}
+func NewIntegrationNotionObjectHooks(
+	app core.App,
+	integrationNotionObjectFetcher IntegrationNotionObjectFetcher,
+) IntegrationNotionObjectDataRules {
+	return &integrationNotionObjectDataRules{app, integrationNotionObjectFetcher}
 }
 
 func (h *integrationNotionObjectDataRules) ApplyHooks() {
@@ -26,8 +30,7 @@ func (h *integrationNotionObjectDataRules) immutableFields() {
 	h.app.OnModelBeforeUpdate(CollectionIntegrationNotionObject).
 		Add(func(e *core.ModelEvent) error {
 			updated := LoadIntegrationNotionObjectFromModel(e.Model)
-			fetcher := NewIntegrationNotionObjectFetcher(h.app)
-			existing, err := fetcher.FetchById(updated.Id())
+			existing, err := h.integrationNotionObjectFetcher.FetchById(updated.Id())
 			if err != nil {
 				return err
 			}

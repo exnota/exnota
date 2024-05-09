@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion"
 	"exnota.com/backend/lib/block"
@@ -26,15 +27,15 @@ type DestinationFetcher interface {
 
 type integrationDestinationSync struct {
 	app                           core.App
-	integrationFetcher            data.IntegrationFetcher
-	integrationDestinationFetcher data.IntegrationDestinationFetcher
+	integrationFetcher            integ.IntegrationFetcher
+	integrationDestinationFetcher integ.IntegrationDestinationFetcher
 	destinationFetcher            DestinationFetcher
 }
 
 func NewIntegrationDestinationSync(
 	app core.App,
-	integrationFetcher data.IntegrationFetcher,
-	integrationDestinationFetcher data.IntegrationDestinationFetcher,
+	integrationFetcher integ.IntegrationFetcher,
+	integrationDestinationFetcher integ.IntegrationDestinationFetcher,
 	destinationFetcher DestinationFetcher,
 ) IntegrationDestinationSync {
 	return &integrationDestinationSync{
@@ -48,7 +49,7 @@ func NewIntegrationDestinationSync(
 func (s *integrationDestinationSync) CreateSync(
 	request block.CreateDestinationSyncRequest,
 ) (result *block.CreateDestinationSyncResult, err error) {
-	integration, err := s.integrationFetcher.FetchById(data.FetchByIdRequest{
+	integration, err := s.integrationFetcher.FetchById(integ.FetchByIdRequest{
 		IntegrationId: request.IntegrationId,
 		UserId:        request.User,
 	})
@@ -58,7 +59,7 @@ func (s *integrationDestinationSync) CreateSync(
 
 	var destinationResult *block.CreateDestinationSyncResult
 	switch integration.Type() {
-	case data.TypeNotion:
+	case integ.TypeNotion:
 		notionSync := notion.NewNotionDestinationSync(
 			s.app,
 			data.NewIntegrationNotionObjectFetcher(s.app),
@@ -94,7 +95,7 @@ func (s *integrationDestinationSync) CreateSync(
 			writer := data.NewIntegrationDestinationWriter(s.app, txDao)
 			err = writer.Upsert(data.IntegrationDestinationUpsertData{
 				DestinationId:      request.DestinationId,
-				ExternalRecordType: data.IntegrationDestinationRecordTypeNotion,
+				ExternalRecordType: integ.IntegrationDestinationRecordTypeNotion,
 				ExternalRecordId:   externalRecord.Id,
 				User:               request.User,
 			})
@@ -126,14 +127,14 @@ func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error
 		return err
 	}
 
-	integration, err := s.integrationFetcher.FetchById(data.FetchByIdRequest{
+	integration, err := s.integrationFetcher.FetchById(integ.FetchByIdRequest{
 		IntegrationId: request.IntegrationId,
 		UserId:        request.UserId,
 	})
 	if err != nil {
 		return err
 	}
-	if integration.Status() != data.IntegrationStatusConnected {
+	if integration.Status() != integ.IntegrationStatusConnected {
 		slog.Warn("Integration not connected", "integrationId", request.IntegrationId)
 		return nil
 	}
@@ -160,7 +161,7 @@ func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error
 	}
 
 	switch integration.Type() {
-	case data.TypeNotion:
+	case integ.TypeNotion:
 		notionSync := notion.NewNotionDestinationSync(
 			s.app,
 			data.NewIntegrationNotionObjectFetcher(s.app),

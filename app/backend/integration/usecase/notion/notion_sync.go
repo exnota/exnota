@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"exnota.com/backend/integration"
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion/api"
 	"exnota.com/backend/lib/url"
@@ -50,7 +50,7 @@ func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) (bool, 
 	}
 
 	integrationFetcher := data.NewIntegrationFetcher(s.app)
-	integration, err := integrationFetcher.FetchById(data.FetchByIdRequest{
+	integration, err := integrationFetcher.FetchById(integ.FetchByIdRequest{
 		IntegrationId: request.IntegrationId,
 		UserId:        request.UserID,
 	})
@@ -58,7 +58,7 @@ func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) (bool, 
 		return false, err
 	}
 
-	notionIntegration, ok := integration.(data.NotionIntegration)
+	notionIntegration, ok := integration.(integ.NotionIntegration)
 	if !ok {
 		slog.Error("Invalid integration type", "type", integration.Type())
 		return false, errors.New("integration is not of type NotionIntegration")
@@ -82,11 +82,11 @@ func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) (bool, 
 	err = s.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
 		// Update integration
 		integrationWriter := data.NewIntegrationWriter(s.app, txDao)
-		var status data.IntegrationStatus
+		var status integ.IntegrationStatus
 		if !verified {
-			status = data.IntegrationStatusAccessRevoked
+			status = integ.IntegrationStatusAccessRevoked
 		} else {
-			status = data.IntegrationStatusConnected
+			status = integ.IntegrationStatusConnected
 		}
 
 		err = integrationWriter.SetStatus(data.SetStatusRequest{
@@ -147,7 +147,7 @@ func (s *notionSync) GetAuthToken(code string) (*NotionAccessTokenResponse, erro
 	body := map[string]string{
 		"grant_type":   "authorization_code",
 		"code":         code,
-		"redirect_uri": url.Url(integration.NotionMobileRedirectPath, s.app),
+		"redirect_uri": url.Url(integ.NotionMobileRedirectPath, s.app),
 	}
 	bodyMarshalled, err := json.Marshal(body)
 	if err != nil {

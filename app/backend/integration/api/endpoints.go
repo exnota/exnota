@@ -9,8 +9,7 @@ import (
 	"reflect"
 	"strings"
 
-	"exnota.com/backend/integration"
-	"exnota.com/backend/integration/data"
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/usecase"
 	"exnota.com/backend/integration/util"
 	"github.com/dstotijn/go-notion"
@@ -57,17 +56,17 @@ func (h *integrationEndpointHooks) Apply() {
 // will redirect to an exnota:// scheme.
 func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(integration.NotionMobileCodeRequestPath, func(c echo.Context) error {
+		e.Router.GET(integ.NotionMobileCodeRequestPath, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integration.NotionMobileCodeRequestPath,
+				integ.NotionMobileCodeRequestPath,
 			)
 			redirectUri, err := url.JoinPath(
 				h.config.BasePath,
-				integration.NotionMobileRedirectPath,
+				integ.NotionMobileRedirectPath,
 			)
 			if err != nil {
 				return err
@@ -92,13 +91,13 @@ func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 // Redirects to an exnota:// scheme for the mobile app to capture and read.
 func (h *integrationEndpointHooks) notionMobileRedirect() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(integration.NotionMobileRedirectPath, func(c echo.Context) error {
+		e.Router.GET(integ.NotionMobileRedirectPath, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integration.NotionMobileRedirectPath,
+				integ.NotionMobileRedirectPath,
 			)
 			code := c.QueryParam("code")
 			return c.Redirect(302, "exnota://integration/notion/mobile-code-redirect?code="+code)
@@ -142,13 +141,13 @@ const (
 
 func (h *integrationEndpointHooks) notionSearch() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(integration.NotionSearchPath, func(c echo.Context) error {
+		e.Router.GET(integ.NotionSearchPath, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integration.NotionSearchPath,
+				integ.NotionSearchPath,
 			)
 
 			searchRequest := new(SearchRequest)
@@ -195,16 +194,16 @@ func (h *integrationEndpointHooks) executeNotionSearch(
 	userId string,
 ) (*SearchResponse, error) {
 	// Get integration
-	filter := data.IntegrationFieldUser + "={:user} && " +
-		data.IntegrationFieldType + "={:type}"
+	filter := integ.IntegrationFieldUser + "={:user} && " +
+		integ.IntegrationFieldType + "={:type}"
 	integrationRecord, err := h.app.Dao().FindFirstRecordByFilter(
-		data.CollectionIntegration,
+		integ.CollectionIntegration,
 		filter,
-		dbx.Params{"user": userId, "type": data.IntegrationTypeNotion})
+		dbx.Params{"user": userId, "type": integ.IntegrationTypeNotion})
 	if err != nil {
 		return nil, err
 	}
-	integration, err := data.LoadNotionIntegration(integrationRecord, h.app)
+	integration, err := integ.LoadNotionIntegration(integrationRecord, h.app)
 	if err != nil {
 		return nil, err
 	}
@@ -346,13 +345,13 @@ func (r VerifyIntegrationAccessResponse) MarshalJSON() ([]byte, error) {
 
 func (h *integrationEndpointHooks) integrationVerifyAccess() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST(integration.IntegrationVerifyAccess, func(c echo.Context) error {
+		e.Router.POST(integ.IntegrationVerifyAccess, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integration.IntegrationVerifyAccess,
+				integ.IntegrationVerifyAccess,
 			)
 
 			verifyRequest := new(VerifyIntegrationAccessRequest)

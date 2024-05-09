@@ -4,40 +4,33 @@ import (
 	"fmt"
 	"log/slog"
 
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/lib/data/filter"
 	"github.com/pocketbase/pocketbase/core"
 )
-
-type IntegrationFetcher interface {
-	FetchById(request FetchByIdRequest) (Integration, error)
-	FetchNotionIntegration(id string) (NotionIntegration, error)
-	ListByNotionBotId(botId string) ([]NotionIntegration, error)
-}
 
 type integrationFetcher struct {
 	app core.App
 }
 
-func NewIntegrationFetcher(app core.App) IntegrationFetcher {
+func NewIntegrationFetcher(app core.App) integ.IntegrationFetcher {
 	return &integrationFetcher{app}
 }
 
-type FetchByIdRequest struct {
-	IntegrationId string `validate:"min=1"`
-	UserId        string `validate:"min=1"`
-}
-
-func (f *integrationFetcher) FetchById(request FetchByIdRequest) (Integration, error) {
+func (f *integrationFetcher) FetchById(
+	request integ.FetchByIdRequest,
+) (integ.Integration, error) {
 	err := validate.Struct(request)
 	if err != nil {
 		return nil, err
 	}
 
-	record, err := f.app.Dao().FindRecordById(CollectionIntegration, request.IntegrationId)
+	record, err := f.app.Dao().
+		FindRecordById(integ.CollectionIntegration, request.IntegrationId)
 	if err != nil {
 		return nil, err
 	}
-	integration, err := LoadIntegration(record, f.app)
+	integration, err := integ.LoadIntegration(record, f.app)
 	if err != nil {
 		return nil, err
 	}
@@ -56,13 +49,15 @@ func (f *integrationFetcher) FetchById(request FetchByIdRequest) (Integration, e
 	return integration, nil
 }
 
-func (f *integrationFetcher) FetchNotionIntegration(id string) (NotionIntegration, error) {
-	record, err := f.app.Dao().FindRecordById(CollectionIntegration, id)
+func (f *integrationFetcher) FetchNotionIntegration(
+	id string,
+) (integ.NotionIntegration, error) {
+	record, err := f.app.Dao().FindRecordById(integ.CollectionIntegration, id)
 	if err != nil {
 		return nil, err
 	}
 
-	integration, err := LoadNotionIntegration(record, f.app)
+	integration, err := integ.LoadNotionIntegration(record, f.app)
 	if err != nil {
 		slog.Error("Error creating notion integration", "err", err)
 		return nil, err
@@ -70,20 +65,22 @@ func (f *integrationFetcher) FetchNotionIntegration(id string) (NotionIntegratio
 	return integration, nil
 }
 
-func (f *integrationFetcher) ListByNotionBotId(botId string) ([]NotionIntegration, error) {
+func (f *integrationFetcher) ListByNotionBotId(
+	botId string,
+) ([]integ.NotionIntegration, error) {
 	filter, err := filter.CreateAndFilter(
 		filter.Field{
-			Name:  IntegrationFieldType,
+			Name:  integ.IntegrationFieldType,
 			Op:    filter.OpEquals,
-			Value: IntegrationTypeNotion,
+			Value: integ.IntegrationTypeNotion,
 		},
 		filter.Field{
-			Name:  FilterConfigBotId,
+			Name:  integ.FilterConfigBotId,
 			Op:    filter.OpEquals,
 			Value: botId,
 		},
 		filter.Field{
-			Name:        IntegrationFieldArchived,
+			Name:        integ.IntegrationFieldArchived,
 			Op:          filter.OpEquals,
 			ValuePreset: filter.ValuePresetNull,
 		},
@@ -92,14 +89,14 @@ func (f *integrationFetcher) ListByNotionBotId(botId string) ([]NotionIntegratio
 		return nil, err
 	}
 	records, err := f.app.Dao().
-		FindRecordsByFilter(CollectionIntegration, filter.Filter, "", 0, 0, filter.Params)
+		FindRecordsByFilter(integ.CollectionIntegration, filter.Filter, "", 0, 0, filter.Params)
 	if err != nil {
 		return nil, err
 	}
 
-	var integrations []NotionIntegration
+	var integrations []integ.NotionIntegration
 	for _, record := range records {
-		integration, err := LoadNotionIntegration(record, f.app)
+		integration, err := integ.LoadNotionIntegration(record, f.app)
 		if err != nil {
 			slog.Error("Error creating notion integration", "err", err)
 			return nil, err

@@ -3,6 +3,7 @@ package data
 import (
 	"errors"
 
+	integ "exnota.com/backend/integration"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
@@ -21,9 +22,9 @@ func NewIntegrationWriter(app core.App, txDao *daos.Dao) IntegrationWriter {
 }
 
 type SetStatusRequest struct {
-	Id     string            `validate:"min=1"`
-	UserId string            `validate:"min=1"`
-	Status IntegrationStatus `validate:"required"`
+	Id     string                  `validate:"min=1"`
+	UserId string                  `validate:"min=1"`
+	Status integ.IntegrationStatus `validate:"required"`
 }
 
 func (w *integrationWriter) SetStatus(request SetStatusRequest) error {
@@ -32,12 +33,12 @@ func (w *integrationWriter) SetStatus(request SetStatusRequest) error {
 		return err
 	}
 
-	record, err := w.txDao.FindRecordById(CollectionIntegration, request.Id)
+	record, err := w.txDao.FindRecordById(integ.CollectionIntegration, request.Id)
 	if err != nil {
 		return err
 	}
 
-	integration, err := LoadIntegration(record, w.app)
+	integration, err := integ.LoadIntegration(record, w.app)
 	if err != nil {
 		return err
 	}

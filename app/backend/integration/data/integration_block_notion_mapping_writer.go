@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/lib/data/filter"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -19,13 +20,13 @@ type integrationBlockNotionMappingWriter struct {
 }
 
 type CreateMappingRequest struct {
-	BlockType           BlockType           `validate:"required"`
-	InternalBlock       string              `validate:"required"`
-	InternalDestination string              `validate:"required"`
-	ExternalBlock       string              `validate:"required"`
-	ExternalDestination string              `validate:"required"`
-	ExternalUrl         string              `validate:"required"`
-	Config              *BlockMappingConfig `validate:"required"`
+	BlockType           integ.BlockType           `validate:"required"`
+	InternalBlock       string                    `validate:"required"`
+	InternalDestination string                    `validate:"required"`
+	ExternalBlock       string                    `validate:"required"`
+	ExternalDestination string                    `validate:"required"`
+	ExternalUrl         string                    `validate:"required"`
+	Config              *integ.BlockMappingConfig `validate:"required"`
 }
 
 func NewIntegrationBlockNotionMappingWriter(app core.App) IntegrationBlockNotionMappingWriter {
@@ -42,7 +43,7 @@ func (w *integrationBlockNotionMappingWriter) Create(
 		return err
 	}
 
-	mapping, err := CreateIntegrationBlockNotionMapping(w.app)
+	mapping, err := integ.CreateIntegrationBlockNotionMapping(w.app)
 	if err != nil {
 		return err
 	}
@@ -68,8 +69,8 @@ func (w *integrationBlockNotionMappingWriter) Create(
 }
 
 type UpdateMappingRequest struct {
-	InternalBlock string              `validate:"required"`
-	Config        *BlockMappingConfig `validate:"required"`
+	InternalBlock string                    `validate:"required"`
+	Config        *integ.BlockMappingConfig `validate:"required"`
 }
 
 func (w *integrationBlockNotionMappingWriter) Update(
@@ -83,7 +84,7 @@ func (w *integrationBlockNotionMappingWriter) Update(
 	txErr := w.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
 		filter, err := filter.CreateAndFilter(
 			filter.Field{
-				Name:  BlockNotionMappingFieldInternalBlock,
+				Name:  integ.BlockNotionMappingFieldInternalBlock,
 				Op:    filter.OpEquals,
 				Value: request.InternalBlock,
 			},
@@ -93,7 +94,7 @@ func (w *integrationBlockNotionMappingWriter) Update(
 		}
 
 		mappings, err := txDao.FindRecordsByFilter(
-			CollectionIntegrationBlockNotionMapping,
+			integ.CollectionIntegrationBlockNotionMapping,
 			filter.Filter,
 			"-created", 1, 0,
 			filter.Params)
@@ -109,7 +110,7 @@ func (w *integrationBlockNotionMappingWriter) Update(
 			return fmt.Errorf("Multiple mappings found")
 		}
 
-		mapping, err := LoadIntegrationBlockNotionMapping(mappings[0], w.app)
+		mapping, err := integ.LoadIntegrationBlockNotionMapping(mappings[0], w.app)
 		if err != nil {
 			return err
 		}

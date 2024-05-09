@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"exnota.com/backend/integration/data"
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/util"
 	lib_block "exnota.com/backend/lib/block"
 	"exnota.com/backend/lib/pb_file"
@@ -19,26 +19,26 @@ type Updater struct {
 	BlockId            string
 	AudioTranscription struct {
 		// Original mapping, used for resetting
-		CurrentMappings []data.NotionMapping
+		CurrentMappings []integ.NotionMapping
 		// Latest mappings (same as initial until changed)
-		UpdatedMappings       []data.NotionMapping
+		UpdatedMappings       []integ.NotionMapping
 		ChildrenToInsert      []gonotion.Block
 		InsertChildrenAfterId *string
 	}
 	File struct {
-		CurrentMapping *data.NotionMapping
-		UpdatedMapping *data.NotionMapping
+		CurrentMapping *integ.NotionMapping
+		UpdatedMapping *integ.NotionMapping
 		ChildToInsert  *gonotion.AudioBlock
 	}
 	Title struct {
-		CurrentMapping   *data.NotionMapping
-		UpdatedMapping   *data.NotionMapping
+		CurrentMapping   *integ.NotionMapping
+		UpdatedMapping   *integ.NotionMapping
 		PropertyToUpdate *gonotion.DatabasePageProperty
 	}
 }
 
 func NewUpdater(
-	mappingConfig data.BlockMappingConfig,
+	mappingConfig integ.BlockMappingConfig,
 	blockId string,
 	app core.App,
 ) (*Updater, error) {
@@ -56,7 +56,7 @@ func NewUpdater(
 		updater.File.CurrentMapping = &mappingConfig.File[0]
 
 		// Confirm file mapping is to a block
-		if updater.File.CurrentMapping.TargetType != data.MappingTargetTypeBlock {
+		if updater.File.CurrentMapping.TargetType != integ.MappingTargetTypeBlock {
 			slog.Error(
 				"Unexpected mapping target type",
 				"targetType",
@@ -75,7 +75,7 @@ func NewUpdater(
 		audioMapping := mappingConfig.Audio[0]
 		// Confirm all transcriptions are mapped to blocks
 		for _, transcriptionMapping := range audioMapping.Transcription {
-			if transcriptionMapping.TargetType != data.MappingTargetTypeBlock {
+			if transcriptionMapping.TargetType != integ.MappingTargetTypeBlock {
 				slog.Error(
 					"Unexpected mapping target type",
 					"targetType",
@@ -86,7 +86,7 @@ func NewUpdater(
 		}
 
 		updater.AudioTranscription.CurrentMappings = make(
-			[]data.NotionMapping,
+			[]integ.NotionMapping,
 			len(audioMapping.Transcription),
 		)
 		// A quick test on go playground shows `copy` should be sufficient
@@ -104,7 +104,7 @@ func NewUpdater(
 		updater.Title.CurrentMapping = &mappingCopy
 
 		// Confirm title mapping is to a property
-		if updater.Title.CurrentMapping.TargetType != data.MappingTargetTypeProperty {
+		if updater.Title.CurrentMapping.TargetType != integ.MappingTargetTypeProperty {
 			slog.Error(
 				"Unexpected mapping target type",
 				"targetType",
@@ -168,9 +168,9 @@ func (u *Updater) UpdateFile(request NoteRequest) error {
 		return err
 	}
 	now := time.Now()
-	u.File.UpdatedMapping = &data.NotionMapping{
-		TargetType:  data.MappingTargetTypeBlock,
-		Status:      data.BlockMappingStatusMapped,
+	u.File.UpdatedMapping = &integ.NotionMapping{
+		TargetType:  integ.MappingTargetTypeBlock,
+		Status:      integ.BlockMappingStatusMapped,
 		ContentHash: contentHash,
 		Created:     now,
 		Updated:     now,
@@ -219,7 +219,7 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 
 	// Add all children
 	children := []gonotion.Block{}
-	newMappings := []data.NotionMapping{}
+	newMappings := []integ.NotionMapping{}
 	now := time.Now()
 	for _, transcription := range request.Audio.Transcription {
 		children = append(children, gonotion.ParagraphBlock{
@@ -231,9 +231,9 @@ func (u *Updater) UpdateAudio(request NoteRequest) error {
 		if err != nil {
 			return err
 		}
-		newMappings = append(newMappings, data.NotionMapping{
-			TargetType:  data.MappingTargetTypeBlock,
-			Status:      data.BlockMappingStatusMapped,
+		newMappings = append(newMappings, integ.NotionMapping{
+			TargetType:  integ.MappingTargetTypeBlock,
+			Status:      integ.BlockMappingStatusMapped,
 			ContentHash: contentHash,
 			Created:     now,
 			Updated:     now,
@@ -280,7 +280,7 @@ func (u *Updater) SetAudioSuccess(externalChildBlockIds []string) error {
 
 func (u *Updater) ResetAudioMappings() {
 	u.AudioTranscription.UpdatedMappings = make(
-		[]data.NotionMapping,
+		[]integ.NotionMapping,
 		len(u.AudioTranscription.CurrentMappings),
 	)
 	copy(u.AudioTranscription.UpdatedMappings, u.AudioTranscription.CurrentMappings)
@@ -305,9 +305,9 @@ func (u *Updater) UpdateTitle(request NoteRequest) error {
 		}
 		now := time.Now()
 		externalPropertyId := titlePropertyId
-		u.Title.UpdatedMapping = &data.NotionMapping{
-			TargetType:         data.MappingTargetTypeProperty,
-			Status:             data.BlockMappingStatusMapped,
+		u.Title.UpdatedMapping = &integ.NotionMapping{
+			TargetType:         integ.MappingTargetTypeProperty,
+			Status:             integ.BlockMappingStatusMapped,
 			ContentHash:        contentHash,
 			Created:            now,
 			Updated:            now,
@@ -336,7 +336,7 @@ func (u *Updater) UpdateTitle(request NoteRequest) error {
 
 	mappingCopy := *u.Title.CurrentMapping
 	u.Title.UpdatedMapping = &mappingCopy
-	u.Title.UpdatedMapping.Status = data.BlockMappingStatusMapped
+	u.Title.UpdatedMapping.Status = integ.BlockMappingStatusMapped
 	u.Title.UpdatedMapping.Updated = time.Now()
 	u.Title.UpdatedMapping.ContentHash = contentHash
 
@@ -352,7 +352,7 @@ func (u *Updater) UpdateTitle(request NoteRequest) error {
 // some information has not been updated. But that's not needed for now.
 // func (u *Updater) SetTitleError() {
 // 	if u.Title.Mapping != nil {
-// 		u.Title.Mapping.Status = data.BlockMappingStatusError
+// 		u.Title.Mapping.Status = integration.BlockMappingStatusError
 // 	}
 // 	return
 // }
@@ -369,29 +369,29 @@ func (u *Updater) GenerateProperties() gonotion.DatabasePageProperties {
 	return props
 }
 
-func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
-	config := &data.BlockMappingConfig{}
+func (u *Updater) GenerateConfig() *integ.BlockMappingConfig {
+	config := &integ.BlockMappingConfig{}
 
 	// Add file mapping
 	if u.File.UpdatedMapping != nil {
-		config.File = []data.NotionMapping{
+		config.File = []integ.NotionMapping{
 			*u.File.UpdatedMapping,
 		}
 	} else if u.File.CurrentMapping != nil {
-		config.File = []data.NotionMapping{
+		config.File = []integ.NotionMapping{
 			*u.File.CurrentMapping,
 		}
 	}
 
 	// Add audio mappings
 	if len(u.AudioTranscription.UpdatedMappings) > 0 {
-		config.Audio = []data.AudioMapping{
+		config.Audio = []integ.AudioMapping{
 			{
 				Transcription: u.AudioTranscription.UpdatedMappings,
 			},
 		}
 	} else if len(u.AudioTranscription.CurrentMappings) > 0 {
-		config.Audio = []data.AudioMapping{
+		config.Audio = []integ.AudioMapping{
 			{
 				Transcription: u.AudioTranscription.CurrentMappings,
 			},
@@ -400,11 +400,11 @@ func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 
 	// Add title mapping
 	if u.Title.UpdatedMapping != nil {
-		config.Title = []data.NotionMapping{
+		config.Title = []integ.NotionMapping{
 			*u.Title.UpdatedMapping,
 		}
 	} else if u.Title.CurrentMapping != nil {
-		config.Title = []data.NotionMapping{
+		config.Title = []integ.NotionMapping{
 			*u.Title.CurrentMapping,
 		}
 	}
@@ -412,17 +412,17 @@ func (u *Updater) GenerateConfig() *data.BlockMappingConfig {
 	return config
 }
 
-func (u *Updater) GenerateConfigDiff() *data.BlockMappingConfig {
-	config := &data.BlockMappingConfig{}
+func (u *Updater) GenerateConfigDiff() *integ.BlockMappingConfig {
+	config := &integ.BlockMappingConfig{}
 	// Add updated file mapping
 	if u.File.UpdatedMapping != nil {
-		config.File = []data.NotionMapping{
+		config.File = []integ.NotionMapping{
 			*u.File.UpdatedMapping,
 		}
 	}
 	// Add updated audio mappings
 	if len(u.AudioTranscription.UpdatedMappings) > 0 {
-		config.Audio = []data.AudioMapping{
+		config.Audio = []integ.AudioMapping{
 			{
 				Transcription: u.AudioTranscription.UpdatedMappings,
 			},
@@ -430,7 +430,7 @@ func (u *Updater) GenerateConfigDiff() *data.BlockMappingConfig {
 	}
 	// Add updated title mapping
 	if u.Title.UpdatedMapping != nil {
-		config.Title = []data.NotionMapping{
+		config.Title = []integ.NotionMapping{
 			*u.Title.UpdatedMapping,
 		}
 	}

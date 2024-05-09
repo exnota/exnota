@@ -1,4 +1,4 @@
-package data
+package integration
 
 import (
 	"exnota.com/backend/lib/block"

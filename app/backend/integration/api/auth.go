@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"exnota.com/backend/integration/data"
+	integ "exnota.com/backend/integration"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -19,13 +19,13 @@ type IntegrationAuth interface {
 
 type integrationAuth struct {
 	app                core.App
-	integrationFetcher data.IntegrationFetcher
+	integrationFetcher integ.IntegrationFetcher
 	context            echo.Context
 }
 
 func NewIntegrationAuth(
 	app core.App,
-	integrationFetcher data.IntegrationFetcher,
+	integrationFetcher integ.IntegrationFetcher,
 	context echo.Context,
 ) IntegrationAuth {
 	return &integrationAuth{app, integrationFetcher, context}
@@ -49,7 +49,7 @@ func (h *integrationAuth) ForIntegration(integrationId string) error {
 	}
 
 	// Get integration
-	_, err := h.integrationFetcher.FetchById(data.FetchByIdRequest{
+	_, err := h.integrationFetcher.FetchById(integ.FetchByIdRequest{
 		IntegrationId: integrationId,
 		UserId:        loggedInUserId,
 	})

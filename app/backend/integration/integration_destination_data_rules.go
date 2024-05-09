@@ -1,4 +1,4 @@
-package data
+package integration
 
 import (
 	"errors"
@@ -11,11 +11,15 @@ type IntegrationDestinationDataRules interface {
 }
 
 type integrationDestinationDataRules struct {
-	app core.App
+	app                           core.App
+	integrationDestinationFetcher IntegrationDestinationFetcher
 }
 
-func NewIntegrationDestinationDataRules(app core.App) IntegrationDestinationDataRules {
-	return &integrationDestinationDataRules{app: app}
+func NewIntegrationDestinationDataRules(
+	app core.App,
+	integrationDestinationFetcher IntegrationDestinationFetcher,
+) IntegrationDestinationDataRules {
+	return &integrationDestinationDataRules{app, integrationDestinationFetcher}
 }
 
 func (h *integrationDestinationDataRules) ApplyHooks() {
@@ -25,8 +29,7 @@ func (h *integrationDestinationDataRules) ApplyHooks() {
 func (h *integrationDestinationDataRules) immutableFields() {
 	h.app.OnModelBeforeUpdate(CollectionIntegrationDestination).Add(func(e *core.ModelEvent) error {
 		updated := NewIntegrationDestinationFromModel(e.Model)
-		fetcher := NewIntegrationDestinationFetcher(h.app)
-		existing, err := fetcher.FetchById(updated.Id())
+		existing, err := h.integrationDestinationFetcher.FetchById(updated.Id())
 		if err != nil {
 			return err
 		}
