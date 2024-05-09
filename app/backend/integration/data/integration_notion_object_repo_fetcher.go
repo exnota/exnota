@@ -22,7 +22,7 @@ func (f *integrationNotionObjectFetcher) FetchById(id string) (IntegrationNotion
 	if err != nil {
 		return nil, err
 	}
-	return NewIntegrationNotionObject(record), nil
+	return LoadIntegrationNotionObject(record), nil
 }
 
 func (f *integrationNotionObjectFetcher) ListByIds(
@@ -34,7 +34,7 @@ func (f *integrationNotionObjectFetcher) ListByIds(
 	}
 	objects := make([]IntegrationNotionObject, len(records))
 	for i, record := range records {
-		objects[i] = NewIntegrationNotionObject(record)
+		objects[i] = LoadIntegrationNotionObject(record)
 	}
 	return objects, nil
 }

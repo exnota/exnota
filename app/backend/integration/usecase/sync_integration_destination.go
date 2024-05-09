@@ -171,6 +171,7 @@ func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error
 			data.NewIntegrationNotionObjectFetcher(s.app),
 		)
 		err = notionSync.UpdateSync(notion.UpdateSyncRequest{
+			IntegrationId:     request.IntegrationId,
 			ExternalRecordIds: externalRecordIds,
 		})
 		if err != nil {

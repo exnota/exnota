@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/dstotijn/go-notion"
 	"github.com/pocketbase/pocketbase/models"
@@ -15,6 +16,7 @@ const (
 	// Id (system)
 	IntegrationNotionObjectFieldExternalId = "external_id"
 	IntegrationNotionObjectFieldType       = "type"
+	IntegrationNotionObjectFieldStatus     = "status"
 	IntegrationNotionObjectFieldProperties = "properties"
 	IntegrationNotionObjectFieldLastSynced = "last_synced"
 	IntegrationNotionObjectFieldUser       = "user"
@@ -25,16 +27,27 @@ const (
 type IntegrationNotionObjectType string
 
 const (
-	IntegrationNotionObjectTypePage     = "page"
-	IntegrationNotionObjectTypeDatabase = "database"
-	IntegrationNotionObjectTypeBlock    = "block"
+	IntegrationNotionObjectTypePage     IntegrationNotionObjectType = "page"
+	IntegrationNotionObjectTypeDatabase IntegrationNotionObjectType = "database"
+	IntegrationNotionObjectTypeBlock    IntegrationNotionObjectType = "block"
+)
+
+type IntegrationNotionObjectStatus string
+
+const (
+	IntegrationNotionObjectStatusConnected     IntegrationNotionObjectStatus = "connected"
+	IntegrationNotionObjectStatusAccessRevoked IntegrationNotionObjectStatus = "access-revoked"
+	IntegrationNotionObjectStatusDeleted       IntegrationNotionObjectStatus = "deleted"
+	IntegrationNotionObjectStatusUnknownError  IntegrationNotionObjectStatus = "unknown-error"
 )
 
 type IntegrationNotionObject interface {
 	Id() string
 	ExternalId() string
 	Type() IntegrationNotionObjectType
+	Status() IntegrationNotionObjectStatus
 	DatabaseTitlePropertyId() (string, error)
+	LastSynced() time.Time
 	User() string
 }
 
@@ -42,11 +55,11 @@ type integrationNotionObject struct {
 	record *models.Record
 }
 
-func NewIntegrationNotionObject(record *models.Record) IntegrationNotionObject {
+func LoadIntegrationNotionObject(record *models.Record) IntegrationNotionObject {
 	return &integrationNotionObject{record: record}
 }
 
-func NewIntegrationNotionObjectFromModel(model models.Model) IntegrationNotionObject {
+func LoadIntegrationNotionObjectFromModel(model models.Model) IntegrationNotionObject {
 	return &integrationNotionObject{record: model.(*models.Record)}
 }
 
@@ -60,6 +73,10 @@ func (i *integrationNotionObject) ExternalId() string {
 
 func (i *integrationNotionObject) Type() IntegrationNotionObjectType {
 	return IntegrationNotionObjectType(i.record.GetString(IntegrationNotionObjectFieldType))
+}
+
+func (i *integrationNotionObject) Status() IntegrationNotionObjectStatus {
+	return IntegrationNotionObjectStatus(i.record.GetString(IntegrationNotionObjectFieldStatus))
 }
 
 func (i *integrationNotionObject) DatabaseTitlePropertyId() (string, error) {
@@ -85,6 +102,10 @@ func (i *integrationNotionObject) DatabaseTitlePropertyId() (string, error) {
 
 	slog.Error("title property not found for notion object", "id", i.Id())
 	return "", fmt.Errorf("title property not found for notion object %s", i.Id())
+}
+
+func (i *integrationNotionObject) LastSynced() time.Time {
+	return i.record.GetDateTime(IntegrationNotionObjectFieldLastSynced).Time()
 }
 
 func (i *integrationNotionObject) User() string {
