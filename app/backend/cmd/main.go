@@ -11,6 +11,7 @@ import (
 	block_api "exnota.com/backend/block/api"
 	block_data "exnota.com/backend/block/data"
 	block_event "exnota.com/backend/block/event"
+	block_event_listeners "exnota.com/backend/block/event_listeners"
 	"exnota.com/backend/cmd/config"
 	"exnota.com/backend/event"
 	integ "exnota.com/backend/integration"
@@ -18,6 +19,7 @@ import (
 	integ_data "exnota.com/backend/integration/data"
 	integration_usecase "exnota.com/backend/integration/usecase"
 	"exnota.com/backend/job"
+	lib_integ "exnota.com/backend/lib/integration"
 	_ "exnota.com/backend/migrations"
 	user_api_hooks "exnota.com/backend/user/api"
 	"github.com/caarlos0/env"
@@ -159,6 +161,11 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// block job workflow above. This would at least help developers know that
 	// changes to one domain will only affect that domain and the event folder.
 	event.NewIntegrationListener(app).ApplyHooks()
+
+	destinationIntegrationUpdate := block_event_listeners.NewDestinationIntegrationUpdate(app)
+	integ.NewIntegrationDestinationEvents(app, []lib_integ.IntegrationDestinationEventListener{
+		destinationIntegrationUpdate.Update,
+	}).ApplyHooks()
 
 	// API rules
 	integ_api.NewIntegrationRequestHooks(app, integ_api.NotionCredentials{
