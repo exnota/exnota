@@ -38,7 +38,8 @@ const (
 type IntegrationNotionObjectStatus string
 
 const (
-	IntegrationNotionObjectStatusConnected    IntegrationNotionObjectStatus = "connected"
+	IntegrationNotionObjectStatusConnected IntegrationNotionObjectStatus = "connected"
+	// This can mean access was revoked or the object was deleted.
 	IntegrationNotionObjectStatusNotFound     IntegrationNotionObjectStatus = "not-found"
 	IntegrationNotionObjectStatusArchived     IntegrationNotionObjectStatus = "archived"
 	IntegrationNotionObjectStatusUnknownError IntegrationNotionObjectStatus = "unknown-error"

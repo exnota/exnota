@@ -283,10 +283,12 @@ func (s *notionDestinationSync) handleError(
 		sourceErr := apiErr.Unwrap()
 		switch sourceErr {
 		case gonotion.ErrUnauthorized:
-			// TODO: Test this case
+			// Not sure when this case will occur. I guess if the token is
+			// revoked.
 			slog.Info("Unauthorized error fetching object", "id", id)
 			return data.IntegrationNotionObjectStatusUnknownError
 		case gonotion.ErrObjectNotFound:
+			// This can mean access was revoked or the object was deleted.
 			slog.Info("Object not found error fetching object", "id", id)
 			return data.IntegrationNotionObjectStatusNotFound
 		case gonotion.ErrRateLimited:
