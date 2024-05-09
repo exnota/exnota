@@ -13,6 +13,7 @@ import (
 	block_event "exnota.com/backend/block/event"
 	"exnota.com/backend/cmd/config"
 	"exnota.com/backend/event"
+	integ "exnota.com/backend/integration"
 	integ_api "exnota.com/backend/integration/api"
 	integ_data "exnota.com/backend/integration/data"
 	integration_usecase "exnota.com/backend/integration/usecase"
@@ -119,8 +120,10 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// Data rules
 	//
 	// Same caveats as event workflows below, for some of these.
-	integ_data.NewIntegrationNotionObjectHooks(app).ApplyHooks()
-	integ_data.NewIntegrationDestinationDataRules(app).ApplyHooks()
+	integ.NewIntegrationNotionObjectHooks(app, integ_data.NewIntegrationNotionObjectFetcher(app)).
+		ApplyHooks()
+	integ.NewIntegrationDestinationDataRules(app, integ_data.NewIntegrationDestinationFetcher(app)).
+		ApplyHooks()
 	block.NewWorkspaceDataRules(app, block_data.NewWorkspaceFetcher(app)).ApplyHooks()
 	destinationFetcher := block_data.NewDestinationFetcher(app)
 	integrationDestinationSync := integration_usecase.NewIntegrationDestinationSync(

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion"
 	"github.com/pocketbase/pocketbase/core"
@@ -34,7 +35,7 @@ func (s *integrationSync) UpdateStatus(request UpdateStatusRequest) (success boo
 	}
 
 	integrationFetcher := data.NewIntegrationFetcher(s.app)
-	integration, err := integrationFetcher.FetchById(data.FetchByIdRequest{
+	integration, err := integrationFetcher.FetchById(integ.FetchByIdRequest{
 		IntegrationId: request.IntegrationId,
 		UserId:        request.UserID,
 	})
@@ -43,7 +44,7 @@ func (s *integrationSync) UpdateStatus(request UpdateStatusRequest) (success boo
 	}
 
 	switch integration.Type() {
-	case data.IntegrationTypeNotion:
+	case integ.IntegrationTypeNotion:
 		notionSync := notion.NewNotionSync(s.app, notion.NotionCredentials{})
 		verified, err := notionSync.VerifyIntegration(notion.VerifyIntegrationRequest{
 			IntegrationId: request.IntegrationId,

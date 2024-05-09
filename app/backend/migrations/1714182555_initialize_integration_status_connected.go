@@ -3,7 +3,7 @@ package migrations
 import (
 	"log/slog"
 
-	"exnota.com/backend/integration/data"
+	integ "exnota.com/backend/integration"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/daos"
 	m "github.com/pocketbase/pocketbase/migrations"
@@ -14,7 +14,7 @@ func init() {
 	m.Register(func(db dbx.Builder) error {
 		// up - set all integrations to 'connected'
 		dao := daos.New(db)
-		query := dao.RecordQuery(data.CollectionIntegration)
+		query := dao.RecordQuery(integ.CollectionIntegration)
 
 		records := []*models.Record{}
 		if err := query.All(&records); err != nil {
@@ -25,7 +25,7 @@ func init() {
 		for _, record := range records {
 			// set individual fields
 			// or bulk load with record.Load(map[string]any{...})
-			record.Set(data.IntegrationFieldStatus, string(data.IntegrationStatusConnected))
+			record.Set(integ.IntegrationFieldStatus, string(integ.IntegrationStatusConnected))
 
 			if err := dao.SaveRecord(record); err != nil {
 				return err
@@ -37,7 +37,7 @@ func init() {
 	}, func(db dbx.Builder) error {
 		// down - set all integration statuses as empty
 		dao := daos.New(db)
-		query := dao.RecordQuery(data.CollectionIntegration)
+		query := dao.RecordQuery(integ.CollectionIntegration)
 
 		records := []*models.Record{}
 		if err := query.All(&records); err != nil {
@@ -48,7 +48,7 @@ func init() {
 		for _, record := range records {
 			// set individual fields
 			// or bulk load with record.Load(map[string]any{...})
-			record.Set(data.IntegrationFieldStatus, nil)
+			record.Set(integ.IntegrationFieldStatus, nil)
 
 			if err := dao.SaveRecord(record); err != nil {
 				return err

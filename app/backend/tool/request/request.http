@@ -113,7 +113,7 @@ content-type: application/json
 Authorization: {{auth_token}}
 
 {
-  "query": "nested",
+  "query": "test",
   "object": "database"
 }
 

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"exnota.com/backend/integration/data"
+	integ "exnota.com/backend/integration"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -23,20 +23,22 @@ func (h *integrationNotionObjectApiRules) ApplyHooks() {
 }
 
 func (h *integrationNotionObjectApiRules) blockApiAccessForNonAdmins() {
-	h.app.OnRecordBeforeCreateRequest(data.CollectionIntegrationNotionObject).Add(func(e *core.RecordCreateEvent) error {
+	h.app.OnRecordBeforeCreateRequest(integ.CollectionIntegrationNotionObject).
+		Add(func(e *core.RecordCreateEvent) error {
 
-		requestInfo := apis.RequestInfo(e.HttpContext)
-		if requestInfo.Admin != nil {
-			return nil
-		}
-		return apis.NewForbiddenError("Not allowed to modify this collection", nil)
-	})
+			requestInfo := apis.RequestInfo(e.HttpContext)
+			if requestInfo.Admin != nil {
+				return nil
+			}
+			return apis.NewForbiddenError("Not allowed to modify this collection", nil)
+		})
 
-	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegrationNotionObject).Add(func(e *core.RecordUpdateEvent) error {
-		requestInfo := apis.RequestInfo(e.HttpContext)
-		if requestInfo.Admin != nil {
-			return nil
-		}
-		return apis.NewForbiddenError("Not allowed to modify this collection", nil)
-	})
+	h.app.OnRecordBeforeUpdateRequest(integ.CollectionIntegrationNotionObject).
+		Add(func(e *core.RecordUpdateEvent) error {
+			requestInfo := apis.RequestInfo(e.HttpContext)
+			if requestInfo.Admin != nil {
+				return nil
+			}
+			return apis.NewForbiddenError("Not allowed to modify this collection", nil)
+		})
 }

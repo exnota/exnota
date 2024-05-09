@@ -4,12 +4,15 @@ import (
 	"database/sql"
 	"log/slog"
 
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/lib/data/filter"
 	"github.com/pocketbase/pocketbase/core"
 )
 
 type IntegrationBlockNotionMappingFetcher interface {
-	FetchByInternalBlockId(internalBlockId string) (IntegrationBlockNotionMapping, error)
+	FetchByInternalBlockId(
+		internalBlockId string,
+	) (integ.IntegrationBlockNotionMapping, error)
 }
 
 type integrationBlockNotionMappingFetcher struct {
@@ -24,9 +27,9 @@ func NewIntegrationBlockNotionMappingFetcher(app core.App) IntegrationBlockNotio
 
 func (f *integrationBlockNotionMappingFetcher) FetchByInternalBlockId(
 	internalBlockId string,
-) (IntegrationBlockNotionMapping, error) {
+) (integ.IntegrationBlockNotionMapping, error) {
 	filter, err := filter.CreateAndFilter(filter.Field{
-		Name:  BlockNotionMappingFieldInternalBlock,
+		Name:  integ.BlockNotionMappingFieldInternalBlock,
 		Op:    filter.OpEquals,
 		Value: internalBlockId,
 	})
@@ -34,15 +37,16 @@ func (f *integrationBlockNotionMappingFetcher) FetchByInternalBlockId(
 		return nil, err
 	}
 
-	record, err := f.app.Dao().FindFirstRecordByFilter(CollectionIntegrationBlockNotionMapping,
-		filter.Filter, filter.Params,
-	)
+	record, err := f.app.Dao().
+		FindFirstRecordByFilter(integ.CollectionIntegrationBlockNotionMapping,
+			filter.Filter, filter.Params,
+		)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
 	}
-	mapping, err := LoadIntegrationBlockNotionMapping(record, f.app)
+	mapping, err := integ.LoadIntegrationBlockNotionMapping(record, f.app)
 	if err != nil {
 		slog.Error(
 			"Failed to create IntegrationBlockNotionMapping instance after fetching",

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion"
 	"exnota.com/backend/lib/data/filter"
@@ -43,7 +44,7 @@ func (h *integrationRequestHooks) Apply() {
 }
 
 func (h *integrationRequestHooks) preventFieldUpdates() {
-	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).
+	h.app.OnRecordBeforeUpdateRequest(integ.CollectionIntegration).
 		Add(func(e *core.RecordUpdateEvent) error {
 			updated, err := castToNotionIntegration(e.Record, h.app)
 			if err != nil {
@@ -51,7 +52,7 @@ func (h *integrationRequestHooks) preventFieldUpdates() {
 			}
 
 			existingRecord, err := h.app.Dao().
-				FindRecordById(data.CollectionIntegration, updated.Id(), nil)
+				FindRecordById(integ.CollectionIntegration, updated.Id(), nil)
 			if err != nil {
 				return err
 			}
@@ -73,21 +74,21 @@ func (h *integrationRequestHooks) preventFieldUpdates() {
 }
 
 func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
-	h.app.OnRecordBeforeCreateRequest(data.CollectionIntegration).
+	h.app.OnRecordBeforeCreateRequest(integ.CollectionIntegration).
 		Add(func(e *core.RecordCreateEvent) error {
-			integration, err := data.LoadIntegration(e.Record, h.app)
+			integration, err := integ.LoadIntegration(e.Record, h.app)
 			if err != nil {
 				return err
 			}
-			var notionIntegration data.NotionIntegration
+			var notionIntegration integ.NotionIntegration
 			switch i := integration.(type) {
-			case data.NotionIntegration:
+			case integ.NotionIntegration:
 				notionIntegration = i
 			default:
 				return apis.NewBadRequestError("Invalid integration type", nil)
 			}
 
-			if notionIntegration.Status() != data.IntegrationStatusConnected {
+			if notionIntegration.Status() != integ.IntegrationStatusConnected {
 				return apis.NewBadRequestError("Integration status must be connected", nil)
 			}
 			if !notionIntegration.Archived().IsZero() {
@@ -133,7 +134,7 @@ func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 			}
 
 			// Set config with notion's response
-			err = notionIntegration.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
+			err = notionIntegration.SetSuccessfulAuth(integ.SuccessfulNotionIntegrationAuth{
 				AccessToken:          accessResponse.AccessToken,
 				BotID:                accessResponse.BotId,
 				DuplicatedTemplateID: &accessResponse.DuplicatedTemplateId,
@@ -151,21 +152,21 @@ func (h *integrationRequestHooks) createValidationAndFetchAccessToken() {
 }
 
 func (h *integrationRequestHooks) userHasNotionIntegration(
-	integration data.NotionIntegration,
+	integration integ.NotionIntegration,
 ) (bool, error) {
 	filter, err := filter.CreateAndFilter(
 		filter.Field{
-			Name:  data.IntegrationFieldUser,
+			Name:  integ.IntegrationFieldUser,
 			Op:    filter.OpEquals,
 			Value: integration.User(),
 		},
 		filter.Field{
-			Name:  data.IntegrationFieldType,
+			Name:  integ.IntegrationFieldType,
 			Op:    filter.OpEquals,
-			Value: data.IntegrationTypeNotion,
+			Value: integ.IntegrationTypeNotion,
 		},
 		filter.Field{
-			Name:        data.IntegrationFieldArchived,
+			Name:        integ.IntegrationFieldArchived,
 			Op:          filter.OpEquals,
 			ValuePreset: filter.ValuePresetNull,
 		},
@@ -175,7 +176,7 @@ func (h *integrationRequestHooks) userHasNotionIntegration(
 	}
 
 	existingRecord, err := h.app.Dao().FindRecordsByFilter(
-		data.CollectionIntegration, filter.Filter, "-created", 1, 0,
+		integ.CollectionIntegration, filter.Filter, "-created", 1, 0,
 		filter.Params)
 	if err != nil {
 		return false, err
@@ -188,7 +189,7 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 	// Two main update update use cases:
 	// 1. Update config
 	// 2. Archive/unarchive
-	h.app.OnRecordBeforeUpdateRequest(data.CollectionIntegration).
+	h.app.OnRecordBeforeUpdateRequest(integ.CollectionIntegration).
 		Add(func(e *core.RecordUpdateEvent) error {
 			updated, err := castToNotionIntegration(e.Record, h.app)
 			if err != nil {
@@ -200,7 +201,7 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 			}
 
 			existingRecord, err := h.app.Dao().
-				FindRecordById(data.CollectionIntegration, updated.Id(), nil)
+				FindRecordById(integ.CollectionIntegration, updated.Id(), nil)
 			if err != nil {
 				return err
 			}
@@ -250,7 +251,7 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 				}
 
 				// Set config with notion's response
-				err = updated.SetSuccessfulAuth(data.SuccessfulNotionIntegrationAuth{
+				err = updated.SetSuccessfulAuth(integ.SuccessfulNotionIntegrationAuth{
 					AccessToken:          accessResponse.AccessToken,
 					BotID:                accessResponse.BotId,
 					DuplicatedTemplateID: &accessResponse.DuplicatedTemplateId,
@@ -262,7 +263,7 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 				if err != nil {
 					return err
 				}
-				updated.SetStatus(data.IntegrationStatusConnected)
+				updated.SetStatus(integ.IntegrationStatusConnected)
 				return nil
 			}
 
@@ -289,14 +290,14 @@ func (h *integrationRequestHooks) updateValidationAndRefetchAccessToken() {
 		})
 }
 
-func castToNotionIntegration(record *models.Record, app core.App) (data.NotionIntegration, error) {
-	integration, err := data.LoadIntegration(record, app)
+func castToNotionIntegration(record *models.Record, app core.App) (integ.NotionIntegration, error) {
+	integration, err := integ.LoadIntegration(record, app)
 	if err != nil {
 		return nil, err
 	}
 
 	switch i := integration.(type) {
-	case data.NotionIntegration:
+	case integ.NotionIntegration:
 		return i, nil
 	default:
 		return nil, errors.New("Invalid integration type")
@@ -304,8 +305,8 @@ func castToNotionIntegration(record *models.Record, app core.App) (data.NotionIn
 }
 
 func configFromNotionIntegration(
-	integration data.NotionIntegration,
-) (*data.NotionIntegrationConfig, error) {
+	integration integ.NotionIntegration,
+) (*integ.NotionIntegrationConfig, error) {
 	config, err := integration.Config()
 	if err != nil {
 		return nil, err

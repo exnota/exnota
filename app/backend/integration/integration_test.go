@@ -1,4 +1,4 @@
-package data
+package integration
 
 import (
 	"testing"
@@ -82,7 +82,10 @@ func TestIntegration(t *testing.T) {
 				t.Fatal("Expected record to be found")
 			}
 			if updated.GetString(IntegrationFieldStatus) != "access-revoked" {
-				t.Fatalf("Expected status to be updated, got %v", updated.GetString(IntegrationFieldStatus))
+				t.Fatalf(
+					"Expected status to be updated, got %v",
+					updated.GetString(IntegrationFieldStatus),
+				)
 			}
 		})
 	})

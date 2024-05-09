@@ -3,6 +3,7 @@ package block
 import (
 	"errors"
 
+	integ "exnota.com/backend/integration"
 	integ_data "exnota.com/backend/integration/data"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -34,7 +35,7 @@ func (r *workspaceDataRules) relationRules() {
 
 		if workspace.Integration() != "" {
 			fetcher := integ_data.NewIntegrationFetcher(r.app)
-			integration, err := fetcher.FetchById(integ_data.FetchByIdRequest{
+			integration, err := fetcher.FetchById(integ.FetchByIdRequest{
 				IntegrationId: workspace.Integration(),
 				UserId:        workspace.User(),
 			})

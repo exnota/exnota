@@ -7,6 +7,7 @@ import (
 
 	"exnota.com/backend/block"
 	block_data "exnota.com/backend/block/data"
+	integ "exnota.com/backend/integration"
 	integ_data "exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion"
 	"exnota.com/backend/job/data"
@@ -54,7 +55,7 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 
 	// Call appropriate integration type handler
 	switch integration := genericIntegration.(type) {
-	case integ_data.NotionIntegration:
+	case integ.NotionIntegration:
 		slog.Info("Running Notion export job", "job", job.ID())
 		notionExporter := notion.NewNotionExporter(j.app)
 		exportRequest := notion.NoteRequest{
@@ -86,7 +87,7 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 func (j *exportJobRunnerConfig) integrationForDestination(
 	destinationId string,
 	userId string,
-) (integ_data.Integration, error) {
+) (integ.Integration, error) {
 	// Get destination
 	destinationFetcher := block_data.NewDestinationFetcher(j.app)
 	destination, err := destinationFetcher.FetchById(destinationId)
@@ -124,7 +125,7 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 		return nil, nil
 	}
 	integrationFetcher := integ_data.NewIntegrationFetcher(j.app)
-	integration, err := integrationFetcher.FetchById(integ_data.FetchByIdRequest{
+	integration, err := integrationFetcher.FetchById(integ.FetchByIdRequest{
 		IntegrationId: integrationId,
 		UserId:        userId,
 	})

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion/api"
 	gonotion "github.com/dstotijn/go-notion"
@@ -45,8 +46,8 @@ const (
 )
 
 type NoteRequest struct {
-	Integration data.NotionIntegration `validate:"required"`
-	Command     ExportCommand          `validate:"required"`
+	Integration integ.NotionIntegration `validate:"required"`
+	Command     ExportCommand           `validate:"required"`
 
 	Id          string `validate:"required"`
 	Title       *string
@@ -59,8 +60,8 @@ type NoteRequest struct {
 // mapstructure:",omitempty" is used by the export job runner when persisting
 // the summary.
 type ExportResult struct {
-	Message      string                   `json:"message"`
-	ConfigUpdate *data.BlockMappingConfig `json:"configUpdate,omitempty" mapstructure:",omitempty"`
+	Message      string                    `json:"message"`
+	ConfigUpdate *integ.BlockMappingConfig `json:"configUpdate,omitempty" mapstructure:",omitempty"`
 }
 
 var validate = validator.New(validator.WithRequiredStructEnabled())
@@ -132,7 +133,7 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 	}
 
 	// Handle file
-	updater, err := NewUpdater(data.BlockMappingConfig{}, request.Id, s.app)
+	updater, err := NewUpdater(integ.BlockMappingConfig{}, request.Id, s.app)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +155,7 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 
 	// Create page in Notion
 	switch destinationObject.Type() {
-	case data.IntegrationNotionObjectTypeDatabase:
+	case integ.IntegrationNotionObjectTypeDatabase:
 		databaseId := destinationObject.ExternalId()
 		result, err := writer.CreateDatabasePage(api.CreateDatabasePageRequest{
 			DatabaseId: databaseId,
@@ -173,7 +174,7 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 		config := updater.GenerateConfig()
 		mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
 		err = mappingWriter.Create(data.CreateMappingRequest{
-			BlockType:           data.BlockTypeVoiceNote,
+			BlockType:           integ.BlockTypeVoiceNote,
 			InternalBlock:       request.Id,
 			InternalDestination: request.Destination,
 			ExternalBlock:       result.PageId,
@@ -190,7 +191,7 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 			Message:      "Mapped to database page",
 			ConfigUpdate: config,
 		}, nil
-	case data.IntegrationNotionObjectTypePage:
+	case integ.IntegrationNotionObjectTypePage:
 		parentId := destinationObject.ExternalId()
 		result, err := writer.CreateChildPage(api.CreateChildPageRequest{
 			ParentId: parentId,
@@ -210,7 +211,7 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 		config := updater.GenerateConfig()
 		mappingWriter := data.NewIntegrationBlockNotionMappingWriter(s.app)
 		err = mappingWriter.Create(data.CreateMappingRequest{
-			BlockType:           data.BlockTypeVoiceNote,
+			BlockType:           integ.BlockTypeVoiceNote,
 			InternalBlock:       request.Id,
 			InternalDestination: request.Destination,
 			ExternalBlock:       result.PageId,
