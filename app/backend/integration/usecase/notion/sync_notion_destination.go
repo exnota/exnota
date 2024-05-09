@@ -27,13 +27,15 @@ type NotionDestinationSync interface {
 type notionDestinationSync struct {
 	app           core.App
 	objectFetcher data.IntegrationNotionObjectFetcher
+	objectWriter  data.IntegrationNotionObjectWriter
 }
 
 func NewNotionDestinationSync(
 	app core.App,
 	objectFetcher data.IntegrationNotionObjectFetcher,
+	objectWriter data.IntegrationNotionObjectWriter,
 ) NotionDestinationSync {
-	return &notionDestinationSync{app, objectFetcher}
+	return &notionDestinationSync{app, objectFetcher, objectWriter}
 }
 
 type CreateNotionDestinationSyncRequest struct {
@@ -82,8 +84,7 @@ func (s *notionDestinationSync) CreateSync(
 			return nil, nil, err
 		}
 
-		objectWriter := data.NewIntegrationNotionObjectWriter(s.app)
-		record, err = objectWriter.UpsertRecord(data.CreateRequest{
+		record, err = s.objectWriter.CreateUpsertRecord(data.CreateRequest{
 			ExternalId: config.Id,
 			Type:       data.IntegrationNotionObjectTypeDatabase,
 			Properties: props,
@@ -112,7 +113,7 @@ func (s *notionDestinationSync) CreateSync(
 		}
 
 		objectWriter := data.NewIntegrationNotionObjectWriter(s.app)
-		record, err = objectWriter.UpsertRecord(data.CreateRequest{
+		record, err = objectWriter.CreateUpsertRecord(data.CreateRequest{
 			ExternalId: config.Id,
 			Type:       data.IntegrationNotionObjectTypePage,
 			Properties: props,
@@ -162,65 +163,92 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 		return err
 	}
 
-	// TODO: Get notion object IDs
 	objects, err := s.objectFetcher.ListByIds(request.ExternalRecordIds)
 	if err != nil {
 		return err
 	}
-
-	// TODO: Remove
-	slog.Info("Notion object IDs", "num", len(objects), "ids", request.ExternalRecordIds)
-
 	for _, obj := range objects {
 		// Skip if status is connected and lastSynced is less than 1 minute ago
 		if obj.Status() == data.IntegrationNotionObjectStatusConnected &&
 			obj.LastSynced().After(time.Now().Add(-1*time.Minute)) {
+			slog.Info("Skipping object", "id", obj.ExternalId())
 			continue
 		}
 
-		// Create fetcher
 		accessToken, err := s.accessToken(request.IntegrationId)
 		if err != nil {
 			return err
 		}
 		notionFetcher := api.NewNotionFetcher(accessToken)
 
-		// TODO: Consider error handling. I.e. one failed request shouldn't stop
-		// the others.
 		switch obj.Type() {
 		case data.IntegrationNotionObjectTypeDatabase:
 			slog.Info("Fetching database", "id", obj.ExternalId())
 			database, err := notionFetcher.FetchDatabase(obj.ExternalId())
 			if err != nil {
-				s.handleError(obj.ExternalId(), err)
+				errStatus := s.handleError(obj.ExternalId(), err)
+				err := s.objectWriter.UpdateErrored(data.UpdateSyncErrorRequest{
+					Id:         obj.Id(),
+					Status:     errStatus,
+					LastSynced: time.Now(),
+				})
+				if err != nil {
+					// Abort loop if there's a write error
+					return err
+				}
 				continue
 			}
-			// TODO: Remove
 			slog.Info("Fetched database", "id", database.ID, "title", database.Title)
-			// Process the fetched database
-			// TODO: Add your code here
+
+			err = s.objectWriter.UpdateConnected(data.UpdateSyncConnectedRequest{
+				Id:         obj.Id(),
+				Properties: database.Properties,
+				LastSynced: time.Now(),
+			})
+			if err != nil {
+				// Abort loop if there's a write error
+				return err
+			}
 		case data.IntegrationNotionObjectTypePage:
 			slog.Info("Fetching page", "id", obj.ExternalId())
 			page, err := notionFetcher.FetchPage(obj.ExternalId())
 			if err != nil {
-				s.handleError(obj.ExternalId(), err)
+				errStatus := s.handleError(obj.ExternalId(), err)
+				err := s.objectWriter.UpdateErrored(data.UpdateSyncErrorRequest{
+					Id:         obj.Id(),
+					Status:     errStatus,
+					LastSynced: time.Now(),
+				})
+				if err != nil {
+					// Abort loop if there's a write error
+					return err
+				}
 				continue
 			}
-			// TODO: Remove
 			slog.Info("Fetched page", "id", page.ID)
-			// Process the fetched page
-			// TODO: Add your code here
+
+			err = s.objectWriter.UpdateConnected(data.UpdateSyncConnectedRequest{
+				Id:         obj.Id(),
+				Properties: page.Properties,
+				LastSynced: time.Now(),
+			})
+			if err != nil {
+				// Abort loop if there's a write error
+				return err
+			}
 		default:
 			slog.Error("Unsupported object type", "type", obj.Type())
 			return fmt.Errorf("unsupported object type: %v", obj.Type())
 		}
 	}
 
-	// TODO:
 	return nil
 }
 
-func (s *notionDestinationSync) handleError(id string, err error) {
+func (s *notionDestinationSync) handleError(
+	id string,
+	err error,
+) data.IntegrationNotionObjectStatus {
 	errUnwrapped := errors.Unwrap(err)
 	if apiErr, ok := errUnwrapped.(*gonotion.APIError); ok {
 		sourceErr := apiErr.Unwrap()
@@ -228,15 +256,19 @@ func (s *notionDestinationSync) handleError(id string, err error) {
 		case gonotion.ErrUnauthorized:
 			// TODO: Test this case
 			slog.Info("Unauthorized error fetching object", "id", id)
+			return data.IntegrationNotionObjectStatusUnknownError
 		case gonotion.ErrObjectNotFound:
-			// TODO: Test this case
 			slog.Info("Object not found error fetching object", "id", id)
+			return data.IntegrationNotionObjectStatusAccessRevoked
 		case gonotion.ErrRateLimited:
 			slog.Warn("Rate limited error fetching object", "id", id)
+			return data.IntegrationNotionObjectStatusRateLimited
 		default:
 			slog.Error("Unknown error fetching object", "id", id, "error", err)
+			return data.IntegrationNotionObjectStatusUnknownError
 		}
 	} else {
 		slog.Error("Non-API error fetching object", "id", id, "error", err)
+		return data.IntegrationNotionObjectStatusUnknownError
 	}
 }
