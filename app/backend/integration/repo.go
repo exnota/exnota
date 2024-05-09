@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	lib_integ "exnota.com/backend/lib/integration"
 	"github.com/pocketbase/pocketbase/models"
 )
 
@@ -30,32 +31,32 @@ type IntegrationNotionObjectFetcher interface {
 
 type IntegrationNotionObjectWriter interface {
 	// Loads or creates a record, validates it, but does not persist.
-	CreateUpsertRecord(request CreateRequest) (*models.Record, error)
-	UpdateConnected(request UpdateSyncConnectedRequest) error
-	UpdateErrored(request UpdateSyncErrorRequest) error
-	UpdateArchived(request UpdateSyncArchivedRequest) error
+	CreateUpsertRecord(request NotionObjectCreateRequest) (*models.Record, error)
+	UpdateConnected(request NotionUpdateSyncConnectedRequest) error
+	UpdateErrored(request NotionUpdateSyncErrorRequest) error
+	UpdateArchived(request NotionUpdateSyncArchivedRequest) error
 }
 
-type CreateRequest struct {
+type NotionObjectCreateRequest struct {
 	ExternalId string                      `validate:"required"`
 	Type       IntegrationNotionObjectType `validate:"required"`
 	Properties any                         `validate:"required"`
 	User       string                      `validate:"required"`
 }
 
-type UpdateSyncConnectedRequest struct {
+type NotionUpdateSyncConnectedRequest struct {
 	Id         string    `validate:"min=1"`
 	Properties any       `validate:"required"`
 	LastSynced time.Time `validate:"required"`
 }
 
-type UpdateSyncErrorRequest struct {
-	Id         string                        `validate:"min=1"`
-	Status     IntegrationNotionObjectStatus `validate:"required"`
-	LastSynced time.Time                     `validate:"required"`
+type NotionUpdateSyncErrorRequest struct {
+	Id         string                       `validate:"min=1"`
+	Status     lib_integ.NotionObjectStatus `validate:"required"`
+	LastSynced time.Time                    `validate:"required"`
 }
 
-type UpdateSyncArchivedRequest struct {
+type NotionUpdateSyncArchivedRequest struct {
 	Id         string    `validate:"min=1"`
 	Properties any       `validate:"required"`
 	LastSynced time.Time `validate:"required"`

@@ -37,10 +37,10 @@ func (h *integrationDestinationEvents) ApplyHooks() {
 			nextObject := LoadIntegrationNotionObject(updatedRecord, h.app)
 
 			prev := lib_integ.IntegrationDestinationState{
-				NotionStatus: h.toEventStatus(prevObject.Status()),
+				NotionObjectStatus: prevObject.Status(),
 			}
 			next := lib_integ.IntegrationDestinationState{
-				NotionStatus: h.toEventStatus(nextObject.Status()),
+				NotionObjectStatus: nextObject.Status(),
 			}
 
 			// switch prevObject.Type() {
@@ -67,23 +67,4 @@ func (h *integrationDestinationEvents) ApplyHooks() {
 
 			return nil
 		})
-}
-
-func (h *integrationDestinationEvents) toEventStatus(
-	status IntegrationNotionObjectStatus,
-) lib_integ.IntegrationDestinationNotionStatus {
-	switch status {
-	case IntegrationNotionObjectStatusConnected:
-		return lib_integ.IntegrationDestinationNotionStatusConnected
-	case IntegrationNotionObjectStatusNotFound:
-		return lib_integ.IntegrationDestinationNotionStatusNotFound
-	case IntegrationNotionObjectStatusArchived:
-		return lib_integ.IntegrationDestinationNotionStatusArchived
-	case IntegrationNotionObjectStatusUnknownError:
-		return lib_integ.IntegrationDestinationNotionStatusError
-	case IntegrationNotionObjectStatusRateLimited:
-		return lib_integ.IntegrationDestinationNotionStatusError
-	default:
-		panic("Unknown notion object status: " + status)
-	}
 }

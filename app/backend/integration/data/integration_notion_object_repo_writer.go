@@ -6,6 +6,7 @@ import (
 	"time"
 
 	integ "exnota.com/backend/integration"
+	lib_integ "exnota.com/backend/lib/integration"
 	"github.com/go-playground/validator/v10"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
@@ -27,7 +28,7 @@ func NewIntegrationNotionObjectWriter(app core.App) integ.IntegrationNotionObjec
 var validate *validator.Validate = validator.New(validator.WithRequiredStructEnabled())
 
 func (w *integrationNotionObjectWriter) CreateUpsertRecord(
-	request integ.CreateRequest,
+	request integ.NotionObjectCreateRequest,
 ) (*models.Record, error) {
 	err := validate.Struct(request)
 	if err != nil {
@@ -81,7 +82,7 @@ func (w *integrationNotionObjectWriter) CreateUpsertRecord(
 	record.Set(integ.IntegrationNotionObjectFieldLastSynced, time.Now())
 	record.Set(
 		integ.IntegrationNotionObjectFieldStatus,
-		integ.IntegrationNotionObjectStatusConnected,
+		lib_integ.NotionObjectStatusConnected,
 	)
 
 	// Validate the record, but don't submit
@@ -95,7 +96,7 @@ func (w *integrationNotionObjectWriter) CreateUpsertRecord(
 }
 
 func (w *integrationNotionObjectWriter) UpdateConnected(
-	request integ.UpdateSyncConnectedRequest,
+	request integ.NotionUpdateSyncConnectedRequest,
 ) error {
 	err := validate.Struct(request)
 	if err != nil {
@@ -112,7 +113,7 @@ func (w *integrationNotionObjectWriter) UpdateConnected(
 		}
 
 		object := integ.LoadIntegrationNotionObject(record, w.app)
-		object.SetStatus(integ.IntegrationNotionObjectStatusConnected)
+		object.SetStatus(lib_integ.NotionObjectStatusConnected)
 		object.SetProperties(request.Properties)
 		object.SetLastSynced(request.LastSynced)
 
@@ -125,7 +126,7 @@ func (w *integrationNotionObjectWriter) UpdateConnected(
 }
 
 func (w *integrationNotionObjectWriter) UpdateErrored(
-	request integ.UpdateSyncErrorRequest,
+	request integ.NotionUpdateSyncErrorRequest,
 ) error {
 	err := validate.Struct(request)
 	if err != nil {
@@ -154,7 +155,7 @@ func (w *integrationNotionObjectWriter) UpdateErrored(
 }
 
 func (w *integrationNotionObjectWriter) UpdateArchived(
-	request integ.UpdateSyncArchivedRequest,
+	request integ.NotionUpdateSyncArchivedRequest,
 ) error {
 	err := validate.Struct(request)
 	if err != nil {
@@ -171,7 +172,7 @@ func (w *integrationNotionObjectWriter) UpdateArchived(
 		}
 
 		object := integ.LoadIntegrationNotionObject(record, w.app)
-		object.SetStatus(integ.IntegrationNotionObjectStatusArchived)
+		object.SetStatus(lib_integ.NotionObjectStatusArchived)
 		object.SetProperties(request.Properties)
 		object.SetLastSynced(request.LastSynced)
 

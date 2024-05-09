@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	lib_integ "exnota.com/backend/lib/integration"
 	"github.com/dstotijn/go-notion"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -35,27 +36,16 @@ const (
 	IntegrationNotionObjectTypeBlock    IntegrationNotionObjectType = "block"
 )
 
-type IntegrationNotionObjectStatus string
-
-const (
-	IntegrationNotionObjectStatusConnected IntegrationNotionObjectStatus = "connected"
-	// This can mean access was revoked or the object was deleted.
-	IntegrationNotionObjectStatusNotFound     IntegrationNotionObjectStatus = "not-found"
-	IntegrationNotionObjectStatusArchived     IntegrationNotionObjectStatus = "archived"
-	IntegrationNotionObjectStatusUnknownError IntegrationNotionObjectStatus = "unknown-error"
-	IntegrationNotionObjectStatusRateLimited  IntegrationNotionObjectStatus = "rate-limited"
-)
-
 type IntegrationNotionObject interface {
 	Id() string
 	ExternalId() string
 	Type() IntegrationNotionObjectType
-	Status() IntegrationNotionObjectStatus
+	Status() lib_integ.NotionObjectStatus
 	DatabaseTitlePropertyId() (string, error)
 	LastSynced() time.Time
 	User() string
 
-	SetStatus(status IntegrationNotionObjectStatus)
+	SetStatus(status lib_integ.NotionObjectStatus)
 	SetLastSynced(time.Time)
 	SetProperties(any)
 
@@ -87,8 +77,8 @@ func (i *integrationNotionObject) Type() IntegrationNotionObjectType {
 	return IntegrationNotionObjectType(i.record.GetString(IntegrationNotionObjectFieldType))
 }
 
-func (i *integrationNotionObject) Status() IntegrationNotionObjectStatus {
-	return IntegrationNotionObjectStatus(i.record.GetString(IntegrationNotionObjectFieldStatus))
+func (i *integrationNotionObject) Status() lib_integ.NotionObjectStatus {
+	return lib_integ.NotionObjectStatus(i.record.GetString(IntegrationNotionObjectFieldStatus))
 }
 
 func (i *integrationNotionObject) DatabaseTitlePropertyId() (string, error) {
@@ -124,7 +114,7 @@ func (i *integrationNotionObject) User() string {
 	return i.record.GetString(IntegrationNotionObjectFieldUser)
 }
 
-func (i *integrationNotionObject) SetStatus(status IntegrationNotionObjectStatus) {
+func (i *integrationNotionObject) SetStatus(status lib_integ.NotionObjectStatus) {
 	i.record.Set(IntegrationNotionObjectFieldStatus, string(status))
 }
 

@@ -27,9 +27,9 @@ func (h *destinationIntegrationUpdate) Update(event integration.IntegrationDesti
 	slog.Info(
 		"DestinationIntegrationUpdate.Update",
 		"event.prev.status",
-		event.Prev.NotionStatus,
+		event.Prev.NotionObjectStatus,
 		"event.next.status",
-		event.Next.NotionStatus,
+		event.Next.NotionObjectStatus,
 	)
 	return nil
 }

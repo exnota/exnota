@@ -8,15 +8,19 @@ type IntegrationDestinationEvent struct {
 }
 
 type IntegrationDestinationState struct {
-	Name         string
-	NotionStatus IntegrationDestinationNotionStatus
+	Name               string
+	NotionObjectStatus NotionObjectStatus
 }
 
-type IntegrationDestinationNotionStatus string
+// Status is the same for Destination and Block mappings for the Notion
+// integration.
+type NotionObjectStatus string
 
 const (
-	IntegrationDestinationNotionStatusConnected IntegrationDestinationNotionStatus = "connected"
-	IntegrationDestinationNotionStatusNotFound  IntegrationDestinationNotionStatus = "not-found"
-	IntegrationDestinationNotionStatusArchived  IntegrationDestinationNotionStatus = "archived"
-	IntegrationDestinationNotionStatusError     IntegrationDestinationNotionStatus = "error"
+	NotionObjectStatusConnected NotionObjectStatus = "connected"
+	// This can mean access was revoked or the object was deleted.
+	NotionObjectStatusNotFound     NotionObjectStatus = "not-found"
+	NotionObjectStatusArchived     NotionObjectStatus = "archived"
+	NotionObjectStatusUnknownError NotionObjectStatus = "unknown-error"
+	NotionObjectStatusRateLimited  NotionObjectStatus = "rate-limited"
 )
