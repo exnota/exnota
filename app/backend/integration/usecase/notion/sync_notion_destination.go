@@ -200,15 +200,29 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 			}
 			slog.Info("Fetched database", "id", database.ID, "title", database.Title)
 
-			err = s.objectWriter.UpdateConnected(data.UpdateSyncConnectedRequest{
-				Id:         obj.Id(),
-				Properties: database.Properties,
-				LastSynced: time.Now(),
-			})
-			if err != nil {
-				// Abort loop if there's a write error
-				return err
+			if database.Archived {
+				err := s.objectWriter.UpdateArchived(data.UpdateSyncArchivedRequest{
+					Id:         obj.Id(),
+					Properties: database.Properties,
+					LastSynced: time.Now(),
+				})
+				if err != nil {
+					// Abort loop if there's a write error
+					return err
+				}
+			} else {
+				err = s.objectWriter.UpdateConnected(data.UpdateSyncConnectedRequest{
+					Id:         obj.Id(),
+					Properties: database.Properties,
+					LastSynced: time.Now(),
+				})
+				if err != nil {
+					// Abort loop if there's a write error
+					return err
+				}
+
 			}
+
 		case data.IntegrationNotionObjectTypePage:
 			slog.Info("Fetching page", "id", obj.ExternalId())
 			page, err := notionFetcher.FetchPage(obj.ExternalId())
@@ -227,15 +241,30 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 			}
 			slog.Info("Fetched page", "id", page.ID)
 
-			err = s.objectWriter.UpdateConnected(data.UpdateSyncConnectedRequest{
-				Id:         obj.Id(),
-				Properties: page.Properties,
-				LastSynced: time.Now(),
-			})
-			if err != nil {
-				// Abort loop if there's a write error
-				return err
+			// TODO: What happens if the page is deleted from the trash?
+			if page.Archived {
+				err := s.objectWriter.UpdateArchived(data.UpdateSyncArchivedRequest{
+					Id:         obj.Id(),
+					Properties: page.Properties,
+					LastSynced: time.Now(),
+				})
+				if err != nil {
+					// Abort loop if there's a write error
+					return err
+				}
+			} else {
+				err = s.objectWriter.UpdateConnected(data.UpdateSyncConnectedRequest{
+					Id:         obj.Id(),
+					Properties: page.Properties,
+					LastSynced: time.Now(),
+				})
+				if err != nil {
+					// Abort loop if there's a write error
+					return err
+				}
+
 			}
+
 		default:
 			slog.Error("Unsupported object type", "type", obj.Type())
 			return fmt.Errorf("unsupported object type: %v", obj.Type())
@@ -259,7 +288,7 @@ func (s *notionDestinationSync) handleError(
 			return data.IntegrationNotionObjectStatusUnknownError
 		case gonotion.ErrObjectNotFound:
 			slog.Info("Object not found error fetching object", "id", id)
-			return data.IntegrationNotionObjectStatusAccessRevoked
+			return data.IntegrationNotionObjectStatusNotFound
 		case gonotion.ErrRateLimited:
 			slog.Warn("Rate limited error fetching object", "id", id)
 			return data.IntegrationNotionObjectStatusRateLimited

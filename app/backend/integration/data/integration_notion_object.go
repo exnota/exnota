@@ -38,11 +38,11 @@ const (
 type IntegrationNotionObjectStatus string
 
 const (
-	IntegrationNotionObjectStatusConnected     IntegrationNotionObjectStatus = "connected"
-	IntegrationNotionObjectStatusAccessRevoked IntegrationNotionObjectStatus = "access-revoked"
-	IntegrationNotionObjectStatusDeleted       IntegrationNotionObjectStatus = "deleted"
-	IntegrationNotionObjectStatusUnknownError  IntegrationNotionObjectStatus = "unknown-error"
-	IntegrationNotionObjectStatusRateLimited   IntegrationNotionObjectStatus = "rate-limited"
+	IntegrationNotionObjectStatusConnected    IntegrationNotionObjectStatus = "connected"
+	IntegrationNotionObjectStatusNotFound     IntegrationNotionObjectStatus = "not-found"
+	IntegrationNotionObjectStatusArchived     IntegrationNotionObjectStatus = "archived"
+	IntegrationNotionObjectStatusUnknownError IntegrationNotionObjectStatus = "unknown-error"
+	IntegrationNotionObjectStatusRateLimited  IntegrationNotionObjectStatus = "rate-limited"
 )
 
 type IntegrationNotionObject interface {

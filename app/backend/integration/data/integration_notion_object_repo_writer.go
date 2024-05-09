@@ -18,6 +18,7 @@ type IntegrationNotionObjectWriter interface {
 	CreateUpsertRecord(request CreateRequest) (*models.Record, error)
 	UpdateConnected(request UpdateSyncConnectedRequest) error
 	UpdateErrored(request UpdateSyncErrorRequest) error
+	UpdateArchived(request UpdateSyncArchivedRequest) error
 }
 
 type integrationNotionObjectWriter struct {
@@ -90,6 +91,7 @@ func (w *integrationNotionObjectWriter) CreateUpsertRecord(
 	// Update the new or existing record
 	record.Set(IntegrationNotionObjectFieldProperties, request.Properties)
 	record.Set(IntegrationNotionObjectFieldLastSynced, time.Now())
+	record.Set(IntegrationNotionObjectFieldStatus, IntegrationNotionObjectStatusConnected)
 
 	// Validate the record, but don't submit
 	form := forms.NewRecordUpsert(w.app, record)
@@ -154,6 +156,39 @@ func (w *integrationNotionObjectWriter) UpdateErrored(request UpdateSyncErrorReq
 
 		object := LoadIntegrationNotionObject(record, w.app)
 		object.SetStatus(request.Status)
+		object.SetLastSynced(request.LastSynced)
+
+		if err := object.ValidateAndSubmit(txDao); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+type UpdateSyncArchivedRequest struct {
+	Id         string    `validate:"min=1"`
+	Properties any       `validate:"required"`
+	LastSynced time.Time `validate:"required"`
+}
+
+func (w *integrationNotionObjectWriter) UpdateArchived(
+	request UpdateSyncArchivedRequest,
+) error {
+	err := validate.Struct(request)
+	if err != nil {
+		return err
+	}
+
+	return w.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		record, err := txDao.FindRecordById(CollectionIntegrationNotionObject, request.Id)
+		if err != nil {
+			return err
+		}
+
+		object := LoadIntegrationNotionObject(record, w.app)
+		object.SetStatus(IntegrationNotionObjectStatusArchived)
+		object.SetProperties(request.Properties)
 		object.SetLastSynced(request.LastSynced)
 
 		if err := object.ValidateAndSubmit(txDao); err != nil {
