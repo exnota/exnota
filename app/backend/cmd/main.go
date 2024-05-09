@@ -126,6 +126,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	integrationDestinationSync := integration_usecase.NewIntegrationDestinationSync(
 		app,
 		integ_data.NewIntegrationFetcher(app),
+		integ_data.NewIntegrationDestinationFetcher(app),
 		destinationFetcher,
 	)
 	block.NewDestinationUpdate(app, destinationFetcher).ApplyHooks()

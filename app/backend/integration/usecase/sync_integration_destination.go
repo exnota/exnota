@@ -25,19 +25,22 @@ type DestinationFetcher interface {
 }
 
 type integrationDestinationSync struct {
-	app                core.App
-	integrationFetcher data.IntegrationFetcher
-	destinationFetcher DestinationFetcher
+	app                           core.App
+	integrationFetcher            data.IntegrationFetcher
+	integrationDestinationFetcher data.IntegrationDestinationFetcher
+	destinationFetcher            DestinationFetcher
 }
 
 func NewIntegrationDestinationSync(
 	app core.App,
 	integrationFetcher data.IntegrationFetcher,
+	integrationDestinationFetcher data.IntegrationDestinationFetcher,
 	destinationFetcher DestinationFetcher,
 ) IntegrationDestinationSync {
 	return &integrationDestinationSync{
 		app,
 		integrationFetcher,
+		integrationDestinationFetcher,
 		destinationFetcher,
 	}
 }
@@ -142,6 +145,15 @@ func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error
 
 	// TODO: Remove
 	slog.Info("Destination IDs", "destinationIds", destinationIds)
+
+	integrationDestinations, err := s.integrationDestinationFetcher.ListByDestinationIds(
+		destinationIds,
+	)
+	if err != nil {
+		return err
+	}
+
+	slog.Info("Integration destinations", "integrationDestinations", integrationDestinations)
 
 	// switch integration.Type() {
 	// case data.TypeNotion:
