@@ -3,6 +3,7 @@ package notion
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion/api"
@@ -17,14 +18,19 @@ type NotionDestinationSync interface {
 	CreateSync(
 		CreateNotionDestinationSyncRequest,
 	) (result *block.CreateDestinationSyncResult, record *models.Record, err error)
+	UpdateSync(request UpdateSyncRequest) error
 }
 
 type notionDestinationSync struct {
-	app core.App
+	app           core.App
+	objectFetcher data.IntegrationNotionObjectFetcher
 }
 
-func NewNotionDestinationSync(app core.App) NotionDestinationSync {
-	return &notionDestinationSync{app}
+func NewNotionDestinationSync(
+	app core.App,
+	objectFetcher data.IntegrationNotionObjectFetcher,
+) NotionDestinationSync {
+	return &notionDestinationSync{app, objectFetcher}
 }
 
 type CreateNotionDestinationSyncRequest struct {
@@ -140,4 +146,56 @@ func (s *notionDestinationSync) accessToken(integrationID string) (string, error
 		return "", err
 	}
 	return *config.Auth.AccessToken, nil
+}
+
+type UpdateSyncRequest struct {
+	ExternalRecordIds []string `validate:"required"`
+}
+
+func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
+	err := validate.Struct(request)
+	if err != nil {
+		return err
+	}
+
+	// TODO: Get notion object IDs
+	objects, err := s.objectFetcher.ListByIds(request.ExternalRecordIds)
+	if err != nil {
+		return err
+	}
+
+	// TODO: Remove
+	slog.Info("Notion object IDs", "num", len(objects), "ids", request.ExternalRecordIds)
+
+	// for _, obj := range objects {
+	// 	// Skip if status is connected and lastSynced is less than 1 minute ago
+	// 	if obj.Status == "connected" && obj.LastSynced.After(time.Now().Add(-1*time.Minute)) {
+	// 		continue
+	// 	}
+
+	// 	// Fetch the page or database based on the object type
+	// 	switch obj.Type {
+	// 	case data.IntegrationNotionObjectTypeDatabase:
+	// 		database, err := notionFetcher.FetchDatabase(obj.ExternalID)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		// Process the fetched database
+	// 		// TODO: Add your code here
+
+	// 	case data.IntegrationNotionObjectTypePage:
+	// 		page, err := notionFetcher.FetchPage(obj.ExternalID)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		// Process the fetched page
+	// 		// TODO: Add your code here
+
+	// 	default:
+	// 		return errors.New("invalid object type: " + obj.Type)
+	// 	}
+	// }
+
+	// TODO:
+	return nil
 }

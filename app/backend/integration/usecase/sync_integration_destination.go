@@ -59,7 +59,10 @@ func (s *integrationDestinationSync) CreateSync(
 	var destinationResult *block.CreateDestinationSyncResult
 	switch integration.Type() {
 	case data.TypeNotion:
-		notionSync := notion.NewNotionDestinationSync(s.app)
+		notionSync := notion.NewNotionDestinationSync(
+			s.app,
+			data.NewIntegrationNotionObjectFetcher(s.app),
+		)
 		var externalRecord *models.Record
 		destinationResult, externalRecord, err = notionSync.CreateSync(
 			notion.CreateNotionDestinationSyncRequest{
@@ -153,18 +156,29 @@ func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error
 		return err
 	}
 
-	slog.Info("Integration destinations", "integrationDestinations", integrationDestinations)
+	externalRecordIds := make([]string, len(integrationDestinations))
+	for i, destination := range integrationDestinations {
+		externalRecordIds[i] = destination.ExternalRecordId()
+	}
 
-	// switch integration.Type() {
-	// case data.TypeNotion:
-	// 	notionSync := notion.NewNotionDestinationSync(s.app)
-	// 	err = notionSync.UpdateSync(integrationId)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// default:
-	// 	return errors.New("Integration type not supported")
-	// }
+	// TODO: Remove
+	slog.Info("Integration destinations", "num", len(integrationDestinations))
+
+	switch integration.Type() {
+	case data.TypeNotion:
+		notionSync := notion.NewNotionDestinationSync(
+			s.app,
+			data.NewIntegrationNotionObjectFetcher(s.app),
+		)
+		err = notionSync.UpdateSync(notion.UpdateSyncRequest{
+			ExternalRecordIds: externalRecordIds,
+		})
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("Integration type not supported")
+	}
 
 	return nil
 
