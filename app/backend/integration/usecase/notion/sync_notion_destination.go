@@ -12,6 +12,7 @@ import (
 	"exnota.com/backend/integration/usecase/notion/api"
 	"exnota.com/backend/integration/util"
 	"exnota.com/backend/lib/block"
+	lib_integ "exnota.com/backend/lib/integration"
 	gonotion "github.com/dstotijn/go-notion"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pocketbase/pocketbase/core"
@@ -85,7 +86,7 @@ func (s *notionDestinationSync) CreateSync(
 			return nil, nil, err
 		}
 
-		record, err = s.objectWriter.CreateUpsertRecord(integ.CreateRequest{
+		record, err = s.objectWriter.CreateUpsertRecord(integ.NotionObjectCreateRequest{
 			ExternalId: config.Id,
 			Type:       integ.IntegrationNotionObjectTypeDatabase,
 			Properties: props,
@@ -114,7 +115,7 @@ func (s *notionDestinationSync) CreateSync(
 		}
 
 		objectWriter := data.NewIntegrationNotionObjectWriter(s.app)
-		record, err = objectWriter.CreateUpsertRecord(integ.CreateRequest{
+		record, err = objectWriter.CreateUpsertRecord(integ.NotionObjectCreateRequest{
 			ExternalId: config.Id,
 			Type:       integ.IntegrationNotionObjectTypePage,
 			Properties: props,
@@ -170,7 +171,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 	}
 	for _, obj := range objects {
 		// Skip if status is connected and lastSynced is less than 1 minute ago
-		if obj.Status() == integ.IntegrationNotionObjectStatusConnected &&
+		if obj.Status() == lib_integ.NotionObjectStatusConnected &&
 			obj.LastSynced().After(time.Now().Add(-1*time.Minute)) {
 			slog.Info("Skipping object", "id", obj.ExternalId())
 			continue
@@ -188,7 +189,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 			database, err := notionFetcher.FetchDatabase(obj.ExternalId())
 			if err != nil {
 				errStatus := s.handleError(obj.ExternalId(), err)
-				err := s.objectWriter.UpdateErrored(integ.UpdateSyncErrorRequest{
+				err := s.objectWriter.UpdateErrored(integ.NotionUpdateSyncErrorRequest{
 					Id:         obj.Id(),
 					Status:     errStatus,
 					LastSynced: time.Now(),
@@ -202,7 +203,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 			slog.Info("Fetched database", "id", database.ID, "title", database.Title)
 
 			if database.Archived {
-				err := s.objectWriter.UpdateArchived(integ.UpdateSyncArchivedRequest{
+				err := s.objectWriter.UpdateArchived(integ.NotionUpdateSyncArchivedRequest{
 					Id:         obj.Id(),
 					Properties: database.Properties,
 					LastSynced: time.Now(),
@@ -212,7 +213,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 					return err
 				}
 			} else {
-				err = s.objectWriter.UpdateConnected(integ.UpdateSyncConnectedRequest{
+				err = s.objectWriter.UpdateConnected(integ.NotionUpdateSyncConnectedRequest{
 					Id:         obj.Id(),
 					Properties: database.Properties,
 					LastSynced: time.Now(),
@@ -229,7 +230,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 			page, err := notionFetcher.FetchPage(obj.ExternalId())
 			if err != nil {
 				errStatus := s.handleError(obj.ExternalId(), err)
-				err := s.objectWriter.UpdateErrored(integ.UpdateSyncErrorRequest{
+				err := s.objectWriter.UpdateErrored(integ.NotionUpdateSyncErrorRequest{
 					Id:         obj.Id(),
 					Status:     errStatus,
 					LastSynced: time.Now(),
@@ -244,7 +245,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 
 			// TODO: What happens if the page is deleted from the trash?
 			if page.Archived {
-				err := s.objectWriter.UpdateArchived(integ.UpdateSyncArchivedRequest{
+				err := s.objectWriter.UpdateArchived(integ.NotionUpdateSyncArchivedRequest{
 					Id:         obj.Id(),
 					Properties: page.Properties,
 					LastSynced: time.Now(),
@@ -254,7 +255,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 					return err
 				}
 			} else {
-				err = s.objectWriter.UpdateConnected(integ.UpdateSyncConnectedRequest{
+				err = s.objectWriter.UpdateConnected(integ.NotionUpdateSyncConnectedRequest{
 					Id:         obj.Id(),
 					Properties: page.Properties,
 					LastSynced: time.Now(),
@@ -278,7 +279,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 func (s *notionDestinationSync) handleError(
 	id string,
 	err error,
-) integ.IntegrationNotionObjectStatus {
+) lib_integ.NotionObjectStatus {
 	errUnwrapped := errors.Unwrap(err)
 	if apiErr, ok := errUnwrapped.(*gonotion.APIError); ok {
 		sourceErr := apiErr.Unwrap()
@@ -287,20 +288,20 @@ func (s *notionDestinationSync) handleError(
 			// Not sure when this case will occur. I guess if the token is
 			// revoked.
 			slog.Info("Unauthorized error fetching object", "id", id)
-			return integ.IntegrationNotionObjectStatusUnknownError
+			return lib_integ.NotionObjectStatusUnknownError
 		case gonotion.ErrObjectNotFound:
 			// This can mean access was revoked or the object was deleted.
 			slog.Info("Object not found error fetching object", "id", id)
-			return integ.IntegrationNotionObjectStatusNotFound
+			return lib_integ.NotionObjectStatusNotFound
 		case gonotion.ErrRateLimited:
 			slog.Warn("Rate limited error fetching object", "id", id)
-			return integ.IntegrationNotionObjectStatusRateLimited
+			return lib_integ.NotionObjectStatusRateLimited
 		default:
 			slog.Error("Unknown error fetching object", "id", id, "error", err)
-			return integ.IntegrationNotionObjectStatusUnknownError
+			return lib_integ.NotionObjectStatusUnknownError
 		}
 	} else {
 		slog.Error("Non-API error fetching object", "id", id, "error", err)
-		return integ.IntegrationNotionObjectStatusUnknownError
+		return lib_integ.NotionObjectStatusUnknownError
 	}
 }
