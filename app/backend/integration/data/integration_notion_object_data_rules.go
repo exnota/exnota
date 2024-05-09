@@ -23,27 +23,28 @@ func (h *integrationNotionObjectDataRules) ApplyHooks() {
 }
 
 func (h *integrationNotionObjectDataRules) immutableFields() {
-	h.app.OnModelBeforeUpdate(CollectionIntegrationNotionObject).Add(func(e *core.ModelEvent) error {
-		updated := NewIntegrationNotionObjectFromModel(e.Model)
-		fetcher := NewIntegrationNotionObjectFetcher(h.app)
-		existing, err := fetcher.FetchById(updated.Id())
-		if err != nil {
-			return err
-		}
-		if existing == nil {
-			return errors.New("Notion object does not exist")
-		}
+	h.app.OnModelBeforeUpdate(CollectionIntegrationNotionObject).
+		Add(func(e *core.ModelEvent) error {
+			updated := LoadIntegrationNotionObjectFromModel(e.Model)
+			fetcher := NewIntegrationNotionObjectFetcher(h.app)
+			existing, err := fetcher.FetchById(updated.Id())
+			if err != nil {
+				return err
+			}
+			if existing == nil {
+				return errors.New("Notion object does not exist")
+			}
 
-		if updated.User() != existing.User() {
-			return errors.New("Cannot change user")
-		}
-		if updated.Type() != existing.Type() {
-			return errors.New("Cannot change type")
-		}
-		if updated.ExternalId() != existing.ExternalId() {
-			return errors.New("Cannot change external_id")
-		}
+			if updated.User() != existing.User() {
+				return errors.New("Cannot change user")
+			}
+			if updated.Type() != existing.Type() {
+				return errors.New("Cannot change type")
+			}
+			if updated.ExternalId() != existing.ExternalId() {
+				return errors.New("Cannot change external_id")
+			}
 
-		return nil
-	})
+			return nil
+		})
 }

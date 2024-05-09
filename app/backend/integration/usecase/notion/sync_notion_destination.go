@@ -3,12 +3,15 @@ package notion
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"time"
 
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion/api"
 	"exnota.com/backend/integration/util"
 	"exnota.com/backend/lib/block"
+	gonotion "github.com/dstotijn/go-notion"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
@@ -149,6 +152,7 @@ func (s *notionDestinationSync) accessToken(integrationID string) (string, error
 }
 
 type UpdateSyncRequest struct {
+	IntegrationId     string   `validate:"min=1"`
 	ExternalRecordIds []string `validate:"required"`
 }
 
@@ -167,35 +171,72 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 	// TODO: Remove
 	slog.Info("Notion object IDs", "num", len(objects), "ids", request.ExternalRecordIds)
 
-	// for _, obj := range objects {
-	// 	// Skip if status is connected and lastSynced is less than 1 minute ago
-	// 	if obj.Status == "connected" && obj.LastSynced.After(time.Now().Add(-1*time.Minute)) {
-	// 		continue
-	// 	}
+	for _, obj := range objects {
+		// Skip if status is connected and lastSynced is less than 1 minute ago
+		if obj.Status() == data.IntegrationNotionObjectStatusConnected &&
+			obj.LastSynced().After(time.Now().Add(-1*time.Minute)) {
+			continue
+		}
 
-	// 	// Fetch the page or database based on the object type
-	// 	switch obj.Type {
-	// 	case data.IntegrationNotionObjectTypeDatabase:
-	// 		database, err := notionFetcher.FetchDatabase(obj.ExternalID)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		// Process the fetched database
-	// 		// TODO: Add your code here
+		// Create fetcher
+		accessToken, err := s.accessToken(request.IntegrationId)
+		if err != nil {
+			return err
+		}
+		notionFetcher := api.NewNotionFetcher(accessToken)
 
-	// 	case data.IntegrationNotionObjectTypePage:
-	// 		page, err := notionFetcher.FetchPage(obj.ExternalID)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		// Process the fetched page
-	// 		// TODO: Add your code here
-
-	// 	default:
-	// 		return errors.New("invalid object type: " + obj.Type)
-	// 	}
-	// }
+		// TODO: Consider error handling. I.e. one failed request shouldn't stop
+		// the others.
+		switch obj.Type() {
+		case data.IntegrationNotionObjectTypeDatabase:
+			slog.Info("Fetching database", "id", obj.ExternalId())
+			database, err := notionFetcher.FetchDatabase(obj.ExternalId())
+			if err != nil {
+				s.handleError(obj.ExternalId(), err)
+				continue
+			}
+			// TODO: Remove
+			slog.Info("Fetched database", "id", database.ID, "title", database.Title)
+			// Process the fetched database
+			// TODO: Add your code here
+		case data.IntegrationNotionObjectTypePage:
+			slog.Info("Fetching page", "id", obj.ExternalId())
+			page, err := notionFetcher.FetchPage(obj.ExternalId())
+			if err != nil {
+				s.handleError(obj.ExternalId(), err)
+				continue
+			}
+			// TODO: Remove
+			slog.Info("Fetched page", "id", page.ID)
+			// Process the fetched page
+			// TODO: Add your code here
+		default:
+			slog.Error("Unsupported object type", "type", obj.Type())
+			return fmt.Errorf("unsupported object type: %v", obj.Type())
+		}
+	}
 
 	// TODO:
 	return nil
+}
+
+func (s *notionDestinationSync) handleError(id string, err error) {
+	errUnwrapped := errors.Unwrap(err)
+	if apiErr, ok := errUnwrapped.(*gonotion.APIError); ok {
+		sourceErr := apiErr.Unwrap()
+		switch sourceErr {
+		case gonotion.ErrUnauthorized:
+			// TODO: Test this case
+			slog.Info("Unauthorized error fetching object", "id", id)
+		case gonotion.ErrObjectNotFound:
+			// TODO: Test this case
+			slog.Info("Object not found error fetching object", "id", id)
+		case gonotion.ErrRateLimited:
+			slog.Warn("Rate limited error fetching object", "id", id)
+		default:
+			slog.Error("Unknown error fetching object", "id", id, "error", err)
+		}
+	} else {
+		slog.Error("Non-API error fetching object", "id", id, "error", err)
+	}
 }
