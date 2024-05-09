@@ -62,6 +62,7 @@ func (s *integrationDestinationSync) CreateSync(
 		notionSync := notion.NewNotionDestinationSync(
 			s.app,
 			data.NewIntegrationNotionObjectFetcher(s.app),
+			data.NewIntegrationNotionObjectWriter(s.app),
 		)
 		var externalRecord *models.Record
 		destinationResult, externalRecord, err = notionSync.CreateSync(
@@ -146,9 +147,6 @@ func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error
 		return nil
 	}
 
-	// TODO: Remove
-	slog.Info("Destination IDs", "destinationIds", destinationIds)
-
 	integrationDestinations, err := s.integrationDestinationFetcher.ListByDestinationIds(
 		destinationIds,
 	)
@@ -161,14 +159,12 @@ func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error
 		externalRecordIds[i] = destination.ExternalRecordId()
 	}
 
-	// TODO: Remove
-	slog.Info("Integration destinations", "num", len(integrationDestinations))
-
 	switch integration.Type() {
 	case data.TypeNotion:
 		notionSync := notion.NewNotionDestinationSync(
 			s.app,
 			data.NewIntegrationNotionObjectFetcher(s.app),
+			data.NewIntegrationNotionObjectWriter(s.app),
 		)
 		err = notionSync.UpdateSync(notion.UpdateSyncRequest{
 			IntegrationId:     request.IntegrationId,

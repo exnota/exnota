@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/dstotijn/go-notion"
+	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/daos"
+	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/models"
 )
 
@@ -39,6 +42,7 @@ const (
 	IntegrationNotionObjectStatusAccessRevoked IntegrationNotionObjectStatus = "access-revoked"
 	IntegrationNotionObjectStatusDeleted       IntegrationNotionObjectStatus = "deleted"
 	IntegrationNotionObjectStatusUnknownError  IntegrationNotionObjectStatus = "unknown-error"
+	IntegrationNotionObjectStatusRateLimited   IntegrationNotionObjectStatus = "rate-limited"
 )
 
 type IntegrationNotionObject interface {
@@ -49,14 +53,21 @@ type IntegrationNotionObject interface {
 	DatabaseTitlePropertyId() (string, error)
 	LastSynced() time.Time
 	User() string
+
+	SetStatus(status IntegrationNotionObjectStatus)
+	SetLastSynced(time.Time)
+	SetProperties(any)
+
+	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
 type integrationNotionObject struct {
 	record *models.Record
+	app    core.App
 }
 
-func LoadIntegrationNotionObject(record *models.Record) IntegrationNotionObject {
-	return &integrationNotionObject{record: record}
+func LoadIntegrationNotionObject(record *models.Record, app core.App) IntegrationNotionObject {
+	return &integrationNotionObject{record, app}
 }
 
 func LoadIntegrationNotionObjectFromModel(model models.Model) IntegrationNotionObject {
@@ -110,4 +121,30 @@ func (i *integrationNotionObject) LastSynced() time.Time {
 
 func (i *integrationNotionObject) User() string {
 	return i.record.GetString(IntegrationNotionObjectFieldUser)
+}
+
+func (i *integrationNotionObject) SetStatus(status IntegrationNotionObjectStatus) {
+	i.record.Set(IntegrationNotionObjectFieldStatus, string(status))
+}
+
+func (i *integrationNotionObject) SetLastSynced(t time.Time) {
+	i.record.Set(IntegrationNotionObjectFieldLastSynced, t)
+}
+
+func (i *integrationNotionObject) SetProperties(props any) {
+	propsStr, err := json.Marshal(props)
+	if err != nil {
+		slog.Error("failed to marshal properties", "err", err)
+		return
+	}
+
+	i.record.Set(IntegrationNotionObjectFieldProperties, string(propsStr))
+}
+
+func (i *integrationNotionObject) ValidateAndSubmit(txDao *daos.Dao) error {
+	form := forms.NewRecordUpsert(i.app, i.record)
+	form.SetDao(txDao)
+
+	// Submit calls validate internally
+	return form.Submit()
 }
