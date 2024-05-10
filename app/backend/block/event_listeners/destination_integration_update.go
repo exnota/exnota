@@ -25,7 +25,11 @@ func NewDestinationIntegrationUpdate(
 
 func (h *destinationIntegrationUpdate) Update(event integration.IntegrationDestinationEvent) error {
 	slog.Info(
-		"DestinationIntegrationUpdate.Update",
+		"❤️ DestinationIntegrationUpdate.Update",
+		"event.prev.name",
+		event.Prev.Name,
+		"event.next.name",
+		event.Next.Name,
 		"event.prev.status",
 		event.Prev.NotionObjectStatus,
 		"event.next.status",

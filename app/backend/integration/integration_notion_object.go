@@ -42,6 +42,7 @@ type IntegrationNotionObject interface {
 	ExternalId() string
 	Type() IntegrationNotionObjectType
 	Status() lib_integ.NotionObjectStatus
+	Title() string
 	DatabaseTitlePropertyId() (string, error)
 	LastSynced() time.Time
 	User() string
@@ -81,6 +82,10 @@ func (i *integrationNotionObject) Type() IntegrationNotionObjectType {
 
 func (i *integrationNotionObject) Status() lib_integ.NotionObjectStatus {
 	return lib_integ.NotionObjectStatus(i.record.GetString(IntegrationNotionObjectFieldStatus))
+}
+
+func (i *integrationNotionObject) Title() string {
+	return i.record.GetString(IntegrationNotionObjectFieldTitle)
 }
 
 func (i *integrationNotionObject) DatabaseTitlePropertyId() (string, error) {
