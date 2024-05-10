@@ -21,6 +21,7 @@ const (
 	IntegrationNotionObjectFieldExternalId = "external_id"
 	IntegrationNotionObjectFieldType       = "type"
 	IntegrationNotionObjectFieldStatus     = "status"
+	IntegrationNotionObjectFieldTitle      = "title"
 	IntegrationNotionObjectFieldProperties = "properties"
 	IntegrationNotionObjectFieldLastSynced = "last_synced"
 	IntegrationNotionObjectFieldUser       = "user"
@@ -46,8 +47,9 @@ type IntegrationNotionObject interface {
 	User() string
 
 	SetStatus(status lib_integ.NotionObjectStatus)
-	SetLastSynced(time.Time)
+	SetTitle(status string)
 	SetProperties(any)
+	SetLastSynced(time.Time)
 
 	ValidateAndSubmit(txDao *daos.Dao) error
 }
@@ -118,8 +120,8 @@ func (i *integrationNotionObject) SetStatus(status lib_integ.NotionObjectStatus)
 	i.record.Set(IntegrationNotionObjectFieldStatus, string(status))
 }
 
-func (i *integrationNotionObject) SetLastSynced(t time.Time) {
-	i.record.Set(IntegrationNotionObjectFieldLastSynced, t)
+func (i *integrationNotionObject) SetTitle(title string) {
+	i.record.Set(IntegrationNotionObjectFieldTitle, title)
 }
 
 func (i *integrationNotionObject) SetProperties(props any) {
@@ -130,6 +132,10 @@ func (i *integrationNotionObject) SetProperties(props any) {
 	}
 
 	i.record.Set(IntegrationNotionObjectFieldProperties, string(propsStr))
+}
+
+func (i *integrationNotionObject) SetLastSynced(t time.Time) {
+	i.record.Set(IntegrationNotionObjectFieldLastSynced, t)
 }
 
 func (i *integrationNotionObject) ValidateAndSubmit(txDao *daos.Dao) error {

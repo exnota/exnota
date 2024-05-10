@@ -79,6 +79,7 @@ func (w *integrationNotionObjectWriter) CreateUpsertRecord(
 
 	// Update the new or existing record
 	record.Set(integ.IntegrationNotionObjectFieldProperties, request.Properties)
+	record.Set(integ.IntegrationNotionObjectFieldTitle, request.Title)
 	record.Set(integ.IntegrationNotionObjectFieldLastSynced, time.Now())
 	record.Set(
 		integ.IntegrationNotionObjectFieldStatus,
@@ -114,6 +115,7 @@ func (w *integrationNotionObjectWriter) UpdateConnected(
 
 		object := integ.LoadIntegrationNotionObject(record, w.app)
 		object.SetStatus(lib_integ.NotionObjectStatusConnected)
+		object.SetTitle(request.Title)
 		object.SetProperties(request.Properties)
 		object.SetLastSynced(request.LastSynced)
 
@@ -173,6 +175,7 @@ func (w *integrationNotionObjectWriter) UpdateArchived(
 
 		object := integ.LoadIntegrationNotionObject(record, w.app)
 		object.SetStatus(lib_integ.NotionObjectStatusArchived)
+		object.SetTitle(request.Title)
 		object.SetProperties(request.Properties)
 		object.SetLastSynced(request.LastSynced)
 

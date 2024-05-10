@@ -40,12 +40,14 @@ type IntegrationNotionObjectWriter interface {
 type NotionObjectCreateRequest struct {
 	ExternalId string                      `validate:"required"`
 	Type       IntegrationNotionObjectType `validate:"required"`
+	Title      string                      `validate:"required"`
 	Properties any                         `validate:"required"`
 	User       string                      `validate:"required"`
 }
 
 type NotionUpdateSyncConnectedRequest struct {
 	Id         string    `validate:"min=1"`
+	Title      string    `validate:"required"`
 	Properties any       `validate:"required"`
 	LastSynced time.Time `validate:"required"`
 }
@@ -58,6 +60,7 @@ type NotionUpdateSyncErrorRequest struct {
 
 type NotionUpdateSyncArchivedRequest struct {
 	Id         string    `validate:"min=1"`
+	Title      string    `validate:"required"`
 	Properties any       `validate:"required"`
 	LastSynced time.Time `validate:"required"`
 }

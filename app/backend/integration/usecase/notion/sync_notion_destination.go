@@ -86,9 +86,11 @@ func (s *notionDestinationSync) CreateSync(
 			return nil, nil, err
 		}
 
+		title := util.TitleToText(database.Title)
 		record, err = s.objectWriter.CreateUpsertRecord(integ.NotionObjectCreateRequest{
 			ExternalId: config.Id,
 			Type:       integ.IntegrationNotionObjectTypeDatabase,
+			Title:      title,
 			Properties: props,
 			User:       request.User,
 		})
@@ -100,7 +102,7 @@ func (s *notionDestinationSync) CreateSync(
 			ExternalRecordId:   record.Id,
 			ExternalRecordType: block.DestinationExternalRecordTypeNotion,
 			DestinationId:      request.DestinationId,
-			DestinationName:    util.TitleToText(database.Title),
+			DestinationName:    title,
 		}, record, nil
 
 	case NotionSyncConfigObjectPage:
@@ -114,10 +116,15 @@ func (s *notionDestinationSync) CreateSync(
 			return nil, nil, err
 		}
 
+		title, err := util.TitleForPage(page)
+		if err != nil {
+			return nil, nil, err
+		}
 		objectWriter := data.NewIntegrationNotionObjectWriter(s.app)
 		record, err = objectWriter.CreateUpsertRecord(integ.NotionObjectCreateRequest{
 			ExternalId: config.Id,
 			Type:       integ.IntegrationNotionObjectTypePage,
+			Title:      title,
 			Properties: props,
 			User:       request.User,
 		})
@@ -125,10 +132,6 @@ func (s *notionDestinationSync) CreateSync(
 			return nil, nil, err
 		}
 
-		title, err := util.TitleForPage(page)
-		if err != nil {
-			return nil, nil, err
-		}
 		return &block.CreateDestinationSyncResult{
 			ExternalRecordId:   record.Id,
 			ExternalRecordType: block.DestinationExternalRecordTypeNotion,
@@ -205,6 +208,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 			if database.Archived {
 				err := s.objectWriter.UpdateArchived(integ.NotionUpdateSyncArchivedRequest{
 					Id:         obj.Id(),
+					Title:      util.TitleToText(database.Title),
 					Properties: database.Properties,
 					LastSynced: time.Now(),
 				})
@@ -215,6 +219,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 			} else {
 				err = s.objectWriter.UpdateConnected(integ.NotionUpdateSyncConnectedRequest{
 					Id:         obj.Id(),
+					Title:      util.TitleToText(database.Title),
 					Properties: database.Properties,
 					LastSynced: time.Now(),
 				})
@@ -255,8 +260,15 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 					return err
 				}
 			} else {
+				title, err := util.TitleForPage(page)
+				if err != nil {
+					slog.Error("Error fetching title for page", "id", page.ID, "error", err)
+					// Skip but don't abort loop if there's an error fetching title
+					continue
+				}
 				err = s.objectWriter.UpdateConnected(integ.NotionUpdateSyncConnectedRequest{
 					Id:         obj.Id(),
+					Title:      title,
 					Properties: page.Properties,
 					LastSynced: time.Now(),
 				})
