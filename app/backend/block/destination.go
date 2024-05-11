@@ -25,8 +25,10 @@ type DestinationExternal struct {
 	// Don't use it for linking the destination to the remote, integrated data.
 	// For that, reference collections such as Integration Notion Object and
 	// Integration Destination.
-	Config map[string]interface{}       `json:"config"`
-	Status lib_integ.NotionObjectStatus `json:"status"`
+	Config map[string]interface{} `json:"config"`
+	// Status is coupled to the specific integration because they will likely
+	// have different meaning and possible actions for the user to take.
+	NotionStatus lib_integ.NotionObjectStatus `json:"notion_status"`
 }
 
 type Destination interface {
@@ -37,7 +39,7 @@ type Destination interface {
 	User() string
 
 	SetName(name string)
-	SetExternalStatus(status lib_integ.NotionObjectStatus) error
+	SetExternalNotionStatus(status lib_integ.NotionObjectStatus) error
 
 	Validate() error
 	ValidateAndSubmit(txDao *daos.Dao) error
@@ -86,7 +88,7 @@ func (d *destination) SetName(name string) {
 	d.record.Set(DestinationFieldName, name)
 }
 
-func (d *destination) SetExternalStatus(status lib_integ.NotionObjectStatus) error {
+func (d *destination) SetExternalNotionStatus(status lib_integ.NotionObjectStatus) error {
 	// Compose new data
 	external, err := d.External()
 	if err != nil {
@@ -95,7 +97,7 @@ func (d *destination) SetExternalStatus(status lib_integ.NotionObjectStatus) err
 	if external == nil {
 		external = &DestinationExternal{}
 	}
-	external.Status = status
+	external.NotionStatus = status
 
 	// Validate
 	err = validate.Struct(external)
