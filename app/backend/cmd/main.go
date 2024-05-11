@@ -162,10 +162,15 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// changes to one domain will only affect that domain and the event folder.
 	event.NewIntegrationListener(app).ApplyHooks()
 
-	destinationIntegrationUpdate := block_event_listeners.NewDestinationIntegrationUpdate(app)
-	integ.NewIntegrationDestinationEvents(app, []lib_integ.IntegrationDestinationEventListener{
-		destinationIntegrationUpdate.Update,
-	}).ApplyHooks()
+	destinationIntegrationUpdate := block_event_listeners.NewDestinationIntegrationUpdate(
+		app,
+		block_data.NewDestinationWriter(app),
+	)
+	integ.NewIntegrationDestinationEvents(app,
+		[]lib_integ.IntegrationDestinationEventListener{
+			destinationIntegrationUpdate.Update,
+		}, integ_data.NewIntegrationDestinationFetcher(app),
+	).ApplyHooks()
 
 	// API rules
 	integ_api.NewIntegrationRequestHooks(app, integ_api.NotionCredentials{

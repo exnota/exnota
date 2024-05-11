@@ -2,6 +2,7 @@
 
 - [Upgrading version](#upgrading-version)
 - [Patterns](#patterns)
+	- [Error handling](#error-handling)
 	- [Validation](#validation)
 	- [Enum for types](#enum-for-types)
 - [Other](#other)
@@ -16,6 +17,14 @@
 
 ## Patterns
 
+### Error handling
+
+- Wrap errors when more context may be helpful for debugging.
+- Check for wrapped sentinal errors with `errors.Is`
+- Avoid swallowing errors. Better to make issues more obvious so they can be resolved, even if it results in a temporarily (perceived) worse user experience.
+- Use panics when continuing is unsafe or there are serious programming errors like incorrect parameters.
+
+Article: https://medium.com/@nouhoum/mastering-error-handling-in-go-0239f229c6c8
 
 ### Validation
 

@@ -11,6 +11,16 @@ type DestinationFetcher interface {
 	ListIdsByIntegrationId(workspaceIntegrationId string) ([]string, error)
 }
 
+type DestinationWriter interface {
+	Update(request DestinationUpdateRequest) error
+}
+
+type DestinationUpdateRequest struct {
+	Id string `validate:"min=1"`
+	// Name has min length of 1 in the Destination collection
+	Name string `validate:"min=1"`
+}
+
 type WorkspaceFetcher interface {
 	FetchById(id string) (Workspace, error)
 	FetchByIntegrationId(integrationId string) ([]Workspace, error)
