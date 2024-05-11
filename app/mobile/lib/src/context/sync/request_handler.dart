@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/network.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
@@ -30,6 +31,24 @@ class RequestHandler extends _$RequestHandler {
   @override
   void build() {
     // no-op
+  }
+
+  Future<BasicResponse<T>> submitWrapped<T>(
+      {required HandledRequest<T> request}) async {
+    final completor = Completer<BasicResponse<T>>();
+    unawaited(submit(
+      request: request,
+      onSuccess: (results) {
+        _log.debug('Success');
+        completor.complete(BasicResponse.success(result: results));
+      },
+      onError: (error) {
+        _log.error('Error', exception: error);
+        completor.complete(BasicResponse.error(error: error.toString()));
+      },
+    ));
+
+    return completor.future;
   }
 
   /// Calls the request's [HandledRequest.request] method and handles connection

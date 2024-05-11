@@ -28,7 +28,6 @@ class WorkspaceImporter extends _$WorkspaceImporter {
 
       _log.debug('Upserting workspace ${workspace.id}');
       await repo.upsert(workspace);
-      _log.debug('Imported workspace ${record.id}');
     } catch (e) {
       _log.error('Error importing workspace ${record.id}', exception: e);
       rethrow;

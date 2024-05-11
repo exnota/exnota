@@ -8,7 +8,7 @@ part 'destination.freezed.dart';
 part 'destination.g.dart';
 
 const collectionDestination = 'destination';
-const destinationFieldIntegration = 'integration';
+const destinationFieldWorkspace = 'workspace';
 
 @freezed
 class Destination with _$Destination {
@@ -34,7 +34,7 @@ class Destination with _$Destination {
     return Destination(
       id: model.id,
       name: model.data['name'],
-      workspaceId: model.data['workspace'],
+      workspaceId: model.data[destinationFieldWorkspace],
       external: external,
       userId: model.data['user'],
       created: DateTime.tryParse(model.created),
