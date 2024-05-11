@@ -11,57 +11,57 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-type UpdateIntegrationDestinationAPI interface {
+type SyncIntegrationDestinationsAPI interface {
 	ApplyHooks()
 }
 
-type updateIntegrationDestinationAPI struct {
+type syncIntegrationDestinationsAPI struct {
 	app                        core.App
 	integrationDestinationSync usecase.IntegrationDestinationSync
 }
 
-func NewUpdateIntegrationDestinationAPI(
+func NewSyncIntegrationDestinationsAPI(
 	app core.App,
 	integrationDestinationSync usecase.IntegrationDestinationSync,
-) UpdateIntegrationDestinationAPI {
-	return &updateIntegrationDestinationAPI{app, integrationDestinationSync}
+) SyncIntegrationDestinationsAPI {
+	return &syncIntegrationDestinationsAPI{app, integrationDestinationSync}
 }
 
-type UpdateIntegrationDestinationRequest struct {
+type SyncIntegrationDestinationsRequest struct {
 	IntegrationId string `json:"integration_id" validate:"min=1"`
 }
 
-func (h *updateIntegrationDestinationAPI) ApplyHooks() {
+func (h *syncIntegrationDestinationsAPI) ApplyHooks() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST(integration.IntegrationUpdateDestination, func(c echo.Context) error {
+		e.Router.POST(integration.SyncIntegrationDestinations, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integration.IntegrationUpdateDestination,
+				integration.SyncIntegrationDestinations,
 			)
 
 			// Parse and validate request
-			updateRequest := new(UpdateIntegrationDestinationRequest)
-			if err := c.Bind(updateRequest); err != nil {
+			syncRequest := new(SyncIntegrationDestinationsRequest)
+			if err := c.Bind(syncRequest); err != nil {
 				return c.String(http.StatusBadRequest, "bad request")
 			}
-			err := validate.Struct(updateRequest)
+			err := validate.Struct(syncRequest)
 			if err != nil {
 				return err
 			}
 
 			// Auth
 			auth := NewIntegrationAuth(h.app, data.NewIntegrationFetcher(h.app), c)
-			err = auth.ForIntegration(updateRequest.IntegrationId)
+			err = auth.ForIntegration(syncRequest.IntegrationId)
 			if err != nil {
 				return err
 			}
 
 			// Update status
 			err = h.integrationDestinationSync.UpdateSync(usecase.UpdateSyncRequest{
-				IntegrationId: updateRequest.IntegrationId,
+				IntegrationId: syncRequest.IntegrationId,
 				UserId:        auth.LoggedInUser(),
 			})
 			if err != nil {
