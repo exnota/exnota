@@ -30,20 +30,14 @@ func NewSyncDestinationUpdates(
 
 func (h *syncDestinationUpdates) Update(event integration.IntegrationDestinationEvent) error {
 	slog.Info(
-		"❤️ DestinationIntegrationUpdate.Update",
-		"event.prev.name",
-		event.Prev.Name,
-		"event.next.name",
-		event.Next.Name,
-		"event.prev.status",
-		event.Prev.NotionObjectStatus,
-		"event.next.status",
-		event.Next.NotionObjectStatus,
+		"SyncDestinationUpdates.Update",
+		"destinationId",
+		event.Id,
 	)
 	err := h.destinationWriter.Update(block.DestinationUpdateRequest{
-		Id:     event.Id,
-		Name:   event.Next.Name,
-		Status: event.Next.NotionObjectStatus,
+		Id:           event.Id,
+		Name:         event.Next.Name,
+		NotionStatus: event.Next.NotionObjectStatus,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to update destination %v: %w", event.Id, err)

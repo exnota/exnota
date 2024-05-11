@@ -21,8 +21,8 @@ type DestinationWriter interface {
 type DestinationUpdateRequest struct {
 	Id string `validate:"min=1"`
 	// Name has min length of 1 in the Destination collection
-	Name   string                       `validate:"min=1"`
-	Status lib_integ.NotionObjectStatus `validate:"required"`
+	Name         string                       `validate:"min=1"`
+	NotionStatus lib_integ.NotionObjectStatus `validate:"required"`
 }
 
 type WorkspaceFetcher interface {
