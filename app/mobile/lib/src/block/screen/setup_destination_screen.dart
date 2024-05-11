@@ -1,3 +1,5 @@
+import 'package:exnota/src/block/repo/drift/destination_importer.dart';
+import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/common/block/workspace_service.dart';
 import 'package:exnota/src/common/integration/integration_service.dart';
@@ -28,7 +30,7 @@ class _SetupDestinationScreenState
     Future(() {
       ref
           .read(setupDestinationScreenControllerProvider.notifier)
-          .syncExistingDestinations();
+          .syncExternalDestinations();
     });
   }
 
@@ -46,11 +48,11 @@ class _SetupDestinationScreenState
       // - Verify and load -> Custom -> (found, disconnected) -> Fix
       // - Verify and load -> Custom -> (not found) -> Add
       switch (nextState.status) {
-        // case DestinationSetupStatus.verifyingDestinations:
-        //   ref
-        //       .read(setupDestinationScreenControllerProvider.notifier)
-        //       .syncExistingDestinations();
-        // break;
+        case DestinationSetupStatus.loadingDestinations:
+          ref
+              .read(setupDestinationScreenControllerProvider.notifier)
+              .loadDestinations();
+          break;
         default:
         // Do nothing
       }
@@ -60,9 +62,9 @@ class _SetupDestinationScreenState
       body: Center(
         child: Container(
           child: switch (setupState.status) {
-            DestinationSetupStatus.verifyingDestinations =>
-              const Text('Verifying destinations...'),
-            DestinationSetupStatus.verifyingDestinationsError =>
+            DestinationSetupStatus.syncingExternalDestinations =>
+              const Text('Syncingn external destinations...'),
+            DestinationSetupStatus.syncingExternalDestinationsError =>
               SetupErrorMessage(
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
@@ -144,8 +146,8 @@ class SetupErrorMessage extends ConsumerWidget {
 }
 
 enum DestinationSetupStatus {
-  verifyingDestinations, // Sends request to update connection status of destinations
-  verifyingDestinationsError,
+  syncingExternalDestinations, // Sends request to update destination info from external service
+  syncingExternalDestinationsError,
   loadingDestinations, // Updates destinations in local database
   loadingDestinationsError,
   checkingDatabaseDestinationStatus, // Determines what prompt to show the user
@@ -182,7 +184,7 @@ class SetupDestinationScreenController
   DestinationSetupState build() {
     _log.debug('build: Initializing state with status verifyingDestinations');
     return const DestinationSetupState(
-      status: DestinationSetupStatus.verifyingDestinations,
+      status: DestinationSetupStatus.syncingExternalDestinations,
       error: null,
       errorRetryStatus: null,
     );
@@ -197,14 +199,14 @@ class SetupDestinationScreenController
     );
   }
 
-  Future<void> syncExistingDestinations() async {
+  Future<void> syncExternalDestinations() async {
     final workspace = await ref.read(activeWorkspaceProvider.future);
     if (workspace == null) {
       _log.error('syncExistingDestinations: No workspace found');
       state = const DestinationSetupState(
-        status: DestinationSetupStatus.verifyingDestinationsError,
+        status: DestinationSetupStatus.syncingExternalDestinationsError,
         error: 'No active workspace',
-        errorRetryStatus: DestinationSetupStatus.verifyingDestinations,
+        errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
       );
       return;
     }
@@ -213,9 +215,9 @@ class SetupDestinationScreenController
     if (integrationId == null) {
       _log.error('syncExistingDestinations: No integration found');
       state = const DestinationSetupState(
-        status: DestinationSetupStatus.verifyingDestinationsError,
+        status: DestinationSetupStatus.syncingExternalDestinationsError,
         error: 'Workspace not integrated',
-        errorRetryStatus: DestinationSetupStatus.verifyingDestinations,
+        errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
       );
       return;
     }
@@ -235,11 +237,57 @@ class SetupDestinationScreenController
       case BasicResponseError(:final error):
         _log.error('syncExistingDestinations: Error');
         state = DestinationSetupState(
-          status: DestinationSetupStatus.verifyingDestinationsError,
+          status: DestinationSetupStatus.syncingExternalDestinationsError,
           error: error,
-          errorRetryStatus: DestinationSetupStatus.verifyingDestinations,
+          errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
         );
         break;
+    }
+  }
+
+  // TODO: Test this. It should be called as part of the flow now
+  // but I haven't tested it yet.
+  Future<void> loadDestinations() async {
+    final workspace = await ref.read(activeWorkspaceProvider.future);
+    if (workspace == null) {
+      _log.error('loadDestinations: No workspace found');
+      state = const DestinationSetupState(
+        status: DestinationSetupStatus.loadingDestinationsError,
+        error: 'No active workspace',
+        errorRetryStatus: DestinationSetupStatus.loadingDestinations,
+      );
+      return;
+    }
+
+    final result =
+        await ref.read(destinationImporterProvider.notifier).importForWorkspace(
+              workspaceId: workspace.id,
+            );
+    switch (result) {
+      case BasicResponseSuccess():
+        _log.debug('loadDestinations: Success');
+        if (workspace.type == WorkspaceType.database) {
+          state = const DestinationSetupState(
+            status: DestinationSetupStatus.checkingDatabaseDestinationStatus,
+            error: null,
+            errorRetryStatus: null,
+          );
+        } else {
+          state = const DestinationSetupState(
+            status: DestinationSetupStatus.checkingCustomDestinationsStatus,
+            error: null,
+            errorRetryStatus: null,
+          );
+        }
+        return;
+      case BasicResponseError(:final error):
+        _log.error('loadDestinations: Error');
+        state = DestinationSetupState(
+          status: DestinationSetupStatus.loadingDestinationsError,
+          error: error,
+          errorRetryStatus: DestinationSetupStatus.loadingDestinations,
+        );
+        return;
     }
   }
 }
