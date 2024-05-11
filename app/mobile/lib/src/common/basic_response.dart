@@ -6,8 +6,10 @@ part 'basic_response.freezed.dart';
 
 @freezed
 sealed class BasicResponse<T> with _$BasicResponse<T> {
-  const factory BasicResponse.success({required T result}) = SuccessResponse<T>;
-  const factory BasicResponse.error({required String? error}) = ErrorResponse;
+  const factory BasicResponse.success({required T result}) =
+      BasicResponseSuccess<T>;
+  const factory BasicResponse.error({required String? error}) =
+      BasicResponseError;
 }
 
 class ResponseWrapper<T> {
