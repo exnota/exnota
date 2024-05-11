@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:exnota/src/block/repo/drift/destination_table.dart';
 import 'package:exnota/src/block/repo/drift/workspace_table.dart';
 import 'package:exnota/src/context/device/local_file_path_service.dart';
 import 'package:exnota/src/lib/data/secure/secure_storage.dart';
@@ -41,6 +42,7 @@ AppDatabase initDatabase({required LocalPathGenerator files}) {
 @DriftDatabase(tables: [
   // IntegrationNotionSettings,
   BlockTable,
+  DestinationTable,
   LocalFileTable,
   SyncCommandTable,
   UserAuthTable,
