@@ -10,6 +10,8 @@
 
 ### Create migration manually
 
+Don't couple migrations to Exnota code! Otherwise refactors need to consider migrations which would be VERY hard to test.
+
 1. `go run cmd/main.go migrate create "your_new_migration"`
 2. It will generate a file with space for up and down migration. See examples below.
 3. To test locally, add breakpoints and run the server as normal.
