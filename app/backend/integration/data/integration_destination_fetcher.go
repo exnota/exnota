@@ -1,6 +1,8 @@
 package data
 
 import (
+	"fmt"
+
 	integ "exnota.com/backend/integration"
 	"exnota.com/backend/lib/data/filter"
 	"github.com/pocketbase/pocketbase/core"
@@ -31,6 +33,22 @@ func (f *integrationDestinationFetcher) FetchByDestinationId(
 		FindFirstRecordByData(integ.CollectionIntegrationDestination, integ.IntegrationDestinationFieldDestinationId, destinationId)
 	if err != nil {
 		return nil, err
+	}
+	return integ.NewIntegrationDestination(record), nil
+}
+
+// If not found, returns wrapped sql.ErrNoRows
+func (f *integrationDestinationFetcher) FetchByExternalId(
+	externalRecordId string,
+) (integ.IntegrationDestination, error) {
+	record, err := f.app.Dao().
+		FindFirstRecordByData(integ.CollectionIntegrationDestination, integ.IntegrationDestinationFieldExternalRecordId, externalRecordId)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to find integration destination by external record ID %v: %w",
+			externalRecordId,
+			err,
+		)
 	}
 	return integ.NewIntegrationDestination(record), nil
 }

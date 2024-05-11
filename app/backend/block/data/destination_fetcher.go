@@ -19,7 +19,7 @@ func (f *destinationFetcher) FetchById(id string) (block.Destination, error) {
 	if err != nil {
 		return nil, err
 	}
-	destination, err := block.NewDestination(record, f.app)
+	destination, err := block.LoadDestination(record, f.app)
 	if err != nil {
 		return nil, err
 	}

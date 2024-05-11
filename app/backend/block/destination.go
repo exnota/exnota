@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/daos"
 	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/models"
 )
@@ -30,6 +31,7 @@ type Destination interface {
 	SetName(name string)
 
 	Validate() error
+	ValidateAndSubmit(txDao *daos.Dao) error
 }
 
 type destination struct {
@@ -37,7 +39,7 @@ type destination struct {
 	app    core.App
 }
 
-func NewDestination(model models.Model, app core.App) (Destination, error) {
+func LoadDestination(model models.Model, app core.App) (Destination, error) {
 	record, ok := model.(*models.Record)
 	if !ok {
 		return nil, errors.New("invalid model")
@@ -80,4 +82,12 @@ func (d *destination) Validate() error {
 	form := forms.NewRecordUpsert(d.app, d.record)
 
 	return form.Validate()
+}
+
+func (d *destination) ValidateAndSubmit(txDao *daos.Dao) error {
+	form := forms.NewRecordUpsert(d.app, d.record)
+	form.SetDao(txDao)
+
+	// Submit calls validate internally
+	return form.Submit()
 }

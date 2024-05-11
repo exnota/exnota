@@ -24,7 +24,7 @@ func NewDestinationUpdate(
 
 func (r *destinationUpdate) ApplyHooks() {
 	r.app.OnModelBeforeUpdate(CollectionDestination).Add(func(e *core.ModelEvent) error {
-		updated, err := NewDestination(e.Model, r.app)
+		updated, err := LoadDestination(e.Model, r.app)
 		if err != nil {
 			return err
 		}

@@ -21,6 +21,7 @@ type FetchByIdRequest struct {
 type IntegrationDestinationFetcher interface {
 	FetchById(id string) (IntegrationDestination, error)
 	FetchByDestinationId(destinationId string) (IntegrationDestination, error)
+	FetchByExternalId(externalRecordId string) (IntegrationDestination, error)
 	ListByDestinationIds(destinationIds []string) ([]IntegrationDestination, error)
 }
 

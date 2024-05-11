@@ -43,7 +43,7 @@ func (h *destinationCreateAPI) ApplyHooks() {
 				return err
 			}
 
-			destination, err := block.NewDestination(e.Record, h.app)
+			destination, err := block.LoadDestination(e.Record, h.app)
 			if err != nil {
 				return err
 			}
