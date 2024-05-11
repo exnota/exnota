@@ -36,6 +36,10 @@ func (w *destinationWriter) Update(request block.DestinationUpdateRequest) error
 			return err
 		}
 		destination.SetName(request.Name)
+		err = destination.SetExternalStatus(request.Status)
+		if err != nil {
+			return err
+		}
 
 		if err := destination.ValidateAndSubmit(txDao); err != nil {
 			return fmt.Errorf(

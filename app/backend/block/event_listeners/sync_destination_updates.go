@@ -9,26 +9,26 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-type DestinationIntegrationUpdate interface {
+type SyncDestinationUpdates interface {
 	Update(event integration.IntegrationDestinationEvent) error
 }
 
-type destinationIntegrationUpdate struct {
+type syncDestinationUpdates struct {
 	app               core.App
 	destinationWriter block.DestinationWriter
 }
 
-func NewDestinationIntegrationUpdate(
+func NewSyncDestinationUpdates(
 	app core.App,
 	destinationWriter block.DestinationWriter,
-) DestinationIntegrationUpdate {
-	return &destinationIntegrationUpdate{
+) SyncDestinationUpdates {
+	return &syncDestinationUpdates{
 		app,
 		destinationWriter,
 	}
 }
 
-func (h *destinationIntegrationUpdate) Update(event integration.IntegrationDestinationEvent) error {
+func (h *syncDestinationUpdates) Update(event integration.IntegrationDestinationEvent) error {
 	slog.Info(
 		"❤️ DestinationIntegrationUpdate.Update",
 		"event.prev.name",
@@ -41,9 +41,9 @@ func (h *destinationIntegrationUpdate) Update(event integration.IntegrationDesti
 		event.Next.NotionObjectStatus,
 	)
 	err := h.destinationWriter.Update(block.DestinationUpdateRequest{
-		Id:   event.Id,
-		Name: event.Next.Name,
-		// TODO: Add status
+		Id:     event.Id,
+		Name:   event.Next.Name,
+		Status: event.Next.NotionObjectStatus,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to update destination %v: %w", event.Id, err)
