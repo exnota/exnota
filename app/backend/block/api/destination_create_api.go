@@ -65,7 +65,10 @@ func (h *destinationCreateAPI) ApplyHooks() {
 			if destinationID == "" {
 				return apis.NewBadRequestError("Destination ID is empty", nil)
 			}
-			external := destination.External()
+			external, err := destination.External()
+			if err != nil {
+				return err
+			}
 			if external == nil {
 				return apis.NewBadRequestError("Destination external is nil", nil)
 			}

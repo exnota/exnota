@@ -155,7 +155,7 @@ func (b *block) SetTitle(title string) {
 }
 
 func (b *block) SetExternalUrl(url string) error {
-	// Update 'external' field
+	// Compose new data
 	external, err := b.External()
 	if err != nil {
 		return err
@@ -171,7 +171,7 @@ func (b *block) SetExternalUrl(url string) error {
 		return err
 	}
 
-	// Save
+	// Set
 	configBytes, err := json.Marshal(external)
 	if err != nil {
 		slog.Error("Error marshalling block external field", "err", err, "id", b.Id())
@@ -182,7 +182,7 @@ func (b *block) SetExternalUrl(url string) error {
 }
 
 func (b *block) SetExternalExportStatus(status ExportStatus) error {
-	// Update 'external' field
+	// Compose new data
 	external, err := b.External()
 	if err != nil {
 		return err
@@ -198,7 +198,7 @@ func (b *block) SetExternalExportStatus(status ExportStatus) error {
 		return err
 	}
 
-	// Save
+	// Set
 	configBytes, err := json.Marshal(external)
 	if err != nil {
 		slog.Error("Error marshalling block external field", "err", err, "id", b.Id())

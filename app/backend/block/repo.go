@@ -1,6 +1,9 @@
 package block
 
-import "github.com/pocketbase/pocketbase/daos"
+import (
+	lib_integ "exnota.com/backend/lib/integration"
+	"github.com/pocketbase/pocketbase/daos"
+)
 
 type BlockFetcher interface {
 	FetchById(id string) (Block, error)
@@ -18,7 +21,8 @@ type DestinationWriter interface {
 type DestinationUpdateRequest struct {
 	Id string `validate:"min=1"`
 	// Name has min length of 1 in the Destination collection
-	Name string `validate:"min=1"`
+	Name   string                       `validate:"min=1"`
+	Status lib_integ.NotionObjectStatus `validate:"required"`
 }
 
 type WorkspaceFetcher interface {

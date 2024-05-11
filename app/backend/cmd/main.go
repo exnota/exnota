@@ -162,7 +162,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// changes to one domain will only affect that domain and the event folder.
 	event.NewIntegrationListener(app).ApplyHooks()
 
-	destinationIntegrationUpdate := block_event_listeners.NewDestinationIntegrationUpdate(
+	destinationIntegrationUpdate := block_event_listeners.NewSyncDestinationUpdates(
 		app,
 		block_data.NewDestinationWriter(app),
 	)
