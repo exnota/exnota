@@ -1,5 +1,6 @@
 import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:exnota/src/account/user/screen/login_screen.dart';
+import 'package:exnota/src/block/screen/setup_destination_screen.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/integration/screen/setup_integration_screen.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -98,6 +99,10 @@ class Router extends _$Router {
             builder: (context, state) => const SetupIntegrationScreen(),
           ),
           GoRoute(
+            path: _routeSettingsSetupDestination,
+            builder: (context, state) => const SetupDestinationScreen(),
+          ),
+          GoRoute(
             path: _routeLogin,
             builder: (context, state) => const LoginScreen(),
           ),
@@ -179,12 +184,14 @@ enum Screen {
   notes,
   settings,
   settingsSetupIntegration,
+  settingsSetupDestination,
   login,
 }
 
 const _routeNotes = '/notes';
 const _routeSettings = '/settings';
 const _routeSettingsSetupIntegration = '/settings/setup/integration';
+const _routeSettingsSetupDestination = '/settings/setup/destination';
 const _routeLogin = '/login';
 
 /// BuildContext helper, for getting a route string.
@@ -198,6 +205,8 @@ String to(Screen route) {
       return _routeSettings;
     case Screen.settingsSetupIntegration:
       return _routeSettingsSetupIntegration;
+    case Screen.settingsSetupDestination:
+      return _routeSettingsSetupDestination;
     case Screen.login:
       return _routeLogin;
   }

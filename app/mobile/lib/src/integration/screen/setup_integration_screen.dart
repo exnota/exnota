@@ -1,5 +1,6 @@
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/common/block/workspace_service.dart';
+import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/integration/integration.dart';
 import 'package:exnota/src/integration/service/integration_fetcher.dart';
 import 'package:exnota/src/integration/service/notion_auth_service.dart';
@@ -90,10 +91,12 @@ class _SetupIntegrationScreenState
               .read(setupIntegrationScreenControllerProvider.notifier)
               .connectToWorkspace();
         case IntegrationSetupStatus.confirmedNotionIntegration:
-          // TODO: Redirect to other screen
+          ref
+              .read(routerProvider.notifier)
+              .pushReplacement(Screen.settingsSetupDestination);
           break;
         default:
-        // TODO:
+        // Do nothing. Show UI instead.
       }
     });
 
@@ -546,7 +549,7 @@ class SetupIntegrationScreenController
             );
 
     switch (response) {
-      case SuccessResponse():
+      case BasicResponseSuccess():
         _log.debug('connectToWorkspace: Integration connected');
         state = IntegrationSetupState(
           status: IntegrationSetupStatus.confirmedNotionIntegration,
@@ -555,7 +558,7 @@ class SetupIntegrationScreenController
           errorRetryStatus: null,
         );
         break;
-      case ErrorResponse(:final error):
+      case BasicResponseError(:final error):
         _log.error('connectToWorkspace: Error connecting integration');
         state = IntegrationSetupState(
           status: IntegrationSetupStatus.connectingToWorkspaceError,
