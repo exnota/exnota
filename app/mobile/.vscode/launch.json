@@ -8,14 +8,18 @@
       "name": "Mobile",
       "request": "launch",
       "type": "dart",
-      "program": "lib/main.dart"
+      "program": "lib/main.dart",
+      "preLaunchTask": "Map Android ports",
+      "internalConsoleOptions": "openOnSessionStart"
     },
     {
       "name": "Mobile (profile mode)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "profile",
-      "program": "lib/main.dart"
+      "program": "lib/main.dart",
+      "preLaunchTask": "Map Android ports",
+      "internalConsoleOptions": "openOnSessionStart"
     },
     {
       "name": "Mobile (release mode)",
