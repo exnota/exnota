@@ -12,6 +12,7 @@ import (
 	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/usecase"
 	"exnota.com/backend/integration/util"
+	"exnota.com/backend/lib/api"
 	"github.com/dstotijn/go-notion"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/dbx"
@@ -56,17 +57,17 @@ func (h *integrationEndpointHooks) Apply() {
 // will redirect to an exnota:// scheme.
 func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(integ.NotionMobileCodeRequestPath, func(c echo.Context) error {
+		e.Router.GET(api.NotionMobileCodeRequestPath, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integ.NotionMobileCodeRequestPath,
+				api.NotionMobileCodeRequestPath,
 			)
 			redirectUri, err := url.JoinPath(
 				h.config.BasePath,
-				integ.NotionMobileRedirectPath,
+				api.NotionMobileRedirectPath,
 			)
 			if err != nil {
 				return err
@@ -91,13 +92,13 @@ func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 // Redirects to an exnota:// scheme for the mobile app to capture and read.
 func (h *integrationEndpointHooks) notionMobileRedirect() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(integ.NotionMobileRedirectPath, func(c echo.Context) error {
+		e.Router.GET(api.NotionMobileRedirectPath, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integ.NotionMobileRedirectPath,
+				api.NotionMobileRedirectPath,
 			)
 			code := c.QueryParam("code")
 			return c.Redirect(302, "exnota://integration/notion/mobile-code-redirect?code="+code)
@@ -141,13 +142,13 @@ const (
 
 func (h *integrationEndpointHooks) notionSearch() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(integ.NotionSearchPath, func(c echo.Context) error {
+		e.Router.GET(api.NotionSearchPath, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integ.NotionSearchPath,
+				api.NotionSearchPath,
 			)
 
 			searchRequest := new(SearchRequest)
@@ -345,13 +346,13 @@ func (r VerifyIntegrationAccessResponse) MarshalJSON() ([]byte, error) {
 
 func (h *integrationEndpointHooks) integrationVerifyAccess() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST(integ.IntegrationVerifyAccess, func(c echo.Context) error {
+		e.Router.POST(api.IntegrationVerifyAccess, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integ.IntegrationVerifyAccess,
+				api.IntegrationVerifyAccess,
 			)
 
 			verifyRequest := new(VerifyIntegrationAccessRequest)
