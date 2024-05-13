@@ -18,6 +18,14 @@ class DestinationRepo {
 
   DestinationRepo(this.db);
 
+  Future<List<Destination>> listForWorkspace(
+      {required String workspaceId}) async {
+    final query = db.select(db.destinationTable)
+      ..where((tbl) => tbl.workspace.equals(workspaceId));
+    final results = await query.map(DestinationRepoMapper.fromRepo).get();
+    return results.toList();
+  }
+
   Future<void> upsert(Destination destination) async {
     await db.transaction(() async {
       final query = db.select(db.destinationTable)
