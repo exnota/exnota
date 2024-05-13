@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"exnota.com/backend/api"
 	"exnota.com/backend/block"
 	block_api "exnota.com/backend/block/api"
 	block_data "exnota.com/backend/block/data"
@@ -19,6 +18,7 @@ import (
 	integ_data "exnota.com/backend/integration/data"
 	integration_usecase "exnota.com/backend/integration/usecase"
 	"exnota.com/backend/job"
+	"exnota.com/backend/lib/api"
 	lib_integ "exnota.com/backend/lib/integration"
 	_ "exnota.com/backend/migrations"
 	user_api_hooks "exnota.com/backend/user/api"
@@ -196,6 +196,14 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 		NotionRedirectBasePath: cfg.NotionRedirectBasePath,
 	}).Apply()
 	integ_api.NewSyncIntegrationDestinationsAPI(app, integrationDestinationSync).ApplyHooks()
+	block_api.NewGetSuggestedWorkspaceDestinationsAPI(
+		app,
+		integration_usecase.NewGetSuggestedIntegrationDestinations(
+			app,
+			integ_data.NewIntegrationFetcher(app),
+		).Get,
+		block_data.NewWorkspaceFetcher(app),
+	).ApplyHooks()
 
 	// Old rules, need extracting/refactoring
 	setBlockJobInvariants(app)

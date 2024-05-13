@@ -14,6 +14,7 @@ import (
 	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion/api"
+	lib_api "exnota.com/backend/lib/api"
 	"exnota.com/backend/lib/url"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -147,7 +148,7 @@ func (s *notionSync) GetAuthToken(code string) (*NotionAccessTokenResponse, erro
 	body := map[string]string{
 		"grant_type":   "authorization_code",
 		"code":         code,
-		"redirect_uri": url.Url(integ.NotionMobileRedirectPath, s.app),
+		"redirect_uri": url.Url(lib_api.NotionMobileRedirectPath, s.app),
 	}
 	bodyMarshalled, err := json.Marshal(body)
 	if err != nil {

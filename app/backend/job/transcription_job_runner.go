@@ -11,8 +11,8 @@ import (
 
 	"exnota.com/backend/block"
 	"exnota.com/backend/job/data"
-	whisper "exnota.com/backend/lib"
 	"exnota.com/backend/lib/pb_file"
+	"exnota.com/backend/lib/whisper"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )

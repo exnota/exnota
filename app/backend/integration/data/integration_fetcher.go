@@ -22,28 +22,28 @@ func (f *integrationFetcher) FetchById(
 ) (integ.Integration, error) {
 	err := validate.Struct(request)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid request: %w", err)
 	}
 
 	record, err := f.app.Dao().
 		FindRecordById(integ.CollectionIntegration, request.IntegrationId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not fetch integration: %w", err)
 	}
 	integration, err := integ.LoadIntegration(record, f.app)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not load integration: %w", err)
 	}
 
 	if integration.User() != request.UserId {
 		slog.Error(
 			"Integration user id does not match",
-			"integration",
-			integration,
+			"integrationId",
+			integration.Id(),
 			"userId",
 			request.UserId,
 		)
-		return nil, fmt.Errorf("Integration user id does not match")
+		return nil, fmt.Errorf("integration user id does not match")
 	}
 
 	return integration, nil

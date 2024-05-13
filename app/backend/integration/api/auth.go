@@ -4,13 +4,13 @@ import (
 	"net/http"
 
 	integ "exnota.com/backend/integration"
+	"exnota.com/backend/lib/api"
 	"github.com/labstack/echo/v5"
-	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
 
 type IntegrationAuth interface {
-	LoggedInUser() string
+	api.AuthBase
 
 	// Returns an error if the logged in user user does not have access to the
 	// integration.
@@ -18,9 +18,8 @@ type IntegrationAuth interface {
 }
 
 type integrationAuth struct {
-	app                core.App
+	api.Base
 	integrationFetcher integ.IntegrationFetcher
-	context            echo.Context
 }
 
 func NewIntegrationAuth(
@@ -28,24 +27,20 @@ func NewIntegrationAuth(
 	integrationFetcher integ.IntegrationFetcher,
 	context echo.Context,
 ) IntegrationAuth {
-	return &integrationAuth{app, integrationFetcher, context}
-}
-
-// LoggedInUser implements IntegrationAuth.
-func (h *integrationAuth) LoggedInUser() string {
-	// Get user
-	requestInfo := apis.RequestInfo(h.context)
-	if requestInfo.AuthRecord == nil {
-		return ""
+	return &integrationAuth{
+		Base: api.Base{
+			App:     app,
+			Context: context,
+		},
+		integrationFetcher: integrationFetcher,
 	}
-	return requestInfo.AuthRecord.Id
 }
 
 func (h *integrationAuth) ForIntegration(integrationId string) error {
 	// Get user
 	loggedInUserId := h.LoggedInUser()
 	if loggedInUserId == "" {
-		return h.context.String(http.StatusUnauthorized, "Not logged in")
+		return h.Context.String(http.StatusUnauthorized, "Not logged in")
 	}
 
 	// Get integration
@@ -56,7 +51,7 @@ func (h *integrationAuth) ForIntegration(integrationId string) error {
 	if err != nil {
 		// The integration may not exist or may not belong to the user. But
 		// probably not worth separating those cases, so just return forbidden.
-		return h.context.String(http.StatusForbidden, "Forbidden")
+		return h.Context.String(http.StatusForbidden, "Forbidden")
 	}
 
 	return nil

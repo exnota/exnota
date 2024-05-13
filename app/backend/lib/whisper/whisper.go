@@ -13,7 +13,16 @@ const prompt = "Hello, welcome to my lecture."
 
 func Command(filePath string) *exec.Cmd {
 	if _, err := os.Stat(largeModelPath); err == nil {
-		return exec.Command("whisper", "--prompt", prompt, "--model", largeModelPath, "-f", filePath, "--output-json")
+		return exec.Command(
+			"whisper",
+			"--prompt",
+			prompt,
+			"--model",
+			largeModelPath,
+			"-f",
+			filePath,
+			"--output-json",
+		)
 
 	} else {
 		return exec.Command("whisper", "--prompt", prompt, "--model", baseModelPath, "-f", filePath, "--output-json")

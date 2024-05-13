@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	gonotion "github.com/dstotijn/go-notion"
@@ -13,6 +14,9 @@ type NotionFetcher interface {
 	FetchPageChildren(pageID string) ([]gonotion.Block, error)
 	FetchPageChildrenWithAccessToken(pageID string) ([]gonotion.Block, error)
 	FetchDatabase(databaseID string) (*gonotion.Database, error) // Added method
+
+	SearchDatabases(query string) ([]gonotion.Database, error)
+	SearchPages(query string) ([]gonotion.Page, error)
 
 	// Returns `true` if access token is still valid, `false` if not, or an
 	// an error if verification couldn't be attempted.
@@ -97,4 +101,66 @@ func (f *notionFetcher) VerifyAccess() (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func (f *notionFetcher) SearchDatabases(query string) ([]gonotion.Database, error) {
+	client := gonotion.NewClient(f.accessToken)
+	opts := &gonotion.SearchOpts{
+		Filter: &gonotion.SearchFilter{
+			Property: "object",
+			Value:    "database",
+		},
+	}
+	if query != "" {
+		opts.Query = query
+	}
+
+	response, err := client.Search(context.Background(), opts)
+	if err != nil {
+		return nil, fmt.Errorf("error searching databases: %w", err)
+	}
+
+	databases := []gonotion.Database{}
+	for _, resultUntyped := range response.Results {
+		switch result := resultUntyped.(type) {
+		case gonotion.Database:
+			if result.Archived {
+				continue
+			}
+			databases = append(databases, result)
+		}
+	}
+
+	return databases, nil
+}
+
+func (f *notionFetcher) SearchPages(query string) ([]gonotion.Page, error) {
+	client := gonotion.NewClient(f.accessToken)
+	opts := &gonotion.SearchOpts{
+		Filter: &gonotion.SearchFilter{
+			Property: "object",
+			Value:    "page",
+		},
+	}
+	if query != "" {
+		opts.Query = query
+	}
+
+	response, err := client.Search(context.Background(), opts)
+	if err != nil {
+		return nil, fmt.Errorf("error searching pages: %w", err)
+	}
+
+	pages := []gonotion.Page{}
+	for _, resultUntyped := range response.Results {
+		switch result := resultUntyped.(type) {
+		case gonotion.Page:
+			if result.Archived {
+				continue
+			}
+			pages = append(pages, result)
+		}
+	}
+
+	return pages, nil
 }

@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase"
+	"exnota.com/backend/lib/api"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -33,13 +33,13 @@ type SyncIntegrationDestinationsRequest struct {
 
 func (h *syncIntegrationDestinationsAPI) ApplyHooks() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST(integration.SyncIntegrationDestinations, func(c echo.Context) error {
+		e.Router.POST(api.SyncIntegrationDestinations, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				integration.SyncIntegrationDestinations,
+				api.SyncIntegrationDestinations,
 			)
 
 			// Parse and validate request
