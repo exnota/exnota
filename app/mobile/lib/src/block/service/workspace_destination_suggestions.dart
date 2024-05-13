@@ -71,13 +71,20 @@ class NotionDestination with _$NotionDestination {
 class NotionObject with _$NotionObject {
   const factory NotionObject({
     @JsonKey(name: 'id') required String id,
-    @JsonKey(name: 'type') required String type,
+    @JsonKey(name: 'type') required NotionObjectType type,
   }) = _NotionObject;
 
   const NotionObject._();
 
   factory NotionObject.fromJson(Map<String, dynamic> json) =>
       _$NotionObjectFromJson(json);
+}
+
+enum NotionObjectType {
+  @JsonValue('page')
+  page,
+  @JsonValue('database')
+  database,
 }
 
 @freezed

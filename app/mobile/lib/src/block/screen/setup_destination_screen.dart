@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:exnota/src/block/repo/drift/destination_importer.dart';
 import 'package:exnota/src/block/service/destination_lister.dart';
 import 'package:exnota/src/block/service/workspace_destination_suggestions.dart';
@@ -8,6 +9,7 @@ import 'package:exnota/src/common/integration/integration_service.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -108,10 +110,9 @@ class _SetupDestinationScreenState
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
               ),
-            DestinationSetupStatus.selectDatabaseDestination =>
-              const Text('Select database destination...'),
+            DestinationSetupStatus.selectDatabaseDestination ||
             DestinationSetupStatus.selectCustomDestinations =>
-              const Text('Select custom destinations...'),
+              const SelectDestination(),
             DestinationSetupStatus.updatingDatabaseDestination =>
               const Text('Updating database destination...'),
             DestinationSetupStatus.updatingDatabaseDestinationError =>
@@ -159,6 +160,86 @@ class SetupErrorMessage extends ConsumerWidget {
           ),
       ],
     );
+  }
+}
+
+class SelectDestination extends ConsumerWidget {
+  const SelectDestination({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectMultiple =
+        ref.read(setupDestinationScreenControllerProvider).status ==
+            DestinationSetupStatus.selectCustomDestinations;
+    final destinations = ref
+            .read(setupDestinationScreenControllerProvider)
+            .notionSuggestedDestinations ??
+        [];
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (final destination in destinations)
+          ListTile(
+            title: Text(destination.name),
+            leading: DestinationIcon(destination: destination),
+            onTap: () {
+              // Do something
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class DestinationIcon extends StatelessWidget {
+  final NotionDestination destination;
+
+  const DestinationIcon({super.key, required this.destination});
+
+  @override
+  Widget build(BuildContext context) {
+    final Icon placeholder;
+    switch (destination.object.type) {
+      case NotionObjectType.page:
+        placeholder = const Icon(Icons.article);
+        break;
+      case NotionObjectType.database:
+        placeholder = const Icon(Icons.table_chart_rounded);
+        break;
+    }
+
+    final icon = destination.icon;
+    if (icon == null) {
+      return placeholder;
+    }
+
+    if (icon.emoji != null) {
+      return Text(
+        icon.emoji!,
+        style: const TextStyle(fontSize: 19),
+      );
+    }
+
+    final url = icon.url;
+    if (url != null && url.endsWith('.svg')) {
+      return SvgPicture.network(
+        url,
+        width: 24,
+        height: 24,
+        placeholderBuilder: (context) => placeholder,
+      );
+    } else if (url != null) {
+      return CachedNetworkImage(
+        imageUrl: url,
+        width: 24,
+        height: 24,
+        errorWidget: (context, url, error) => placeholder,
+        placeholder: (context, url) => placeholder,
+      );
+    }
+
+    return placeholder;
   }
 }
 
