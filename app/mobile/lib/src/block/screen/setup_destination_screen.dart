@@ -1,4 +1,6 @@
 import 'package:exnota/src/block/repo/drift/destination_importer.dart';
+import 'package:exnota/src/block/service/destination_lister.dart';
+import 'package:exnota/src/block/service/workspace_destination_suggestions.dart';
 import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/common/block/workspace_service.dart';
@@ -53,6 +55,21 @@ class _SetupDestinationScreenState
               .read(setupDestinationScreenControllerProvider.notifier)
               .loadDestinations();
           break;
+        case DestinationSetupStatus.checkingDatabaseDestinationStatus:
+          ref
+              .read(setupDestinationScreenControllerProvider.notifier)
+              .checkDatabaseDestinationStatus();
+          break;
+        case DestinationSetupStatus.checkingCustomDestinationsStatus:
+          ref
+              .read(setupDestinationScreenControllerProvider.notifier)
+              .checkCustomDestinationsStatus();
+          break;
+        case DestinationSetupStatus.loadingSuggestedDestinations:
+          ref
+              .read(setupDestinationScreenControllerProvider.notifier)
+              .loadSuggestedDestinations();
+          break;
         default:
         // Do nothing
       }
@@ -63,7 +80,7 @@ class _SetupDestinationScreenState
         child: Container(
           child: switch (setupState.status) {
             DestinationSetupStatus.syncingExternalDestinations =>
-              const Text('Syncingn external destinations...'),
+              const Text('Syncing external destinations...'),
             DestinationSetupStatus.syncingExternalDestinationsError =>
               SetupErrorMessage(
                 error: setupState.error!,
@@ -169,7 +186,7 @@ enum DestinationSetupStatus {
 class DestinationSetupState with _$DestinationSetupState {
   const factory DestinationSetupState({
     required DestinationSetupStatus status,
-    // required Destination? destination,
+    required List<NotionDestination>? notionSuggestedDestinations,
     required String? error,
     required DestinationSetupStatus? errorRetryStatus,
   }) = _DestinationSetupState;
@@ -185,6 +202,7 @@ class SetupDestinationScreenController
     _log.debug('build: Initializing state with status verifyingDestinations');
     return const DestinationSetupState(
       status: DestinationSetupStatus.syncingExternalDestinations,
+      notionSuggestedDestinations: null,
       error: null,
       errorRetryStatus: null,
     );
@@ -194,28 +212,20 @@ class SetupDestinationScreenController
   void transitionStatus({required DestinationSetupStatus newStatus}) {
     state = DestinationSetupState(
       status: newStatus,
+      notionSuggestedDestinations: state.notionSuggestedDestinations,
       error: null,
       errorRetryStatus: null,
     );
   }
 
   Future<void> syncExternalDestinations() async {
-    final workspace = await ref.read(activeWorkspaceProvider.future);
-    if (workspace == null) {
-      _log.error('syncExistingDestinations: No workspace found');
-      state = const DestinationSetupState(
-        status: DestinationSetupStatus.syncingExternalDestinationsError,
-        error: 'No active workspace',
-        errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
-      );
-      return;
-    }
-
+    final workspace = (await ref.read(activeWorkspaceProvider.future))!;
     final integrationId = workspace.integrationId;
     if (integrationId == null) {
       _log.error('syncExistingDestinations: No integration found');
       state = const DestinationSetupState(
         status: DestinationSetupStatus.syncingExternalDestinationsError,
+        notionSuggestedDestinations: null,
         error: 'Workspace not integrated',
         errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
       );
@@ -230,6 +240,7 @@ class SetupDestinationScreenController
         _log.debug('syncExistingDestinations: Success');
         state = const DestinationSetupState(
           status: DestinationSetupStatus.loadingDestinations,
+          notionSuggestedDestinations: null,
           error: null,
           errorRetryStatus: null,
         );
@@ -238,6 +249,7 @@ class SetupDestinationScreenController
         _log.error('syncExistingDestinations: Error');
         state = DestinationSetupState(
           status: DestinationSetupStatus.syncingExternalDestinationsError,
+          notionSuggestedDestinations: null,
           error: error,
           errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
         );
@@ -245,19 +257,8 @@ class SetupDestinationScreenController
     }
   }
 
-  // TODO: Test this. It should be called as part of the flow now
-  // but I haven't tested it yet.
   Future<void> loadDestinations() async {
-    final workspace = await ref.read(activeWorkspaceProvider.future);
-    if (workspace == null) {
-      _log.error('loadDestinations: No workspace found');
-      state = const DestinationSetupState(
-        status: DestinationSetupStatus.loadingDestinationsError,
-        error: 'No active workspace',
-        errorRetryStatus: DestinationSetupStatus.loadingDestinations,
-      );
-      return;
-    }
+    final workspace = (await ref.read(activeWorkspaceProvider.future))!;
 
     final result =
         await ref.read(destinationImporterProvider.notifier).importForWorkspace(
@@ -269,12 +270,14 @@ class SetupDestinationScreenController
         if (workspace.type == WorkspaceType.database) {
           state = const DestinationSetupState(
             status: DestinationSetupStatus.checkingDatabaseDestinationStatus,
+            notionSuggestedDestinations: null,
             error: null,
             errorRetryStatus: null,
           );
         } else {
           state = const DestinationSetupState(
             status: DestinationSetupStatus.checkingCustomDestinationsStatus,
+            notionSuggestedDestinations: null,
             error: null,
             errorRetryStatus: null,
           );
@@ -284,8 +287,77 @@ class SetupDestinationScreenController
         _log.error('loadDestinations: Error');
         state = DestinationSetupState(
           status: DestinationSetupStatus.loadingDestinationsError,
+          notionSuggestedDestinations: null,
           error: error,
           errorRetryStatus: DestinationSetupStatus.loadingDestinations,
+        );
+        return;
+    }
+  }
+
+  Future<void> checkDatabaseDestinationStatus() async {
+    final destinations = await ref.read(destinationListerProvider.future);
+    if (destinations.isEmpty) {
+      _log.debug('checkDatabaseDestinationStatus: No destinations found');
+      state = const DestinationSetupState(
+        status: DestinationSetupStatus.loadingSuggestedDestinations,
+        notionSuggestedDestinations: null,
+        error: null,
+        errorRetryStatus: null,
+      );
+      return;
+    }
+
+    state = const DestinationSetupState(
+      status: DestinationSetupStatus.promptCurrentDatabaseDestinationAction,
+      notionSuggestedDestinations: null,
+      error: null,
+      errorRetryStatus: null,
+    );
+  }
+
+  Future<void> checkCustomDestinationsStatus() async {
+    final destinations = await ref.read(destinationListerProvider.future);
+    if (destinations.isEmpty) {
+      _log.debug('checkCustomDestinationsStatus: No destinations found');
+      state = const DestinationSetupState(
+        status: DestinationSetupStatus.loadingSuggestedDestinations,
+        notionSuggestedDestinations: null,
+        error: null,
+        errorRetryStatus: null,
+      );
+      return;
+    }
+
+    state = const DestinationSetupState(
+      status: DestinationSetupStatus.promptCurrentCustomDestinationAction,
+      notionSuggestedDestinations: null,
+      error: null,
+      errorRetryStatus: null,
+    );
+  }
+
+  Future<void> loadSuggestedDestinations() async {
+    final suggestionResponse =
+        await ref.read(workspaceDestinationSuggestionsProvider.notifier).get();
+    switch (suggestionResponse) {
+      case BasicResponseSuccess(:final result):
+        _log.debug('loadSuggestedDestinations: Success');
+
+        state = DestinationSetupState(
+          status: DestinationSetupStatus.selectDatabaseDestination,
+          notionSuggestedDestinations: result.notionDestinations,
+          error: null,
+          errorRetryStatus: null,
+        );
+        return;
+      case BasicResponseError(:final error):
+        _log.error('loadSuggestedDestinations: Error');
+        state = DestinationSetupState(
+          status: DestinationSetupStatus.loadingSuggestedDestinationsError,
+          notionSuggestedDestinations: null,
+          error: error,
+          errorRetryStatus: DestinationSetupStatus.loadingSuggestedDestinations,
         );
         return;
     }

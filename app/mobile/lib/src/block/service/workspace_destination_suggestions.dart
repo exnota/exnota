@@ -1,0 +1,122 @@
+// ignore_for_file: invalid_annotation_target
+
+import 'package:exnota/src/common/basic_response.dart';
+import 'package:exnota/src/common/block/workspace_service.dart';
+import 'package:exnota/src/context/sync/request_handler.dart';
+import 'package:exnota/src/lib/log/logger.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:pocketbase/pocketbase.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'workspace_destination_suggestions.g.dart';
+part 'workspace_destination_suggestions.freezed.dart';
+
+@riverpod
+class WorkspaceDestinationSuggestions
+    extends _$WorkspaceDestinationSuggestions {
+  final _log = Logger(context: 'WorkspaceDestinationSuggestions');
+
+  @override
+  Future<void> build() async {
+    // no-op
+  }
+
+  Future<BasicResponse<GetSuggestedDestinationsResponse>> get() async {
+    final workspace = await ref.read(activeWorkspaceProvider.future);
+    if (workspace == null) {
+      _log.error('No active workspace');
+      return const BasicResponse.error(error: 'No active workspace');
+    }
+
+    final request = WorkspaceSuggestedDestinationsRequest(
+      workspaceId: workspace.id,
+    );
+    _log.debug('Fetching suggested destinations for workspace ${workspace.id}');
+    return await ref
+        .read(requestHandlerProvider.notifier)
+        .submitWithBasicResponse(request: request);
+  }
+}
+
+@freezed
+class GetSuggestedDestinationsResponse with _$GetSuggestedDestinationsResponse {
+  const factory GetSuggestedDestinationsResponse({
+    @JsonKey(name: 'notion_destinations')
+    required List<NotionDestination> notionDestinations,
+  }) = _GetSuggestedDestinationsResponse;
+
+  const GetSuggestedDestinationsResponse._();
+
+  factory GetSuggestedDestinationsResponse.fromJson(
+          Map<String, dynamic> json) =>
+      _$GetSuggestedDestinationsResponseFromJson(json);
+}
+
+@freezed
+class NotionDestination with _$NotionDestination {
+  const factory NotionDestination({
+    @JsonKey(name: 'name') required String name,
+    @JsonKey(name: 'object') required NotionObject object,
+    @JsonKey(name: 'icon') NotionIcon? icon,
+  }) = _NotionDestination;
+
+  const NotionDestination._();
+
+  factory NotionDestination.fromJson(Map<String, dynamic> json) =>
+      _$NotionDestinationFromJson(json);
+}
+
+@freezed
+class NotionObject with _$NotionObject {
+  const factory NotionObject({
+    @JsonKey(name: 'id') required String id,
+    @JsonKey(name: 'type') required String type,
+  }) = _NotionObject;
+
+  const NotionObject._();
+
+  factory NotionObject.fromJson(Map<String, dynamic> json) =>
+      _$NotionObjectFromJson(json);
+}
+
+@freezed
+class NotionIcon with _$NotionIcon {
+  const factory NotionIcon({
+    @JsonKey(name: 'type') required IconType type,
+    @JsonKey(name: 'emoji') String? emoji,
+    @JsonKey(name: 'url') String? url,
+  }) = _NotionIcon;
+
+  const NotionIcon._();
+
+  factory NotionIcon.fromJson(Map<String, dynamic> json) =>
+      _$NotionIconFromJson(json);
+}
+
+enum IconType {
+  @JsonValue('emoji')
+  emoji,
+  @JsonValue('url')
+  url,
+}
+
+class WorkspaceSuggestedDestinationsRequest
+    extends HandledRequest<GetSuggestedDestinationsResponse> {
+  final Logger _log = Logger(context: 'WorkspaceSuggestedDestinationsRequest');
+
+  final String workspaceId;
+
+  WorkspaceSuggestedDestinationsRequest({required this.workspaceId}) : super();
+
+  @override
+  Future<GetSuggestedDestinationsResponse> request(
+      {required PocketBase pb, required Ref ref}) async {
+    _log.debug('Verifying status for id $workspaceId');
+    final result = await pb.send(
+        '/api/exnota/workspace/get-suggested-destinations',
+        method: 'GET',
+        body: {'workspace_id': workspaceId});
+    return GetSuggestedDestinationsResponse.fromJson(result);
+  }
+}

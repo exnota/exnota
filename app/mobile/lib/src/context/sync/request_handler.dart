@@ -148,4 +148,21 @@ class RequestHandler extends _$RequestHandler {
       onError?.call(e);
     }
   }
+
+  Future<BasicResponse<T>> submitWithBasicResponse<T>(
+      {required HandledRequest<T> request}) async {
+    final completer = Completer<BasicResponse<T>>();
+    unawaited(submit(
+      request: request,
+      onSuccess: (result) {
+        final response = BasicResponse.success(result: result);
+        completer.complete(response);
+      },
+      onError: (error) {
+        final response = BasicResponse<T>.error(error: error.toString());
+        completer.complete(response);
+      },
+    ));
+    return completer.future;
+  }
 }
