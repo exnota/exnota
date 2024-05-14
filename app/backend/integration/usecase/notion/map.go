@@ -15,8 +15,8 @@ func mapDatabaseToDestination(database gonotion.Database) lib_integ.NotionDestin
 	return lib_integ.NotionDestination{
 		Name: util.TitleToText(database.Title),
 		Object: lib_integ.NotionObject{
-			ID:   database.ID,
-			Type: "database",
+			ID:     database.ID,
+			Object: "database",
 		},
 		Icon: mapIcon(database.Icon),
 	}
@@ -43,8 +43,8 @@ func mapPageToDestination(page gonotion.Page) (lib_integ.NotionDestination, erro
 	return lib_integ.NotionDestination{
 		Name: title,
 		Object: lib_integ.NotionObject{
-			ID:   page.ID,
-			Type: "page",
+			ID:     page.ID,
+			Object: "page",
 		},
 		Icon: mapIcon(page.Icon),
 	}, nil
@@ -65,8 +65,8 @@ func mapPagesToDestinations(
 		suggestions = append(suggestions, lib_integ.NotionDestination{
 			Name: title,
 			Object: lib_integ.NotionObject{
-				ID:   page.ID,
-				Type: "page",
+				ID:     page.ID,
+				Object: "page",
 			},
 			Icon: mapIcon(page.Icon),
 		})

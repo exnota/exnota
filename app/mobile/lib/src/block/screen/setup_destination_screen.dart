@@ -1,11 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:exnota/src/block/repo/drift/destination_importer.dart';
+import 'package:exnota/src/block/service/destination_exporter.dart';
 import 'package:exnota/src/block/service/destination_lister.dart';
 import 'package:exnota/src/block/service/workspace_destination_suggestions.dart';
 import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/common/block/workspace_service.dart';
 import 'package:exnota/src/common/integration/integration_service.dart';
+import 'package:exnota/src/common/integration/notion_destination.dart';
+import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,6 +75,10 @@ class _SetupDestinationScreenState
               .read(setupDestinationScreenControllerProvider.notifier)
               .loadSuggestedDestinations();
           break;
+        case DestinationSetupStatus.updatingDatabaseDestination:
+          ref
+              .read(setupDestinationScreenControllerProvider.notifier)
+              .updateDestination();
         default:
         // Do nothing
       }
@@ -163,31 +170,189 @@ class SetupErrorMessage extends ConsumerWidget {
   }
 }
 
-class SelectDestination extends ConsumerWidget {
+class SelectDestination extends ConsumerStatefulWidget {
   const SelectDestination({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectMultiple =
-        ref.read(setupDestinationScreenControllerProvider).status ==
-            DestinationSetupStatus.selectCustomDestinations;
-    final destinations = ref
-            .read(setupDestinationScreenControllerProvider)
+  ConsumerState<SelectDestination> createState() => _SelectDestinationState();
+}
+
+class _SelectDestinationState extends ConsumerState<SelectDestination> {
+  final _log = Logger(context: '_SelectDestinationState');
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = ref.watch(_selectedDestinationProvider);
+    final suggestions = ref
+            .watch(setupDestinationScreenControllerProvider)
             .notionSuggestedDestinations ??
         [];
+    final searchResults = ref.watch(_searchResultsProvider);
+    if (searchResults is AsyncData) {
+      _log.debug('build: num results: ${searchResults.value?.length}');
+    }
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final destination in destinations)
-          ListTile(
-            title: Text(destination.name),
-            leading: DestinationIcon(destination: destination),
-            onTap: () {
-              // Do something
+        const Text('Suggested'),
+        for (final destination in suggestions)
+          RadioListTile(
+            title: Row(
+              children: [
+                DestinationIcon(destination: destination),
+                const SizedBox(width: 8),
+                Text(destination.name),
+              ],
+            ),
+            value: destination,
+            groupValue: selected,
+            onChanged: (value) {
+              ref
+                  .read(setupDestinationScreenControllerProvider.notifier)
+                  .setSelectedDestination(value);
             },
           ),
+        const SizedBox(height: 16),
+        if (selected != null && !suggestions.contains(selected)) ...[
+          const Text('Selected'),
+          DestinationRadioTile(
+            destination: selected,
+            selected: selected,
+            onChanged: (value) {
+              ref
+                  .read(setupDestinationScreenControllerProvider.notifier)
+                  .setSelectedDestination(value);
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+        const Text('Search'),
+        SearchAnchor(
+          viewOnChanged: (query) {
+            _log.debug('SearchAnchor: viewOnChanged search query: $query');
+          },
+          viewOnSubmitted: (query) {
+            _log.debug('SearchAnchor: viewOnSubmitted search query: $query');
+            ref.read(_searchQueryProvider.notifier).setQuery(query);
+          },
+          // Couldn't figure out how to have the suggestionsBuilder re-build
+          // when the search results change. So I'm using the provider
+          // directly in the viewBuilder instead.
+          suggestionsBuilder: (context, controller) => [],
+          viewBuilder: (suggestions) {
+            // Ignore the suggestions argument and use from the provider
+            // instead. Because I can't figure out how to have
+            // suggestionsBuilder re-build when the search results change,
+            // although I'm sure it mustn't be difficult.
+            return Consumer(
+              builder: (context, ref, child) {
+                final selected = ref.watch(_selectedDestinationProvider);
+                final results = ref.watch(_searchResultsProvider);
+                _log.debug(
+                    'SearchAnchor: rebuilding viewBuilder with selected: $selected');
+
+                return switch (results) {
+                  AsyncData(:final value) => Column(
+                      children: [
+                        for (final destination in value)
+                          RadioListTile(
+                            title: Row(
+                              children: [
+                                DestinationIcon(destination: destination),
+                                const SizedBox(width: 8),
+                                Text(destination.name),
+                              ],
+                            ),
+                            value: destination,
+                            groupValue: selected,
+                            onChanged: (value) {
+                              ref
+                                  .read(setupDestinationScreenControllerProvider
+                                      .notifier)
+                                  .setSelectedDestination(value);
+                            },
+                          ),
+                      ],
+                    ),
+                  AsyncLoading() => const Text('Loading...'),
+                  AsyncError(:final error) => Text('Error: $error'),
+                  AsyncValue() => const Text('No results'),
+                };
+              },
+            );
+          },
+          builder: (context, controller) {
+            return SearchBar(
+              controller: controller,
+              onTap: () {
+                _log.debug('SearchAnchor: onTap search bar');
+                controller.openView();
+              },
+              onSubmitted: (query) {
+                _log.debug('SearchAnchor: onSubmitted search query: $query');
+                controller.openView();
+              },
+              onChanged: (query) {
+                _log.debug('SearchAnchor: onChanged search query: $query');
+                ref.read(_searchQueryProvider.notifier).setQuery(query);
+                controller.openView();
+              },
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            ElevatedButton(
+              onPressed: selected == null
+                  ? null
+                  : () {
+                      ref
+                          .read(
+                              setupDestinationScreenControllerProvider.notifier)
+                          .transitionStatus(
+                              newStatus: DestinationSetupStatus
+                                  .updatingDatabaseDestination);
+                    },
+              child: const Text('Select destination'),
+            ),
+          ],
+        ),
       ],
+    );
+  }
+}
+
+class DestinationRadioTile extends StatelessWidget {
+  final NotionDestination destination;
+  final NotionDestination? selected;
+  final void Function(NotionDestination?) onChanged;
+
+  const DestinationRadioTile({
+    super.key,
+    required this.destination,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RadioListTile(
+      title: Row(
+        children: [
+          DestinationIcon(destination: destination),
+          const SizedBox(width: 8),
+          Text(destination.name),
+        ],
+      ),
+      value: destination,
+      groupValue: selected,
+      onChanged: (value) {
+        onChanged(value);
+      },
     );
   }
 }
@@ -200,7 +365,7 @@ class DestinationIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Icon placeholder;
-    switch (destination.object.type) {
+    switch (destination.object.object) {
       case NotionObjectType.page:
         placeholder = const Icon(Icons.article);
         break;
@@ -268,9 +433,15 @@ class DestinationSetupState with _$DestinationSetupState {
   const factory DestinationSetupState({
     required DestinationSetupStatus status,
     required List<NotionDestination>? notionSuggestedDestinations,
+    required NotionDestination? selected,
     required String? error,
     required DestinationSetupStatus? errorRetryStatus,
   }) = _DestinationSetupState;
+}
+
+@riverpod
+NotionDestination? _selectedDestination(_SelectedDestinationRef ref) {
+  return ref.watch(setupDestinationScreenControllerProvider).selected;
 }
 
 @riverpod
@@ -284,6 +455,7 @@ class SetupDestinationScreenController
     return const DestinationSetupState(
       status: DestinationSetupStatus.syncingExternalDestinations,
       notionSuggestedDestinations: null,
+      selected: null,
       error: null,
       errorRetryStatus: null,
     );
@@ -294,6 +466,17 @@ class SetupDestinationScreenController
     state = DestinationSetupState(
       status: newStatus,
       notionSuggestedDestinations: state.notionSuggestedDestinations,
+      selected: state.selected,
+      error: null,
+      errorRetryStatus: null,
+    );
+  }
+
+  void setSelectedDestination(NotionDestination? destination) {
+    state = DestinationSetupState(
+      status: state.status,
+      notionSuggestedDestinations: state.notionSuggestedDestinations,
+      selected: destination,
       error: null,
       errorRetryStatus: null,
     );
@@ -307,6 +490,7 @@ class SetupDestinationScreenController
       state = const DestinationSetupState(
         status: DestinationSetupStatus.syncingExternalDestinationsError,
         notionSuggestedDestinations: null,
+        selected: null,
         error: 'Workspace not integrated',
         errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
       );
@@ -322,6 +506,7 @@ class SetupDestinationScreenController
         state = const DestinationSetupState(
           status: DestinationSetupStatus.loadingDestinations,
           notionSuggestedDestinations: null,
+          selected: null,
           error: null,
           errorRetryStatus: null,
         );
@@ -331,6 +516,7 @@ class SetupDestinationScreenController
         state = DestinationSetupState(
           status: DestinationSetupStatus.syncingExternalDestinationsError,
           notionSuggestedDestinations: null,
+          selected: null,
           error: error,
           errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
         );
@@ -352,6 +538,7 @@ class SetupDestinationScreenController
           state = const DestinationSetupState(
             status: DestinationSetupStatus.checkingDatabaseDestinationStatus,
             notionSuggestedDestinations: null,
+            selected: null,
             error: null,
             errorRetryStatus: null,
           );
@@ -359,6 +546,7 @@ class SetupDestinationScreenController
           state = const DestinationSetupState(
             status: DestinationSetupStatus.checkingCustomDestinationsStatus,
             notionSuggestedDestinations: null,
+            selected: null,
             error: null,
             errorRetryStatus: null,
           );
@@ -369,6 +557,7 @@ class SetupDestinationScreenController
         state = DestinationSetupState(
           status: DestinationSetupStatus.loadingDestinationsError,
           notionSuggestedDestinations: null,
+          selected: null,
           error: error,
           errorRetryStatus: DestinationSetupStatus.loadingDestinations,
         );
@@ -383,6 +572,7 @@ class SetupDestinationScreenController
       state = const DestinationSetupState(
         status: DestinationSetupStatus.loadingSuggestedDestinations,
         notionSuggestedDestinations: null,
+        selected: null,
         error: null,
         errorRetryStatus: null,
       );
@@ -392,6 +582,7 @@ class SetupDestinationScreenController
     state = const DestinationSetupState(
       status: DestinationSetupStatus.promptCurrentDatabaseDestinationAction,
       notionSuggestedDestinations: null,
+      selected: null,
       error: null,
       errorRetryStatus: null,
     );
@@ -404,6 +595,7 @@ class SetupDestinationScreenController
       state = const DestinationSetupState(
         status: DestinationSetupStatus.loadingSuggestedDestinations,
         notionSuggestedDestinations: null,
+        selected: null,
         error: null,
         errorRetryStatus: null,
       );
@@ -413,6 +605,7 @@ class SetupDestinationScreenController
     state = const DestinationSetupState(
       status: DestinationSetupStatus.promptCurrentCustomDestinationAction,
       notionSuggestedDestinations: null,
+      selected: null,
       error: null,
       errorRetryStatus: null,
     );
@@ -427,7 +620,8 @@ class SetupDestinationScreenController
 
         state = DestinationSetupState(
           status: DestinationSetupStatus.selectDatabaseDestination,
-          notionSuggestedDestinations: result.notionDestinations,
+          notionSuggestedDestinations: result.destinations.notion,
+          selected: null,
           error: null,
           errorRetryStatus: null,
         );
@@ -437,10 +631,100 @@ class SetupDestinationScreenController
         state = DestinationSetupState(
           status: DestinationSetupStatus.loadingSuggestedDestinationsError,
           notionSuggestedDestinations: null,
+          selected: null,
           error: error,
           errorRetryStatus: DestinationSetupStatus.loadingSuggestedDestinations,
         );
         return;
     }
   }
+
+  Future<void> updateDestination() async {
+    final selected = state.selected;
+    if (selected == null) {
+      _log.error('updateDestination: No destination selected');
+      return;
+    }
+
+    final workspace = (await ref.read(activeWorkspaceProvider.future))!;
+
+    final result = await ref
+        .read(destinationExporterProvider.notifier)
+        .createNotionDestination(
+          workspaceId: workspace.id,
+          notionObject: selected.object,
+        );
+
+    switch (result) {
+      case BasicResponseSuccess():
+        _log.debug('updateDestination: Success');
+        // TODO: Actually need to fetch the updated destination before proceeding
+        state = DestinationSetupState(
+          status: DestinationSetupStatus.destinationsReady,
+          notionSuggestedDestinations: null,
+          selected: state.selected,
+          error: null,
+          errorRetryStatus: null,
+        );
+        return;
+      case BasicResponseError(:final error):
+        _log.error('updateDestination: Error');
+        state = DestinationSetupState(
+          status: DestinationSetupStatus.updatingDatabaseDestinationError,
+          notionSuggestedDestinations: null,
+          selected: state.selected,
+          error: error,
+          errorRetryStatus: DestinationSetupStatus.updatingDatabaseDestination,
+        );
+        return;
+    }
+  }
+}
+
+@riverpod
+class _SearchQuery extends _$SearchQuery {
+  @override
+  String build() {
+    return '';
+  }
+
+  void setQuery(String query) {
+    state = query;
+  }
+}
+
+@riverpod
+Future<List<NotionDestination>> _searchResults(_SearchResultsRef ref) async {
+  final query = ref.watch(_searchQueryProvider);
+  final pb = ref.watch(pocketBaseSyncProvider);
+  final workspace = await ref.watch(activeWorkspaceProvider.future);
+  final workspaceId = workspace?.id;
+  if (workspaceId == null) {
+    return [];
+  }
+
+  final rawResult = await pb.send(
+    '/api/exnota/workspace/search-destinations',
+    method: 'GET',
+    body: {
+      'query': query,
+      'workspace_id': workspaceId,
+    },
+  );
+
+  final result = GetSuggestedDestinationsResponse.fromJson(rawResult);
+  return result.destinations.notion ?? [];
+}
+
+@freezed
+class SearchWorkspaceDestinations with _$SearchWorkspaceDestinations {
+  const factory SearchWorkspaceDestinations({
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'destinations') required Destinations destinations,
+  }) = _SearchWorkspaceDestinations;
+
+  const SearchWorkspaceDestinations._();
+
+  factory SearchWorkspaceDestinations.fromJson(Map<String, dynamic> json) =>
+      _$SearchWorkspaceDestinationsFromJson(json);
 }

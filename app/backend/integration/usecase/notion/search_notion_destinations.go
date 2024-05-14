@@ -99,5 +99,4 @@ func (s *searchNotionDestinations) SearchAllDestinations(
 		return nil, fmt.Errorf("error mapping search results to destinations: %w", err)
 	}
 	return mapped, nil
-
 }

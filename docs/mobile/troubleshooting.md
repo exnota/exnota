@@ -1,11 +1,16 @@
 # Troubleshooting
 
 - [Common issues](#common-issues)
+- [`Error: Method not found` in Freezed file](#error-method-not-found-in-freezed-file)
 - [Symptom: Bottom sheet/modal/dialog variables not updating](#symptom-bottom-sheetmodaldialog-variables-not-updating)
   - [Symptom: Platform-specific changes not working](#symptom-platform-specific-changes-not-working)
   - [Symptom: Code involving DB not working; Debugger stepthrough breaks; Behavior inconsistent](#symptom-code-involving-db-not-working-debugger-stepthrough-breaks-behavior-inconsistent)
 
 ## Common issues
+
+## `Error: Method not found` in Freezed file
+
+May need to add `part '<filename>.g.dart';`, e.g. due to generating JSON-related code.
 
 ## Symptom: Bottom sheet/modal/dialog variables not updating
 

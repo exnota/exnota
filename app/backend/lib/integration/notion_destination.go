@@ -1,6 +1,7 @@
 package integration
 
 type Destinations struct {
+	// This will be omitted if the array is empty
 	Notion []NotionDestination `json:"notion,omitempty"`
 }
 
@@ -11,8 +12,8 @@ type NotionDestination struct {
 }
 
 type NotionObject struct {
-	ID   string `json:"id"   validate:"required"`
-	Type string `json:"type" validate:"oneof=database page"`
+	ID     string `json:"id"     validate:"required"`
+	Object string `json:"object" validate:"oneof=database page"`
 }
 
 type IconType string

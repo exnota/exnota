@@ -98,8 +98,8 @@ func searchResultsToSuggestions(
 		suggestions = append(suggestions, lib.NotionDestination{
 			Name: util.TitleToText(db.Title),
 			Object: lib.NotionObject{
-				ID:   db.ID,
-				Type: "database",
+				ID:     db.ID,
+				Object: "database",
 			},
 			Icon: mapIcon(db.Icon),
 		})
