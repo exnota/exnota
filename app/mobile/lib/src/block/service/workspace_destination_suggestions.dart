@@ -2,6 +2,7 @@
 
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/common/block/workspace_service.dart';
+import 'package:exnota/src/common/integration/notion_destination.dart';
 import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,8 +43,7 @@ class WorkspaceDestinationSuggestions
 @freezed
 class GetSuggestedDestinationsResponse with _$GetSuggestedDestinationsResponse {
   const factory GetSuggestedDestinationsResponse({
-    @JsonKey(name: 'notion_destinations')
-    required List<NotionDestination> notionDestinations,
+    @JsonKey(name: 'destinations') required Destinations destinations,
   }) = _GetSuggestedDestinationsResponse;
 
   const GetSuggestedDestinationsResponse._();
@@ -51,61 +51,6 @@ class GetSuggestedDestinationsResponse with _$GetSuggestedDestinationsResponse {
   factory GetSuggestedDestinationsResponse.fromJson(
           Map<String, dynamic> json) =>
       _$GetSuggestedDestinationsResponseFromJson(json);
-}
-
-@freezed
-class NotionDestination with _$NotionDestination {
-  const factory NotionDestination({
-    @JsonKey(name: 'name') required String name,
-    @JsonKey(name: 'object') required NotionObject object,
-    @JsonKey(name: 'icon') NotionIcon? icon,
-  }) = _NotionDestination;
-
-  const NotionDestination._();
-
-  factory NotionDestination.fromJson(Map<String, dynamic> json) =>
-      _$NotionDestinationFromJson(json);
-}
-
-@freezed
-class NotionObject with _$NotionObject {
-  const factory NotionObject({
-    @JsonKey(name: 'id') required String id,
-    @JsonKey(name: 'type') required NotionObjectType type,
-  }) = _NotionObject;
-
-  const NotionObject._();
-
-  factory NotionObject.fromJson(Map<String, dynamic> json) =>
-      _$NotionObjectFromJson(json);
-}
-
-enum NotionObjectType {
-  @JsonValue('page')
-  page,
-  @JsonValue('database')
-  database,
-}
-
-@freezed
-class NotionIcon with _$NotionIcon {
-  const factory NotionIcon({
-    @JsonKey(name: 'type') required IconType type,
-    @JsonKey(name: 'emoji') String? emoji,
-    @JsonKey(name: 'url') String? url,
-  }) = _NotionIcon;
-
-  const NotionIcon._();
-
-  factory NotionIcon.fromJson(Map<String, dynamic> json) =>
-      _$NotionIconFromJson(json);
-}
-
-enum IconType {
-  @JsonValue('emoji')
-  emoji,
-  @JsonValue('url')
-  url,
 }
 
 class WorkspaceSuggestedDestinationsRequest

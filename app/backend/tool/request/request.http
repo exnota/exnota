@@ -85,6 +85,24 @@ Content-Type: application/json
     "name": "Second test db destination 2"
 }
 
+### Create destination
+POST {{baseUrl}}/collections/destination/records HTTP/1.1
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+{
+    "id": "c4a300da2b844a8",
+    "name": " ",
+    "workspace": "{{workspace}}",
+    "user": "{{user_id}}",
+    "external": {
+      "config": {
+        "id": "c4a300da-2b84-4a85-a00b-c56210d82968",
+        "object": "database"
+      }
+    }
+}
+
 ### Get notion integration
 GET {{baseUrl}}/collections/integration/records
   ?filter=type = "notion"
