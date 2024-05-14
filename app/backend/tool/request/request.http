@@ -108,16 +108,13 @@ content-type: application/json
 {}
 
 ### Search destinations - database
-GET {{baseUrl}}/exnota/integration/search-destinations
+GET {{baseUrl}}/exnota/workspace/search-destinations
 content-type: application/json
 Authorization: {{auth_token}}
 
 {
-  "query": "",
-  "integration_id": "{{integration}}",
-  "notion": {
-    "object": "database"
-  }
+  "workspace_id": "{{workspace}}",
+  "query": ""
 }
 
 ### Verify integration

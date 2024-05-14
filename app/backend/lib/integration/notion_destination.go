@@ -1,5 +1,9 @@
 package integration
 
+type Destinations struct {
+	Notion []NotionDestination `json:"notion,omitempty"`
+}
+
 type NotionDestination struct {
 	Name   string       `json:"name"           validate:"required"`
 	Object NotionObject `json:"object"         validate:"required"`

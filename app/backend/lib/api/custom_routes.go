@@ -5,14 +5,14 @@ package api
 
 // Block
 const (
-	GetSuggestedDestinations = "/api/exnota/workspace/get-suggested-destinations"
+	GetSuggestedDestinations    = "/api/exnota/workspace/get-suggested-destinations"
+	SearchWorkspaceDestinations = "/api/exnota/workspace/search-destinations"
 )
 
 // Integration
 const (
 	NotionMobileCodeRequestPath = "/api/exnota/integration/notion/mobile-code-request-path"
 	NotionMobileRedirectPath    = "/api/exnota/integration/notion/mobile-code-redirect"
-	SearchDestinationsPath      = "/api/exnota/integration/search-destinations"
 	IntegrationVerifyAccess     = "/api/exnota/integration/verify-access"
 	SyncIntegrationDestinations = "/api/exnota/integration/sync-destinations"
 )
