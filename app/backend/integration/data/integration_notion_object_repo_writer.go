@@ -3,6 +3,7 @@ package data
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	integ "exnota.com/backend/integration"
@@ -83,14 +84,14 @@ func (w *integrationNotionObjectWriter) CreateUpsertRecord(
 	record.Set(integ.IntegrationNotionObjectFieldLastSynced, time.Now())
 	record.Set(
 		integ.IntegrationNotionObjectFieldStatus,
-		lib_integ.NotionObjectStatusConnected,
+		string(lib_integ.NotionObjectStatusConnected),
 	)
 
 	// Validate the record, but don't submit
 	form := forms.NewRecordUpsert(w.app, record)
 	err = form.Validate()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error validating notion object record: %w", err)
 	}
 
 	return record, nil
