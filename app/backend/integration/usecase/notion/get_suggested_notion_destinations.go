@@ -7,7 +7,7 @@ import (
 	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/usecase/notion/api"
 	"exnota.com/backend/integration/util"
-	lib_integ "exnota.com/backend/lib/integration"
+	lib "exnota.com/backend/lib/integration"
 	gonotion "github.com/dstotijn/go-notion"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -17,8 +17,8 @@ const maxWorkspaceLevelSuggestions = 2
 
 type GetSuggestedNotionDestinations interface {
 	Get(
-		request lib_integ.GetSuggestedDestinationsRequest,
-	) (*lib_integ.GetSuggestedDestinationsResponse, error)
+		request lib.GetSuggestedDestinationsRequest,
+	) ([]lib.NotionDestination, error)
 }
 
 type getSuggestedNotionDestinations struct {
@@ -37,13 +37,11 @@ func NewGetSuggestedNotionDestinations(
 }
 
 func (s *getSuggestedNotionDestinations) Get(
-	request lib_integ.GetSuggestedDestinationsRequest,
-) (*lib_integ.GetSuggestedDestinationsResponse, error) {
-	if request.WorkspaceType != lib_integ.WorkspaceTypeDatabase {
+	request lib.GetSuggestedDestinationsRequest,
+) ([]lib.NotionDestination, error) {
+	if request.WorkspaceType != lib.WorkspaceTypeDatabase {
 		slog.Info("Workspace type not supported", "workspaceType", request.WorkspaceType)
-		return &lib_integ.GetSuggestedDestinationsResponse{
-			NotionDestinations: []lib_integ.NotionDestination{},
-		}, nil
+		return []lib.NotionDestination{}, nil
 	}
 
 	integration, err := s.integrationFetcher.FetchNotionIntegration(request.IntegrationID)
@@ -86,22 +84,20 @@ func (s *getSuggestedNotionDestinations) Get(
 		suggestions = trimDatabaseSuggestions(allDatabases, recentPages, suggestions)
 	}
 
-	return &lib_integ.GetSuggestedDestinationsResponse{
-		NotionDestinations: suggestions,
-	}, nil
+	return suggestions, nil
 }
 
 func searchResultsToSuggestions(
 	databases []gonotion.Database,
-) []lib_integ.NotionDestination {
-	suggestions := []lib_integ.NotionDestination{}
+) []lib.NotionDestination {
+	suggestions := []lib.NotionDestination{}
 	for _, db := range databases {
 		if db.Archived {
 			continue
 		}
-		suggestions = append(suggestions, lib_integ.NotionDestination{
+		suggestions = append(suggestions, lib.NotionDestination{
 			Name: util.TitleToText(db.Title),
-			Object: lib_integ.NotionObject{
+			Object: lib.NotionObject{
 				ID:   db.ID,
 				Type: "database",
 			},
@@ -116,8 +112,8 @@ func searchResultsToSuggestions(
 func trimDatabaseSuggestions(
 	databases []gonotion.Database,
 	recentPages []gonotion.Page,
-	suggestions []lib_integ.NotionDestination,
-) []lib_integ.NotionDestination {
+	suggestions []lib.NotionDestination,
+) []lib.NotionDestination {
 	// Workspace-level suggestions
 	//
 	// Get all databases that are at workspace level
@@ -128,7 +124,7 @@ func trimDatabaseSuggestions(
 		}
 	}
 	// Choose the suggestions that are in the workspace list
-	workspaceLevelSuggestions := make([]lib_integ.NotionDestination, 0)
+	workspaceLevelSuggestions := make([]lib.NotionDestination, 0)
 	for _, suggestion := range suggestions {
 		if workspaceLevelDatabases[suggestion.Object.ID] {
 			workspaceLevelSuggestions = append(workspaceLevelSuggestions, suggestion)
@@ -154,7 +150,7 @@ func trimDatabaseSuggestions(
 	}
 
 	numPopularParentsToChoose := maxSuggestions - len(workspaceLevelSuggestions)
-	popularParentSuggestions := make([]lib_integ.NotionDestination, 0)
+	popularParentSuggestions := make([]lib.NotionDestination, 0)
 	for _, suggestion := range suggestions {
 		// if databaseParentCounts[suggestion.Object.ID] > 0 {
 		// Exclude suggestions that are already in workspaceLevelSuggestions
@@ -180,24 +176,24 @@ func trimDatabaseSuggestions(
 	return append(workspaceLevelSuggestions, popularParentSuggestions...)
 }
 
-func mapIcon(icon *gonotion.Icon) *lib_integ.NotionIcon {
+func mapIcon(icon *gonotion.Icon) *lib.NotionIcon {
 	if icon == nil {
 		return nil
 	}
 	switch icon.Type {
 	case gonotion.IconTypeEmoji:
-		return &lib_integ.NotionIcon{
-			Type:  lib_integ.IconTypeEmoji,
+		return &lib.NotionIcon{
+			Type:  lib.IconTypeEmoji,
 			Emoji: icon.Emoji,
 		}
 	case gonotion.IconTypeFile:
-		return &lib_integ.NotionIcon{
-			Type: lib_integ.IconTypeURL,
+		return &lib.NotionIcon{
+			Type: lib.IconTypeURL,
 			URL:  &icon.File.URL,
 		}
 	case gonotion.IconTypeExternal:
-		return &lib_integ.NotionIcon{
-			Type: lib_integ.IconTypeURL,
+		return &lib.NotionIcon{
+			Type: lib.IconTypeURL,
 			URL:  &icon.External.URL,
 		}
 	default:

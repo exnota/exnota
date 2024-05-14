@@ -37,6 +37,10 @@ type GetSuggestedDestinationsRequest struct {
 	WorkspaceId string `json:"workspace_id" validate:"min=1"`
 }
 
+type GetSuggestedDestinationsResponse struct {
+	Destinations lib_integ.Destinations `json:"destinations"`
+}
+
 func (h *getSuggestedWorkspaceDestinationsAPI) ApplyHooks() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET(api.GetSuggestedDestinations, func(c echo.Context) error {
@@ -75,16 +79,20 @@ func (h *getSuggestedWorkspaceDestinationsAPI) ApplyHooks() {
 			}
 
 			// Update status
-			response, err := h.getSuggestedDestinations(lib_integ.GetSuggestedDestinationsRequest{
-				IntegrationID: workspace.Integration(),
-				UserID:        auth.LoggedInUser(),
-				WorkspaceType: mapWorkspaceType(workspace.Type()),
-			})
+			destinations, err := h.getSuggestedDestinations(
+				lib_integ.GetSuggestedDestinationsRequest{
+					IntegrationID: workspace.Integration(),
+					UserID:        auth.LoggedInUser(),
+					WorkspaceType: mapWorkspaceType(workspace.Type()),
+				},
+			)
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, nil)
 			}
 
-			return c.JSON(http.StatusOK, response)
+			return c.JSON(http.StatusOK, &GetSuggestedDestinationsResponse{
+				Destinations: *destinations,
+			})
 		})
 		return nil
 	})

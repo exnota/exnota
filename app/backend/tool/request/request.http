@@ -107,16 +107,6 @@ content-type: application/json
 
 {}
 
-### Search destinations - database
-GET {{baseUrl}}/exnota/workspace/search-destinations
-content-type: application/json
-Authorization: {{auth_token}}
-
-{
-  "workspace_id": "{{workspace}}",
-  "query": ""
-}
-
 ### Verify integration
 POST {{baseUrl}}/exnota/integration/verify-access
 content-type: application/json
@@ -142,6 +132,16 @@ Authorization: {{auth_token}}
 
 {
   "workspace_id": "{{workspace}}"
+}
+
+### Search destinations - database
+GET {{baseUrl}}/exnota/workspace/search-destinations
+content-type: application/json
+Authorization: {{auth_token}}
+
+{
+  "workspace_id": "{{workspace}}",
+  "query": ""
 }
 
 
