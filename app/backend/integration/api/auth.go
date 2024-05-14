@@ -1,6 +1,8 @@
 package api
 
 import (
+	"cmp"
+	"fmt"
 	"net/http"
 
 	integ "exnota.com/backend/integration"
@@ -40,7 +42,8 @@ func (h *integrationAuth) ForIntegration(integrationId string) error {
 	// Get user
 	loggedInUserId := h.LoggedInUser()
 	if loggedInUserId == "" {
-		return h.Context.String(http.StatusUnauthorized, "Not logged in")
+		cErr := h.Context.String(http.StatusUnauthorized, "Not logged in")
+		return cmp.Or(cErr, fmt.Errorf("Not logged in"))
 	}
 
 	// Get integration
@@ -51,7 +54,8 @@ func (h *integrationAuth) ForIntegration(integrationId string) error {
 	if err != nil {
 		// The integration may not exist or may not belong to the user. But
 		// probably not worth separating those cases, so just return forbidden.
-		return h.Context.String(http.StatusForbidden, "Forbidden")
+		cErr := h.Context.String(http.StatusForbidden, "Forbidden")
+		return cmp.Or(cErr, err)
 	}
 
 	return nil

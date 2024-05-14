@@ -1,5 +1,11 @@
 package integration
 
+type NotionDestination struct {
+	Name   string       `json:"name"           validate:"required"`
+	Object NotionObject `json:"object"         validate:"required"`
+	Icon   *NotionIcon  `json:"icon,omitempty"`
+}
+
 type NotionObject struct {
 	ID   string `json:"id"   validate:"required"`
 	Type string `json:"type" validate:"oneof=database page"`

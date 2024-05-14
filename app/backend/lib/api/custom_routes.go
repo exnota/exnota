@@ -12,7 +12,7 @@ const (
 const (
 	NotionMobileCodeRequestPath = "/api/exnota/integration/notion/mobile-code-request-path"
 	NotionMobileRedirectPath    = "/api/exnota/integration/notion/mobile-code-redirect"
-	NotionSearchPath            = "/api/exnota/integration/notion/search"
+	SearchDestinationsPath      = "/api/exnota/integration/search-destinations"
 	IntegrationVerifyAccess     = "/api/exnota/integration/verify-access"
 	SyncIntegrationDestinations = "/api/exnota/integration/sync-destinations"
 )

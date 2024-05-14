@@ -15,6 +15,7 @@ type NotionFetcher interface {
 	FetchPageChildrenWithAccessToken(pageID string) ([]gonotion.Block, error)
 	FetchDatabase(databaseID string) (*gonotion.Database, error) // Added method
 
+	Search(pageID string) (gonotion.SearchResults, error)
 	SearchDatabases(query string) ([]gonotion.Database, error)
 	SearchPages(query string) ([]gonotion.Page, error)
 
@@ -101,6 +102,39 @@ func (f *notionFetcher) VerifyAccess() (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func (f *notionFetcher) Search(query string) (gonotion.SearchResults, error) {
+	client := gonotion.NewClient(f.accessToken)
+	opts := &gonotion.SearchOpts{}
+	if query != "" {
+		opts.Query = query
+	}
+
+	response, err := client.Search(context.Background(), opts)
+	if err != nil {
+		return nil, fmt.Errorf("error searching: %w", err)
+	}
+
+	results := gonotion.SearchResults{}
+	for _, resultUntyped := range response.Results {
+		switch result := resultUntyped.(type) {
+		case gonotion.Database:
+			if result.Archived {
+				continue
+			}
+			results = append(results, result)
+		case gonotion.Page:
+			if result.Archived {
+				continue
+			}
+			results = append(results, result)
+		default:
+			slog.Error("Unsupported search result type", "type", fmt.Sprintf("%T", result))
+		}
+	}
+
+	return results, nil
 }
 
 func (f *notionFetcher) SearchDatabases(query string) ([]gonotion.Database, error) {

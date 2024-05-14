@@ -1,27 +1,21 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
 
-	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/usecase"
-	"exnota.com/backend/integration/util"
 	"exnota.com/backend/lib/api"
-	"github.com/dstotijn/go-notion"
 	"github.com/labstack/echo/v5"
-	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
 
 type IntegrationEndpointHooks interface {
-	Apply()
+	ApplyHooks()
 }
 
 type integrationEndpointHooks struct {
@@ -44,11 +38,10 @@ func NewIntegrationEndpointHooks(
 	return &integrationEndpointHooks{app: app, config: config}
 }
 
-func (h *integrationEndpointHooks) Apply() {
+func (h *integrationEndpointHooks) ApplyHooks() {
 	// TODO: Move each endpoint into its own file, like update_integration_destination.go
 	h.notionMobileCodeRequestPath()
 	h.notionMobileRedirect()
-	h.notionSearch()
 	h.integrationVerifyAccess()
 }
 
@@ -105,220 +98,6 @@ func (h *integrationEndpointHooks) notionMobileRedirect() {
 		})
 		return nil
 	})
-}
-
-type SearchRequest struct {
-	Query  string  `json:"query"`
-	Object *string `json:"object"`
-}
-
-type ObjectType string
-
-const (
-	ObjectTypePage     ObjectType = "page"
-	ObjectTypeDatabase ObjectType = "database"
-)
-
-type SearchResponse struct {
-	Results []SearchResult `json:"results"`
-}
-
-type SearchResult struct {
-	Id         string     `json:"id"`
-	Name       string     `json:"name"`
-	Object     string     `json:"object"`
-	ParentType ParentType `json:"parent_type"`
-	ParentId   *string    `json:"parent_id"`
-}
-
-type ParentType string
-
-const (
-	ParentTypeDatabase  ParentType = "database"
-	ParentTypePage      ParentType = "page"
-	ParentTypeBlock     ParentType = "block"
-	ParentTypeWorkspace ParentType = "workspace"
-)
-
-func (h *integrationEndpointHooks) notionSearch() {
-	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(api.NotionSearchPath, func(c echo.Context) error {
-			slog.Info(
-				"Custom endpoint",
-				"method",
-				c.Request().Method,
-				"path",
-				api.NotionSearchPath,
-			)
-
-			searchRequest := new(SearchRequest)
-			if err := c.Bind(searchRequest); err != nil {
-				return c.String(http.StatusBadRequest, "bad request")
-			}
-
-			if strings.TrimSpace(searchRequest.Query) == "" {
-				return c.JSON(200, SearchResponse{Results: []SearchResult{}})
-			}
-
-			var object ObjectType
-			if searchRequest.Object != nil {
-				switch *searchRequest.Object {
-				case string(ObjectTypePage):
-					object = ObjectTypePage
-				case string(ObjectTypeDatabase):
-					object = ObjectTypeDatabase
-				default:
-					return c.String(http.StatusBadRequest, "bad request")
-				}
-
-			}
-
-			requestInfo := apis.RequestInfo(c)
-			if requestInfo.AuthRecord == nil {
-				return c.String(http.StatusUnauthorized, "Not logged in")
-			}
-			userId := requestInfo.AuthRecord.Id
-
-			response, err := h.executeNotionSearch(searchRequest.Query, object, userId)
-			if err != nil {
-				return err
-			}
-			return c.JSON(200, response)
-		})
-		return nil
-	})
-}
-
-func (h *integrationEndpointHooks) executeNotionSearch(
-	query string,
-	object ObjectType,
-	userId string,
-) (*SearchResponse, error) {
-	// Get integration
-	filter := integ.IntegrationFieldUser + "={:user} && " +
-		integ.IntegrationFieldType + "={:type}"
-	integrationRecord, err := h.app.Dao().FindFirstRecordByFilter(
-		integ.CollectionIntegration,
-		filter,
-		dbx.Params{"user": userId, "type": integ.IntegrationTypeNotion})
-	if err != nil {
-		return nil, err
-	}
-	integration, err := integ.LoadNotionIntegration(integrationRecord, h.app)
-	if err != nil {
-		return nil, err
-	}
-
-	// Config for integration
-	config, err := integration.Config()
-	if err != nil {
-		return nil, err
-	}
-
-	// Send search to Notion
-	client := notion.NewClient(*config.Auth.AccessToken)
-	opts := &notion.SearchOpts{
-		Query: query,
-	}
-	switch object {
-	case ObjectTypePage:
-		opts.Filter = &notion.SearchFilter{
-			Property: "object",
-			Value:    "page",
-		}
-	case ObjectTypeDatabase:
-		opts.Filter = &notion.SearchFilter{
-			Property: "object",
-			Value:    "database",
-		}
-	}
-
-	response, err := client.Search(context.Background(), opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Parse and map results
-	results := []SearchResult{}
-	for _, resultUntyped := range response.Results {
-		switch result := resultUntyped.(type) {
-		case notion.Page:
-			parentType, parentId := h.mapParent(result.Parent)
-			switch properties := result.Properties.(type) {
-			case notion.PageProperties:
-				results = append(results, SearchResult{
-					Id:         result.ID,
-					Name:       util.TitleToText(properties.Title.Title),
-					Object:     "page",
-					ParentType: parentType,
-					ParentId:   parentId,
-				})
-				continue
-			case notion.DatabasePageProperties:
-				parentType, parentId := h.mapParent(result.Parent)
-				for _, v := range properties {
-					if v.Type == notion.DBPropTypeTitle {
-						results = append(results, SearchResult{
-							Id:         result.ID,
-							Name:       util.TitleToText(v.Title),
-							Object:     "page",
-							ParentType: parentType,
-							ParentId:   parentId,
-						})
-					}
-				}
-				continue
-			default:
-				slog.Warn("Unknown notion page type",
-					"id", result.ID,
-					"type", reflect.TypeOf(result),
-					"parent", result.Parent,
-				)
-				continue
-			}
-		case notion.Database:
-			parentType, parentId := h.mapParent(result.Parent)
-			results = append(results, SearchResult{
-				Id:         result.ID,
-				Name:       util.TitleToText(result.Title),
-				Object:     "database",
-				ParentType: parentType,
-				ParentId:   parentId,
-			})
-			continue
-		default:
-			slog.Warn("Unknown search result type",
-				"type", reflect.TypeOf(result),
-			)
-			continue
-		}
-	}
-
-	return &SearchResponse{
-		Results: results,
-	}, nil
-}
-
-func (h *integrationEndpointHooks) mapParent(
-	parent notion.Parent,
-) (parentType ParentType, parentId *string) {
-	switch parent.Type {
-	case notion.ParentTypeDatabase:
-		parentType = ParentTypeDatabase
-		parentId = &parent.DatabaseID
-	case notion.ParentTypePage:
-		parentType = ParentTypePage
-		parentId = &parent.PageID
-	case notion.ParentTypeBlock:
-		parentType = ParentTypeBlock
-		parentId = &parent.BlockID
-	case notion.ParentTypeWorkspace:
-		parentType = ParentTypeWorkspace
-		parentId = nil
-	default:
-		slog.Warn("Unknown parent type")
-	}
-	return
 }
 
 type VerifyIntegrationAccessRequest struct {

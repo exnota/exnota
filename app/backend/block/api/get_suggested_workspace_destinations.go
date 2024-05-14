@@ -71,7 +71,7 @@ func (h *getSuggestedWorkspaceDestinationsAPI) ApplyHooks() {
 			}
 
 			if workspace.Integration() == "" {
-				return c.JSON(http.StatusBadRequest, "workspace has no integration")
+				return c.String(http.StatusBadRequest, "workspace has no integration")
 			}
 
 			// Update status

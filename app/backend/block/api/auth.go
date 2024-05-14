@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cmp"
 	"fmt"
 	"net/http"
 
@@ -41,7 +42,8 @@ func (h *workspaceAuth) ForWorkspace(workspaceId string) error {
 	// Get user
 	loggedInUserId := h.LoggedInUser()
 	if loggedInUserId == "" {
-		return h.Context.String(http.StatusUnauthorized, "Not logged in")
+		cErr := h.Context.String(http.StatusUnauthorized, "Not logged in")
+		return cmp.Or(cErr, fmt.Errorf("Not logged in"))
 	}
 
 	// Get workspace
@@ -51,7 +53,11 @@ func (h *workspaceAuth) ForWorkspace(workspaceId string) error {
 	}
 
 	if workspace.User() != loggedInUserId {
-		return h.Context.String(http.StatusForbidden, "Forbidden")
+		cErr := h.Context.String(http.StatusForbidden, "Forbidden")
+		return cmp.Or(
+			cErr,
+			fmt.Errorf("User %v does not have access to workspace %v", loggedInUserId, workspaceId),
+		)
 	}
 
 	return nil
