@@ -18,9 +18,3 @@ const (
 type GetSuggestedDestinationsResponse struct {
 	NotionDestinations []NotionDestination `json:"notion_destinations" validate:"required"`
 }
-
-type NotionDestination struct {
-	Name   string       `json:"name"           validate:"required"`
-	Object NotionObject `json:"object"         validate:"required"`
-	Icon   *NotionIcon  `json:"icon,omitempty"`
-}

@@ -107,14 +107,17 @@ content-type: application/json
 
 {}
 
-### Notion search
-GET {{baseUrl}}/exnota/integration/notion/search
+### Search destinations - database
+GET {{baseUrl}}/exnota/integration/search-destinations
 content-type: application/json
 Authorization: {{auth_token}}
 
 {
-  "query": "test",
-  "object": "database"
+  "query": "",
+  "integration_id": "{{integration}}",
+  "notion": {
+    "object": "database"
+  }
 }
 
 ### Verify integration

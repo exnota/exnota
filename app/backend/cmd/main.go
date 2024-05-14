@@ -194,8 +194,16 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 		BasePath:               cfg.BasePath,
 		NotionClientID:         cfg.NotionOAuthClientID,
 		NotionRedirectBasePath: cfg.NotionRedirectBasePath,
-	}).Apply()
+	}).ApplyHooks()
 	integ_api.NewSyncIntegrationDestinationsAPI(app, integrationDestinationSync).ApplyHooks()
+	integ_api.NewSearchDestinationsAPI(
+		app,
+		integ_data.NewIntegrationFetcher(app),
+		integration_usecase.NewSearchDestinations(
+			app,
+			integ_data.NewIntegrationFetcher(app),
+		),
+	).ApplyHooks()
 	block_api.NewGetSuggestedWorkspaceDestinationsAPI(
 		app,
 		integration_usecase.NewGetSuggestedIntegrationDestinations(
