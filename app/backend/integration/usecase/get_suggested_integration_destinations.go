@@ -12,7 +12,7 @@ import (
 type GetSuggestedIntegrationDestinations interface {
 	Get(
 		request lib_integ.GetSuggestedDestinationsRequest,
-	) (*lib_integ.GetSuggestedDestinationsResponse, error)
+	) (*lib_integ.Destinations, error)
 }
 
 type getSuggestedIntegrationDestinations struct {
@@ -32,7 +32,7 @@ func NewGetSuggestedIntegrationDestinations(
 
 func (s *getSuggestedIntegrationDestinations) Get(
 	request lib_integ.GetSuggestedDestinationsRequest,
-) (*lib_integ.GetSuggestedDestinationsResponse, error) {
+) (*lib_integ.Destinations, error) {
 	integration, err := s.integrationFetcher.FetchById(integ.FetchByIdRequest{
 		IntegrationId: request.IntegrationID,
 		UserId:        request.UserID,
@@ -43,12 +43,14 @@ func (s *getSuggestedIntegrationDestinations) Get(
 
 	switch integration.Type() {
 	case integ.IntegrationTypeNotion:
-		result, err := notion.NewGetSuggestedNotionDestinations(s.app, s.integrationFetcher).
+		results, err := notion.NewGetSuggestedNotionDestinations(s.app, s.integrationFetcher).
 			Get(request)
 		if err != nil {
 			return nil, err
 		}
-		return result, nil
+		return &lib_integ.Destinations{
+			Notion: results,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported integration type: %s", integration.Type())
 	}
