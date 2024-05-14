@@ -10,9 +10,16 @@ import (
 )
 
 type SearchDestinations interface {
-	Search(
-		request SearchDestinationsRequest,
-	) (*SearchDestinationsResponse, error)
+	SearchDatabaseDestinations(
+		integrationId string,
+		userId string,
+		query string,
+	) (*lib_integ.Destinations, error)
+	SearchAllDestinations(
+		integrationId string,
+		userId string,
+		query string,
+	) (*lib_integ.Destinations, error)
 }
 
 type searchDestinations struct {
@@ -34,24 +41,21 @@ type SearchDestinationsRequest struct {
 	IntegrationID string `validate:"min=1"`
 	UserID        string `validate:"min=1"`
 	Query         string
-	Notion        *notion.NotionSearchParams
+	WorkspaceType string `validate:"oneof=database custom" json:"workspace_type"`
 }
 
 type SearchDestinationsResponse struct {
 	NotionDestinations []lib_integ.NotionDestination `json:"notion_destinations" validate:"required"`
 }
 
-func (s *searchDestinations) Search(
-	request SearchDestinationsRequest,
-) (*SearchDestinationsResponse, error) {
-	err := validate.Struct(request)
-	if err != nil {
-		return nil, err
-	}
-
+func (s *searchDestinations) SearchDatabaseDestinations(
+	integrationID string,
+	userID string,
+	query string,
+) (*lib_integ.Destinations, error) {
 	integration, err := s.integrationFetcher.FetchById(integ.FetchByIdRequest{
-		IntegrationId: request.IntegrationID,
-		UserId:        request.UserID,
+		IntegrationId: integrationID,
+		UserId:        userID,
 	})
 	if err != nil {
 		return nil, err
@@ -60,18 +64,42 @@ func (s *searchDestinations) Search(
 	switch integration.Type() {
 	case integ.IntegrationTypeNotion:
 		result, err := notion.NewSearchNotionDestinations(s.app, s.integrationFetcher).
-			Search(notion.SearchNotionDestinationsRequest{
-				IntegrationID: request.IntegrationID,
-				Query:         request.Query,
-				Notion:        request.Notion,
-			})
+			SearchDatabaseDestinations(integrationID, query)
 		if err != nil {
 			return nil, err
 		}
-		return &SearchDestinationsResponse{
-			NotionDestinations: result,
+		return &lib_integ.Destinations{
+			Notion: result,
 		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported integration type: %s", integration.Type())
+		panic(fmt.Sprintf("unsupported integration type: %s", integration.Type()))
+	}
+}
+
+func (s *searchDestinations) SearchAllDestinations(
+	integrationID string,
+	userID string,
+	query string,
+) (*lib_integ.Destinations, error) {
+	integration, err := s.integrationFetcher.FetchById(integ.FetchByIdRequest{
+		IntegrationId: integrationID,
+		UserId:        userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	switch integration.Type() {
+	case integ.IntegrationTypeNotion:
+		result, err := notion.NewSearchNotionDestinations(s.app, s.integrationFetcher).
+			SearchAllDestinations(integrationID, query)
+		if err != nil {
+			return nil, err
+		}
+		return &lib_integ.Destinations{
+			Notion: result,
+		}, nil
+	default:
+		panic(fmt.Sprintf("unsupported integration type: %s", integration.Type()))
 	}
 }
