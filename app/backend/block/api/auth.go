@@ -60,5 +60,10 @@ func (h *workspaceAuth) ForWorkspace(workspaceId string) error {
 		)
 	}
 
+	if !workspace.Archived().IsZero() {
+		cErr := h.Context.String(http.StatusForbidden, "Forbidden")
+		return cmp.Or(cErr, fmt.Errorf("Workspace %v is archived", workspaceId))
+	}
+
 	return nil
 }

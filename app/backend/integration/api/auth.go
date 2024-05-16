@@ -47,7 +47,7 @@ func (h *integrationAuth) ForIntegration(integrationId string) error {
 	}
 
 	// Get integration
-	_, err := h.integrationFetcher.FetchById(integ.FetchByIdRequest{
+	integration, err := h.integrationFetcher.FetchById(integ.FetchByIdRequest{
 		IntegrationId: integrationId,
 		UserId:        loggedInUserId,
 	})
@@ -56,6 +56,10 @@ func (h *integrationAuth) ForIntegration(integrationId string) error {
 		// probably not worth separating those cases, so just return forbidden.
 		cErr := h.Context.String(http.StatusForbidden, "Forbidden")
 		return cmp.Or(cErr, err)
+	}
+	if !integration.Archived().IsZero() {
+		cErr := h.Context.String(http.StatusForbidden, "Forbidden")
+		return cmp.Or(cErr, fmt.Errorf("Integration is archived"))
 	}
 
 	return nil
