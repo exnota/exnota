@@ -135,7 +135,7 @@ Authorization: {{auth_token}}
 }
 
 ### Update integration destination
-POST {{baseUrl}}/exnota/integration/update-destination
+POST {{baseUrl}}/exnota/integration/sync-destinations
 content-type: application/json
 Authorization: {{auth_token}}
 

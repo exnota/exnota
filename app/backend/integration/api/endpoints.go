@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase"
 	"exnota.com/backend/lib/api"
 	"github.com/labstack/echo/v5"
@@ -139,8 +140,15 @@ func (h *integrationEndpointHooks) integrationVerifyAccess() {
 				return c.String(http.StatusBadRequest, "bad request")
 			}
 
-			if strings.TrimSpace(verifyRequest.IntegrationId) == "" {
+			integrationId := verifyRequest.IntegrationId
+			if strings.TrimSpace(integrationId) == "" {
 				return c.JSON(http.StatusBadRequest, nil)
+			}
+
+			auth := NewIntegrationAuth(h.app, data.NewIntegrationFetcher(h.app), c)
+			err := auth.ForIntegration(integrationId)
+			if err != nil {
+				return err
 			}
 
 			requestInfo := apis.RequestInfo(c)
@@ -151,7 +159,7 @@ func (h *integrationEndpointHooks) integrationVerifyAccess() {
 
 			integrationSync := usecase.NewIntegrationSync(h.app)
 			success, err := integrationSync.UpdateStatus(usecase.UpdateStatusRequest{
-				IntegrationId: verifyRequest.IntegrationId,
+				IntegrationId: integrationId,
 				UserID:        loggedInUserId,
 			})
 			if err != nil {
