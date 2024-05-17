@@ -26,7 +26,7 @@ func (f *integrationDestinationFetcher) FetchById(
 	return integ.NewIntegrationDestination(record), nil
 }
 
-func (f *integrationDestinationFetcher) FetchByDestinationId(
+func (f *integrationDestinationFetcher) FetchByDestinationID(
 	destinationId string,
 ) (integ.IntegrationDestination, error) {
 	record, err := f.app.Dao().
@@ -73,7 +73,7 @@ func (f *integrationDestinationFetcher) ListByExternalID(
 	return integrationDestinations, nil
 }
 
-func (f *integrationDestinationFetcher) ListByDestinationIds(
+func (f *integrationDestinationFetcher) ListByDestinationIDs(
 	destinationIds []string,
 ) ([]integ.IntegrationDestination, error) {
 	// Generate separate ID filters for each destination and combine them with OR,

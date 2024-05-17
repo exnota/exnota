@@ -60,11 +60,19 @@ func (w *destinationWriter) ArchiveForWorkspace(workspaceId string) error {
 	slog.Info("Archiving destinations for workspace", "workspace", workspaceId)
 
 	return w.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		filter, err := filter.CreateAndFilter(filter.Field{
-			Name:  block.DestinationFieldWorkspace,
-			Op:    filter.OpEquals,
-			Value: workspaceId,
-		})
+		filter, err := filter.CreateAndFilter(
+			filter.Field{
+				Name:  block.DestinationFieldWorkspace,
+				Op:    filter.OpEquals,
+				Value: workspaceId,
+			},
+			// Exclude already-archived to preserve timestamps
+			filter.Field{
+				Name:        block.DestinationFieldArchived,
+				Op:          filter.OpEquals,
+				ValuePreset: filter.ValuePresetNull,
+			},
+		)
 		if err != nil {
 			return err
 		}
