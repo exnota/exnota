@@ -54,6 +54,11 @@ func (h *destinationCreateAPI) ApplyHooks() {
 				return err
 			}
 
+			// Cannot create as archived
+			if !destination.Archived().IsZero() {
+				return apis.NewBadRequestError("Cannot create destination as archived", nil)
+			}
+
 			// If there's no integration, skip syncing the destination
 			integration := workspace.Integration()
 			if integration == "" {

@@ -11,6 +11,7 @@ type BlockFetcher interface {
 
 type DestinationFetcher interface {
 	FetchById(id string) (Destination, error)
+	// List unarchived destination IDs for an integration ID
 	ListIdsByIntegrationId(workspaceIntegrationId string) ([]string, error)
 }
 

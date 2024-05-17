@@ -134,7 +134,7 @@ Authorization: {{auth_token}}
   "integration_id": "{{integration}}"
 }
 
-### Update integration destination
+### Sync integration destinations
 POST {{baseUrl}}/exnota/integration/sync-destinations
 content-type: application/json
 Authorization: {{auth_token}}
