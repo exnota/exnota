@@ -26,7 +26,7 @@ type IntegrationDestinationSync interface {
 }
 
 type DestinationFetcher interface {
-	ListIdsByIntegrationId(workspaceIntegrationId string) ([]string, error)
+	ListIDsByIntegrationID(workspaceIntegrationId string) ([]string, error)
 }
 
 type integrationDestinationSync struct {
@@ -143,16 +143,16 @@ func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error
 		return nil
 	}
 
-	destinationIds, err := s.destinationFetcher.ListIdsByIntegrationId(request.IntegrationId)
+	destinationIds, err := s.destinationFetcher.ListIDsByIntegrationID(request.IntegrationId)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list destination IDs for integration: %w", err)
 	}
 	if len(destinationIds) == 0 {
 		slog.Info("No destinations for integration", "integrationId", request.IntegrationId)
 		return nil
 	}
 
-	integrationDestinations, err := s.integrationDestinationFetcher.ListByDestinationIds(
+	integrationDestinations, err := s.integrationDestinationFetcher.ListByDestinationIDs(
 		destinationIds,
 	)
 	if err != nil {

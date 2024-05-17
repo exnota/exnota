@@ -355,7 +355,7 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 
 func (s *notionExporter) getNotionObjectInternalId(destinationId string) (string, error) {
 	integrationDestinationRepo := data.NewIntegrationDestinationFetcher(s.app)
-	integrationDestination, err := integrationDestinationRepo.FetchByDestinationId(destinationId)
+	integrationDestination, err := integrationDestinationRepo.FetchByDestinationID(destinationId)
 	if err != nil {
 		slog.Error(
 			"Error fetching integration destination by destination id",

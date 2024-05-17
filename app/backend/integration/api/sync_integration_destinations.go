@@ -70,7 +70,7 @@ func (h *syncIntegrationDestinationsAPI) ApplyHooks() {
 					"error",
 					err,
 				)
-				return c.JSON(http.StatusInternalServerError, nil)
+				return err
 			}
 
 			return nil

@@ -20,9 +20,9 @@ type FetchByIdRequest struct {
 
 type IntegrationDestinationFetcher interface {
 	FetchById(id string) (IntegrationDestination, error)
-	FetchByDestinationId(destinationId string) (IntegrationDestination, error)
+	FetchByDestinationID(destinationId string) (IntegrationDestination, error)
 	ListByExternalID(externalRecordId string) ([]IntegrationDestination, error)
-	ListByDestinationIds(destinationIds []string) ([]IntegrationDestination, error)
+	ListByDestinationIDs(destinationIds []string) ([]IntegrationDestination, error)
 }
 
 type IntegrationNotionObjectFetcher interface {

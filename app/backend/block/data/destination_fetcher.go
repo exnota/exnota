@@ -26,7 +26,7 @@ func (f *destinationFetcher) FetchById(id string) (block.Destination, error) {
 	return destination, nil
 }
 
-func (f *destinationFetcher) ListIdsByIntegrationId(
+func (f *destinationFetcher) ListIDsByIntegrationID(
 	workspaceIntegrationId string,
 ) ([]string, error) {
 	// Workspaces for integration
@@ -54,6 +54,9 @@ func (f *destinationFetcher) ListIdsByIntegrationId(
 		)
 	if err != nil {
 		return nil, err
+	}
+	if len(workspaces) == 0 {
+		return nil, nil
 	}
 
 	// Destinations for workspaces
