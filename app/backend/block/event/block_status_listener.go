@@ -28,6 +28,7 @@ func (l *blockStatusListener) ApplyHooks() {
 	l.applyHooksToUpdateExternalExportStatus()
 }
 
+// TODO: Decouple from integration domain
 func (l *blockStatusListener) applyHooksToUpdateExternalUrl() {
 	// On Notion mapping create, update external URL if already set
 	l.app.OnModelAfterCreate(
@@ -84,6 +85,7 @@ func (l *blockStatusListener) applyHooksToUpdateExternalUrl() {
 	)
 }
 
+// TODO: Either decouple from block domain or move jobs into block domain
 func (l *blockStatusListener) applyHooksToUpdateExternalExportStatus() {
 	l.app.OnModelAfterCreate(
 		block_job_data.CollectionBlockJob).Add(

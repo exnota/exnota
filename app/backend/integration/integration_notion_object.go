@@ -29,21 +29,13 @@ const (
 	// updated (system)
 )
 
-type IntegrationNotionObjectType string
-
-const (
-	IntegrationNotionObjectTypePage     IntegrationNotionObjectType = "page"
-	IntegrationNotionObjectTypeDatabase IntegrationNotionObjectType = "database"
-	IntegrationNotionObjectTypeBlock    IntegrationNotionObjectType = "block"
-)
-
 type IntegrationNotionObject interface {
-	Id() string
-	ExternalId() string
-	Type() IntegrationNotionObjectType
+	ID() string
+	ExternalID() string
+	Type() lib_integ.NotionObjectType
 	Status() lib_integ.NotionObjectStatus
 	Title() string
-	DatabaseTitlePropertyId() (string, error)
+	DatabaseTitlePropertyID() (string, error)
 	LastSynced() time.Time
 	User() string
 
@@ -68,16 +60,16 @@ func LoadIntegrationNotionObjectFromModel(model models.Model) IntegrationNotionO
 	return &integrationNotionObject{record: model.(*models.Record)}
 }
 
-func (i *integrationNotionObject) Id() string {
+func (i *integrationNotionObject) ID() string {
 	return i.record.Id
 }
 
-func (i *integrationNotionObject) ExternalId() string {
+func (i *integrationNotionObject) ExternalID() string {
 	return i.record.GetString(IntegrationNotionObjectFieldExternalId)
 }
 
-func (i *integrationNotionObject) Type() IntegrationNotionObjectType {
-	return IntegrationNotionObjectType(i.record.GetString(IntegrationNotionObjectFieldType))
+func (i *integrationNotionObject) Type() lib_integ.NotionObjectType {
+	return lib_integ.NotionObjectType(i.record.GetString(IntegrationNotionObjectFieldType))
 }
 
 func (i *integrationNotionObject) Status() lib_integ.NotionObjectStatus {
@@ -88,10 +80,10 @@ func (i *integrationNotionObject) Title() string {
 	return i.record.GetString(IntegrationNotionObjectFieldTitle)
 }
 
-func (i *integrationNotionObject) DatabaseTitlePropertyId() (string, error) {
-	if i.Type() != IntegrationNotionObjectTypeDatabase {
-		slog.Error("object is not a database", "id", i.Id())
-		return "", fmt.Errorf("object id %s is not a database", i.Id())
+func (i *integrationNotionObject) DatabaseTitlePropertyID() (string, error) {
+	if i.Type() != lib_integ.NotionObjectTypeDatabase {
+		slog.Error("object is not a database", "id", i.ID())
+		return "", fmt.Errorf("object id %s is not a database", i.ID())
 	}
 
 	propsStr := i.record.GetString(IntegrationNotionObjectFieldProperties)
@@ -109,8 +101,8 @@ func (i *integrationNotionObject) DatabaseTitlePropertyId() (string, error) {
 		}
 	}
 
-	slog.Error("title property not found for notion object", "id", i.Id())
-	return "", fmt.Errorf("title property not found for notion object %s", i.Id())
+	slog.Error("title property not found for notion object", "id", i.ID())
+	return "", fmt.Errorf("title property not found for notion object %s", i.ID())
 }
 
 func (i *integrationNotionObject) LastSynced() time.Time {

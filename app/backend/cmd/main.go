@@ -161,10 +161,12 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// block job workflow above. This would at least help developers know that
 	// changes to one domain will only affect that domain and the event folder.
 	event.NewIntegrationListener(app).ApplyHooks()
+	block_event_listeners.ApplyBlockDomainHooks(app)
 
 	destinationIntegrationUpdate := block_event_listeners.NewSyncDestinationUpdates(
 		app,
 		block_data.NewDestinationWriter(app),
+		block_data.NewDestinationFetcher(app),
 	)
 	integ.NewIntegrationDestinationEvents(app,
 		[]lib_integ.IntegrationDestinationEventListener{
@@ -182,8 +184,9 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	workspaceFetcher := block_data.NewWorkspaceFetcher(app)
 	block_api.NewDestinationCreateAPI(
 		app,
-		integrationDestinationSync.CreateSync,
+		integrationDestinationSync,
 		workspaceFetcher,
+		destinationFetcher,
 	).ApplyHooks()
 	block_api.NewBlockCreateAPI(app).ApplyHooks()
 	block_api.NewWorkspaceCreateAPI(app, workspaceFetcher).ApplyHooks()

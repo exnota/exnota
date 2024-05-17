@@ -1,6 +1,7 @@
 package notion
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,6 +25,9 @@ type NotionDestinationSync interface {
 		CreateNotionDestinationSyncRequest,
 	) (result *block.CreateDestinationSyncResult, record *models.Record, err error)
 	UpdateSync(request UpdateSyncRequest) error
+	GetExternalRecordID(
+		request GetExternalRecordIDsRequest,
+	) (*string, error)
 }
 
 type notionDestinationSync struct {
@@ -47,22 +51,10 @@ type CreateNotionDestinationSyncRequest struct {
 	User          string
 }
 
-type CreateNotionDestinationSyncConfig struct {
-	Id     string                            `json:"id"     validate:"required"`
-	Object NotionDestinationSyncConfigObject `json:"object" validate:"required"`
-}
-
-type NotionDestinationSyncConfigObject string
-
-const (
-	NotionSyncConfigObjectDatabase NotionDestinationSyncConfigObject = "database"
-	NotionSyncConfigObjectPage     NotionDestinationSyncConfigObject = "page"
-)
-
 func (s *notionDestinationSync) CreateSync(
 	request CreateNotionDestinationSyncRequest,
 ) (result *block.CreateDestinationSyncResult, record *models.Record, err error) {
-	var config CreateNotionDestinationSyncConfig
+	var config lib_integ.NotionObject
 	err = mapstructure.Decode(request.Config, &config)
 	if err != nil {
 		return nil, nil, err
@@ -75,8 +67,8 @@ func (s *notionDestinationSync) CreateSync(
 
 	notionFetcher := api.NewNotionFetcher(accessToken)
 	switch config.Object {
-	case NotionSyncConfigObjectDatabase:
-		database, err := notionFetcher.FetchDatabase(config.Id)
+	case lib_integ.NotionObjectTypeDatabase:
+		database, err := notionFetcher.FetchDatabase(config.ID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -88,8 +80,8 @@ func (s *notionDestinationSync) CreateSync(
 
 		title := util.TitleToText(database.Title)
 		record, err = s.objectWriter.CreateUpsertRecord(integ.NotionObjectCreateRequest{
-			ExternalId: config.Id,
-			Type:       integ.IntegrationNotionObjectTypeDatabase,
+			ExternalId: config.ID,
+			Type:       lib_integ.NotionObjectTypeDatabase,
 			Title:      title,
 			Properties: props,
 			User:       request.User,
@@ -105,8 +97,8 @@ func (s *notionDestinationSync) CreateSync(
 			DestinationName:    title,
 		}, record, nil
 
-	case NotionSyncConfigObjectPage:
-		page, err := notionFetcher.FetchPage(config.Id)
+	case lib_integ.NotionObjectTypePage:
+		page, err := notionFetcher.FetchPage(config.ID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -122,8 +114,8 @@ func (s *notionDestinationSync) CreateSync(
 		}
 		objectWriter := data.NewIntegrationNotionObjectWriter(s.app)
 		record, err = objectWriter.CreateUpsertRecord(integ.NotionObjectCreateRequest{
-			ExternalId: config.Id,
-			Type:       integ.IntegrationNotionObjectTypePage,
+			ExternalId: config.ID,
+			Type:       lib_integ.NotionObjectTypePage,
 			Title:      title,
 			Properties: props,
 			User:       request.User,
@@ -176,7 +168,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 		// Skip if status is connected and lastSynced is less than 1 minute ago
 		if obj.Status() == lib_integ.NotionObjectStatusConnected &&
 			obj.LastSynced().After(time.Now().Add(-1*time.Minute)) {
-			slog.Info("Skipping object", "id", obj.ExternalId())
+			slog.Info("Skipping object", "id", obj.ExternalID())
 			continue
 		}
 
@@ -187,13 +179,13 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 		notionFetcher := api.NewNotionFetcher(accessToken)
 
 		switch obj.Type() {
-		case integ.IntegrationNotionObjectTypeDatabase:
-			slog.Info("Fetching database", "id", obj.ExternalId())
-			database, err := notionFetcher.FetchDatabase(obj.ExternalId())
+		case lib_integ.NotionObjectTypeDatabase:
+			slog.Info("Fetching database", "id", obj.ExternalID())
+			database, err := notionFetcher.FetchDatabase(obj.ExternalID())
 			if err != nil {
-				errStatus := s.handleError(obj.ExternalId(), err)
+				errStatus := s.handleError(obj.ExternalID(), err)
 				err := s.objectWriter.UpdateErrored(integ.NotionUpdateSyncErrorRequest{
-					Id:         obj.Id(),
+					Id:         obj.ID(),
 					Status:     errStatus,
 					LastSynced: time.Now(),
 				})
@@ -207,7 +199,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 
 			if database.Archived {
 				err := s.objectWriter.UpdateArchived(integ.NotionUpdateSyncArchivedRequest{
-					Id:         obj.Id(),
+					Id:         obj.ID(),
 					Title:      util.TitleToText(database.Title),
 					Properties: database.Properties,
 					LastSynced: time.Now(),
@@ -218,7 +210,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 				}
 			} else {
 				err = s.objectWriter.UpdateConnected(integ.NotionUpdateSyncConnectedRequest{
-					Id:         obj.Id(),
+					Id:         obj.ID(),
 					Title:      util.TitleToText(database.Title),
 					Properties: database.Properties,
 					LastSynced: time.Now(),
@@ -230,13 +222,13 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 
 			}
 
-		case integ.IntegrationNotionObjectTypePage:
-			slog.Info("Fetching page", "id", obj.ExternalId())
-			page, err := notionFetcher.FetchPage(obj.ExternalId())
+		case lib_integ.NotionObjectTypePage:
+			slog.Info("Fetching page", "id", obj.ExternalID())
+			page, err := notionFetcher.FetchPage(obj.ExternalID())
 			if err != nil {
-				errStatus := s.handleError(obj.ExternalId(), err)
+				errStatus := s.handleError(obj.ExternalID(), err)
 				err := s.objectWriter.UpdateErrored(integ.NotionUpdateSyncErrorRequest{
-					Id:         obj.Id(),
+					Id:         obj.ID(),
 					Status:     errStatus,
 					LastSynced: time.Now(),
 				})
@@ -251,7 +243,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 			// TODO: What happens if the page is deleted from the trash?
 			if page.Archived {
 				err := s.objectWriter.UpdateArchived(integ.NotionUpdateSyncArchivedRequest{
-					Id:         obj.Id(),
+					Id:         obj.ID(),
 					Properties: page.Properties,
 					LastSynced: time.Now(),
 				})
@@ -267,7 +259,7 @@ func (s *notionDestinationSync) UpdateSync(request UpdateSyncRequest) error {
 					continue
 				}
 				err = s.objectWriter.UpdateConnected(integ.NotionUpdateSyncConnectedRequest{
-					Id:         obj.Id(),
+					Id:         obj.ID(),
 					Title:      title,
 					Properties: page.Properties,
 					LastSynced: time.Now(),
@@ -316,4 +308,40 @@ func (s *notionDestinationSync) handleError(
 		slog.Error("Non-API error fetching object", "id", id, "error", err)
 		return lib_integ.NotionObjectStatusUnknownError
 	}
+}
+
+type GetExternalRecordIDsRequest struct {
+	IntegrationId string                 `validate:"min=1"`
+	UserId        string                 `validate:"min=1"`
+	Config        map[string]interface{} `validate:"required"`
+}
+
+func (s *notionDestinationSync) GetExternalRecordID(
+	request GetExternalRecordIDsRequest,
+) (*string, error) {
+	err := validate.Struct(request)
+	if err != nil {
+		return nil, fmt.Errorf("validation error: %w", err)
+	}
+
+	var config lib_integ.NotionObject
+	err = mapstructure.Decode(request.Config, &config)
+	if err != nil {
+		return nil, err
+	}
+
+	notionObject, err := s.objectFetcher.FetchByExternalID(integ.NotionObjectFetchRequest{
+		ExternalID: config.ID,
+		Type:       config.Object,
+		User:       request.UserId,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	id := notionObject.ID()
+	return &id, nil
 }

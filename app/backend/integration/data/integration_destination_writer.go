@@ -3,9 +3,11 @@ package data
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log/slog"
 
 	integ "exnota.com/backend/integration"
-	"github.com/pocketbase/dbx"
+	"exnota.com/backend/lib/data/filter"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 	"github.com/pocketbase/pocketbase/forms"
@@ -48,37 +50,41 @@ func (m *integrationDestinationWriter) Upsert(data IntegrationDestinationUpsertD
 			return err
 		}
 
-		// Check if object already exists.
-		filter := integ.IntegrationDestinationFieldExternalRecordId + "={:externalRecordId} && " +
-			integ.IntegrationDestinationFieldExternalRecordType + "={:externalRecordType}"
-		existing, err := dao.FindFirstRecordByFilter(integ.CollectionIntegrationDestination,
-			filter, dbx.Params{
-				"externalRecordId":   data.ExternalRecordId,
-				"externalRecordType": string(data.ExternalRecordType),
+		// Check if a mapping already exists
+		filter, err := filter.CreateAndFilter(
+			filter.Field{
+				Name:  integ.IntegrationDestinationFieldDestinationId,
+				Op:    filter.OpEquals,
+				Value: data.DestinationId,
 			},
+			filter.Field{
+				Name:  integ.IntegrationDestinationFieldExternalRecordType,
+				Op:    filter.OpEquals,
+				Value: string(data.ExternalRecordType),
+			},
+			filter.Field{
+				Name:  integ.IntegrationDestinationFieldExternalRecordId,
+				Op:    filter.OpEquals,
+				Value: data.ExternalRecordId,
+			},
+		)
+		if err != nil {
+			return err
+		}
+		_, err = dao.FindFirstRecordByFilter(integ.CollectionIntegrationDestination,
+			filter.Filter,
+			filter.Params,
 		)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				// If it doesn't exist, create a new record.
 				// Fallthrough to below.
 			} else {
-				return err
+				return fmt.Errorf("Error finding existing record: %w", err)
 			}
 		} else {
-			// If it does exist but the requested user or destination are
-			// different, throw an error because that shouldn't happen.
-			if existing.GetString(integ.IntegrationDestinationFieldDestinationId) != data.DestinationId {
-				return errors.New("IntegrationDestinationUpsertData: Attempted to change destination from " +
-					existing.GetString(integ.IntegrationDestinationFieldDestinationId) + " to " +
-					data.DestinationId)
-			}
-			if existing.Get(integ.IntegrationDestinationFieldUser) != data.User {
-				return errors.New("IntegrationDestinationUpsertData: Attempted to change user from " +
-					existing.GetString(integ.IntegrationDestinationFieldUser) + " to " +
-					data.User)
-			}
-
-			// If everything is the same, no reason to update.
+			// Already exists, no-op
+			slog.Info("Integration destination already exists", "destination_id", data.DestinationId)
 			return nil
 		}
 

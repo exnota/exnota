@@ -17,6 +17,7 @@ type DestinationFetcher interface {
 
 type DestinationWriter interface {
 	Update(request DestinationUpdateRequest) error
+	ArchiveForWorkspace(workspaceId string) error
 }
 
 type DestinationUpdateRequest struct {

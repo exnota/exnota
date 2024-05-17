@@ -21,3 +21,9 @@ type CreateDestinationSyncResult struct {
 	ExternalRecordType DestinationExternalRecordType
 	ExternalRecordId   string
 }
+
+type GetDestinationForExternalRequest struct {
+	IntegrationId string                 `validate:"min=1"`
+	UserId        string                 `validate:"min=1"`
+	Config        map[string]interface{} `validate:"required"`
+}

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+
 	"exnota.com/backend/block"
 	lib_block "exnota.com/backend/lib/block"
 	"github.com/pocketbase/pocketbase/apis"
@@ -13,22 +15,42 @@ type DestinationCreateAPI interface {
 }
 
 type destinationCreateAPI struct {
-	app                   core.App
-	createDestinationSync CreateDestinationSync
-	workspaceFetcher      block.WorkspaceFetcher
+	app                        core.App
+	syncIntegratedDestinations SyncIntegratedDestinations
+	workspaceFetcher           block.WorkspaceFetcher
+	destinationFetcher         block.DestinationFetcher
 }
 
 type CreateDestinationSync func(request lib_block.CreateDestinationSyncRequest) (result *lib_block.CreateDestinationSyncResult, err error)
 
+type SyncIntegratedDestinations interface {
+	CreateSync(
+		request lib_block.CreateDestinationSyncRequest,
+	) (result *lib_block.CreateDestinationSyncResult, err error)
+	// Returns destination IDs that are integrated with the given integration
+	// ID and external config.
+	GetDestinationForExternal(
+		request lib_block.GetDestinationForExternalRequest,
+	) ([]string, error)
+}
+
+type GetDestinationForExternalRequest struct {
+	IntegrationId string                 `validate:"min=1"`
+	UserId        string                 `validate:"min=1"`
+	Config        map[string]interface{} `validate:"required"`
+}
+
 func NewDestinationCreateAPI(
 	app core.App,
-	createDestinationSync CreateDestinationSync,
+	syncDestinationDestination SyncIntegratedDestinations,
 	workspaceFetcher block.WorkspaceFetcher,
+	destinationFetcher block.DestinationFetcher,
 ) DestinationCreateAPI {
 	return &destinationCreateAPI{
-		app:                   app,
-		createDestinationSync: createDestinationSync,
-		workspaceFetcher:      workspaceFetcher,
+		app,
+		syncDestinationDestination,
+		workspaceFetcher,
+		destinationFetcher,
 	}
 }
 
@@ -78,13 +100,40 @@ func (h *destinationCreateAPI) ApplyHooks() {
 				return apis.NewBadRequestError("Destination external is nil", nil)
 			}
 
-			// Sync data from remote destination
-			syncResult, err := h.createDestinationSync(lib_block.CreateDestinationSyncRequest{
-				DestinationId: destinationID,
-				IntegrationId: integration,
-				Config:        external.Config,
-				User:          destination.User(),
-			})
+			// Ensure external resource not already integrated with a
+			// destination.
+			integratedDestinationIDs, err := h.syncIntegratedDestinations.GetDestinationForExternal(
+				lib_block.GetDestinationForExternalRequest{
+					IntegrationId: integration,
+					UserId:        destination.User(),
+					Config:        external.Config,
+				},
+			)
+			if err != nil {
+				return fmt.Errorf("get destination for external error: %w", err)
+			}
+			for _, id := range integratedDestinationIDs {
+				integratedDestination, err := h.destinationFetcher.FetchById(id)
+				if err != nil {
+					return fmt.Errorf("fetch integrated destination error: %w", err)
+				}
+				if !integratedDestination.Archived().IsZero() {
+					return apis.NewBadRequestError(
+						"External resource is already integrated with a destination",
+						nil,
+					)
+				}
+			}
+
+			// Sync data from remote resource
+			syncResult, err := h.syncIntegratedDestinations.CreateSync(
+				lib_block.CreateDestinationSyncRequest{
+					DestinationId: destinationID,
+					IntegrationId: integration,
+					Config:        external.Config,
+					User:          destination.User(),
+				},
+			)
 			if err != nil {
 				return err
 			}

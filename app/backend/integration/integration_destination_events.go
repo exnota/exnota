@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"database/sql"
 	"fmt"
 	"reflect"
 
@@ -36,13 +35,10 @@ func (h *integrationDestinationEvents) ApplyHooks() {
 			updatedRecord := e.Model.(*models.Record)
 
 			// Skip if object is not used for a destination
-			integrationDestination, err := h.integrationDestinationFetcher.FetchByExternalId(
+			integrationDestinations, err := h.integrationDestinationFetcher.ListByExternalID(
 				updatedRecord.Id,
 			)
 			if err != nil {
-				if err == sql.ErrNoRows {
-					return nil
-				}
 				return fmt.Errorf(
 					"Error fetching integration destination for external record %v: %w",
 					updatedRecord.Id,
@@ -50,43 +46,46 @@ func (h *integrationDestinationEvents) ApplyHooks() {
 				)
 			}
 
-			prevObject := LoadIntegrationNotionObject(updatedRecord.OriginalCopy(), h.app)
-			prev := lib_integ.IntegrationDestinationState{
-				Name:               prevObject.Title(),
-				NotionObjectStatus: prevObject.Status(),
-			}
-			nextObject := LoadIntegrationNotionObject(updatedRecord, h.app)
-			next := lib_integ.IntegrationDestinationState{
-				Name:               nextObject.Title(),
-				NotionObjectStatus: nextObject.Status(),
-			}
-			event := lib_integ.IntegrationDestinationEvent{
-				Id:   integrationDestination.DestinationId(),
-				Prev: prev,
-				Next: next,
-			}
+			// Create an event for each integration destination
+			for _, destination := range integrationDestinations {
+				prevObject := LoadIntegrationNotionObject(updatedRecord.OriginalCopy(), h.app)
+				prev := lib_integ.IntegrationDestinationState{
+					Name:               prevObject.Title(),
+					NotionObjectStatus: prevObject.Status(),
+				}
+				nextObject := LoadIntegrationNotionObject(updatedRecord, h.app)
+				next := lib_integ.IntegrationDestinationState{
+					Name:               nextObject.Title(),
+					NotionObjectStatus: nextObject.Status(),
+				}
+				event := lib_integ.IntegrationDestinationEvent{
+					Id:   destination.DestinationId(),
+					Prev: prev,
+					Next: next,
+				}
 
-			// Validate event, since it will be used by other domains (i.e.
-			// maintain a strong contract).
-			err = validate.Struct(event)
-			if err != nil {
-				panic(err)
-			}
-
-			// Skip if no change
-			if reflect.DeepEqual(prev, next) {
-				return nil
-			}
-
-			// Call listeners
-			for _, listener := range h.listeners {
-				err := listener(event)
+				// Validate event, since it will be used by other domains (i.e.
+				// maintain a strong contract).
+				err = validate.Struct(event)
 				if err != nil {
-					return fmt.Errorf(
-						"Error calling listener function for external record id %v: %w",
-						updatedRecord.Id,
-						err,
-					)
+					panic(err)
+				}
+
+				// Skip if no change
+				if reflect.DeepEqual(prev, next) {
+					continue
+				}
+
+				// Call listeners
+				for _, listener := range h.listeners {
+					err := listener(event)
+					if err != nil {
+						return fmt.Errorf(
+							"Error calling listener function for external record id %v: %w",
+							updatedRecord.Id,
+							err,
+						)
+					}
 				}
 			}
 

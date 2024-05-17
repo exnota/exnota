@@ -12,9 +12,16 @@ type NotionDestination struct {
 }
 
 type NotionObject struct {
-	ID     string `json:"id"     validate:"required"`
-	Object string `json:"object" validate:"oneof=database page"`
+	ID     string           `json:"id"     validate:"required"`
+	Object NotionObjectType `json:"object" validate:"oneof=database page"`
 }
+
+type NotionObjectType string
+
+const (
+	NotionObjectTypeDatabase NotionObjectType = "database"
+	NotionObjectTypePage     NotionObjectType = "page"
+)
 
 type IconType string
 

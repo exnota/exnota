@@ -2,12 +2,13 @@ package usecase
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 
 	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion"
-	"exnota.com/backend/lib/block"
+	lib_block "exnota.com/backend/lib/block"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 	"github.com/pocketbase/pocketbase/forms"
@@ -16,9 +17,12 @@ import (
 
 type IntegrationDestinationSync interface {
 	CreateSync(
-		request block.CreateDestinationSyncRequest,
-	) (result *block.CreateDestinationSyncResult, err error)
+		request lib_block.CreateDestinationSyncRequest,
+	) (result *lib_block.CreateDestinationSyncResult, err error)
 	UpdateSync(request UpdateSyncRequest) error
+	GetDestinationForExternal(
+		request lib_block.GetDestinationForExternalRequest,
+	) ([]string, error)
 }
 
 type DestinationFetcher interface {
@@ -47,8 +51,8 @@ func NewIntegrationDestinationSync(
 }
 
 func (s *integrationDestinationSync) CreateSync(
-	request block.CreateDestinationSyncRequest,
-) (result *block.CreateDestinationSyncResult, err error) {
+	request lib_block.CreateDestinationSyncRequest,
+) (result *lib_block.CreateDestinationSyncResult, err error) {
 	integration, err := s.integrationFetcher.FetchById(integ.FetchByIdRequest{
 		IntegrationId: request.IntegrationId,
 		UserId:        request.User,
@@ -57,7 +61,7 @@ func (s *integrationDestinationSync) CreateSync(
 		return nil, err
 	}
 
-	var destinationResult *block.CreateDestinationSyncResult
+	var destinationResult *lib_block.CreateDestinationSyncResult
 	switch integration.Type() {
 	case integ.TypeNotion:
 		notionSync := notion.NewNotionDestinationSync(
@@ -180,4 +184,64 @@ func (s *integrationDestinationSync) UpdateSync(request UpdateSyncRequest) error
 
 	return nil
 
+}
+
+func (s *integrationDestinationSync) GetDestinationForExternal(
+	request lib_block.GetDestinationForExternalRequest,
+) ([]string, error) {
+	err := validate.Struct(request)
+	if err != nil {
+		return nil, fmt.Errorf("validation error: %w", err)
+	}
+
+	integration, err := s.integrationFetcher.FetchById(integ.FetchByIdRequest{
+		IntegrationId: request.IntegrationId,
+		UserId:        request.UserId,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("fetch integration error: %w", err)
+	}
+
+	switch integration.Type() {
+	case integ.TypeNotion:
+		slog.Info(
+			"Getting integrated destination IDs for Notion integration",
+			"integrationId",
+			request.IntegrationId,
+		)
+
+		// Get external record ID
+		notionSync := notion.NewNotionDestinationSync(
+			s.app,
+			data.NewIntegrationNotionObjectFetcher(s.app),
+			data.NewIntegrationNotionObjectWriter(s.app),
+		)
+		externalRecordID, err := notionSync.GetExternalRecordID(notion.GetExternalRecordIDsRequest{
+			IntegrationId: request.IntegrationId,
+			UserId:        request.UserId,
+			Config:        request.Config,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("get external record ID error: %w", err)
+		}
+
+		// Get destination ID for external record ID
+		if externalRecordID == nil {
+			return nil, nil
+		}
+		integrationDestinations, err := s.integrationDestinationFetcher.ListByExternalID(
+			*externalRecordID,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		destinationIds := make([]string, len(integrationDestinations))
+		for i, destination := range integrationDestinations {
+			destinationIds[i] = destination.DestinationId()
+		}
+		return destinationIds, nil
+	default:
+		panic("Integration type not supported: " + integration.Type())
+	}
 }

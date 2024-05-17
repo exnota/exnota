@@ -13,7 +13,7 @@ type integrationDestinationFetcher struct {
 }
 
 func NewIntegrationDestinationFetcher(app core.App) integ.IntegrationDestinationFetcher {
-	return &integrationDestinationFetcher{app: app}
+	return &integrationDestinationFetcher{app}
 }
 
 func (f *integrationDestinationFetcher) FetchById(
@@ -38,19 +38,39 @@ func (f *integrationDestinationFetcher) FetchByDestinationId(
 }
 
 // If not found, returns wrapped sql.ErrNoRows
-func (f *integrationDestinationFetcher) FetchByExternalId(
+func (f *integrationDestinationFetcher) ListByExternalID(
 	externalRecordId string,
-) (integ.IntegrationDestination, error) {
-	record, err := f.app.Dao().
-		FindFirstRecordByData(integ.CollectionIntegrationDestination, integ.IntegrationDestinationFieldExternalRecordId, externalRecordId)
+) ([]integ.IntegrationDestination, error) {
+	filter, err := filter.CreateAndFilter(filter.Field{
+		Name:  integ.IntegrationDestinationFieldExternalRecordId,
+		Op:    filter.OpEquals,
+		Value: externalRecordId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	record, err := f.app.Dao().FindRecordsByFilter(
+		integ.CollectionIntegrationDestination,
+		filter.Filter,
+		"",
+		0,
+		0,
+		filter.Params,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"failed to find integration destination by external record ID %v: %w",
+			"Error listing integration destinations for external record ID %v: %w",
 			externalRecordId,
 			err,
 		)
 	}
-	return integ.NewIntegrationDestination(record), nil
+
+	integrationDestinations := make([]integ.IntegrationDestination, len(record))
+	for i, r := range record {
+		integrationDestinations[i] = integ.NewIntegrationDestination(r)
+	}
+	return integrationDestinations, nil
 }
 
 func (f *integrationDestinationFetcher) ListByDestinationIds(
