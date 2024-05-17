@@ -12,7 +12,6 @@ import (
 
 type IntegrationSync interface {
 	UpdateStatus(request UpdateStatusRequest) (success bool, err error)
-	UpdateDestinationStatus(request UpdateDestinationStatusRequest) error
 }
 
 type integrationSync struct {
@@ -58,28 +57,4 @@ func (s *integrationSync) UpdateStatus(request UpdateStatusRequest) (success boo
 		slog.Error("Unknown integration type", "type", integration.Type())
 		return false, fmt.Errorf("Unknown integration type: %s", integration.Type())
 	}
-}
-
-type UpdateDestinationStatusRequest struct {
-	IntegrationId string `validate:"min=1"`
-	UserID        string `validate:"min=1"`
-}
-
-func (s *integrationSync) UpdateDestinationStatus(request UpdateDestinationStatusRequest) error {
-	err := validate.Struct(request)
-	if err != nil {
-		return err
-	}
-
-	// TODO:
-	// - Call a shared/common service to get all destinations by integration ID
-	// - For each destination, re-fetch the notion object.
-	// - Successful updates should, through events, update the destination object (e.g. name)
-	// - Updates should also update destination.external.status (options: access, no-access, remotely-deleted)
-
-	// TODO:
-	// - Can external.config in destinations be removed before persisting on
-	// success?
-
-	return nil
 }

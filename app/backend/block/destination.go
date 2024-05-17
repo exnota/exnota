@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	lib_integ "exnota.com/backend/lib/integration"
 	"github.com/pocketbase/pocketbase/core"
@@ -18,6 +19,7 @@ const (
 	DestinationFieldWorkspace = "workspace"
 	DestinationFieldExternal  = "external"
 	DestinationFieldUser      = "user"
+	DestinationFieldArchived  = "archived"
 )
 
 type DestinationExternal struct {
@@ -37,6 +39,7 @@ type Destination interface {
 	Name() string
 	External() (*DestinationExternal, error)
 	User() string
+	Archived() time.Time
 
 	SetName(name string)
 	SetExternalNotionStatus(status lib_integ.NotionObjectStatus) error
@@ -82,6 +85,10 @@ func (d *destination) External() (*DestinationExternal, error) {
 
 func (d *destination) User() string {
 	return d.record.GetString(DestinationFieldUser)
+}
+
+func (d *destination) Archived() time.Time {
+	return d.record.GetDateTime(DestinationFieldArchived).Time()
 }
 
 func (d *destination) SetName(name string) {

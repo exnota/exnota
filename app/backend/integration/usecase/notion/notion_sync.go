@@ -109,17 +109,6 @@ func (s *notionSync) VerifyIntegration(request VerifyIntegrationRequest) (bool, 
 	}
 
 	return verified, nil
-
-	// 	//   - maybe a data rule: When integration status changes, workspace status changes
-	// 	// TODO: If access, get all destinations belonging to it.
-	// 	// TODO: Ping them all to verify we have access
-	// 	// TODO: Update their statuses to reflect the result
-	// 	// TODO: Return success stastus of integration itself, ignore result of destinations
-
-	// 	// TODO: Is this right?
-	// 	// TODO: It's returning just "success"? What about {result:success}?
-	// 	// ...does it work with other custom endpoints? Maybe needs to be a pointer?
-	// 	//...ahh it's probably the Marshal function TODO: Fix that.
 }
 
 type NotionAccessTokenResponse struct {

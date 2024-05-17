@@ -33,6 +33,11 @@ func (r *destinationUpdate) ApplyHooks() {
 			return err
 		}
 
+		// Cannot update archived destination OR unarchive a destination (for
+		// now). Implementing unarchive will require re-syncing with Notion.
+		if !existing.Archived().IsZero() {
+			return errors.New("Cannot update archived destination")
+		}
 		if updated.User() != existing.User() {
 			return errors.New("Cannot change user")
 		}

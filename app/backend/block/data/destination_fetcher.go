@@ -30,11 +30,18 @@ func (f *destinationFetcher) ListIdsByIntegrationId(
 	workspaceIntegrationId string,
 ) ([]string, error) {
 	// Workspaces for integration
-	workspaceFilter, err := filter.CreateAndFilter(filter.Field{
-		Name:  block.WorkspaceFieldIntegration,
-		Op:    filter.OpEquals,
-		Value: workspaceIntegrationId,
-	})
+	workspaceFilter, err := filter.CreateAndFilter(
+		filter.Field{
+			Name:  block.WorkspaceFieldIntegration,
+			Op:    filter.OpEquals,
+			Value: workspaceIntegrationId,
+		},
+		filter.Field{
+			Name:        block.WorkspaceFieldArchived,
+			Op:          filter.OpEquals,
+			ValuePreset: filter.ValuePresetNull,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +62,18 @@ func (f *destinationFetcher) ListIdsByIntegrationId(
 	// as there's currently no 'IN' operator: https://github.com/pocketbase/pocketbase/issues/4596
 	destinationIdFilters := make([]*filter.Filter, len(workspaces))
 	for i, workspace := range workspaces {
-		destinationFilter, err := filter.CreateAndFilter(filter.Field{
-			Name:  block.DestinationFieldWorkspace,
-			Op:    filter.OpEquals,
-			Value: workspace.Id,
-		})
+		destinationFilter, err := filter.CreateAndFilter(
+			filter.Field{
+				Name:  block.DestinationFieldWorkspace,
+				Op:    filter.OpEquals,
+				Value: workspace.Id,
+			},
+			filter.Field{
+				Name:        block.DestinationFieldArchived,
+				Op:          filter.OpEquals,
+				ValuePreset: filter.ValuePresetNull,
+			},
+		)
 		if err != nil {
 			return nil, err
 		}

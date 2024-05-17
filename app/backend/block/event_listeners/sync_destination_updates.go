@@ -28,6 +28,8 @@ func NewSyncDestinationUpdates(
 	}
 }
 
+// Called when a destination in the Integration Notion Object collection is
+// updated.
 func (h *syncDestinationUpdates) Update(event integration.IntegrationDestinationEvent) error {
 	slog.Info(
 		"SyncDestinationUpdates.Update",

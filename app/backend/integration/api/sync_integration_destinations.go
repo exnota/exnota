@@ -65,6 +65,11 @@ func (h *syncIntegrationDestinationsAPI) ApplyHooks() {
 				UserId:        auth.LoggedInUser(),
 			})
 			if err != nil {
+				slog.Error(
+					"Failed to update integration destination sync",
+					"error",
+					err,
+				)
 				return c.JSON(http.StatusInternalServerError, nil)
 			}
 
