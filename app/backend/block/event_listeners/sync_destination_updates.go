@@ -14,17 +14,20 @@ type SyncDestinationUpdates interface {
 }
 
 type syncDestinationUpdates struct {
-	app               core.App
-	destinationWriter block.DestinationWriter
+	app                core.App
+	destinationWriter  block.DestinationWriter
+	destinationFetcher block.DestinationFetcher
 }
 
 func NewSyncDestinationUpdates(
 	app core.App,
 	destinationWriter block.DestinationWriter,
+	destinationFetcher block.DestinationFetcher,
 ) SyncDestinationUpdates {
 	return &syncDestinationUpdates{
 		app,
 		destinationWriter,
+		destinationFetcher,
 	}
 }
 
@@ -36,7 +39,17 @@ func (h *syncDestinationUpdates) Update(event integration.IntegrationDestination
 		"destinationId",
 		event.Id,
 	)
-	err := h.destinationWriter.Update(block.DestinationUpdateRequest{
+
+	// Ignore if destination archived
+	destination, err := h.destinationFetcher.FetchById(event.Id)
+	if err != nil {
+		return fmt.Errorf("failed to fetch destination %v: %w", event.Id, err)
+	}
+	if !destination.Archived().IsZero() {
+		return nil
+	}
+
+	err = h.destinationWriter.Update(block.DestinationUpdateRequest{
 		Id:           event.Id,
 		Name:         event.Next.Name,
 		NotionStatus: event.Next.NotionObjectStatus,

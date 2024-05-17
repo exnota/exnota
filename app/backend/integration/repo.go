@@ -21,12 +21,14 @@ type FetchByIdRequest struct {
 type IntegrationDestinationFetcher interface {
 	FetchById(id string) (IntegrationDestination, error)
 	FetchByDestinationId(destinationId string) (IntegrationDestination, error)
-	FetchByExternalId(externalRecordId string) (IntegrationDestination, error)
+	ListByExternalID(externalRecordId string) ([]IntegrationDestination, error)
 	ListByDestinationIds(destinationIds []string) ([]IntegrationDestination, error)
 }
 
 type IntegrationNotionObjectFetcher interface {
 	FetchById(id string) (IntegrationNotionObject, error)
+	// Returns wrapped sql.ErrNoRows if not found.
+	FetchByExternalID(request NotionObjectFetchRequest) (IntegrationNotionObject, error)
 	ListByIds(ids []string) ([]IntegrationNotionObject, error)
 }
 
@@ -39,11 +41,17 @@ type IntegrationNotionObjectWriter interface {
 }
 
 type NotionObjectCreateRequest struct {
-	ExternalId string                      `validate:"required"`
-	Type       IntegrationNotionObjectType `validate:"required"`
-	Title      string                      `validate:"required"`
-	Properties any                         `validate:"required"`
-	User       string                      `validate:"required"`
+	ExternalId string                     `validate:"required"`
+	Type       lib_integ.NotionObjectType `validate:"required"`
+	Title      string                     `validate:"required"`
+	Properties any                        `validate:"required"`
+	User       string                     `validate:"required"`
+}
+
+type NotionObjectFetchRequest struct {
+	ExternalID string                     `validate:"min=1"`
+	Type       lib_integ.NotionObjectType `validate:"required"`
+	User       string                     `validate:"min=1"`
 }
 
 type NotionUpdateSyncConnectedRequest struct {

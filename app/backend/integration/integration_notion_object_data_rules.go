@@ -30,7 +30,7 @@ func (h *integrationNotionObjectDataRules) immutableFields() {
 	h.app.OnModelBeforeUpdate(CollectionIntegrationNotionObject).
 		Add(func(e *core.ModelEvent) error {
 			updated := LoadIntegrationNotionObjectFromModel(e.Model)
-			existing, err := h.integrationNotionObjectFetcher.FetchById(updated.Id())
+			existing, err := h.integrationNotionObjectFetcher.FetchById(updated.ID())
 			if err != nil {
 				return err
 			}
@@ -44,7 +44,7 @@ func (h *integrationNotionObjectDataRules) immutableFields() {
 			if updated.Type() != existing.Type() {
 				return errors.New("Cannot change type")
 			}
-			if updated.ExternalId() != existing.ExternalId() {
+			if updated.ExternalID() != existing.ExternalID() {
 				return errors.New("Cannot change external_id")
 			}
 

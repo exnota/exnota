@@ -8,6 +8,7 @@ import (
 	integ "exnota.com/backend/integration"
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion/api"
+	lib_integ "exnota.com/backend/lib/integration"
 	gonotion "github.com/dstotijn/go-notion"
 	"github.com/go-playground/validator/v10"
 	"github.com/pocketbase/pocketbase/core"
@@ -155,8 +156,8 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 
 	// Create page in Notion
 	switch destinationObject.Type() {
-	case integ.IntegrationNotionObjectTypeDatabase:
-		databaseId := destinationObject.ExternalId()
+	case lib_integ.NotionObjectTypeDatabase:
+		databaseId := destinationObject.ExternalID()
 		result, err := writer.CreateDatabasePage(api.CreateDatabasePageRequest{
 			DatabaseId: databaseId,
 			Children:   fileChildren,
@@ -191,8 +192,8 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 			Message:      "Mapped to database page",
 			ConfigUpdate: config,
 		}, nil
-	case integ.IntegrationNotionObjectTypePage:
-		parentId := destinationObject.ExternalId()
+	case lib_integ.NotionObjectTypePage:
+		parentId := destinationObject.ExternalID()
 		result, err := writer.CreateChildPage(api.CreateChildPageRequest{
 			ParentId: parentId,
 			Children: fileChildren,

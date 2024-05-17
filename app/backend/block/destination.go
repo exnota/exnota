@@ -43,6 +43,7 @@ type Destination interface {
 
 	SetName(name string)
 	SetExternalNotionStatus(status lib_integ.NotionObjectStatus) error
+	SetArchived(time.Time)
 
 	Validate() error
 	ValidateAndSubmit(txDao *daos.Dao) error
@@ -120,6 +121,10 @@ func (d *destination) SetExternalNotionStatus(status lib_integ.NotionObjectStatu
 	d.record.Set(DestinationFieldExternal, string(configBytes))
 
 	return nil
+}
+
+func (d *destination) SetArchived(t time.Time) {
+	d.record.Set(DestinationFieldArchived, t)
 }
 
 func (d *destination) Validate() error {
