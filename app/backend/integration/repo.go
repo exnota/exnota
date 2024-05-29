@@ -9,6 +9,7 @@ import (
 
 type IntegrationFetcher interface {
 	FetchById(request FetchByIdRequest) (Integration, error)
+	UserForIntegration(integrationId string) (*string, error)
 	FetchNotionIntegration(id string) (NotionIntegration, error)
 	ListByNotionBotId(botId string) ([]NotionIntegration, error)
 }

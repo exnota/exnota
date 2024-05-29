@@ -17,6 +17,7 @@ import (
 	integ_api "exnota.com/backend/integration/api"
 	integ_data "exnota.com/backend/integration/data"
 	integration_usecase "exnota.com/backend/integration/usecase"
+	integration_notion_usecase "exnota.com/backend/integration/usecase/notion"
 	"exnota.com/backend/job"
 	"exnota.com/backend/lib/api"
 	lib_integ "exnota.com/backend/lib/integration"
@@ -96,7 +97,17 @@ func isAutoMigrate() bool {
 }
 
 func initJobWorker(app core.App, skipWorkers *bool) {
-	jobQueue := job.NewBlockJobQueue(app)
+	destinationFetcher := block_data.NewDestinationFetcher(app)
+	notionExporter := integration_notion_usecase.NewNotionExporter(
+		app,
+		integ_data.NewIntegrationDestinationFetcher(app, destinationFetcher),
+	)
+	exportJobRunner := job.NewExportJobRunner(
+		app,
+		block_data.NewWorkspaceFetcher(app),
+		notionExporter,
+	)
+	jobQueue := job.NewBlockJobQueue(app, exportJobRunner)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		if *skipWorkers {
 			return nil
@@ -124,14 +135,23 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// Same caveats as event workflows below, for some of these.
 	integ.NewIntegrationNotionObjectHooks(app, integ_data.NewIntegrationNotionObjectFetcher(app)).
 		ApplyHooks()
-	integ.NewIntegrationDestinationDataRules(app, integ_data.NewIntegrationDestinationFetcher(app)).
-		ApplyHooks()
-	block.NewWorkspaceDataRules(app, block_data.NewWorkspaceFetcher(app)).ApplyHooks()
 	destinationFetcher := block_data.NewDestinationFetcher(app)
+	integ.NewIntegrationDestinationDataRules(
+		app,
+		integ_data.NewIntegrationDestinationFetcher(app, destinationFetcher),
+	).
+		ApplyHooks()
+	integrationFetcher := integ_data.NewIntegrationFetcher(app)
+	block.NewWorkspaceDataRules(
+		app,
+		block_data.NewWorkspaceFetcher(app),
+		integrationFetcher,
+	).
+		ApplyHooks()
 	integrationDestinationSync := integration_usecase.NewIntegrationDestinationSync(
 		app,
 		integ_data.NewIntegrationFetcher(app),
-		integ_data.NewIntegrationDestinationFetcher(app),
+		integ_data.NewIntegrationDestinationFetcher(app, destinationFetcher),
 		destinationFetcher,
 	)
 	block.NewDestinationUpdate(app, destinationFetcher).ApplyHooks()
@@ -171,7 +191,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	integ.NewIntegrationDestinationEvents(app,
 		[]lib_integ.IntegrationDestinationEventListener{
 			destinationIntegrationUpdate.Update,
-		}, integ_data.NewIntegrationDestinationFetcher(app),
+		}, integ_data.NewIntegrationDestinationFetcher(app, destinationFetcher),
 	).ApplyHooks()
 
 	// API rules

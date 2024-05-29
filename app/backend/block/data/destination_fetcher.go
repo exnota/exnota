@@ -26,6 +26,12 @@ func (f *destinationFetcher) FetchById(id string) (block.Destination, error) {
 	return destination, nil
 }
 
+// Returns sql.ErrNoRows if not found
+func (f *destinationFetcher) Exists(id string) error {
+	_, err := f.FetchById(id)
+	return err
+}
+
 func (f *destinationFetcher) ListIDsByIntegrationID(
 	workspaceIntegrationId string,
 ) ([]string, error) {

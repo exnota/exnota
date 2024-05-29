@@ -49,6 +49,23 @@ func (f *integrationFetcher) FetchById(
 	return integration, nil
 }
 
+func (f *integrationFetcher) UserForIntegration(
+	integrationId string,
+) (*string, error) {
+	record, err := f.app.Dao().
+		FindRecordById(integ.CollectionIntegration, integrationId)
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch integration: %w", err)
+	}
+	integration, err := integ.LoadIntegration(record, f.app)
+	if err != nil {
+		return nil, fmt.Errorf("could not load integration: %w", err)
+	}
+
+	userId := integration.User()
+	return &userId, nil
+}
+
 func (f *integrationFetcher) FetchNotionIntegration(
 	id string,
 ) (integ.NotionIntegration, error) {

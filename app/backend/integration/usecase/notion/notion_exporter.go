@@ -21,11 +21,15 @@ type NotionExporter interface {
 }
 
 type notionExporter struct {
-	app core.App
+	app                           core.App
+	integrationDestinationFetcher integ.IntegrationDestinationFetcher
 }
 
-func NewNotionExporter(app core.App) NotionExporter {
-	return &notionExporter{app}
+func NewNotionExporter(
+	app core.App,
+	integrationDestinationFetcher integ.IntegrationDestinationFetcher,
+) NotionExporter {
+	return &notionExporter{app, integrationDestinationFetcher}
 }
 
 type ExportBlockType string
@@ -354,8 +358,9 @@ func (s *notionExporter) updateNote(request NoteRequest) (*ExportResult, error) 
 }
 
 func (s *notionExporter) getNotionObjectInternalId(destinationId string) (string, error) {
-	integrationDestinationRepo := data.NewIntegrationDestinationFetcher(s.app)
-	integrationDestination, err := integrationDestinationRepo.FetchByDestinationID(destinationId)
+	integrationDestination, err := s.integrationDestinationFetcher.FetchByDestinationID(
+		destinationId,
+	)
 	if err != nil {
 		slog.Error(
 			"Error fetching integration destination by destination id",

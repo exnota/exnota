@@ -2,9 +2,8 @@ package block
 
 import (
 	"errors"
+	"fmt"
 
-	integ "exnota.com/backend/integration"
-	integ_data "exnota.com/backend/integration/data"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -13,12 +12,21 @@ type WorkspaceDataRules interface {
 }
 
 type workspaceDataRules struct {
-	app              core.App
-	workspaceFetcher WorkspaceFetcher
+	app                core.App
+	workspaceFetcher   WorkspaceFetcher
+	integrationFetcher IntegrationFetcher
 }
 
-func NewWorkspaceDataRules(app core.App, workspaceFetcher WorkspaceFetcher) WorkspaceDataRules {
-	return &workspaceDataRules{app, workspaceFetcher}
+type IntegrationFetcher interface {
+	UserForIntegration(integrationId string) (*string, error)
+}
+
+func NewWorkspaceDataRules(
+	app core.App,
+	workspaceFetcher WorkspaceFetcher,
+	integrationFetcher IntegrationFetcher,
+) WorkspaceDataRules {
+	return &workspaceDataRules{app, workspaceFetcher, integrationFetcher}
 }
 
 func (r *workspaceDataRules) ApplyHooks() {
@@ -34,19 +42,16 @@ func (r *workspaceDataRules) relationRules() {
 		}
 
 		if workspace.Integration() != "" {
-			fetcher := integ_data.NewIntegrationFetcher(r.app)
-			integration, err := fetcher.FetchById(integ.FetchByIdRequest{
-				IntegrationId: workspace.Integration(),
-				UserId:        workspace.User(),
-			})
+			integrationUser, err := r.integrationFetcher.UserForIntegration(workspace.Integration())
 			if err != nil {
-				return err
-			}
-			if integration == nil {
-				return errors.New("Integration not found with id: " + workspace.Integration())
+				return fmt.Errorf(
+					"Error fetching user for integration %v : %v",
+					workspace.Integration(),
+					err,
+				)
 			}
 
-			if integration.User() != workspace.User() {
+			if *integrationUser != workspace.User() {
 				return errors.New("Integration user does not match workspace user")
 			}
 		}

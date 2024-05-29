@@ -22,10 +22,15 @@ type ExportJobRunner interface {
 type exportJobRunnerConfig struct {
 	app              core.App
 	workspaceFetcher block.WorkspaceFetcher
+	notionExporter   notion.NotionExporter
 }
 
-func NewExportJobRunner(app core.App, workspaceFetcher block.WorkspaceFetcher) ExportJobRunner {
-	return &exportJobRunnerConfig{app, workspaceFetcher}
+func NewExportJobRunner(
+	app core.App,
+	workspaceFetcher block.WorkspaceFetcher,
+	notionExporter notion.NotionExporter,
+) ExportJobRunner {
+	return &exportJobRunnerConfig{app, workspaceFetcher, notionExporter}
 }
 
 func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (data.Summary, error) {
@@ -57,7 +62,6 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 	switch integration := genericIntegration.(type) {
 	case integ.NotionIntegration:
 		slog.Info("Running Notion export job", "job", job.ID())
-		notionExporter := notion.NewNotionExporter(j.app)
 		exportRequest := notion.NoteRequest{
 			Integration: integration,
 			Command:     notion.ExportCommand(config.Command),
@@ -73,7 +77,7 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 			}
 		}
 
-		exportResult, err := notionExporter.Export(exportRequest)
+		exportResult, err := j.notionExporter.Export(exportRequest)
 		if err != nil {
 			return nil, err
 		}
