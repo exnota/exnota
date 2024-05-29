@@ -30,8 +30,12 @@ func (r *workspaceCreateAPI) ApplyHooks() {
 				return err
 			}
 
-			if newWorkspace.Record().GetString(block.WorkspaceFieldExternal) != "" {
-				return apis.NewBadRequestError("Cannot change external on workspace update", nil)
+			newExternal, err := newWorkspace.External()
+			if err != nil {
+				return err
+			}
+			if newExternal != nil {
+				return apis.NewBadRequestError("Cannot set external on workspace create", nil)
 			}
 
 			if !newWorkspace.Archived().IsZero() {

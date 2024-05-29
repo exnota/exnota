@@ -1,6 +1,8 @@
 package data
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 
 	integ "exnota.com/backend/integration"
@@ -9,11 +11,19 @@ import (
 )
 
 type integrationDestinationFetcher struct {
-	app core.App
+	app                core.App
+	destinationFetcher DestinationFetcher
 }
 
-func NewIntegrationDestinationFetcher(app core.App) integ.IntegrationDestinationFetcher {
-	return &integrationDestinationFetcher{app}
+type DestinationFetcher interface {
+	Exists(id string) error
+}
+
+func NewIntegrationDestinationFetcher(
+	app core.App,
+	destinationFetcher DestinationFetcher,
+) integ.IntegrationDestinationFetcher {
+	return &integrationDestinationFetcher{app, destinationFetcher}
 }
 
 func (f *integrationDestinationFetcher) FetchById(
@@ -50,7 +60,7 @@ func (f *integrationDestinationFetcher) ListByExternalID(
 		return nil, err
 	}
 
-	record, err := f.app.Dao().FindRecordsByFilter(
+	records, err := f.app.Dao().FindRecordsByFilter(
 		integ.CollectionIntegrationDestination,
 		filter.Filter,
 		"",
@@ -66,9 +76,27 @@ func (f *integrationDestinationFetcher) ListByExternalID(
 		)
 	}
 
-	integrationDestinations := make([]integ.IntegrationDestination, len(record))
-	for i, r := range record {
-		integrationDestinations[i] = integ.NewIntegrationDestination(r)
+	var integrationDestinations []integ.IntegrationDestination
+	for _, r := range records {
+		// Verify the destination exists.
+		//
+		// Creating a destination with an integration destination join table
+		// entry is not transactional, so it's possible for the join table
+		// entry to exist without a corresponding destination.
+		integDest := integ.NewIntegrationDestination(r)
+		if err := f.destinationFetcher.Exists(integDest.DestinationId()); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				// Skip orphaned integration destination
+				continue
+			}
+			return nil, fmt.Errorf(
+				"Error verifying destination %v for integration destination %v: %w",
+				integDest.DestinationId(),
+				integDest.Id(),
+				err,
+			)
+		}
+		integrationDestinations = append(integrationDestinations, integDest)
 	}
 	return integrationDestinations, nil
 }

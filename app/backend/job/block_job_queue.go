@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"time"
 
-	block_data "exnota.com/backend/block/data"
 	"exnota.com/backend/job/data"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -25,13 +24,12 @@ type BlockJobQueue interface {
 }
 
 type blockJobQueue struct {
-	app core.App
+	app             core.App
+	exportJobRunner ExportJobRunner
 }
 
-func NewBlockJobQueue(app core.App) BlockJobQueue {
-	return &blockJobQueue{
-		app: app,
-	}
+func NewBlockJobQueue(app core.App, exportJobRunner ExportJobRunner) BlockJobQueue {
+	return &blockJobQueue{app, exportJobRunner}
 }
 
 // run method
@@ -47,7 +45,7 @@ func (j *blockJobQueue) Start() error {
 	// channel patterns and it could be useful
 	exportResults := make(chan string)
 	for w := 1; w <= NUM_EXPORT_WORKERS; w++ {
-		go exportWorker(w, exportQueue, exportResults, j.app)
+		go exportWorker(w, exportQueue, exportResults, j.app, j.exportJobRunner)
 	}
 
 	transcriptionQueue := make(chan data.BlockJob)
@@ -93,7 +91,13 @@ func (j *blockJobQueue) Start() error {
 	return nil
 }
 
-func exportWorker(id int, jobs <-chan data.BlockJob, _ chan<- string, app core.App) {
+func exportWorker(
+	id int,
+	jobs <-chan data.BlockJob,
+	_ chan<- string,
+	app core.App,
+	exportRunner ExportJobRunner,
+) {
 	for j := range jobs {
 		slog.Info(
 			"[export worker] Received job",
@@ -107,7 +111,6 @@ func exportWorker(id int, jobs <-chan data.BlockJob, _ chan<- string, app core.A
 
 		// The processor handles the status and panics of the runner
 		processor := NewBlockJobProcessor(app)
-		exportRunner := NewExportJobRunner(app, block_data.NewWorkspaceFetcher(app))
 		err := processor.Process(j, exportRunner)
 		if err != nil {
 			slog.Warn(

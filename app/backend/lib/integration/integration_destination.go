@@ -3,6 +3,7 @@ package integration
 type IntegrationDestinationEventListener func(event IntegrationDestinationEvent) error
 
 type IntegrationDestinationEvent struct {
+	// Destination ID (not Integration Destination ID)
 	Id   string                      `validate:"min=1"`
 	Prev IntegrationDestinationState `validate:"required"`
 	Next IntegrationDestinationState `validate:"required"`
