@@ -97,7 +97,43 @@ Content-Type: application/json
     "user": "{{user_id}}",
     "external": {
       "config": {
-        "id": "c4a300da-2b84-4a85-a00b-c56210d82968",
+        "id": "c4a300da-2b84-4a85-a00b-c56210d82968", // db that is nested
+        "object": "database"
+      }
+    }
+}
+
+### Create destination - "secondary relation"
+POST {{baseUrl}}/collections/destination/records HTTP/1.1
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+{
+    "id": "c4a300da2b84aab",
+    "name": " ",
+    "workspace": "{{workspace}}",
+    "user": "{{user_id}}",
+    "external": {
+      "config": {
+        "id": "8d9ce7feb71f4b61afc39df1eed92637",
+        "object": "database"
+      }
+    }
+}
+
+### Create destination - "secondary relation" a second one
+POST {{baseUrl}}/collections/destination/records HTTP/1.1
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+{
+    "id": "c4a300da2b84aac",
+    "name": " ",
+    "workspace": "{{workspace}}",
+    "user": "{{user_id}}",
+    "external": {
+      "config": {
+        "id": "8d9ce7feb71f4b61afc39df1eed92637",
         "object": "database"
       }
     }
