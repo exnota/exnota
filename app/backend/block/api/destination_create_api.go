@@ -117,7 +117,7 @@ func (h *destinationCreateAPI) ApplyHooks() {
 				if err != nil {
 					return fmt.Errorf("fetch integrated destination error: %w", err)
 				}
-				if !integratedDestination.Archived().IsZero() {
+				if integratedDestination.Archived().IsZero() {
 					return apis.NewBadRequestError(
 						"External resource is already integrated with a destination",
 						nil,
