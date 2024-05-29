@@ -13,6 +13,7 @@ class DestinationRepoMapper {
       userId: destination.user,
       created: destination.created,
       updated: destination.updated,
+      archived: destination.archived,
     );
   }
 
@@ -25,6 +26,7 @@ class DestinationRepoMapper {
       user: destination.userId,
       created: destination.created,
       updated: destination.updated,
+      archived: destination.archived,
     );
   }
 

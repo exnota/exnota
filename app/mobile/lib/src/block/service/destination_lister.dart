@@ -8,15 +8,22 @@ part 'destination_lister.g.dart';
 
 @riverpod
 // Returns non-archived destinations for the active user.
-Future<List<Destination>> destinationLister(DestinationListerRef ref) async {
-  final log = ref.watch(loggerProvider('DestinationLister'));
-  log.debug('Building destination lister');
+class DestinationLister extends _$DestinationLister {
+  @override
+  Future<List<Destination>> build() async {
+    final log = ref.watch(loggerProvider('DestinationLister'));
+    log.debug('Building destination lister');
 
-  final workspace = await ref.watch(activeWorkspaceProvider.future);
-  if (workspace == null) {
-    return [];
+    final workspace = await ref.watch(activeWorkspaceProvider.future);
+    if (workspace == null) {
+      return [];
+    }
+
+    final repo = ref.watch(destinationRepoProvider);
+    return await repo.listForWorkspace(workspaceId: workspace.id);
   }
 
-  final repo = ref.watch(destinationRepoProvider);
-  return await repo.listForWorkspace(workspaceId: workspace.id);
+  void refresh() {
+    ref.invalidateSelf();
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:exnota/src/block/destination.dart';
 import 'package:exnota/src/block/repo/drift/destination_importer.dart';
 import 'package:exnota/src/block/service/destination_exporter.dart';
 import 'package:exnota/src/block/service/destination_lister.dart';
@@ -79,10 +80,16 @@ class _SetupDestinationScreenState
           ref
               .read(setupDestinationScreenControllerProvider.notifier)
               .updateDestination();
+        case DestinationSetupStatus.loadingUpdatedDestinations:
+          ref
+              .read(setupDestinationScreenControllerProvider.notifier)
+              .loadUpdatedDestinations();
         default:
         // Do nothing
       }
     });
+
+    final destinations = ref.watch(destinationListerProvider).valueOrNull;
 
     return Scaffold(
       body: Center(
@@ -105,11 +112,11 @@ class _SetupDestinationScreenState
             DestinationSetupStatus.checkingDatabaseDestinationStatus =>
               const Text('Checking database destination status...'),
             DestinationSetupStatus.promptCurrentDatabaseDestinationAction =>
-              const Text('Prompting current database destination action...'),
+              DisplayDestinations(destinations: destinations),
             DestinationSetupStatus.checkingCustomDestinationsStatus =>
               const Text('Checking custom destinations status...'),
             DestinationSetupStatus.promptCurrentCustomDestinationAction =>
-              const Text('Prompting current custom destination action...'),
+              DisplayDestinations(destinations: destinations),
             DestinationSetupStatus.loadingSuggestedDestinations =>
               const Text('Loading suggested destinations...'),
             DestinationSetupStatus.loadingSuggestedDestinationsError =>
@@ -134,11 +141,49 @@ class _SetupDestinationScreenState
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
               ),
+            DestinationSetupStatus.loadingUpdatedDestinations =>
+              const Text('Loading updated destinations...'),
+            DestinationSetupStatus.loadingUpdatedDestinationsError =>
+              SetupErrorMessage(
+                error: setupState.error!,
+                errorRetryStatus: setupState.errorRetryStatus,
+              ),
             DestinationSetupStatus.destinationsReady =>
-              const Text('Destinations ready'),
+              DisplayDestinations(destinations: destinations),
           },
         ),
       ),
+    );
+  }
+}
+
+class DisplayDestinations extends StatelessWidget {
+  const DisplayDestinations({
+    super.key,
+    required this.destinations,
+  });
+
+  final List<Destination>? destinations;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = destinations;
+    if (d == null) {
+      return const Text('No destinations found');
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text('Destinations'),
+        if (destinations != null) ...[
+          for (final destination in d)
+            ListTile(
+              title: Text(destination.name ?? ''),
+              subtitle: Text(destination.id),
+            ),
+        ],
+      ],
     );
   }
 }
@@ -198,16 +243,9 @@ class _SelectDestinationState extends ConsumerState<SelectDestination> {
       children: [
         const Text('Suggested'),
         for (final destination in suggestions)
-          RadioListTile(
-            title: Row(
-              children: [
-                DestinationIcon(destination: destination),
-                const SizedBox(width: 8),
-                Text(destination.name),
-              ],
-            ),
-            value: destination,
-            groupValue: selected,
+          DestinationRadioTile(
+            destination: destination,
+            selected: selected,
             onChanged: (value) {
               ref
                   .read(setupDestinationScreenControllerProvider.notifier)
@@ -425,6 +463,8 @@ enum DestinationSetupStatus {
   updatingDatabaseDestinationError,
   updatingCustomDestinations, // Processes custom destination changes
   updatingCustomDestinationError,
+  loadingUpdatedDestinations,
+  loadingUpdatedDestinationsError,
   destinationsReady, // Completed.
 }
 
@@ -565,6 +605,37 @@ class SetupDestinationScreenController
     }
   }
 
+  Future<void> loadUpdatedDestinations() async {
+    final workspace = (await ref.read(activeWorkspaceProvider.future))!;
+
+    final result =
+        await ref.read(destinationImporterProvider.notifier).importForWorkspace(
+              workspaceId: workspace.id,
+            );
+    switch (result) {
+      case BasicResponseSuccess():
+        _log.debug('loadUpdatedDestinations: Success');
+        state = const DestinationSetupState(
+          status: DestinationSetupStatus.destinationsReady,
+          notionSuggestedDestinations: null,
+          selected: null,
+          error: null,
+          errorRetryStatus: null,
+        );
+        return;
+      case BasicResponseError(:final error):
+        _log.error('loadUpdatedDestinations: Error');
+        state = DestinationSetupState(
+          status: DestinationSetupStatus.loadingUpdatedDestinationsError,
+          notionSuggestedDestinations: null,
+          selected: null,
+          error: error,
+          errorRetryStatus: DestinationSetupStatus.loadingUpdatedDestinations,
+        );
+        return;
+    }
+  }
+
   Future<void> checkDatabaseDestinationStatus() async {
     final destinations = await ref.read(destinationListerProvider.future);
     if (destinations.isEmpty) {
@@ -660,7 +731,7 @@ class SetupDestinationScreenController
         _log.debug('updateDestination: Success');
         // TODO: Actually need to fetch the updated destination before proceeding
         state = DestinationSetupState(
-          status: DestinationSetupStatus.destinationsReady,
+          status: DestinationSetupStatus.loadingUpdatedDestinations,
           notionSuggestedDestinations: null,
           selected: state.selected,
           error: null,

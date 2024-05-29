@@ -21,7 +21,8 @@ class DestinationRepo {
   Future<List<Destination>> listForWorkspace(
       {required String workspaceId}) async {
     final query = db.select(db.destinationTable)
-      ..where((tbl) => tbl.workspace.equals(workspaceId));
+      ..where((tbl) => tbl.workspace.equals(workspaceId))
+      ..where((tbl) => tbl.archived.isNull());
     final results = await query.map(DestinationRepoMapper.fromRepo).get();
     return results.toList();
   }
