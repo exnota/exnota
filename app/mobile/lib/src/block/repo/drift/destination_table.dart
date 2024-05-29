@@ -19,6 +19,7 @@ class DestinationTable extends Table {
 
   DateTimeColumn get created => dateTime().nullable()();
   DateTimeColumn get updated => dateTime().nullable()();
+  DateTimeColumn get archived => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

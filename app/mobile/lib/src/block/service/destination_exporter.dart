@@ -52,16 +52,11 @@ class WorkspaceExportDestinationsRequest extends HandledRequest<void> {
     _log.debug('request: Exporting destinations for workspace');
 
     await pb.collection(collectionDestination).create(
-      body: {
-        'id': generateId(),
-        // Name will be overridden by the server from Notion
-        'name': 'New destination',
-        'workspace': workspaceId,
-        'user': userId,
-        'external': {
-          'config': notionObject.toJson(),
-        },
-      },
-    );
+          body: Destination.createRequestBodyForNotion(
+            workspaceId: workspaceId,
+            userId: userId,
+            notionObject: notionObject,
+          ),
+        );
   }
 }

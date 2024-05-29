@@ -1,5 +1,6 @@
 import 'package:exnota/src/block/repo/drift/destination_repo.dart';
 import 'package:exnota/src/block/destination.dart';
+import 'package:exnota/src/block/service/destination_lister.dart';
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -33,8 +34,10 @@ class DestinationImporter extends _$DestinationImporter {
     switch (requestResult) {
       case BasicResponseSuccess(:final result):
         await _importAll(result);
+        ref.read(destinationListerProvider.notifier).refresh();
         return const BasicResponse.success(result: null);
       case BasicResponseError():
+        ref.read(destinationListerProvider.notifier).refresh();
         return requestResult;
     }
   }
