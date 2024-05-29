@@ -95,6 +95,7 @@ func (s *notionDestinationSync) CreateSync(
 			ExternalRecordType: block.DestinationExternalRecordTypeNotion,
 			DestinationId:      request.DestinationId,
 			DestinationName:    title,
+			NotionStatus:       lib_integ.NotionObjectStatusConnected,
 		}, record, nil
 
 	case lib_integ.NotionObjectTypePage:
@@ -129,6 +130,7 @@ func (s *notionDestinationSync) CreateSync(
 			ExternalRecordType: block.DestinationExternalRecordTypeNotion,
 			DestinationId:      request.DestinationId,
 			DestinationName:    title,
+			NotionStatus:       lib_integ.NotionObjectStatusConnected,
 		}, record, nil
 	default:
 		return nil, nil, errors.New("invalid object type: " + string(config.Object))

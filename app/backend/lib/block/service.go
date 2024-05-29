@@ -1,5 +1,7 @@
 package block
 
+import "exnota.com/backend/lib/integration"
+
 // Interfaces shared between domains
 
 type CreateDestinationSyncRequest struct {
@@ -20,6 +22,7 @@ type CreateDestinationSyncResult struct {
 	DestinationName    string
 	ExternalRecordType DestinationExternalRecordType
 	ExternalRecordId   string
+	NotionStatus       integration.NotionObjectStatus
 }
 
 type GetDestinationForExternalRequest struct {

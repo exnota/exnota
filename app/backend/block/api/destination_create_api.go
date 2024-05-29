@@ -137,6 +137,10 @@ func (h *destinationCreateAPI) ApplyHooks() {
 			if err != nil {
 				return err
 			}
+			err = destination.SetExternalNotionStatus(syncResult.NotionStatus)
+			if err != nil {
+				return err
+			}
 
 			// Update destination using data from sync
 			destination.SetName(syncResult.DestinationName)
