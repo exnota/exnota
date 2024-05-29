@@ -9,6 +9,13 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
+      "internalConsoleOptions": "openOnSessionStart"
+    },
+    {
+      "name": "Mobile (Android USB)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
       "preLaunchTask": "Map Android ports",
       "internalConsoleOptions": "openOnSessionStart"
     },
@@ -18,7 +25,6 @@
       "type": "dart",
       "flutterMode": "profile",
       "program": "lib/main.dart",
-      "preLaunchTask": "Map Android ports",
       "internalConsoleOptions": "openOnSessionStart"
     },
     {
