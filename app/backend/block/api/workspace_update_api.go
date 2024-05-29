@@ -13,15 +13,17 @@ type WorkspaceUpdateAPI interface {
 }
 
 type workspaceUpdateAPI struct {
-	app              core.App
-	workspaceFetcher block.WorkspaceFetcher
+	app                core.App
+	workspaceFetcher   block.WorkspaceFetcher
+	destinationFetcher block.DestinationFetcher
 }
 
 func NewWorkspaceUpdateAPI(
 	app core.App,
 	workspaceFetcher block.WorkspaceFetcher,
+	destinationFetcher block.DestinationFetcher,
 ) WorkspaceUpdateAPI {
-	return &workspaceUpdateAPI{app, workspaceFetcher}
+	return &workspaceUpdateAPI{app, workspaceFetcher, destinationFetcher}
 }
 
 func (r *workspaceUpdateAPI) ApplyHooks() {
@@ -54,6 +56,8 @@ func (r *workspaceUpdateAPI) ApplyHooks() {
 				)
 			}
 
+			// When unarchiving, check for existing unarchived workspaces.
+			//
 			// Only one non-archived workspace allowed for now
 			if !existingWorkspace.Archived().IsZero() && updatedWorkspace.Archived().IsZero() {
 				workspaces, err := r.workspaceFetcher.ListUnarchived(updatedWorkspace.User())
@@ -63,6 +67,20 @@ func (r *workspaceUpdateAPI) ApplyHooks() {
 				if len(workspaces) > 0 {
 					return apis.NewBadRequestError(
 						"Cannot have multiple unarchived workspaces",
+						nil,
+					)
+				}
+			}
+
+			// When archiving, error if there are non-archived destinations
+			if existingWorkspace.Archived().IsZero() && !updatedWorkspace.Archived().IsZero() {
+				destinations, err := r.destinationFetcher.ListByWorkspace(updatedWorkspace.Id())
+				if err != nil {
+					return err
+				}
+				if len(destinations) > 0 {
+					return apis.NewBadRequestError(
+						"Cannot archive workspace with unarchived destinations",
 						nil,
 					)
 				}
