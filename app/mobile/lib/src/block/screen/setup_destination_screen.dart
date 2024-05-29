@@ -295,23 +295,16 @@ class _SelectDestinationState extends ConsumerState<SelectDestination> {
                   AsyncData(:final value) => Column(
                       children: [
                         for (final destination in value)
-                          RadioListTile(
-                            title: Row(
-                              children: [
-                                DestinationIcon(destination: destination),
-                                const SizedBox(width: 8),
-                                Text(destination.name),
-                              ],
-                            ),
-                            value: destination,
-                            groupValue: selected,
+                          DestinationRadioTile(
+                            destination: destination,
+                            selected: selected,
                             onChanged: (value) {
                               ref
                                   .read(setupDestinationScreenControllerProvider
                                       .notifier)
                                   .setSelectedDestination(value);
                             },
-                          ),
+                          )
                       ],
                     ),
                   AsyncLoading() => const Text('Loading...'),
