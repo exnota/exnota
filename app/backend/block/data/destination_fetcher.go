@@ -110,3 +110,40 @@ func (f *destinationFetcher) ListIDsByIntegrationID(
 	}
 	return destinationIds, nil
 }
+
+func (f *destinationFetcher) ListByWorkspace(workspaceId string) ([]block.Destination, error) {
+	destinationFilter, err := filter.CreateAndFilter(
+		filter.Field{
+			Name:  block.DestinationFieldWorkspace,
+			Op:    filter.OpEquals,
+			Value: workspaceId,
+		},
+		filter.Field{
+			Name:        block.DestinationFieldArchived,
+			Op:          filter.OpEquals,
+			ValuePreset: filter.ValuePresetNull,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	records, err := f.app.Dao().
+		FindRecordsByFilter(
+			block.CollectionDestination,
+			destinationFilter.Filter,
+			"", 0, 0,
+			destinationFilter.Params,
+		)
+	if err != nil {
+		return nil, err
+	}
+	destinations := make([]block.Destination, len(records))
+	for i, record := range records {
+		destination, err := block.LoadDestination(record, f.app)
+		if err != nil {
+			return nil, err
+		}
+		destinations[i] = destination
+	}
+	return destinations, nil
+}

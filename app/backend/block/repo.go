@@ -14,6 +14,8 @@ type DestinationFetcher interface {
 	Exists(id string) error
 	// List unarchived destination IDs for an integration ID
 	ListIDsByIntegrationID(workspaceIntegrationId string) ([]string, error)
+	// All unarchived destinations for a workspace
+	ListByWorkspace(workspaceId string) ([]Destination, error)
 }
 
 type DestinationWriter interface {
