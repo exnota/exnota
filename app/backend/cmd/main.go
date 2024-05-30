@@ -208,6 +208,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 		workspaceFetcher,
 		destinationFetcher,
 	).ApplyHooks()
+	block_api.NewDestinationUpdateAPI(app, destinationFetcher).ApplyHooks()
 	block_api.NewBlockCreateAPI(app).ApplyHooks()
 	block_api.NewWorkspaceCreateAPI(app, workspaceFetcher).ApplyHooks()
 	block_api.NewWorkspaceUpdateAPI(app, workspaceFetcher, destinationFetcher).ApplyHooks()

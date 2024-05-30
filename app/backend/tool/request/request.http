@@ -76,14 +76,22 @@ Content-Type: application/json
     "title": "block title 2"
 }
 
-### Update destination
-PATCH {{baseUrl}}/collections/destination/records/fdsafdasfdsa777 HTTP/1.1
+### Create integration - See 'Exnota auth' section below.
+
+### Create workspace
+POST {{baseUrl}}/collections/workspace/records HTTP/1.1
 Authorization: {{auth_token}}
 Content-Type: application/json
 
 {
-    "name": "Second test db destination 2"
+    "name": "test workspace",
+    "type": "database",
+    "integration": "{{integration}}",
+    "user": "{{user_id}}"
 }
+
+// format
+// 0de9f446-6a57-4282-b449-ddfce8a59499
 
 ### Create destination
 POST {{baseUrl}}/collections/destination/records HTTP/1.1
@@ -91,58 +99,42 @@ Authorization: {{auth_token}}
 Content-Type: application/json
 
 {
-    "id": "c4a300da2b84aaa",
+    "id": "c4a300da2b84aae",
     "name": " ",
     "workspace": "{{workspace}}",
     "user": "{{user_id}}",
     "external": {
       "config": {
-        "id": "c4a300da-2b84-4a85-a00b-c56210d82968", // db that is nested
-        "object": "database"
+        "id": "85c36e5e2be04bca8f2b4964e4c5c30d",
+        "object": "page"
       }
     }
 }
 
-### Create destination - "secondary relation"
-POST {{baseUrl}}/collections/destination/records HTTP/1.1
+### Update destination
+PATCH {{baseUrl}}/collections/destination/records/c4a300da2b84aad HTTP/1.1
 Authorization: {{auth_token}}
 Content-Type: application/json
 
 {
-    "id": "c4a300da2b84aab",
-    "name": " ",
-    "workspace": "{{workspace}}",
-    "user": "{{user_id}}",
-    "external": {
+  "external": {
       "config": {
-        "id": "8d9ce7feb71f4b61afc39df1eed92637",
-        "object": "database"
-      }
-    }
-}
-
-### Create destination - "secondary relation" a second one
-POST {{baseUrl}}/collections/destination/records HTTP/1.1
-Authorization: {{auth_token}}
-Content-Type: application/json
-
-{
-    "id": "c4a300da2b84aac",
-    "name": " ",
-    "workspace": "{{workspace}}",
-    "user": "{{user_id}}",
-    "external": {
-      "config": {
-        "id": "8d9ce7feb71f4b61afc39df1eed92637",
-        "object": "database"
-      }
-    }
+        "id": "c9d9afd7-b130-4880-b373-64d3ec384488",
+        "object": "page"
+      },
+      "notion_status": "other"
+  }
 }
 
 ### Get notion integration
 GET {{baseUrl}}/collections/integration/records
   ?filter=type = "notion"
 Authorization: {{auth_token}}
+
+
+### ----------------------------------------------------
+### Exnota user auth
+### ----------------------------------------------------
 
 ### Auth with password
 ###
@@ -155,11 +147,52 @@ content-type: application/json
 	"password": "{{password}}"
 }
 
-### Notion
+### ----------------------------------------------------
+### Exnota Notion auth
+### ----------------------------------------------------
+
+### Create integration
+###
+### 1/3: Get path for code
 GET {{baseUrl}}/exnota/integration/notion/mobile-code-request-path HTTP/1.1
 content-type: application/json
 
 {}
+
+### 2/3: Get code
+# 1. Copy path from previous step.
+# 2. Open in browser AND START CAPTURING NETWORK REQUESTS
+# 3. Go through flow, and get code from attempted redirect
+#    (won't actually redirect due to exnota:// scheme).
+
+### 3a/3: Create an integration with the code
+POST {{baseUrl}}/collections/integration/records HTTP/1.1
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+{
+    "type": "notion",
+    "user": "{{user_id}}",
+    "status": "connected",
+    "config": {
+      "auth": {
+        "code": "0338c8b3-8d4e-4d71-921d-8dd436b46687"
+      }
+    }
+}
+
+### 3b/3: Update an integration with the code
+PATCH {{baseUrl}}/collections/integration/records/{{integration}} HTTP/1.1
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+{
+    "config": {
+      "auth": {
+        "code": "03f1f148-db6e-40de-8942-84d8b75f8a26"
+      }
+    }
+}
 
 ### Verify integration
 POST {{baseUrl}}/exnota/integration/verify-access
@@ -206,32 +239,6 @@ Authorization: {{auth_token}}
 ###
 ### ----------------------------------------------------
 
-### Auth Notion in Exnota:
-###
-### 1/3: Get path for code
-GET {{baseUrl}}/exnota/integration/notion/mobile-code-request-path HTTP/1.1
-content-type: application/json
-
-{}
-
-### 2/3: Get code
-# 1. Copy path from previous step.
-# 2. Open in browser AND START CAPTURING NETWORK REQUESTS
-# 3. Go through flow, and get code from attempted redirect
-#    (won't actually redirect due to exnota:// scheme).
-
-### 3/3: Update (or create) an integration with the code
-PATCH {{baseUrl}}/collections/integration/records/{{integration}} HTTP/1.1
-Authorization: {{auth_token}}
-Content-Type: application/json
-
-{
-    "config": {
-      "auth": {
-        "code": "03cc113a-6a8a-41b2-af3a-1e6fd6ec6ffa"
-      }
-    }
-}
 
 ### Search any
 curl -X POST 'https://api.notion.com/v1/search' \
