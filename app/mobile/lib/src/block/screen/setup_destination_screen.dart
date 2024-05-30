@@ -148,7 +148,7 @@ class _SetupDestinationScreenState
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
               ),
-            DestinationSetupStatus.destinationsReady =>
+            DestinationSetupStatus.destinationsUpdated =>
               DisplayDestinations(destinations: destinations),
           },
         ),
@@ -157,7 +157,7 @@ class _SetupDestinationScreenState
   }
 }
 
-class DisplayDestinations extends StatelessWidget {
+class DisplayDestinations extends ConsumerWidget {
   const DisplayDestinations({
     super.key,
     required this.destinations,
@@ -166,7 +166,7 @@ class DisplayDestinations extends StatelessWidget {
   final List<Destination>? destinations;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final d = destinations;
     if (d == null) {
       return const Text('No destinations found');
@@ -183,6 +183,28 @@ class DisplayDestinations extends StatelessWidget {
               subtitle: Text(destination.id),
             ),
         ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                ref
+                    .read(setupDestinationScreenControllerProvider.notifier)
+                    .transitionStatus(
+                        newStatus: DestinationSetupStatus
+                            .loadingSuggestedDestinations);
+              },
+              child: const Text('Change'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Done'),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -227,6 +249,7 @@ class _SelectDestinationState extends ConsumerState<SelectDestination> {
 
   @override
   Widget build(BuildContext context) {
+    final destination = ref.watch(activeDestinationLazyProvider);
     final selected = ref.watch(_selectedDestinationProvider);
     final suggestions = ref
             .watch(setupDestinationScreenControllerProvider)
@@ -241,6 +264,14 @@ class _SelectDestinationState extends ConsumerState<SelectDestination> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (destination != null) ...[
+          const Text('Current destination'),
+          ListTile(
+            title: Text(destination.name ?? ''),
+            subtitle: Text(destination.id),
+          ),
+          const SizedBox(height: 16),
+        ],
         const Text('Suggested'),
         for (final destination in suggestions)
           DestinationRadioTile(
@@ -442,7 +473,7 @@ class DestinationIcon extends StatelessWidget {
 enum DestinationSetupStatus {
   syncingExternalDestinations, // Sends request to update destination info from external service
   syncingExternalDestinationsError,
-  loadingDestinations, // Updates destinations in local database
+  loadingDestinations, // Updates destinations in local database, after sync
   loadingDestinationsError,
   checkingDatabaseDestinationStatus, // Determines what prompt to show the user
   promptCurrentDatabaseDestinationAction, // Ask to keep, fix or change
@@ -456,9 +487,9 @@ enum DestinationSetupStatus {
   updatingDatabaseDestinationError,
   updatingCustomDestinations, // Processes custom destination changes
   updatingCustomDestinationError,
-  loadingUpdatedDestinations,
+  loadingUpdatedDestinations, // Updates destinations in local database, after changes
   loadingUpdatedDestinationsError,
-  destinationsReady, // Completed.
+  destinationsUpdated, // Destinations updated
 }
 
 @Freezed(copyWith: false)
@@ -609,7 +640,7 @@ class SetupDestinationScreenController
       case BasicResponseSuccess():
         _log.debug('loadUpdatedDestinations: Success');
         state = const DestinationSetupState(
-          status: DestinationSetupStatus.destinationsReady,
+          status: DestinationSetupStatus.destinationsUpdated,
           notionSuggestedDestinations: null,
           selected: null,
           error: null,
@@ -712,17 +743,15 @@ class SetupDestinationScreenController
 
     final workspace = (await ref.read(activeWorkspaceProvider.future))!;
 
-    final result = await ref
-        .read(destinationExporterProvider.notifier)
-        .createNotionDestination(
-          workspaceId: workspace.id,
-          notionObject: selected.object,
-        );
+    final result =
+        await ref.read(destinationExporterProvider.notifier).replaceDestination(
+              workspaceId: workspace.id,
+              notionObject: selected.object,
+            );
 
     switch (result) {
       case BasicResponseSuccess():
         _log.debug('updateDestination: Success');
-        // TODO: Actually need to fetch the updated destination before proceeding
         state = DestinationSetupState(
           status: DestinationSetupStatus.loadingUpdatedDestinations,
           notionSuggestedDestinations: null,

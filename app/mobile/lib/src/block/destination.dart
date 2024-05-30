@@ -1,6 +1,7 @@
 // ignore_for_file: invalid_annotation_target
 
 import 'package:exnota/src/common/integration/notion_destination.dart';
+import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flutter/foundation.dart';
@@ -62,6 +63,13 @@ class Destination with _$Destination {
     };
 
     return body;
+  }
+
+  static Map<String, dynamic> createArchiveRequestBody() {
+    final clock = Clock();
+    return {
+      'archived': clock.now().toIso8601String(),
+    };
   }
 }
 

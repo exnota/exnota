@@ -27,3 +27,23 @@ class DestinationLister extends _$DestinationLister {
     ref.invalidateSelf();
   }
 }
+
+@riverpod
+Future<Destination?> activeDestination(ActiveDestinationRef ref) async {
+  final destinations = await ref.watch(destinationListerProvider.future);
+  if (destinations.isEmpty) {
+    return Future.value(null);
+  }
+
+  return destinations.first;
+}
+
+@riverpod
+Destination? activeDestinationLazy(ActiveDestinationLazyRef ref) {
+  final destinations = ref.watch(destinationListerProvider).value;
+  if (destinations == null || destinations.isEmpty) {
+    return null;
+  }
+
+  return destinations.first;
+}
