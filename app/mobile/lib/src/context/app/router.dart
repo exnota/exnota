@@ -95,9 +95,15 @@ class Router extends _$Router {
             builder: (context, state) => const SettingsScreen(),
           ),
           GoRoute(
-            path: _routeSettingsSetupIntegration,
-            builder: (context, state) => const SetupIntegrationScreen(),
-          ),
+              path: _routeSettingsSetupIntegration,
+              builder: (context, state) {
+                final forceReauthParam =
+                    state.uri.queryParameters['forceReauth'] ??
+                        ''; // may be null
+                return SetupIntegrationScreen(
+                  forceReauth: forceReauthParam == 'true',
+                );
+              }),
           GoRoute(
             path: _routeSettingsSetupDestination,
             builder: (context, state) => const SetupDestinationScreen(),
@@ -184,6 +190,7 @@ enum Screen {
   notes,
   settings,
   settingsSetupIntegration,
+  settingsSetupIntegrationForceReauth,
   settingsSetupDestination,
   login,
 }
@@ -205,6 +212,8 @@ String to(Screen route) {
       return _routeSettings;
     case Screen.settingsSetupIntegration:
       return _routeSettingsSetupIntegration;
+    case Screen.settingsSetupIntegrationForceReauth:
+      return '$_routeSettingsSetupIntegration?forceReauth=true';
     case Screen.settingsSetupDestination:
       return _routeSettingsSetupDestination;
     case Screen.login:

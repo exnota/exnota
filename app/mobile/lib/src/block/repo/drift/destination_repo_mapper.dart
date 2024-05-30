@@ -37,31 +37,31 @@ class DestinationRepoMapper {
     final json = jsonDecode(external) as Map<String, dynamic>;
     final notionStatusStr = json['notion_status'];
     if (notionStatusStr is String) {
-      final DestinationExternalNotionStatus status;
+      final DestinationExternalNotionStatus notionStatus;
 
       switch (notionStatusStr) {
         case 'connected':
-          status = DestinationExternalNotionStatus.connected;
+          notionStatus = DestinationExternalNotionStatus.connected;
           break;
         case 'not-found':
-          status = DestinationExternalNotionStatus.notFound;
+          notionStatus = DestinationExternalNotionStatus.notFound;
           break;
         case 'archived':
-          status = DestinationExternalNotionStatus.archived;
+          notionStatus = DestinationExternalNotionStatus.archived;
           break;
         case 'unknown-error':
-          status = DestinationExternalNotionStatus.unknownError;
+          notionStatus = DestinationExternalNotionStatus.unknownError;
           break;
         case 'rate-limited':
-          status = DestinationExternalNotionStatus.rateLimited;
+          notionStatus = DestinationExternalNotionStatus.rateLimited;
           break;
         default:
-          status = DestinationExternalNotionStatus.unknown;
+          notionStatus = DestinationExternalNotionStatus.unknown;
       }
-      return DestinationExternal(status: status);
+      return DestinationExternal(notionStatus: notionStatus);
     } else {
       return const DestinationExternal(
-          status: DestinationExternalNotionStatus.unknown);
+          notionStatus: DestinationExternalNotionStatus.unknown);
     }
   }
 
@@ -69,27 +69,27 @@ class DestinationRepoMapper {
     if (external == null) {
       return null;
     }
-    final String status;
-    switch (external.status) {
+    final String notionStatus;
+    switch (external.notionStatus) {
       case DestinationExternalNotionStatus.connected:
-        status = 'connected';
+        notionStatus = 'connected';
         break;
       case DestinationExternalNotionStatus.notFound:
-        status = 'not-found';
+        notionStatus = 'not-found';
         break;
       case DestinationExternalNotionStatus.archived:
-        status = 'archived';
+        notionStatus = 'archived';
         break;
       case DestinationExternalNotionStatus.unknownError:
-        status = 'unknown-error';
+        notionStatus = 'unknown-error';
         break;
       case DestinationExternalNotionStatus.rateLimited:
-        status = 'rate-limited';
+        notionStatus = 'rate-limited';
         break;
       default:
-        status = 'unknown';
+        notionStatus = 'unknown';
     }
 
-    return jsonEncode({'notion_status': status});
+    return jsonEncode({'notion_status': notionStatus});
   }
 }
