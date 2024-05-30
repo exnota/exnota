@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:exnota/src/block/service/destination_lister.dart';
 import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/id_generator.dart';
@@ -85,8 +86,10 @@ class CreateAudioBlockSyncCommand extends SyncCommand<Block> {
     final created = _blockFromData();
     final recording = await container
         .read(getLocalFileByIdOrThrowProvider(data.localFileId).future);
+    final destination = await container.read(activeDestinationProvider.future);
 
-    final request = CreateAudioRequest(created: created, recording: recording);
+    final request = CreateAudioRequest(
+        created: created, destinationId: destination?.id, recording: recording);
     await container.read(requestHandlerProvider.notifier).submit(
           request: request,
           onSuccess: (createResponse) {
@@ -212,9 +215,13 @@ class CreateAudioRequest extends HandledRequest<Block> {
   static final Logger _log = Logger(context: 'CreateAudioRequest');
 
   final Block created;
+  final String? destinationId;
   final LocalFile recording;
 
-  CreateAudioRequest({required this.created, required this.recording});
+  CreateAudioRequest(
+      {required this.created,
+      required this.destinationId,
+      required this.recording});
 
   @override
   Duration get timeout => commandRequestTimeout;
@@ -230,7 +237,7 @@ class CreateAudioRequest extends HandledRequest<Block> {
 
     _log.debug('Request: Sending request to server');
     final responseRecord = await pb.collection('block').create(
-      body: created.toCreateRequestBody(),
+      body: created.toCreateRequestBody(destinationId: destinationId),
       files: [multipartFile],
     );
 

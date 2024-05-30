@@ -78,7 +78,7 @@ class Block with _$Block {
     );
   }
 
-  Map<String, dynamic> toCreateRequestBody() {
+  Map<String, dynamic> toCreateRequestBody({required String? destinationId}) {
     Map<String, dynamic> body = {
       'id': id,
     };
@@ -106,8 +106,8 @@ class Block with _$Block {
       body['archived'] = archived!.toIso8601String();
     }
 
-    // // TODO: Remove, testing only
-    // body['destination'] = '123qweasdzxcvb2';
+    // TODO: Remove fallback destinationId. For testing only.
+    body['destination'] = destinationId ?? 'qo5swl6IBz45HvX';
 
     return body;
   }

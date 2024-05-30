@@ -19,6 +19,13 @@ class DestinationImporter extends _$DestinationImporter {
     // No-op
   }
 
+  Future<BasicResponse<void>> importRecord(
+      {required RecordModel record}) async {
+    await _import(record);
+    ref.read(destinationListerProvider.notifier).refresh();
+    return const BasicResponse.success(result: null);
+  }
+
   Future<BasicResponse<void>> importForWorkspace(
       {required String workspaceId}) async {
     // Request destinations
