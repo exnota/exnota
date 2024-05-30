@@ -16,7 +16,9 @@ part 'setup_integration_screen.freezed.dart';
 part 'setup_integration_screen.g.dart';
 
 class SetupIntegrationScreen extends ConsumerStatefulWidget {
-  const SetupIntegrationScreen({super.key});
+  final bool forceReauth;
+
+  const SetupIntegrationScreen({super.key, this.forceReauth = false});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
@@ -36,7 +38,7 @@ class _SetupIntegrationScreenState
     Future(() {
       ref
           .read(setupIntegrationScreenControllerProvider.notifier)
-          .loadIntegration();
+          .loadIntegration(forceReauth: widget.forceReauth);
     });
   }
 
@@ -70,7 +72,7 @@ class _SetupIntegrationScreenState
         case IntegrationSetupStatus.loadingIntegration:
           ref
               .read(setupIntegrationScreenControllerProvider.notifier)
-              .loadIntegration();
+              .loadIntegration(forceReauth: false);
           break;
         case IntegrationSetupStatus.verifyingIntegration:
           ref
@@ -269,7 +271,7 @@ class SetupIntegrationScreenController
   }
 
   // Fetches integration from backend and saves to this provider's state
-  Future<void> loadIntegration() async {
+  Future<void> loadIntegration({required bool forceReauth}) async {
     _log.debug('loadIntegration: Loading integration');
     final result = await ref.read(integrationFetcherProvider.notifier).fetch(
           type: IntegrationType.notion,
@@ -303,6 +305,17 @@ class SetupIntegrationScreenController
       state = const IntegrationSetupState(
         status: IntegrationSetupStatus.createNotionIntegration,
         integration: null,
+        error: null,
+        errorRetryStatus: null,
+      );
+      return;
+    }
+
+    if (forceReauth) {
+      _log.debug('loadIntegration: Forcing reauth');
+      state = IntegrationSetupState(
+        status: IntegrationSetupStatus.updateNotionIntegration,
+        integration: result.integration,
         error: null,
         errorRetryStatus: null,
       );

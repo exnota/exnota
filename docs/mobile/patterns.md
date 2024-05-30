@@ -1,5 +1,12 @@
 # Patterns
 
+## Enums
+
+### Freezed/fromJson and fallback values
+
+Use `unknownEnumValue` to definte a fallback enum for generated code that
+converts from JSON. E.g. setting to a 'MyEnum.unknown'.
+
 ## Providers
 
 ### Perform actions on state change

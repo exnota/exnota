@@ -9,6 +9,7 @@ import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/common/block/workspace_service.dart';
 import 'package:exnota/src/common/integration/integration_service.dart';
 import 'package:exnota/src/common/integration/notion_destination.dart';
+import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
@@ -176,13 +177,54 @@ class DisplayDestinations extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text('Destinations'),
+        const SizedBox(height: 16),
         if (destinations != null) ...[
           for (final destination in d)
-            ListTile(
-              title: Text(destination.name ?? ''),
-              subtitle: Text(destination.id),
+            Row(
+              children: [
+                Text(destination.name ?? ''),
+                const SizedBox(width: 16),
+                switch (destination.external?.notionStatus) {
+                  DestinationExternalNotionStatus.connected =>
+                    const Text('Connected'),
+                  DestinationExternalNotionStatus.notFound =>
+                    const Text('Not found'),
+                  DestinationExternalNotionStatus.archived =>
+                    const Text('Archived'),
+                  DestinationExternalNotionStatus.unknownError =>
+                    const Text('Unknown error'),
+                  DestinationExternalNotionStatus.rateLimited =>
+                    const Text('API error'),
+                  DestinationExternalNotionStatus.unknown ||
+                  null =>
+                    const Text('Unknown'),
+                },
+                const SizedBox(width: 16),
+                if (destination.external?.notionStatus ==
+                    DestinationExternalNotionStatus.notFound)
+                  ElevatedButton(
+                    onPressed: () {
+                      ref.read(routerProvider.notifier).pushReplacement(
+                          Screen.settingsSetupIntegrationForceReauth);
+                    },
+                    child: const Text('Reconnect'),
+                  ),
+                if (destination.external?.notionStatus !=
+                        DestinationExternalNotionStatus.notFound &&
+                    destination.external?.notionStatus !=
+                        DestinationExternalNotionStatus.connected)
+                  ElevatedButton(
+                    onPressed: () {
+                      ref
+                          .read(routerProvider.notifier)
+                          .pushReplacement(Screen.settingsSetupIntegration);
+                    },
+                    child: const Text('Retry'),
+                  ),
+              ],
             ),
         ],
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

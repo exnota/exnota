@@ -74,10 +74,15 @@ class Destination with _$Destination {
 }
 
 enum DestinationExternalNotionStatus {
+  @JsonValue('connected')
   connected,
+  @JsonValue('not-found')
   notFound,
+  @JsonValue('archived')
   archived,
+  @JsonValue('unknown-error')
   unknownError,
+  @JsonValue('rate-limited')
   rateLimited,
   unknown,
 }
@@ -86,8 +91,11 @@ enum DestinationExternalNotionStatus {
 // status or other data, e.g. an unknown status to DestinationExternalNotionStatus.unknown.
 @freezed
 class DestinationExternal with _$DestinationExternal {
-  const factory DestinationExternal({DestinationExternalNotionStatus? status}) =
-      _DestinationExternal;
+  const factory DestinationExternal(
+      {@JsonKey(
+          name: 'notion_status',
+          unknownEnumValue: DestinationExternalNotionStatus.unknown)
+      DestinationExternalNotionStatus? notionStatus}) = _DestinationExternal;
 
   const DestinationExternal._();
 
