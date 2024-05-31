@@ -27,9 +27,6 @@ type integrationEndpointHooks struct {
 type IntegrationEndpointConfig struct {
 	BasePath       string
 	NotionClientID string
-	// Added this when I thought localhost redirect_uris wouldn't work. Turns
-	// out they do but thought I'd leave this here for laziness sake.
-	NotionRedirectBasePath string
 }
 
 func NewIntegrationEndpointHooks(

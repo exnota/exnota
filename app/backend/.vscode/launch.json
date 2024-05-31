@@ -21,7 +21,6 @@
       ],
       "env": {
         "BASE_PATH": "http://localhost:8080/",
-        "NOTION_REDIRECT_BASE_PATH": "https://app.exnota.com/",
         "NOTION_OAUTH_CLIENT_ID": "${config:rest-client.environmentVariables.$shared.notionOauthClientId}",
         "NOTION_OAUTH_CLIENT_SECRET": "${config:rest-client.environmentVariables.$shared.notionOauthSecret}"
       }

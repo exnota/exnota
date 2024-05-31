@@ -60,12 +60,14 @@ Fix:
 
 ### Environment variables
 
-See <https://dokku.com/docs/configuration/environment-variables/>
+Required variables in `/app/backend/cmd/config/config.go`.
 
 ```bash
 ssh -t dokku@195.201.33.178 config:get exnota0 VARIABLE_NAME
-ssh -t dokku@195.201.33.178 config:get exnota0 VARIABLE_NAME=VALUE
+ssh -t dokku@195.201.33.178 config:set exnota0 VARIABLE_NAME=VALUE --no-restart
 ```
+
+See <https://dokku.com/docs/configuration/environment-variables/>
 
 ### Checking logs
 
