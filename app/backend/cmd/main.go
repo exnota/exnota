@@ -24,15 +24,22 @@ import (
 	_ "exnota.com/backend/migrations"
 	user_api_hooks "exnota.com/backend/user/api"
 	"github.com/caarlos0/env"
+	"github.com/go-playground/validator/v10"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 )
 
+var validate = validator.New(validator.WithRequiredStructEnabled())
+
 func main() {
 	cfg := config.Config{}
 	err := env.Parse(&cfg)
+	if err != nil {
+		panic(err)
+	}
+	err = validate.Struct(cfg)
 	if err != nil {
 		panic(err)
 	}
