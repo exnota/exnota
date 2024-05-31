@@ -199,19 +199,30 @@ class SetupErrorMessage extends ConsumerWidget {
       children: [
         Text('Error: $error'),
         if (errorRetryStatus != null)
-          ElevatedButton(
-            onPressed: () {
-              // Clear token. This is a bit of a hack to ensure the flow truly
-              // starts from the beginning. It shouldn't go in the loading
-              // integration method because we may load this screen with a valid
-              // code ready to go.
-              ref.read(notionAuthProvider.notifier).clearCode();
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(routerProvider.notifier).pop();
+                },
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {
+                  // Clear token. This is a bit of a hack to ensure the flow truly
+                  // starts from the beginning. It shouldn't go in the loading
+                  // integration method because we may load this screen with a valid
+                  // code ready to go.
+                  ref.read(notionAuthProvider.notifier).clearCode();
 
-              ref
-                  .read(setupIntegrationScreenControllerProvider.notifier)
-                  .transitionStatus(newStatus: errorRetryStatus!);
-            },
-            child: const Text('Retry'),
+                  ref
+                      .read(setupIntegrationScreenControllerProvider.notifier)
+                      .transitionStatus(newStatus: errorRetryStatus!);
+                },
+                child: const Text('Retry'),
+              ),
+            ],
           ),
       ],
     );

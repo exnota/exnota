@@ -1,6 +1,7 @@
 import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:exnota/src/account/user/screen/login_screen.dart';
 import 'package:exnota/src/block/screen/setup_destination_screen.dart';
+import 'package:exnota/src/block/screen/setup_workspace_screen.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/integration/screen/setup_integration_screen.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -87,30 +88,38 @@ class Router extends _$Router {
         navigatorKey: navigatorKey,
         routes: [
           GoRoute(
-            path: _routeNotes,
+            path: _routeHome,
             builder: (context, state) => const BlockListScreen(),
-          ),
-          GoRoute(
-            path: _routeSettings,
-            builder: (context, state) => const SettingsScreen(),
-          ),
-          GoRoute(
-              path: _routeSettingsSetupIntegration,
-              builder: (context, state) {
-                final forceReauthParam =
-                    state.uri.queryParameters['forceReauth'] ??
-                        ''; // may be null
-                return SetupIntegrationScreen(
-                  forceReauth: forceReauthParam == 'true',
-                );
-              }),
-          GoRoute(
-            path: _routeSettingsSetupDestination,
-            builder: (context, state) => const SetupDestinationScreen(),
-          ),
-          GoRoute(
-            path: _routeLogin,
-            builder: (context, state) => const LoginScreen(),
+            routes: [
+              GoRoute(
+                path: _routeLogin,
+                builder: (context, state) => const LoginScreen(),
+              ),
+              GoRoute(
+                  path: _routeSettings,
+                  builder: (context, state) => const SettingsScreen(),
+                  routes: [
+                    GoRoute(
+                      path: _routeSettingsSetupWorkspace,
+                      builder: (context, state) => const SetupWorkspaceScreen(),
+                    ),
+                    GoRoute(
+                        path: _routeSettingsSetupIntegration,
+                        builder: (context, state) {
+                          final forceReauthParam =
+                              state.uri.queryParameters['forceReauth'] ??
+                                  ''; // may be null
+                          return SetupIntegrationScreen(
+                            forceReauth: forceReauthParam == 'true',
+                          );
+                        }),
+                    GoRoute(
+                      path: _routeSettingsSetupDestination,
+                      builder: (context, state) =>
+                          const SetupDestinationScreen(),
+                    ),
+                  ]),
+            ],
           ),
         ],
         // Ensure the router is updated when login status changes.
@@ -124,7 +133,7 @@ class Router extends _$Router {
           }
 
           if (state.matchedLocation == '/') {
-            return _routeNotes;
+            return _routeHome;
           }
           return null;
         });
@@ -158,6 +167,11 @@ class Router extends _$Router {
   void push(Screen screen) {
     _log.debug('Pushing screen: $screen');
     state.push(to(screen));
+  }
+
+  void pop() {
+    _log.debug('Popping');
+    state.pop();
   }
 
   void pushReplacement(Screen screen) {
@@ -195,11 +209,12 @@ enum Screen {
   login,
 }
 
-const _routeNotes = '/notes';
-const _routeSettings = '/settings';
-const _routeSettingsSetupIntegration = '/settings/setup/integration';
-const _routeSettingsSetupDestination = '/settings/setup/destination';
-const _routeLogin = '/login';
+const _routeHome = '/';
+const _routeSettings = 'settings';
+const _routeSettingsSetupWorkspace = 'setup-workspace';
+const _routeSettingsSetupIntegration = 'setup-integration';
+const _routeSettingsSetupDestination = 'setup-destination';
+const _routeLogin = 'login';
 
 /// BuildContext helper, for getting a route string.
 ///
@@ -207,16 +222,25 @@ const _routeLogin = '/login';
 String to(Screen route) {
   switch (route) {
     case Screen.notes:
-      return _routeNotes;
+      return _routeHome;
     case Screen.settings:
-      return _routeSettings;
+      Uri uri = Uri(pathSegments: [_routeSettings]);
+      return '/$uri';
     case Screen.settingsSetupIntegration:
-      return _routeSettingsSetupIntegration;
+      Uri uri =
+          Uri(pathSegments: [_routeSettings, _routeSettingsSetupIntegration]);
+      return '/$uri';
     case Screen.settingsSetupIntegrationForceReauth:
-      return '$_routeSettingsSetupIntegration?forceReauth=true';
+      Uri uri = Uri(
+          pathSegments: [_routeSettings, _routeSettingsSetupIntegration],
+          queryParameters: {'forceReauth': 'true'});
+      return '/$uri';
     case Screen.settingsSetupDestination:
-      return _routeSettingsSetupDestination;
+      Uri uri =
+          Uri(pathSegments: [_routeSettings, _routeSettingsSetupDestination]);
+      return '/$uri';
     case Screen.login:
-      return _routeLogin;
+      Uri uri = Uri(pathSegments: [_routeLogin]);
+      return '/$uri';
   }
 }
