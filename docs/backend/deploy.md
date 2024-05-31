@@ -43,9 +43,9 @@ Don't run inside dev container!
 
 ### Troubleshooting
 
-#### Error: At least one invalid signature was encountered
+#### Error: At least one invalid signature was encountered, or "no space left on device"
 
-Apparently caused by insufficient space according to this [SO post](https://stackoverflow.com/questions/62473932/at-least-one-invalid-signature-was-encountered) (which has more options for freeing space in addition to below).
+Former is apparently caused by insufficient space according to this [SO post](https://stackoverflow.com/questions/62473932/at-least-one-invalid-signature-was-encountered) (which has more options for freeing space in addition to below).
 
 Fix:
 

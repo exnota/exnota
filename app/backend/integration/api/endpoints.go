@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"net/url"
+	netUrl "net/url"
 	"strings"
 
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase"
 	"exnota.com/backend/lib/api"
+	"exnota.com/backend/lib/url"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -25,7 +26,6 @@ type integrationEndpointHooks struct {
 }
 
 type IntegrationEndpointConfig struct {
-	BasePath       string
 	NotionClientID string
 }
 
@@ -56,17 +56,11 @@ func (h *integrationEndpointHooks) notionMobileCodeRequestPath() {
 				"path",
 				api.NotionMobileCodeRequestPath,
 			)
-			redirectUri, err := url.JoinPath(
-				h.config.BasePath,
-				api.NotionMobileRedirectPath,
-			)
-			if err != nil {
-				return err
-			}
+			redirectUri := url.Url(api.NotionMobileRedirectPath, h.app)
 			url := "https://api.notion.com/v1/oauth/authorize?client_id=" +
 				h.config.NotionClientID +
 				"&response_type=code&owner=user&redirect_uri=" +
-				url.QueryEscape(redirectUri)
+				netUrl.QueryEscape(redirectUri)
 
 			// Manually constract this using a string + c.JSONBlob because
 			// using json.Marshall (or c.JSON(), which calls json.Marshall) will

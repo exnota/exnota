@@ -222,7 +222,6 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 
 	// Custom endpoints
 	integ_api.NewIntegrationEndpointHooks(app, integ_api.IntegrationEndpointConfig{
-		BasePath:       cfg.BasePath,
 		NotionClientID: cfg.NotionOAuthClientID,
 	}).ApplyHooks()
 	integ_api.NewSyncIntegrationDestinationsAPI(app, integrationDestinationSync).ApplyHooks()
