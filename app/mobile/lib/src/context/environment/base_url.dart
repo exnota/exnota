@@ -36,7 +36,7 @@ class BaseUrl extends _$BaseUrl {
         }
       case Environment.prod:
         _log.info('Detected prod environment');
-        return Uri.https('exnota.matt.to');
+        return Uri.https('app.exnota.com');
     }
   }
 }

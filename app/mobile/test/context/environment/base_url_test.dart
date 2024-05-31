@@ -138,7 +138,7 @@ void main() {
 
         expect(
           container.read(baseUrlProvider),
-          equals(Uri.https('exnota.matt.to')),
+          equals(Uri.https('app.exnota.com')),
         );
       });
     });
