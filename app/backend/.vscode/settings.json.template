@@ -21,7 +21,7 @@
       "block_job_collection_id": ""
     },
     "production": {
-      "baseUrl": "https://exnota.matt.to/api",
+      "baseUrl": "https://app.exnota.com/api",
       "user_id": "",
       "username": "",
       "password": "",
