@@ -61,14 +61,6 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
               SettingsTile(
-                title: const Text('Configure integration'),
-                leading: const Icon(Icons.import_export),
-                onPressed: (BuildContext context) {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => const SetupIntegrationScreen()));
-                },
-              ),
-              SettingsTile(
                 title: const Text('Sign out'),
                 leading: const Icon(Icons.exit_to_app),
                 onPressed: (BuildContext context) async {
