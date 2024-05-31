@@ -163,7 +163,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	)
 	block.NewDestinationUpdate(app, destinationFetcher).ApplyHooks()
 	block.NewBlockCreate(app, destinationFetcher).ApplyHooks()
-	block.NewBlockUpdate(app, block_data.NewBlockFetcher(app)).ApplyHooks()
+	block.NewBlockUpdate(app, block_data.NewBlockFetcher(app), destinationFetcher).ApplyHooks()
 
 	// Event workflows
 	//

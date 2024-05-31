@@ -18,12 +18,12 @@
 ### Pocketbase API
 ### ----------------------------------------------------
 ### List all blocks
-GET {{baseUrl}}/collections/{{block_collection_id}}/records HTTP/1.1
+GET {{baseUrl}}/collections/block/records HTTP/1.1
 content-type: application/json
 Authorization: {{auth_token}}
 
 ### Create voice note
-POST {{baseUrl}}/collections/{{block_collection_id}}/records HTTP/1.1
+POST {{baseUrl}}/collections/block/records HTTP/1.1
 Authorization: {{auth_token}}
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -55,7 +55,7 @@ Content-Type: audio/wav
 --boundary--
 
 ### Create text note
-POST {{baseUrl}}/collections/{{block_collection_id}}/records HTTP/1.1
+POST {{baseUrl}}/collections/block/records HTTP/1.1
 Authorization: {{auth_token}}
 Content-Type: application/json
 
@@ -67,13 +67,22 @@ Content-Type: application/json
     "userCreated": "{{$datetime iso8601}}"
 }
 
-### Update text note
-PATCH {{baseUrl}}/collections/{{block_collection_id}}/records/qpd2wx0ryerqhw1 HTTP/1.1
+### Update block - text note title
+PATCH {{baseUrl}}/collections/block/records/qpd2wx0ryerqhw1 HTTP/1.1
 Authorization: {{auth_token}}
 Content-Type: application/json
 
 {
     "title": "block title 2"
+}
+
+### Update block - add destination
+PATCH {{baseUrl}}/collections/block/records/bfq2tn3buvipj99 HTTP/1.1
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+{
+  "destination": {{destination}}
 }
 
 ### Create integration - See 'Exnota auth' section below.
@@ -111,7 +120,7 @@ Content-Type: application/json
     }
 }
 
-### Update destination
+### Update destination - integration
 PATCH {{baseUrl}}/collections/destination/records/c4a300da2b84aad HTTP/1.1
 Authorization: {{auth_token}}
 Content-Type: application/json

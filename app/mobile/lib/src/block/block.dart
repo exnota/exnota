@@ -106,8 +106,9 @@ class Block with _$Block {
       body['archived'] = archived!.toIso8601String();
     }
 
-    // TODO: Remove fallback destinationId. For testing only.
-    body['destination'] = destinationId ?? 'qo5swl6IBz45HvX';
+    if (destinationId != null) {
+      body['destination'] = destinationId;
+    }
 
     return body;
   }

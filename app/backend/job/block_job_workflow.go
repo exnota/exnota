@@ -47,7 +47,10 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 				return err
 			}
 
-			// Create export job
+			// Create export job if destination is set
+			if b.Destination() == "" {
+				return nil
+			}
 			file := b.File()
 			var audio *data.AudioField
 			if audioBlock, ok := b.(block.VoiceNoteBlock); ok {
@@ -174,11 +177,14 @@ func (j *blockJobWorkflow) createAddTranscriptionJob() {
 			return nil
 		}
 
-		// Create export job
+		// Create export job if destination is set
 		blockJobFetcher := block_data.NewBlockFetcher(j.app)
 		b, err := blockJobFetcher.FetchById(updatedJob.Block())
 		if err != nil {
 			return err
+		}
+		if b.Destination() == "" {
+			return nil
 		}
 
 		// get transcription

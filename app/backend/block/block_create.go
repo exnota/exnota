@@ -30,32 +30,16 @@ func (r *blockCreate) ApplyHooks() {
 			return err
 		}
 
-		destination, err := r.destinationFetcher.FetchById(block.Destination())
-		if err != nil {
-			return err
-		}
+		// if destination is set, user must match destination's user
+		if block.Destination() != "" {
+			destination, err := r.destinationFetcher.FetchById(block.Destination())
+			if err != nil {
+				return err
+			}
 
-		if block.User() != destination.User() {
-			return errors.New("Block user does not match destination user")
-		}
-
-		return nil
-	})
-
-	// user must match destination's user
-	r.app.OnModelBeforeCreate(CollectionBlock).Add(func(e *core.ModelEvent) error {
-		block, err := LoadBlockFromModel(e.Model, r.app)
-		if err != nil {
-			return err
-		}
-
-		destination, err := r.destinationFetcher.FetchById(block.Destination())
-		if err != nil {
-			return err
-		}
-
-		if block.User() != destination.User() {
-			return errors.New("Block user does not match destination user")
+			if block.User() != destination.User() {
+				return errors.New("Block user does not match destination user")
+			}
 		}
 
 		return nil
