@@ -60,7 +60,7 @@ Fix:
 
 ### Environment variables
 
-See https://dokku.com/docs/configuration/environment-variables/
+See <https://dokku.com/docs/configuration/environment-variables/>
 
 ```bash
 ssh -t dokku@195.201.33.178 config:get exnota0 VARIABLE_NAME
@@ -79,7 +79,7 @@ There is an [official client](https://dokku.com/docs/deployment/remote-commands/
 
 1. Ensure SSH is setup as below.
 
-2. Omit `dokku` root command and send sub-command.
+2. Omit `dokku` root command and send sub-command. On local machine, not dev container.
 
     ```bash
         ssh -t dokku@195.201.33.178 <sub-command>
@@ -92,7 +92,7 @@ There is an [official client](https://dokku.com/docs/deployment/remote-commands/
 
 ### SSH
 
-1. Create an SSH key locally and add to Hetzner via UI.
+1. Create an SSH key locally (not dev container) and add to Hetzner via UI.
    - This will be used for deploys and can be used to configure Dokku remotely.
 
 ### Dokku
