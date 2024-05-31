@@ -57,7 +57,7 @@ class LoginScreenController extends _$LoginScreenController {
     }
 
     _log.debug('loginGoogle: User verified');
-    ref.read(routerProvider.notifier).go(Screen.notes);
+    ref.read(routerProvider.notifier).go(Screen.home);
     state = state.copyWith(status: LoginStatus.awaitingLogin);
   }
 }

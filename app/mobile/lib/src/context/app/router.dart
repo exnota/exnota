@@ -74,7 +74,7 @@ class Router extends _$Router {
     // This isn't intended to be reactive. It's just a one-time setup.
     final initialScreen =
         ref.read(initializeOrPushscreenProvider.notifier).popInitialScreen() ??
-            Screen.notes;
+            Screen.home;
 
     final initialHasActiveUser = ref.read(hasActiveUserSyncProvider);
     final loginStatus = RouterLoginStatus(active: initialHasActiveUser);
@@ -129,11 +129,11 @@ class Router extends _$Router {
           _log.debug('Redirecting location: ${state.matchedLocation}');
 
           if (!loginStatus.active) {
-            return _routeLogin;
+            return to(Screen.login);
           }
 
           if (state.matchedLocation == '/') {
-            return _routeHome;
+            return to(Screen.home);
           }
           return null;
         });
@@ -201,7 +201,7 @@ final navigatorKey = GlobalKey<NavigatorState>();
 // ----------------------------------------------------------------------------
 
 enum Screen {
-  notes,
+  home, // notes/blocks screen
   settings,
   settingsSetupIntegration,
   settingsSetupIntegrationForceReauth,
@@ -221,7 +221,7 @@ const _routeLogin = 'login';
 /// E.g. `context.push(to(Screen.settings));`
 String to(Screen route) {
   switch (route) {
-    case Screen.notes:
+    case Screen.home:
       return _routeHome;
     case Screen.settings:
       Uri uri = Uri(pathSegments: [_routeSettings]);
