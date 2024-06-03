@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
+import 'package:exnota/src/lib/data/sync/set_block_destination_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 
@@ -24,6 +25,20 @@ class SyncCommandRepoMapper {
             createdAt: command.createdAt,
             startedAt: command.startedAt,
             updatedAt: command.updatedAt);
+      case SetBlockDestinationSyncCommand():
+        final data = jsonEncode(command.data.toJson());
+        return SyncCommandTableData(
+            id: command.id,
+            type: 'setBlockDestination',
+            entityId: command.entityId,
+            rootEntityId: command.rootEntityId,
+            userId: command.userId,
+            status: statusToData(command.status),
+            result: command.result,
+            data: data,
+            createdAt: command.createdAt,
+            startedAt: command.startedAt,
+            updatedAt: command.updatedAt);
       default:
         throw Exception('Unknown command type: ${command.runtimeType}');
     }
@@ -35,6 +50,20 @@ class SyncCommandRepoMapper {
         final data =
             CreateAudioBlockData.fromJson(jsonDecode(commandData.data));
         return CreateAudioBlockSyncCommand.fromDb(
+            id: commandData.id,
+            entityId: commandData.entityId,
+            rootEntityId: commandData.rootEntityId,
+            userId: commandData.userId,
+            status: statusFromData(commandData.status),
+            result: commandData.result,
+            createdAt: commandData.createdAt,
+            startedAt: commandData.startedAt,
+            updatedAt: commandData.updatedAt,
+            data: data);
+      case 'setBlockDestination':
+        final data =
+            SetBlockDestinationData.fromJson(jsonDecode(commandData.data));
+        return SetBlockDestinationSyncCommand.fromDb(
             id: commandData.id,
             entityId: commandData.entityId,
             rootEntityId: commandData.rootEntityId,

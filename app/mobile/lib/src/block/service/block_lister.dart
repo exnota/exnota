@@ -93,3 +93,15 @@ Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
   });
   return blocks;
 }
+
+@riverpod
+Future<List<Block>> blocksWithoutDestination(
+    BlocksWithoutDestinationRef ref) async {
+  final log = ref.watch(loggerProvider('BlocksWithoutDestination'));
+  log.debug('Getting blocks without destination');
+
+  final userId = ref.watch(activeUserIdOrThrowSyncProvider);
+  final blockRepo = ref.watch(blockRepoProvider);
+  final blocks = await blockRepo.listWithoutDestination(userId: userId);
+  return blocks;
+}

@@ -13,6 +13,7 @@ class Block with _$Block {
     required String id,
     String? title,
     required BlockType type,
+    String? destination,
     External? external,
     String? file,
     Audio? audio,
@@ -35,6 +36,23 @@ class Block with _$Block {
       type: BlockType.audio,
       userId: userId,
       userCreated: userCreated,
+    );
+  }
+
+  Block copyWithDestination(String? destination) {
+    return Block(
+      id: id,
+      title: title,
+      type: type,
+      destination: destination,
+      external: external,
+      file: file,
+      audio: audio,
+      userId: userId,
+      userCreated: userCreated,
+      created: created,
+      updated: updated,
+      archived: archived,
     );
   }
 
@@ -67,6 +85,7 @@ class Block with _$Block {
       id: model.id,
       title: model.data['title'],
       type: type,
+      destination: model.data['destination'],
       external: external,
       file: model.data['file'],
       audio: audio,
@@ -105,6 +124,18 @@ class Block with _$Block {
     if (archived != null) {
       body['archived'] = archived!.toIso8601String();
     }
+
+    if (destinationId != null) {
+      body['destination'] = destinationId;
+    }
+
+    return body;
+  }
+
+  static Map<String, dynamic> generateUpdateBody({
+    String? destinationId,
+  }) {
+    Map<String, dynamic> body = {};
 
     if (destinationId != null) {
       body['destination'] = destinationId;

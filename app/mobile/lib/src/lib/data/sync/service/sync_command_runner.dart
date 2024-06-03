@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
+import 'package:exnota/src/lib/data/sync/set_block_destination_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -188,13 +189,14 @@ class SyncCommandRunner {
         // generic on SyncCommand<T> but not sure it's possible to pattern match
         // that.
         case CreateAudioBlockSyncCommand():
+        case SetBlockDestinationSyncCommand():
           final blockRepo = _container.read(blockRepoProvider);
           _log.debug('processNext: Upserting block (id: ${updated.id})');
           await blockRepo.upsert(updated);
           _log.debug('processNext: Upsert complete');
           break;
         default:
-          throw Exception('Unhandled command type');
+          throw Exception('Unknown command type');
       }
     } catch (e) {
       // TODO: Improve specific error type handling.

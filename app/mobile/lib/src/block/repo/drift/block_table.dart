@@ -11,6 +11,8 @@ class BlockTable extends Table {
   // Allow any value in case of future expansion
   TextColumn get type => text()();
 
+  TextColumn get destination => text().nullable()();
+
   // Allow any value in case of future expansion
   TextColumn get external => text().nullable()();
 

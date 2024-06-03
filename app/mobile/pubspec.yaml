@@ -17,13 +17,13 @@ dependencies:
   freezed_annotation: ^2.4.1
   flutter_localizations:
     sdk: flutter
-  flutter_riverpod: ^2.4.3
+  flutter_riverpod: ^2.5.1
   http: ^1.2.0
   intl: any
   oauth2: ^2.0.2
   path_provider: ^2.0.0
   path: ^1.8.3
-  riverpod_annotation: ^2.2.0
+  riverpod_annotation: ^2.3.5
   url_launcher: ^6.2.6
   # Use this specific commit otherwise an APK cannot be built due to no
   # `namespace` in build.gradle.

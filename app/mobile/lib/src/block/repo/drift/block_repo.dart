@@ -49,4 +49,11 @@ class BlockRepo {
     final query = db.select(db.blockTable)..where((tbl) => tbl.id.equals(id));
     return await query.map(BlockRepoMapper.fromRepo).getSingleOrNull();
   }
+
+  Future<List<Block>> listWithoutDestination({required String userId}) async {
+    final query = db.select(db.blockTable)
+      ..where((tbl) => tbl.user.equals(userId))
+      ..where((tbl) => tbl.destination.isNull() | tbl.destination.equals(''));
+    return await query.map(BlockRepoMapper.fromRepo).get();
+  }
 }

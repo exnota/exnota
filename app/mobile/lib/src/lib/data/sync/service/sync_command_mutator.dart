@@ -1,6 +1,7 @@
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
+import 'package:exnota/src/lib/data/sync/set_block_destination_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/repo/sync_command_repo.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/block/repo/drift/block_repo.dart';
@@ -26,6 +27,7 @@ class SyncCommandMutator {
         // generic on SyncCommand<T> but not sure it's possible to pattern match
         // that.
         case CreateAudioBlockSyncCommand():
+        case SetBlockDestinationSyncCommand():
           final blockId = command.entityId;
           final blockRepo = BlockRepo(db);
           final current = await blockRepo.fetchById(blockId);
