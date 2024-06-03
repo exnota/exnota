@@ -33,6 +33,11 @@ Content-Type: application/json
 
 voice-note
 --boundary
+Content-Disposition: form-data; name="destination"
+Content-Type: application/json
+
+{{destination}}
+--boundary
 Content-Disposition: form-data; name="user"
 Content-Type: application/json
 
@@ -99,7 +104,7 @@ Content-Type: application/json
 }
 
 ### Update block - add destination
-PATCH {{baseUrl}}/collections/block/records/cyisf9bp0w2r00v HTTP/1.1
+PATCH {{baseUrl}}/collections/block/records/18inzougb0qtc9d HTTP/1.1
 Authorization: {{auth_token}}
 Content-Type: application/json
 

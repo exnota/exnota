@@ -202,7 +202,11 @@ func (j *transcriptionJobRunner) saveTranscription(
 			}
 			batch := sentences[i:end]
 			paragraph := strings.Join(batch, " ")
-			if i+batchSize >= numSentences-1 {
+			// Add to the previous paragraph if:
+			// 1. It's not the first batch
+			// 2. The current batch has only 1 sentence
+			// 3. It is the last batch
+			if i > 0 && len(batch) == 1 && i+batchSize >= numSentences-1 {
 				lastParagraph := paragraphs[len(paragraphs)-1]
 				lastParagraph += " " + paragraph
 				paragraphs[len(paragraphs)-1] = lastParagraph
