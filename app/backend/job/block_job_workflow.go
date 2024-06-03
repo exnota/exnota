@@ -24,7 +24,8 @@ func NewBlockJobWorkflow(app core.App) BlockJobWorkflow {
 
 func (j *blockJobWorkflow) ApplyHooks() {
 	j.createNewVoiceNoteJobs()
-	j.createAddTranscriptionJob()
+	j.createVoiceNoteDestinationAddedJob()
+	j.createVoiceNoteTranscriptionAddedJob()
 }
 
 func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
@@ -51,33 +52,14 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 			if b.Destination() == "" {
 				return nil
 			}
-			file := b.File()
-			var audio *data.AudioField
-			if audioBlock, ok := b.(block.VoiceNoteBlock); ok {
-				blockAudio, err := audioBlock.Audio()
-				if err != nil {
-					return err
-				}
-				if blockAudio != nil {
-					audio = &data.AudioField{
-						Transcription: blockAudio.Transcription,
-					}
-				}
+			config, err := j.buildCreateVoiceNoteConfig(b)
+			if err != nil {
+				return err
 			}
 			err = blockJobWriter.CreateExportJob(data.CreateCreateVoiceNoteRequest{
 				BlockId: b.Id(),
 				UserId:  b.User(),
-				Config: data.ExportJobConfig{
-					Command: data.CommandCreateVoiceNote,
-					Data: data.ExportJobData{
-						Id:          b.Id(),
-						Type:        data.BlockTypeVoiceNote,
-						Destination: b.Destination(),
-						File:        &file,
-						Title:       b.Title(),
-						Audio:       audio,
-					},
-				},
+				Config:  config,
 			})
 			if err != nil {
 				return err
@@ -87,7 +69,74 @@ func (j *blockJobWorkflow) createNewVoiceNoteJobs() {
 	})
 }
 
-func (j *blockJobWorkflow) createAddTranscriptionJob() {
+func (j *blockJobWorkflow) createVoiceNoteDestinationAddedJob() {
+	// Create export job when destination is added
+	j.app.OnModelAfterUpdate(block.CollectionBlock).Add(func(e *core.ModelEvent) error {
+		updatedBlock, err := block.LoadBlock(e.Model.(*models.Record), j.app)
+		if err != nil {
+			return err
+		}
+
+		// Voice note blocks only
+		if updatedBlock.Type() != block.BlockTypeVoiceNote {
+			return nil
+		}
+
+		// Adding destination updates only
+		prevBlock, err := block.LoadBlock(updatedBlock.Record().OriginalCopy(), j.app)
+		if err != nil {
+			return err
+		}
+		if prevBlock.Destination() != "" || updatedBlock.Destination() == "" {
+			return nil
+		}
+
+		// Create export job
+		blockJobWriter := data.NewBlockJobWriter(j.app)
+		config, err := j.buildCreateVoiceNoteConfig(updatedBlock)
+		if err != nil {
+			return err
+		}
+		err = blockJobWriter.CreateExportJob(data.CreateCreateVoiceNoteRequest{
+			BlockId: updatedBlock.Id(),
+			UserId:  updatedBlock.User(),
+			Config:  config,
+		})
+		if err != nil {
+			return err
+		}
+		return err
+	})
+}
+
+func (j *blockJobWorkflow) buildCreateVoiceNoteConfig(b block.Block) (data.ExportJobConfig, error) {
+	file := b.File()
+	var audio *data.AudioField
+	if audioBlock, ok := b.(block.VoiceNoteBlock); ok {
+		blockAudio, err := audioBlock.Audio()
+		if err != nil {
+			return data.ExportJobConfig{}, err
+		}
+		if blockAudio != nil {
+			audio = &data.AudioField{
+				Transcription: blockAudio.Transcription,
+			}
+		}
+	}
+	return data.ExportJobConfig{
+		Command: data.CommandCreateVoiceNote,
+		Data: data.ExportJobData{
+			Id:          b.Id(),
+			Type:        data.BlockTypeVoiceNote,
+			Destination: b.Destination(),
+			File:        &file,
+			Title:       b.Title(),
+			Audio:       audio,
+		},
+	}, nil
+}
+
+func (j *blockJobWorkflow) createVoiceNoteTranscriptionAddedJob() {
 	// Create add transcription export job when both transcription job and
 	// create voice note export job are completed.
 	j.app.OnModelAfterUpdate(data.CollectionBlockJob).Add(func(e *core.ModelEvent) error {

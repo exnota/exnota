@@ -127,22 +127,31 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 		return nil, fmt.Errorf("No notion object found: %s", notionObjectInternalId)
 	}
 
-	// Handle title
-	if request.Title != nil {
-		return nil, fmt.Errorf("Title is not supported on page create yet")
-	}
-
-	// Handle audio
-	if request.Audio != nil {
-		return nil, fmt.Errorf("Audio is not supported on page create yet")
-	}
-
-	// Handle file
 	updater, err := NewUpdater(integ.BlockMappingConfig{}, request.Id, s.app)
 	if err != nil {
 		return nil, err
 	}
+
+	// Handle title.
+	//
+	// This may be available on create when the export job was created later due
+	// to the block being given a destination after creation.
+	err = updater.UpdateTitle(request)
+	if err != nil {
+		return nil, err
+	}
+
+	// Handle file
 	err = updater.UpdateFile(request)
+	if err != nil {
+		return nil, err
+	}
+
+	// Handle audio field (transcription)
+	//
+	// This may be available on create when the export job was created later due
+	// to the block being given a destination after creation.
+	err = updater.UpdateAudio(request)
 	if err != nil {
 		return nil, err
 	}
@@ -155,16 +164,19 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 	writer := api.NewNotionWriter(s.app, *config.Auth.AccessToken)
 
 	// Gather children
-	fileChildren := []gonotion.Block{}
-	fileChildren = append(fileChildren, *updater.File.ChildToInsert)
+	children := []gonotion.Block{}
+	children = append(children, *updater.File.ChildToInsert)
+	children = append(children, updater.AudioTranscription.ChildrenToInsert...)
 
 	// Create page in Notion
 	switch destinationObject.Type() {
 	case lib_integ.NotionObjectTypeDatabase:
 		databaseId := destinationObject.ExternalID()
+		props := updater.GenerateProperties()
 		result, err := writer.CreateDatabasePage(api.CreateDatabasePageRequest{
-			DatabaseId: databaseId,
-			Children:   fileChildren,
+			DatabaseId:         databaseId,
+			DatabaseProperties: &props,
+			Children:           children,
 		})
 		if err != nil {
 			return nil, err
@@ -198,9 +210,17 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 		}, nil
 	case lib_integ.NotionObjectTypePage:
 		parentId := destinationObject.ExternalID()
+		props := updater.GenerateProperties()
+		var title []gonotion.RichText
+		if props != nil {
+			if titleProp, ok := props[titlePropertyId]; ok {
+				title = titleProp.Title
+			}
+		}
 		result, err := writer.CreateChildPage(api.CreateChildPageRequest{
 			ParentId: parentId,
-			Children: fileChildren,
+			Title:    title,
+			Children: children,
 		})
 		if err != nil {
 			return nil, err

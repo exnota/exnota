@@ -22,7 +22,7 @@ GET {{baseUrl}}/collections/block/records HTTP/1.1
 content-type: application/json
 Authorization: {{auth_token}}
 
-### Create voice note
+### Create voice note - short
 POST {{baseUrl}}/collections/block/records HTTP/1.1
 Authorization: {{auth_token}}
 Content-Type: multipart/form-data; boundary=boundary
@@ -54,6 +54,33 @@ Content-Type: audio/wav
 < jfk.wav
 --boundary--
 
+### Create voice note - long, without destination
+POST {{baseUrl}}/collections/block/records HTTP/1.1
+Authorization: {{auth_token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="type"
+Content-Type: application/json
+
+voice-note
+--boundary
+Content-Disposition: form-data; name="user"
+Content-Type: application/json
+
+{{user_id}}
+--boundary
+Content-Disposition: form-data; name="userCreated"
+Content-Type: application/json
+
+{{$datetime iso8601}}
+--boundary
+Content-Disposition: form-data; name="file"; filename="5min.m4a"
+Content-Type: audio/wav
+
+< /Users/matt/code/exnota/app/platform/tool/request/5min.m4a
+--boundary--
+
 ### Create text note
 POST {{baseUrl}}/collections/block/records HTTP/1.1
 Authorization: {{auth_token}}
@@ -77,12 +104,12 @@ Content-Type: application/json
 }
 
 ### Update block - add destination
-PATCH {{baseUrl}}/collections/block/records/bfq2tn3buvipj99 HTTP/1.1
+PATCH {{baseUrl}}/collections/block/records/exqcttaaan3picr HTTP/1.1
 Authorization: {{auth_token}}
 Content-Type: application/json
 
 {
-  "destination": {{destination}}
+  "destination": "{{destination}}"
 }
 
 ### Create integration - See 'Exnota auth' section below.
@@ -108,14 +135,14 @@ Authorization: {{auth_token}}
 Content-Type: application/json
 
 {
-    "id": "c4a300da2b84aae",
+    "id": "c4a300da2b84aaf",
     "name": " ",
     "workspace": "{{workspace}}",
     "user": "{{user_id}}",
     "external": {
       "config": {
-        "id": "85c36e5e2be04bca8f2b4964e4c5c30d",
-        "object": "page"
+        "id": "d01261c86c5344b49ece3116f43057c1",
+        "object": "database"
       }
     }
 }
