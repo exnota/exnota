@@ -13,6 +13,7 @@ import (
 	"exnota.com/backend/job/data"
 	"exnota.com/backend/lib/pb_file"
 	"exnota.com/backend/lib/whisper"
+	"github.com/neurosnap/sentences/english"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
@@ -178,7 +179,39 @@ func (j *transcriptionJobRunner) saveTranscription(
 			transcription += result.Transcription[i].Text
 		}
 		transcription = strings.Trim(transcription, " ")
-		err = b.SetTranscription([]string{transcription})
+
+		tokenizer, err := english.NewSentenceTokenizer(nil)
+		if err != nil {
+			panic(err)
+		}
+
+		sentenceTokens := tokenizer.Tokenize(transcription)
+		sentences := make([]string, len(sentenceTokens))
+		for i, token := range sentenceTokens {
+			sentences[i] = token.Text
+		}
+		paragraphs := make([]string, 0)
+		batchSize := 3
+		numSentences := len(sentences)
+		// 3 sentences per paragraph. If the last paragraph is only 1 sentence,
+		// append it to the previous paragraph.
+		for i := 0; i < numSentences; i += batchSize {
+			end := i + batchSize
+			if end > numSentences {
+				end = numSentences
+			}
+			batch := sentences[i:end]
+			paragraph := strings.Join(batch, " ")
+			if i+batchSize >= numSentences-1 {
+				lastParagraph := paragraphs[len(paragraphs)-1]
+				lastParagraph += " " + paragraph
+				paragraphs[len(paragraphs)-1] = lastParagraph
+			} else {
+				paragraphs = append(paragraphs, paragraph)
+			}
+		}
+
+		err = b.SetTranscription(paragraphs)
 		if err != nil {
 			return err
 		}

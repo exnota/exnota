@@ -14,6 +14,7 @@ require (
 	github.com/go-playground/validator/v10 v10.19.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/neurosnap/sentences v1.1.2 // indirect
 )
 
 require (
