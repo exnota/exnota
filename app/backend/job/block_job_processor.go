@@ -13,7 +13,7 @@ import (
 )
 
 type BlockJobProcessor interface {
-	Process(job data.BlockJob, runnable RunnableBlockJob) error
+	Process(jobID string, runnable RunnableBlockJob) error
 }
 
 type blockJobProcessor struct {
@@ -31,7 +31,20 @@ type RunnableBlockJob interface {
 	Run(job data.BlockJob, app core.App) (data.Summary, error)
 }
 
-func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob) (err error) {
+// Accept job ID rather than job because the entity may be queued for a while.
+func (j *blockJobProcessor) Process(jobID string, runnable RunnableBlockJob) (err error) {
+	slog.Info(
+		"[block job processor] Processing job",
+		"job",
+		jobID,
+	)
+
+	fetcher := data.NewBlockJobFetcher(j.app)
+	job, err := fetcher.FetchById(jobID)
+	if err != nil {
+		return err
+	}
+
 	writer := data.NewBlockJobWriter(j.app)
 
 	err = writer.SetStatusRunning(job.ID())
@@ -40,6 +53,13 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 		// been set to running if the last call failed.
 		return err
 	}
+	slog.Info(
+		"[block job processor] Job set to running",
+		"job",
+		job.ID(),
+		"type",
+		job.Type(),
+	)
 
 	// Handle panics from the runnable
 	defer func() {
@@ -61,11 +81,25 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 		}
 	}()
 
+	slog.Info(
+		"[block job processor] Running job",
+		"job",
+		job.ID(),
+		"type",
+		job.Type(),
+	)
 	summary, err := runnable.Run(job, j.app)
 	if err != nil {
 		j.handleError(job, err, nil)
 		return err
 	}
+	slog.Info(
+		"[block job processor] Job completed",
+		"job",
+		job.ID(),
+		"type",
+		job.Type(),
+	)
 
 	err = writer.SetStatusComplete(job.ID(), summary)
 	if err != nil {
@@ -74,6 +108,14 @@ func (j *blockJobProcessor) Process(job data.BlockJob, runnable RunnableBlockJob
 		// enable a better recovery path.
 		return err
 	}
+
+	slog.Info(
+		"[block job processor] Job set to complete",
+		"job",
+		job.ID(),
+		"type",
+		job.Type(),
+	)
 
 	// This error may come from the defer call
 	return err

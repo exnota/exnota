@@ -9,6 +9,7 @@ import (
 )
 
 type BlockJobFetcher interface {
+	FetchById(id string) (BlockJob, error)
 	ListJobsToProcess() ([]BlockJob, error)
 	ListExportJobs(request ListExportJobsRequest) ([]BlockJob, error)
 	ListJobs(request ListJobsRequest) ([]BlockJob, error)
@@ -20,6 +21,15 @@ type blockJobFetcher struct {
 
 func NewBlockJobFetcher(app core.App) BlockJobFetcher {
 	return &blockJobFetcher{app}
+}
+
+func (f *blockJobFetcher) FetchById(id string) (BlockJob, error) {
+	record, err := f.app.Dao().FindRecordById(CollectionBlockJob, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return LoadBlockJob(record, f.app)
 }
 
 func (f *blockJobFetcher) ListJobsToProcess() ([]BlockJob, error) {

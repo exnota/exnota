@@ -34,6 +34,14 @@ func NewExportJobRunner(
 }
 
 func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (data.Summary, error) {
+	slog.Info(
+		"[export job runner] Running job",
+		"job",
+		genericJob.ID(),
+		"block",
+		genericJob.Block(),
+	)
+
 	job, err := data.LoadExportBlockJob(genericJob.Record(), app)
 	if err != nil {
 		return nil, err
@@ -52,7 +60,11 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 
 	// Complete job if destination isn't integrated
 	if genericIntegration == nil {
-		slog.Info("No integration for destination", "destinationId", destination)
+		slog.Info(
+			"[export job runner] No integration for destination",
+			"destinationId",
+			destination,
+		)
 		return data.NewSummaryComplete(
 			"No integration for destination " + destination,
 		), nil
@@ -61,7 +73,7 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 	// Call appropriate integration type handler
 	switch integration := genericIntegration.(type) {
 	case integ.NotionIntegration:
-		slog.Info("Running Notion export job", "job", job.ID())
+		slog.Info("[export job runner] Running Notion export job", "job", job.ID())
 		exportRequest := notion.NoteRequest{
 			Integration: integration,
 			Command:     notion.ExportCommand(config.Command),
@@ -81,9 +93,12 @@ func (j *exportJobRunnerConfig) Run(genericJob data.BlockJob, app core.App) (dat
 		if err != nil {
 			return nil, err
 		}
+
+		slog.Info("[export job runner] Notion export job completed", "job", job.ID())
+
 		return j.exportResultToSummary(exportResult)
 	default:
-		slog.Error("Unknown integration type", "type", reflect.TypeOf(genericIntegration))
+		slog.Error("[export job runner] Unknown integration type", "type", reflect.TypeOf(genericIntegration))
 		return nil, fmt.Errorf("Unknown integration type: %s", reflect.TypeOf(genericIntegration))
 	}
 }
@@ -96,11 +111,17 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 	destinationFetcher := block_data.NewDestinationFetcher(j.app)
 	destination, err := destinationFetcher.FetchById(destinationId)
 	if err != nil {
-		slog.Error("Error fetching destination by id", "destinationId", destinationId, "err", err)
+		slog.Error(
+			"[export job runner] Error fetching destination by id",
+			"destinationId",
+			destinationId,
+			"err",
+			err,
+		)
 		return nil, err
 	}
 	if destination == nil {
-		slog.Error("Destination not found", "destinationId", destinationId)
+		slog.Error("[export job runner] Destination not found", "destinationId", destinationId)
 		return nil, fmt.Errorf("Destination not found")
 	}
 
@@ -109,7 +130,7 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 	workspace, err := j.workspaceFetcher.FetchById(destination.Workspace())
 	if err != nil {
 		slog.Error(
-			"Error fetching workspace by destination id",
+			"[export job runner] Error fetching workspace by destination id",
 			"destinationId",
 			destinationId,
 			"err",
@@ -118,14 +139,18 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 		return nil, err
 	}
 	if workspace == nil {
-		slog.Error("Workspace not found", "workspaceId", destination.Workspace())
+		slog.Error(
+			"[export job runner] Workspace not found",
+			"workspaceId",
+			destination.Workspace(),
+		)
 		return nil, fmt.Errorf("Workspace not found")
 	}
 
 	// Get integration for workspace
 	integrationId := workspace.Integration()
 	if integrationId == "" {
-		slog.Info("No integration for workspace", "workspaceId", workspace.Id())
+		slog.Info("[export job runner] No integration for workspace", "workspaceId", workspace.Id())
 		return nil, nil
 	}
 	integrationFetcher := integ_data.NewIntegrationFetcher(j.app)
@@ -134,11 +159,21 @@ func (j *exportJobRunnerConfig) integrationForDestination(
 		UserId:        userId,
 	})
 	if err != nil {
-		slog.Error("Error fetching integration by id", "integrationId", integrationId, "err", err)
+		slog.Error(
+			"[export job runner] Error fetching integration by id",
+			"integrationId",
+			integrationId,
+			"err",
+			err,
+		)
 		return nil, err
 	}
 	if integration == nil {
-		slog.Error("Integration not found by id", "integrationId", integrationId)
+		slog.Error(
+			"[export job runner] Integration not found by id",
+			"integrationId",
+			integrationId,
+		)
 		return nil, fmt.Errorf("Integration not found")
 	}
 	return integration, nil
@@ -148,7 +183,7 @@ func (j *exportJobRunnerConfig) exportResultToSummary(
 	result *notion.ExportResult,
 ) (data.Summary, error) {
 	if result == nil {
-		slog.Warn("Export result is nil")
+		slog.Warn("[export job runner] Export result is nil")
 		return data.NewSummaryCompleteEmpty(), nil
 	}
 

@@ -3,6 +3,7 @@ package job
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path"
@@ -36,6 +37,13 @@ func NewTranscriptionJobRunner(app core.App) TranscriptionJobRunner {
 
 // run method
 func (j *transcriptionJobRunner) Run(job data.BlockJob, app core.App) (data.Summary, error) {
+	slog.Info(
+		"[transcription job runner] Running job",
+		"job",
+		job.ID(),
+		"block",
+		job.Block(),
+	)
 	fileInfo, err := j.getFileInfo(job.Block())
 	if err != nil {
 		return nil, err
@@ -56,6 +64,13 @@ func (j *transcriptionJobRunner) Run(job data.BlockJob, app core.App) (data.Summ
 		return nil, err
 	}
 
+	slog.Info(
+		"[transcription job runner] Job completed",
+		"job",
+		job.ID(),
+		"block",
+		job.Block(),
+	)
 	return data.NewSummaryCompleteEmpty(), nil
 }
 
