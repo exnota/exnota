@@ -15,30 +15,38 @@ class BlockImporter extends _$BlockImporter {
     // No-op
   }
 
-  Future<void> import(RecordModel? record) async {
+  Future<void> import({required Block block}) async {
+    final repo = ref.read(blockRepoProvider);
+    try {
+      _log.debug('Upserting block ${block.id}');
+      await repo.upsert(block);
+    } catch (e) {
+      _log.error('Error importing block ${block.id}', exception: e);
+    }
+  }
+
+  Future<void> importRecord(RecordModel? record) async {
     if (record == null) {
       _log.warn('No block record to import');
       return;
     }
 
-    final repo = ref.read(blockRepoProvider);
     try {
       final block = Block.fromRecord(record);
 
-      _log.debug('Upserting block ${block.id}');
-      await repo.upsert(block);
+      return import(block: block);
     } catch (e) {
-      _log.error('Error importing block ${record.id}', exception: e);
+      _log.error('Error mapping block record ${record.id}', exception: e);
     }
   }
 
-  Future<void> importAll(List<RecordModel> records) async {
+  Future<void> importAllRecords(List<RecordModel> records) async {
     _log.debug('Importing ${records.length} block records');
 
     // Don't use a transaction. We don't want one failed import to block the
     // rest.
     for (final record in records) {
-      await import(record);
+      await importRecord(record);
     }
   }
 }

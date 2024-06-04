@@ -1,3 +1,4 @@
+import 'package:exnota/src/context/workspace/block_importer.dart';
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
@@ -34,7 +35,9 @@ class SyncCommandMutator {
 
           // Update or create the entity using the command's localUpdate method.
           final updated = await command.localUpdate(current: current);
-          await blockRepo.upsert(updated);
+          await _container
+              .read(blockImporterProvider.notifier)
+              .import(block: updated);
           break;
         default:
           throw Exception('Unknown command type');

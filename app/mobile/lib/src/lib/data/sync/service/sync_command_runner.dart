@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:exnota/src/context/workspace/block_importer.dart';
 import 'package:exnota/src/lib/clock.dart';
 import 'package:exnota/src/lib/data/sync/create_audio_note_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/set_block_destination_sync_command.dart';
 import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
 import 'package:exnota/src/lib/data/sync/sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/block/repo/drift/block_repo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -190,9 +190,10 @@ class SyncCommandRunner {
         // that.
         case CreateAudioBlockSyncCommand():
         case SetBlockDestinationSyncCommand():
-          final blockRepo = _container.read(blockRepoProvider);
           _log.debug('processNext: Upserting block (id: ${updated.id})');
-          await blockRepo.upsert(updated);
+          await _container
+              .read(blockImporterProvider.notifier)
+              .import(block: updated);
           _log.debug('processNext: Upsert complete');
           break;
         default:

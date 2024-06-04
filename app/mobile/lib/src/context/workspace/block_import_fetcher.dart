@@ -147,7 +147,7 @@ class ImportBlocksRequest extends ImportRequest<List<RecordModel>> {
         .timeout(defaultTimeout);
     _log.debug('Fetched ${result.length} blocks');
 
-    await ref.read(blockImporterProvider.notifier).importAll(result);
+    await ref.read(blockImporterProvider.notifier).importAllRecords(result);
 
     _log.debug('Importing blocks complete');
   }

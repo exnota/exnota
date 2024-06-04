@@ -224,7 +224,7 @@ class BlockImportSubscribeRequest
         await pb.collection(collectionBlock).subscribe('*', (e) async {
       _log.debug(
           'Received \'${e.action}\' action for block record ${e.record?.id}');
-      await ref.read(blockImporterProvider.notifier).import(e.record);
+      await ref.read(blockImporterProvider.notifier).importRecord(e.record);
     });
     _log.debug('Subscribed to block changes');
     return result;
