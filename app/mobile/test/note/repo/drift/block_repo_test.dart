@@ -30,21 +30,21 @@ void main() {
           now = Clock().now();
           final block1 = BlockTableData(
               id: 'block1',
-              type: 'audio',
+              type: 'voice-note',
               user: 'user 1',
               userCreated: DateTime.utc(1809, DateTime.february, 11),
               created: DateTime.utc(1809, DateTime.february, 12),
               updated: now);
           final block2 = BlockTableData(
               id: 'block2',
-              type: 'audio',
+              type: 'voice-note',
               user: 'user 1',
               userCreated: DateTime.utc(1879, DateTime.march, 13),
               created: DateTime.utc(1879, DateTime.march, 14),
               updated: now);
           final block3 = BlockTableData(
               id: 'block3',
-              type: 'audio',
+              type: 'voice-note',
               user: 'user 2',
               userCreated: DateTime.utc(1879, DateTime.march, 13),
               created: DateTime.utc(1879, DateTime.march, 14),
@@ -68,7 +68,7 @@ void main() {
                     // First
                     final block = blocks[0];
                     expect(block.id, 'block2');
-                    expect(block.type, BlockType.audio);
+                    expect(block.type, BlockType.voiceNote);
                     expect(block.userId, 'user 1');
                     expect(block.userCreated,
                         DateTime.utc(1879, DateTime.march, 13));
@@ -79,7 +79,7 @@ void main() {
                     // Second
                     final block2 = blocks[1];
                     expect(block2.id, 'block1');
-                    expect(block2.type, BlockType.audio);
+                    expect(block2.type, BlockType.voiceNote);
                     expect(block2.userId, 'user 1');
                     expect(block2.userCreated,
                         DateTime.utc(1809, DateTime.february, 11));

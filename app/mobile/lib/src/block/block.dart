@@ -33,7 +33,7 @@ class Block with _$Block {
   }) {
     return Block(
       id: id,
-      type: BlockType.audio,
+      type: BlockType.voiceNote,
       userId: userId,
       userCreated: userCreated,
     );
@@ -59,11 +59,11 @@ class Block with _$Block {
   factory Block.fromRecord(RecordModel model) {
     final BlockType type;
     switch (model.data['type']) {
-      case 'audio':
-        type = BlockType.audio;
+      case 'voice-note':
+        type = BlockType.voiceNote;
         break;
-      case 'text':
-        type = BlockType.text;
+      case 'text-note':
+        type = BlockType.textNote;
         break;
       default:
         type = BlockType.unknown;
@@ -107,10 +107,10 @@ class Block with _$Block {
     }
 
     switch (type) {
-      case BlockType.audio:
+      case BlockType.voiceNote:
         body['type'] = 'voice-note';
         break;
-      case BlockType.text:
+      case BlockType.textNote:
         body['type'] = 'text-note';
         break;
       case BlockType.unknown:
@@ -145,7 +145,7 @@ class Block with _$Block {
   }
 }
 
-enum BlockType { audio, text, unknown }
+enum BlockType { voiceNote, textNote, unknown }
 
 @freezed
 class Audio with _$Audio {

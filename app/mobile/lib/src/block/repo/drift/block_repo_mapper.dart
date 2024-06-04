@@ -40,10 +40,10 @@ class BlockRepoMapper {
 
   static BlockType _typeFromRepo(String type) {
     switch (type) {
-      case 'audio':
-        return BlockType.audio;
-      case 'text':
-        return BlockType.text;
+      case 'voice-note':
+        return BlockType.voiceNote;
+      case 'text-note':
+        return BlockType.textNote;
       default:
         return BlockType.unknown;
     }
@@ -51,10 +51,10 @@ class BlockRepoMapper {
 
   static String _typeToRepo(BlockType type) {
     switch (type) {
-      case BlockType.audio:
-        return 'audio';
-      case BlockType.text:
-        return 'text';
+      case BlockType.voiceNote:
+        return 'voice-note';
+      case BlockType.textNote:
+        return 'text-note';
       case BlockType.unknown:
         return 'unknown';
     }

@@ -80,7 +80,7 @@ Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
       BlockStatus status = syncStatuses[block.id] ?? BlockStatus.unknown;
 
       if (status == BlockStatus.synced) {
-        if (block.type == BlockType.audio &&
+        if (block.type == BlockType.voiceNote &&
             block.audio?.transcription == null) {
           status = BlockStatus.transcribing;
         } else if (block.external != null) {

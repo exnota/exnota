@@ -24,7 +24,7 @@ void main() {
                 'external': {'url': 'https://www.exnota.com'},
                 'file': 'jfk_cksDY70lDs.wav',
                 'title': 'audio record 2',
-                'type': 'audio',
+                'type': 'voice-note',
                 'user': '31fa2e03sqircla',
                 'userCreated': '2024-02-22 12:00:00.000Z'
               },
@@ -43,7 +43,7 @@ void main() {
                   external: const External(url: 'https://www.exnota.com'),
                   file: 'jfk_cksDY70lDs.wav',
                   title: 'audio record 2',
-                  type: BlockType.audio,
+                  type: BlockType.voiceNote,
                   userId: '31fa2e03sqircla',
                   userCreated: DateTime.parse('2024-02-22 12:00:00.000Z'),
                 )));
@@ -63,7 +63,7 @@ void main() {
                 'external': null,
                 'file': 'jfk_cksDY70lDs.wav',
                 'title': 'audio record 2',
-                'type': 'audio',
+                'type': 'voice-note',
                 'user': '31fa2e03sqircla',
                 'userCreated': '2024-02-22 12:00:00.000Z'
               },
@@ -80,7 +80,7 @@ void main() {
                   external: null,
                   file: 'jfk_cksDY70lDs.wav',
                   title: 'audio record 2',
-                  type: BlockType.audio,
+                  type: BlockType.voiceNote,
                   userId: '31fa2e03sqircla',
                   userCreated: DateTime.parse('2024-02-22 12:00:00.000Z'),
                 )));
@@ -100,7 +100,7 @@ void main() {
                 'external': {'url': 'https://www.exnota.com'},
                 'file': 'jfk_cksDY70lDs.wav',
                 'title': 'audio record 2',
-                'type': 'audio',
+                'type': 'voice-note',
                 'user': '31fa2e03sqircla',
                 'userCreated': '2024-02-22 12:00:00.000Z'
               },
@@ -117,7 +117,7 @@ void main() {
                   external: const External(url: 'https://www.exnota.com'),
                   file: 'jfk_cksDY70lDs.wav',
                   title: 'audio record 2',
-                  type: BlockType.audio,
+                  type: BlockType.voiceNote,
                   userId: '31fa2e03sqircla',
                   userCreated: DateTime.parse('2024-02-22 12:00:00.000Z'),
                 )));
@@ -137,7 +137,7 @@ void main() {
                 'external': {'url': 'https://www.exnota.com'},
                 'file': 'jfk_cksDY70lDs.wav',
                 'title': 'audio record 2',
-                'type': 'audio',
+                'type': 'voice-note',
                 'user': '31fa2e03sqircla',
                 'userCreated': '2024-02-22 12:00:00.000Z'
               },
@@ -154,7 +154,7 @@ void main() {
                   external: const External(url: 'https://www.exnota.com'),
                   file: 'jfk_cksDY70lDs.wav',
                   title: 'audio record 2',
-                  type: BlockType.audio,
+                  type: BlockType.voiceNote,
                   userId: '31fa2e03sqircla',
                   userCreated: DateTime.parse('2024-02-22 12:00:00.000Z'),
                 )));
@@ -174,7 +174,7 @@ void main() {
                 'external': {'url': 'https://www.exnota.com'},
                 'file': 'jfk_cksDY70lDs.wav',
                 'title': 'audio record 2',
-                'type': 'audio',
+                'type': 'voice-note',
                 'user': '31fa2e03sqircla',
                 'userCreated': '2024-02-22 12:00:00.000Z'
               },
@@ -191,7 +191,7 @@ void main() {
                   external: const External(url: 'https://www.exnota.com'),
                   file: 'jfk_cksDY70lDs.wav',
                   title: 'audio record 2',
-                  type: BlockType.audio,
+                  type: BlockType.voiceNote,
                   userId: '31fa2e03sqircla',
                   userCreated: DateTime.parse('2024-02-22 12:00:00.000Z'),
                 )));
@@ -212,7 +212,7 @@ void main() {
                 'external': {'url': 'https://www.exnota.com'},
                 'file': 'jfk_cksDY70lDs.wav',
                 'title': 'audio record 2',
-                'type': 'audio',
+                'type': 'voice-note',
                 'user': '31fa2e03sqircla',
                 'userCreated': '2024-02-22 12:00:00.000Z'
               },
@@ -235,7 +235,7 @@ void main() {
               'external': null,
               'file': '',
               'title': 'text record 1',
-              'type': 'text',
+              'type': 'text-note',
               'user': '31fa2e03sqircla',
               'userCreated': '2024-02-22 12:00:00.000Z'
             },
@@ -252,7 +252,7 @@ void main() {
                 external: null,
                 file: '',
                 title: 'text record 1',
-                type: BlockType.text,
+                type: BlockType.textNote,
                 userId: '31fa2e03sqircla',
                 userCreated: DateTime.parse('2024-02-22 12:00:00.000Z'),
               )));
@@ -272,7 +272,7 @@ void main() {
               'external': '',
               'file': '',
               'title': 'text record 1',
-              'type': 'text',
+              'type': 'text-note',
               'user': '31fa2e03sqircla',
               'userCreated': '2024-02-22 12:00:00.000Z'
             },
@@ -289,7 +289,7 @@ void main() {
                 external: null,
                 file: '',
                 title: 'text record 1',
-                type: BlockType.text,
+                type: BlockType.textNote,
                 userId: '31fa2e03sqircla',
                 userCreated: DateTime.parse('2024-02-22 12:00:00.000Z'),
               )));
