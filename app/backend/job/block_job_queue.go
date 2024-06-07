@@ -267,6 +267,7 @@ func exportWorker(
 				"error",
 				err,
 			)
+			completions <- j.ID()
 			continue
 		}
 
@@ -286,7 +287,7 @@ func exportWorker(
 func transcriptionWorker(
 	workerId int,
 	jobs <-chan data.BlockJob,
-	completed chan<- string,
+	completions chan<- string,
 	app core.App,
 	whisper whisper.Whisper,
 ) {
@@ -317,6 +318,7 @@ func transcriptionWorker(
 				"error",
 				err,
 			)
+			completions <- j.ID()
 			continue
 		}
 
@@ -329,7 +331,7 @@ func transcriptionWorker(
 			"block id",
 			j.Block(),
 		)
-		completed <- j.ID()
+		completions <- j.ID()
 	}
 }
 
