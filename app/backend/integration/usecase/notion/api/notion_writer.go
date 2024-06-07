@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"exnota.com/backend/integration/util"
 	"github.com/dstotijn/go-notion"
 	gonotion "github.com/dstotijn/go-notion"
 	"github.com/pocketbase/pocketbase/core"
@@ -54,23 +53,15 @@ func (n *notionWriter) CreateDatabasePage(
 		properties = &gonotion.DatabasePageProperties{}
 	}
 	page, err := client.CreatePage(context.Background(), notion.CreatePageParams{
-		ParentType:             notion.ParentTypeDatabase,
-		ParentID:               request.DatabaseId,
+		ParentType: notion.ParentTypeDatabase,
+		ParentID:   request.DatabaseId,
+		// DatabasePageProperties must be non-nil for go-notion to detect this
+		// as creating a database page instead of a child page.
+		//
+		// Conversely, don't provide 'Title' as go-notion may interpret this
+		// as a child page instead of a database page.
 		DatabasePageProperties: properties,
 		Children:               request.Children,
-		// DatabasePageProperties: &notion.DatabasePageProperties{
-		// 	"Name": notion.DatabasePageProperty{
-		// 		Type: notion.DBPropTypeTitle,
-		// 		ID:   "title",
-		// 		Title: []notion.RichText{
-		// 			{
-		// 				Text: &notion.Text{
-		// 					Content: "dummy title db page xy", // TODO: Remove
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// },
 	})
 	if err != nil {
 		return nil, err
@@ -102,7 +93,12 @@ func (n *notionWriter) CreateDatabasePage(
 
 type CreateChildPageRequest struct {
 	ParentId string `validate:"required"`
-	Title    []gonotion.RichText
+	// Title must be non-nil for go-notion to detect this as creating a
+	// child page instead of a database page.
+	//
+	// Conversely, don't provide 'DatabasePageProperties' as go-notion may
+	// interpret this as a database page instead of a child page.
+	Title    []gonotion.RichText `validate:"required"`
 	Children []gonotion.Block
 }
 type CreateChildPageResponse struct {
@@ -124,12 +120,13 @@ func (n *notionWriter) CreateChildPage(
 
 	client := notion.NewClient(n.accessToken)
 
-	title := util.TextToRichText("dummy title page") // TODO: Remove
 	page, err := client.CreatePage(context.Background(), notion.CreatePageParams{
 		ParentType: notion.ParentTypePage,
 		ParentID:   request.ParentId,
-		Title:      title,
-		Children:   request.Children,
+		// Title must be non-nil for go-notion to detect this as creating a
+		// child page instead of a database page.
+		Title:    request.Title,
+		Children: request.Children,
 	})
 	if err != nil {
 		return nil, err

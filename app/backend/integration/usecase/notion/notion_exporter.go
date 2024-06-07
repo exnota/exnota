@@ -211,11 +211,16 @@ func (s *notionExporter) createNote(request NoteRequest) (*ExportResult, error) 
 	case lib_integ.NotionObjectTypePage:
 		parentId := destinationObject.ExternalID()
 		props := updater.GenerateProperties()
+
+		// Title
 		var title []gonotion.RichText
-		if props != nil {
-			if titleProp, ok := props[titlePropertyId]; ok {
-				title = titleProp.Title
-			}
+		titleProp, ok := props[titlePropertyId]
+		if ok {
+			title = titleProp.Title
+		} else {
+			// Title must be non-nil for go-notion to detect this as creating a
+			// child page instead of a database page.
+			title = []gonotion.RichText{}
 		}
 		result, err := writer.CreateChildPage(api.CreateChildPageRequest{
 			ParentId: parentId,
