@@ -14,3 +14,8 @@
 
 4. Disable collection modifications in shared environments (prod, staging)
    - In settings UI, enable `Hide collection create and edit controls`
+
+5. Configure logging
+   - Go to: Logs (left menu) > Select cog icon
+   - Turn off `Enable IP logging`
+   - Set a higher logs retention
