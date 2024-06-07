@@ -21,9 +21,9 @@ import (
 	"exnota.com/backend/job"
 	"exnota.com/backend/lib/api"
 	lib_integ "exnota.com/backend/lib/integration"
+	"exnota.com/backend/lib/whisper"
 	_ "exnota.com/backend/migrations"
 	user_api_hooks "exnota.com/backend/user/api"
-	"github.com/caarlos0/env"
 	"github.com/go-playground/validator/v10"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
@@ -34,15 +34,8 @@ import (
 var validate = validator.New(validator.WithRequiredStructEnabled())
 
 func main() {
-	cfg := config.Config{}
-	err := env.Parse(&cfg)
-	if err != nil {
-		panic(err)
-	}
-	err = validate.Struct(cfg)
-	if err != nil {
-		panic(err)
-	}
+	// Parse environment variables to fail fast if missing
+	cfg := config.ReadConfig()
 
 	app := pocketbase.New()
 
@@ -114,7 +107,9 @@ func initJobWorker(app core.App, skipWorkers *bool) {
 		block_data.NewWorkspaceFetcher(app),
 		notionExporter,
 	)
-	jobQueue := job.NewBlockJobQueue(app, exportJobRunner)
+	cfg := config.ReadConfig()
+	whisper := whisper.NewWhisper(&cfg.WhisperThreads)
+	jobQueue := job.NewBlockJobQueue(app, exportJobRunner, whisper)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		if *skipWorkers {
 			return nil

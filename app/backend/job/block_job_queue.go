@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"exnota.com/backend/job/data"
+	"exnota.com/backend/lib/whisper"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -28,10 +29,15 @@ type BlockJobQueue interface {
 type blockJobQueue struct {
 	app             core.App
 	exportJobRunner ExportJobRunner
+	whisper         whisper.Whisper
 }
 
-func NewBlockJobQueue(app core.App, exportJobRunner ExportJobRunner) BlockJobQueue {
-	return &blockJobQueue{app, exportJobRunner}
+func NewBlockJobQueue(
+	app core.App,
+	exportJobRunner ExportJobRunner,
+	whisper whisper.Whisper,
+) BlockJobQueue {
+	return &blockJobQueue{app, exportJobRunner, whisper}
 }
 
 // Based on https://gobyexample.com/worker-pools
@@ -51,7 +57,7 @@ func (j *blockJobQueue) Start() error {
 	})
 
 	go func() {
-		poolManager := NewPoolManager(j.app, j.exportJobRunner)
+		poolManager := NewPoolManager(j.app, j.exportJobRunner, j.whisper)
 		poolManager.Start()
 
 		blockJobFetcher := data.NewBlockJobFetcher(j.app)
@@ -129,9 +135,14 @@ type poolManager struct {
 	exportPool        chan data.BlockJob
 	transcriptionPool chan data.BlockJob
 	completions       chan string
+	whisper           whisper.Whisper
 }
 
-func NewPoolManager(app core.App, exportJobRunner ExportJobRunner) PoolManager {
+func NewPoolManager(
+	app core.App,
+	exportJobRunner ExportJobRunner,
+	whisper whisper.Whisper,
+) PoolManager {
 	jip := jobsInProgress{
 		m: make(map[string]struct{}),
 	}
@@ -146,6 +157,7 @@ func NewPoolManager(app core.App, exportJobRunner ExportJobRunner) PoolManager {
 		exportPool,
 		transcriptionPool,
 		completions,
+		whisper,
 	}
 }
 
@@ -154,7 +166,7 @@ func (pm *poolManager) Start() {
 		go exportWorker(w, pm.exportPool, pm.completions, pm.app, pm.exportJobRunner)
 	}
 	for w := 1; w <= NUM_TRANSCRIPTION_WORKERS; w++ {
-		go transcriptionWorker(w, pm.transcriptionPool, pm.completions, pm.app)
+		go transcriptionWorker(w, pm.transcriptionPool, pm.completions, pm.app, pm.whisper)
 	}
 
 	go func() {
@@ -276,6 +288,7 @@ func transcriptionWorker(
 	jobs <-chan data.BlockJob,
 	completed chan<- string,
 	app core.App,
+	whisper whisper.Whisper,
 ) {
 	for j := range jobs {
 		slog.Info(
@@ -290,7 +303,7 @@ func transcriptionWorker(
 
 		// The processor handles the status and panics of the runner
 		processor := NewBlockJobProcessor(app)
-		transcriptionRunner := NewTranscriptionJobRunner(app)
+		transcriptionRunner := NewTranscriptionJobRunner(app, whisper)
 		err := processor.Process(j.ID(), transcriptionRunner)
 		if err != nil {
 			slog.Warn(

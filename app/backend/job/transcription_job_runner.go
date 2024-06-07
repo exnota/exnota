@@ -26,12 +26,14 @@ type TranscriptionJobRunner interface {
 }
 
 type transcriptionJobRunner struct {
-	app core.App
+	app     core.App
+	whisper whisper.Whisper
 }
 
-func NewTranscriptionJobRunner(app core.App) TranscriptionJobRunner {
+func NewTranscriptionJobRunner(app core.App, whisper whisper.Whisper) TranscriptionJobRunner {
 	return &transcriptionJobRunner{
-		app: app,
+		app,
+		whisper,
 	}
 }
 
@@ -145,7 +147,7 @@ type Timestamp struct {
 func (j *transcriptionJobRunner) transcribe(
 	convertedFileInfo ConvertedFileInfo,
 ) (*TranscriptionResult, error) {
-	cmnd := whisper.Command(convertedFileInfo.fullPath)
+	cmnd := j.whisper.Command(convertedFileInfo.fullPath)
 	out, err := cmnd.CombinedOutput()
 	fmt.Println("Transcribe:")
 	fmt.Println(string(out))
