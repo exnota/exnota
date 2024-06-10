@@ -66,7 +66,8 @@ Future<void> isolateTest() async {
     BackgroundIsolateBinaryMessenger.ensureInitialized(rootToken!);
 
     return Future<void>(() async {
-      final overrides = await getOverrides();
+      final navigator = GlobalKey<NavigatorState>();
+      final overrides = await getOverrides(navigator);
       final container = ProviderContainer(
         overrides: overrides,
       );
@@ -86,7 +87,9 @@ void main() async {
   // Needed for the database, Firebase, and more. Don't know why :)
   WidgetsFlutterBinding.ensureInitialized();
 
-  await isolateTest();
+  final navigator = GlobalKey<NavigatorState>();
+
+  // await isolateTest();
 
   // Recording doesn't seem to work without this
   final session = await AudioSession.instance;
@@ -95,7 +98,7 @@ void main() async {
   ));
 
   // Overrides
-  final overrides = await getOverrides();
+  final overrides = await getOverrides(navigator);
 
   // TODO: Move sync command runner init to inside the user context
   // (possibly inside a workspace context)
@@ -106,9 +109,10 @@ void main() async {
   runApp(ProviderScope(overrides: overrides, child: const MyApp()));
 }
 
-Future<List<Override>> getOverrides() async {
+Future<List<Override>> getOverrides(GlobalKey<NavigatorState> navigator) async {
   final deviceInfo = await initDeviceInfoService();
-  await initCrashlytics();
+
+  await initCrashlytics(navigator);
   final localFilePathGenerator = await initLocalFilePathGenerator();
   final db = initDatabase(files: localFilePathGenerator);
 

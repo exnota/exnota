@@ -5,6 +5,7 @@ import 'package:exnota/src/context/environment/environment.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/integration/screen/setup_integration_screen.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_ui/flutter_settings_ui.dart';
@@ -92,6 +93,32 @@ class SettingsScreen extends ConsumerWidget {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) =>
                           DriftDbViewer(ref.read(databaseProvider))));
+                },
+              ),
+              SettingsTile(
+                title: const Text('Exception'),
+                leading: const Icon(Icons.dangerous),
+                onPressed: (BuildContext context) {
+                  // Triggers FlutterError.onError
+                  throw Exception();
+                },
+              ),
+              SettingsTile(
+                title: const Text('Async Exception'),
+                leading: const Icon(Icons.dangerous),
+                onPressed: (BuildContext context) async {
+                  // Triggers PlatformDispatcher.instance.onError
+                  throw Exception();
+                },
+              ),
+              SettingsTile(
+                title: const Text('Crash'),
+                leading: const Icon(Icons.dangerous),
+                onPressed: (BuildContext context) {
+                  // Performs a native crash. Reports not expected to be sent
+                  // until next app launch. Will not trigger either onError
+                  // handlers.
+                  FirebaseCrashlytics.instance.crash();
                 },
               ),
             ]),
