@@ -1,7 +1,6 @@
 package job
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -13,9 +12,8 @@ import (
 	"exnota.com/backend/block"
 	"exnota.com/backend/job/data"
 	"exnota.com/backend/lib/account"
+	lib_block "exnota.com/backend/lib/block"
 	"exnota.com/backend/lib/pb_file"
-	"exnota.com/backend/lib/whisper"
-	"github.com/neurosnap/sentences/english"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
 )
@@ -28,19 +26,25 @@ type TranscriptionJobRunner interface {
 
 type transcriptionJobRunner struct {
 	app                core.App
-	whisper            whisper.Whisper
+	whisperV3Generator lib_block.TranscriptionGenerator
+	whisperV2Generator lib_block.TranscriptionGenerator
 	getFeatureSettings account.GetFeatureSettings
+	blockFetcher       block.BlockFetcher
 }
 
 func NewTranscriptionJobRunner(
 	app core.App,
-	whisper whisper.Whisper,
+	whisperV3Generator lib_block.TranscriptionGenerator,
+	whisperV2Generator lib_block.TranscriptionGenerator,
 	getFeatureSettings account.GetFeatureSettings,
+	blockFetcher block.BlockFetcher,
 ) TranscriptionJobRunner {
 	return &transcriptionJobRunner{
 		app,
-		whisper,
+		whisperV3Generator,
+		whisperV2Generator,
 		getFeatureSettings,
+		blockFetcher,
 	}
 }
 
@@ -63,12 +67,7 @@ func (j *transcriptionJobRunner) Run(job data.BlockJob, app core.App) (data.Summ
 		return nil, err
 	}
 
-	result, err := j.transcribe(*convertedFileInfo, job.User())
-	if err != nil {
-		return nil, err
-	}
-
-	err = j.saveTranscription(result, job.Block())
+	err = j.transcribe(*convertedFileInfo, job.User(), job.Block())
 	if err != nil {
 		return nil, err
 	}
@@ -137,123 +136,47 @@ func (j *transcriptionJobRunner) convertAudio(fileInfo *FileInfo) (*ConvertedFil
 	}, nil
 }
 
-type TranscriptionResult struct {
-	Transcription []Transcription `json:"transcription"`
-}
-
-type Transcription struct {
-	Timestamps Timestamp `json:"timestamps"`
-	Text       string    `json:"text"`
-}
-
-type Timestamp struct {
-	From string `json:"from"`
-	To   string `json:"to"`
-}
-
 func (j *transcriptionJobRunner) transcribe(
 	convertedFileInfo ConvertedFileInfo,
 	user string,
-) (*TranscriptionResult, error) {
-	// Settings
+	blockId string,
+) error {
+	// Get service settings
 	settings, err := j.getFeatureSettings.GetExnotaSettings(
 		account.ExnotaFeatureVoiceNote, user,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	voiceNoteSettings, ok := settings.(account.VoiceNoteSettings)
 	if !ok {
-		return nil, fmt.Errorf("incorrect type for voiceNoteSettings")
-	}
-	if voiceNoteSettings.Service != account.VoiceNoteServiceWhisperLargeV3 {
-		return nil, fmt.Errorf("unsupported voice note service: %s", voiceNoteSettings.Service)
+		return fmt.Errorf("incorrect type for voiceNoteSettings")
 	}
 
-	// Transcribe with whisper large v3
-	cmnd := j.whisper.Command(convertedFileInfo.fullPath)
-	out, err := cmnd.CombinedOutput()
-	fmt.Println("Transcribe:")
-	fmt.Println(string(out))
-	if err != nil {
-		return nil, err
+	// Transcribe
+	var paragraphs []string
+	switch voiceNoteSettings.Service {
+	case account.VoiceNoteServiceWhisperLargeV3:
+		paragraphs, err = j.whisperV3Generator.Generate(convertedFileInfo.fullPath)
+		if err != nil {
+			slog.Error("Error generating transcription for whisper large v3", "error", err)
+			return fmt.Errorf("error generating transcription for whisper large v3: %w", err)
+		}
+	case account.VoiceNoteServiceWhisperLargeV2:
+		paragraphs, err = j.whisperV2Generator.Generate(convertedFileInfo.fullPath)
+		if err != nil {
+			slog.Error("Error generating transcription for whisper large v2", "error", err)
+			return fmt.Errorf("error generating transcription for whisper large v2: %w", err)
+		}
+	default:
+		panic(fmt.Sprintf("unsupported voice note service: %s", string(voiceNoteSettings.Service)))
 	}
 
-	raw, err := os.ReadFile(convertedFileInfo.fullPath + ".json")
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("raw json", string(raw))
-
-	var result TranscriptionResult
-	err = json.Unmarshal(raw, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := 0; i < len(result.Transcription); i++ {
-		transcription := result.Transcription[i]
-		fmt.Println(transcription.Text)
-	}
-
-	return &result, nil
-}
-
-func (j *transcriptionJobRunner) saveTranscription(
-	result *TranscriptionResult,
-	blockId string,
-) error {
-	err := j.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
-		// TODO: Refactor to use repo
-		blockRecord, err := txDao.FindRecordById("block", blockId)
+	// Persist
+	err = j.app.Dao().RunInTransaction(func(txDao *daos.Dao) error {
+		b, err := j.blockFetcher.FetchVoiceNoteByIdInTx(txDao, blockId)
 		if err != nil {
 			return err
-		}
-
-		b, err := block.LoadVoiceNoteBlock(blockRecord, j.app)
-		if err != nil {
-			return err
-		}
-
-		transcription := ""
-		for i := 0; i < len(result.Transcription); i++ {
-			transcription += result.Transcription[i].Text
-		}
-		transcription = strings.Trim(transcription, " ")
-
-		tokenizer, err := english.NewSentenceTokenizer(nil)
-		if err != nil {
-			panic(err)
-		}
-
-		sentenceTokens := tokenizer.Tokenize(transcription)
-		sentences := make([]string, len(sentenceTokens))
-		for i, token := range sentenceTokens {
-			sentences[i] = token.Text
-		}
-		paragraphs := make([]string, 0)
-		batchSize := 3
-		numSentences := len(sentences)
-		// 3 sentences per paragraph. If the last paragraph is only 1 sentence,
-		// append it to the previous paragraph.
-		for i := 0; i < numSentences; i += batchSize {
-			end := i + batchSize
-			if end > numSentences {
-				end = numSentences
-			}
-			batch := sentences[i:end]
-			paragraph := strings.Join(batch, " ")
-			// Add to the previous paragraph if:
-			// 1. It's not the first batch
-			// 2. The current batch has only 1 sentence
-			// 3. It is the last batch
-			if i > 0 && len(batch) == 1 && i+batchSize >= numSentences-1 {
-				lastParagraph := paragraphs[len(paragraphs)-1]
-				lastParagraph += " " + paragraph
-				paragraphs[len(paragraphs)-1] = lastParagraph
-			} else {
-				paragraphs = append(paragraphs, paragraph)
-			}
 		}
 
 		err = b.SetTranscription(paragraphs)

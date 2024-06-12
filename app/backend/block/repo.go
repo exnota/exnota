@@ -7,6 +7,7 @@ import (
 
 type BlockFetcher interface {
 	FetchById(id string) (Block, error)
+	FetchVoiceNoteByIdInTx(txDao *daos.Dao, id string) (VoiceNoteBlock, error)
 }
 
 type DestinationFetcher interface {
