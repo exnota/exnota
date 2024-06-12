@@ -45,4 +45,21 @@
 		],
 		"description": "Validates a struct"
 	},
+	"Collection Filter: Single": {
+		"scope": "go",
+		"prefix": "flt",
+		"body": [
+			"filter, err := filter.CreateAndFilter(",
+			"\tfilter.Field{",
+			"\t\tName:  ${1:field_name},",
+			"\t\tOp:    filter.OpEquals,",
+			"\t\tValue: ${2:field_value},",
+			"\t},",
+			")",
+			"if err != nil {",
+			"\treturn nil, err",
+			"}"
+		],
+		"description": ""
+	}
 }
