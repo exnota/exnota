@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"exnota.com/backend/job/data"
-	"exnota.com/backend/lib/whisper"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -27,17 +26,17 @@ type BlockJobQueue interface {
 }
 
 type blockJobQueue struct {
-	app             core.App
-	exportJobRunner ExportJobRunner
-	whisper         whisper.Whisper
+	app                    core.App
+	exportJobRunner        ExportJobRunner
+	transcriptionJobRunner TranscriptionJobRunner
 }
 
 func NewBlockJobQueue(
 	app core.App,
 	exportJobRunner ExportJobRunner,
-	whisper whisper.Whisper,
+	transcriptionJobRunner TranscriptionJobRunner,
 ) BlockJobQueue {
-	return &blockJobQueue{app, exportJobRunner, whisper}
+	return &blockJobQueue{app, exportJobRunner, transcriptionJobRunner}
 }
 
 // Based on https://gobyexample.com/worker-pools
@@ -57,7 +56,7 @@ func (j *blockJobQueue) Start() error {
 	})
 
 	go func() {
-		poolManager := NewPoolManager(j.app, j.exportJobRunner, j.whisper)
+		poolManager := NewPoolManager(j.app, j.exportJobRunner, j.transcriptionJobRunner)
 		poolManager.Start()
 
 		blockJobFetcher := data.NewBlockJobFetcher(j.app)
@@ -131,17 +130,17 @@ type poolManager struct {
 	exportJobRunner ExportJobRunner
 	// jobsInProgress should be a pointer in case it needs to be passed around,
 	// as the mutex property should not be passed by value.
-	jobsInProgress    *jobsInProgress
-	exportPool        chan data.BlockJob
-	transcriptionPool chan data.BlockJob
-	completions       chan string
-	whisper           whisper.Whisper
+	jobsInProgress         *jobsInProgress
+	exportPool             chan data.BlockJob
+	transcriptionPool      chan data.BlockJob
+	completions            chan string
+	transcriptionJobRunner TranscriptionJobRunner
 }
 
 func NewPoolManager(
 	app core.App,
 	exportJobRunner ExportJobRunner,
-	whisper whisper.Whisper,
+	transcriptionJobRunner TranscriptionJobRunner,
 ) PoolManager {
 	jip := jobsInProgress{
 		m: make(map[string]struct{}),
@@ -157,7 +156,7 @@ func NewPoolManager(
 		exportPool,
 		transcriptionPool,
 		completions,
-		whisper,
+		transcriptionJobRunner,
 	}
 }
 
@@ -166,7 +165,13 @@ func (pm *poolManager) Start() {
 		go exportWorker(w, pm.exportPool, pm.completions, pm.app, pm.exportJobRunner)
 	}
 	for w := 1; w <= NUM_TRANSCRIPTION_WORKERS; w++ {
-		go transcriptionWorker(w, pm.transcriptionPool, pm.completions, pm.app, pm.whisper)
+		go transcriptionWorker(
+			w,
+			pm.transcriptionPool,
+			pm.completions,
+			pm.app,
+			pm.transcriptionJobRunner,
+		)
 	}
 
 	go func() {
@@ -289,7 +294,7 @@ func transcriptionWorker(
 	jobs <-chan data.BlockJob,
 	completions chan<- string,
 	app core.App,
-	whisper whisper.Whisper,
+	transcriptionJobRunner TranscriptionJobRunner,
 ) {
 	for j := range jobs {
 		slog.Info(
@@ -304,8 +309,7 @@ func transcriptionWorker(
 
 		// The processor handles the status and panics of the runner
 		processor := NewBlockJobProcessor(app)
-		transcriptionRunner := NewTranscriptionJobRunner(app, whisper)
-		err := processor.Process(j.ID(), transcriptionRunner)
+		err := processor.Process(j.ID(), transcriptionJobRunner)
 		if err != nil {
 			slog.Warn(
 				"[transcription worker] Job errored",
