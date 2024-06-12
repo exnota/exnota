@@ -35,7 +35,17 @@ var validate = validator.New(validator.WithRequiredStructEnabled())
 
 func main() {
 	// Parse environment variables to fail fast if missing
-	cfg := config.ReadConfig()
+	//
+	// Skip when running migration scripts. This is a quick hack to avoid
+	// needing to set environment variables when running migrations. Ideally,
+	// main.go would be refactored to have a separate code path for running
+	// migrations that does not panic when environment variables aren't set, but
+	// not worth the time for now.
+	isMigrate := os.Args[1] == "migrate"
+	cfg := config.Config{}
+	if !isMigrate {
+		cfg = config.ReadConfig()
+	}
 
 	app := pocketbase.New()
 
@@ -61,7 +71,7 @@ func main() {
 		Automigrate: autoMigrate,
 	})
 
-	initJobWorker(app, &skipWorkersCmd)
+	initJobWorker(app, &skipWorkersCmd, cfg)
 	bindRequestAndRecordHooks(app, cfg)
 
 	if err := app.Start(); err != nil {
@@ -96,7 +106,7 @@ func isAutoMigrate() bool {
 	return autoMigrate
 }
 
-func initJobWorker(app core.App, skipWorkers *bool) {
+func initJobWorker(app core.App, skipWorkers *bool, cfg config.Config) {
 	destinationFetcher := block_data.NewDestinationFetcher(app)
 	notionExporter := integration_notion_usecase.NewNotionExporter(
 		app,
@@ -107,7 +117,6 @@ func initJobWorker(app core.App, skipWorkers *bool) {
 		block_data.NewWorkspaceFetcher(app),
 		notionExporter,
 	)
-	cfg := config.ReadConfig()
 	whisper := whisper.NewWhisper(&cfg.WhisperThreads)
 	jobQueue := job.NewBlockJobQueue(app, exportJobRunner, whisper)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {

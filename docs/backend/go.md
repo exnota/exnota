@@ -1,12 +1,12 @@
 # Go
 
 - [Upgrading version](#upgrading-version)
+- [Style](#style)
 - [Patterns](#patterns)
-	- [Error handling](#error-handling)
-	- [Validation](#validation)
-	- [Enum for types](#enum-for-types)
+ 	- [Error handling](#error-handling)
+ 	- [Validation](#validation)
+ 	- [Enum for types](#enum-for-types)
 - [Other](#other)
-
 
 ## Upgrading version
 
@@ -14,6 +14,10 @@
 2. Update version number in `go.mod`
 3. Update version number in `Dockerfile` in `FROM`
 4. Rebuild local Dev Container
+
+## Style
+
+- Pocketbase field names: Use camelCase ([link](https://github.com/pocketbase/pocketbase/discussions/3254))
 
 ## Patterns
 
@@ -24,7 +28,7 @@
 - Avoid swallowing errors. Better to make issues more obvious so they can be resolved, even if it results in a temporarily (perceived) worse user experience.
 - Use panics when continuing is unsafe or there are serious programming errors like incorrect parameters.
 
-Article: https://medium.com/@nouhoum/mastering-error-handling-in-go-0239f229c6c8
+Article: <https://medium.com/@nouhoum/mastering-error-handling-in-go-0239f229c6c8>
 
 ### Validation
 
@@ -40,10 +44,10 @@ Have been using the following pattern:
 type Status string
 
 const (
-	StatusWaiting  Status = "waiting"
-	StatusRunning  Status = "running"
-	StatusComplete Status = "complete"
-	StatusError    Status = "error"
+ StatusWaiting  Status = "waiting"
+ StatusRunning  Status = "running"
+ StatusComplete Status = "complete"
+ StatusError    Status = "error"
 )
 ```
 
@@ -53,11 +57,11 @@ To validate at runtime, you can use the [validator](https://github.com/go-playgr
 
 ```go
 type Json struct {
-	Status Status `validate:"oneof=waiting running complete error"`
+ Status Status `validate:"oneof=waiting running complete error"`
 }
 ```
 
-Or possibly a custom validator: https://github.com/go-playground/validator/blob/master/_examples/custom-validation/main.go
+Or possibly a custom validator: <https://github.com/go-playground/validator/blob/master/_examples/custom-validation/main.go>
 
 ## Other
 

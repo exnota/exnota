@@ -37,7 +37,6 @@ func NewTranscriptionJobRunner(app core.App, whisper whisper.Whisper) Transcript
 	}
 }
 
-// run method
 func (j *transcriptionJobRunner) Run(job data.BlockJob, app core.App) (data.Summary, error) {
 	slog.Info(
 		"[transcription job runner] Running job",
