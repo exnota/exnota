@@ -23,17 +23,14 @@ import (
 	"exnota.com/backend/job"
 	"exnota.com/backend/lib/api"
 	lib_integ "exnota.com/backend/lib/integration"
-	"exnota.com/backend/lib/whisper"
+	whisper "exnota.com/backend/lib/transcription"
 	_ "exnota.com/backend/migrations"
 	user_api_hooks "exnota.com/backend/user/api"
-	"github.com/go-playground/validator/v10"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 )
-
-var validate = validator.New(validator.WithRequiredStructEnabled())
 
 func main() {
 	// Parse environment variables to fail fast if missing
@@ -110,14 +107,22 @@ func initJobWorker(app core.App, skipWorkers *bool) {
 		notionExporter,
 	)
 	cfg := config.ReadConfig()
-	whisper := whisper.NewWhisper(&cfg.WhisperThreads)
+	whisperCommand := whisper.NewWhisperCommand(&cfg.WhisperThreads)
+	whisperV3Generator := whisper.NewTranscriptionWhisperGeneratorLargeV3(
+		whisperCommand,
+	)
+	whisperV2Generator := whisper.NewTranscriptionWhisperGeneratorLargeV2(
+		whisperCommand,
+	)
 	transcriptionJobRunner := job.NewTranscriptionJobRunner(
 		app,
-		whisper,
+		whisperV3Generator,
+		whisperV2Generator,
 		account_service.NewGetUserFeatureSettings(
 			app,
 			account_data.NewUserFeatureSettingsFetcher(app),
 		),
+		block_data.NewBlockFetcher(app),
 	)
 	jobQueue := job.NewBlockJobQueue(app, exportJobRunner, transcriptionJobRunner)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {

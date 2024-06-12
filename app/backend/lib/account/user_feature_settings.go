@@ -15,6 +15,7 @@ type VoiceNoteService string
 const (
 	// Keep these in sync with 'oneof' validation in VoiceNoteSettings
 	VoiceNoteServiceWhisperLargeV3 VoiceNoteService = "whisper-large-v3"
+	VoiceNoteServiceWhisperLargeV2 VoiceNoteService = "whisper-large-v2"
 	VoiceNoteServiceOpenAI         VoiceNoteService = "openai"
 )
 
