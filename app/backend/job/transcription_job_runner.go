@@ -12,6 +12,7 @@ import (
 
 	"exnota.com/backend/block"
 	"exnota.com/backend/job/data"
+	"exnota.com/backend/lib/account"
 	"exnota.com/backend/lib/pb_file"
 	"exnota.com/backend/lib/whisper"
 	"github.com/neurosnap/sentences/english"
@@ -26,14 +27,20 @@ type TranscriptionJobRunner interface {
 }
 
 type transcriptionJobRunner struct {
-	app     core.App
-	whisper whisper.Whisper
+	app                core.App
+	whisper            whisper.Whisper
+	getFeatureSettings account.GetFeatureSettings
 }
 
-func NewTranscriptionJobRunner(app core.App, whisper whisper.Whisper) TranscriptionJobRunner {
+func NewTranscriptionJobRunner(
+	app core.App,
+	whisper whisper.Whisper,
+	getFeatureSettings account.GetFeatureSettings,
+) TranscriptionJobRunner {
 	return &transcriptionJobRunner{
 		app,
 		whisper,
+		getFeatureSettings,
 	}
 }
 
@@ -56,7 +63,7 @@ func (j *transcriptionJobRunner) Run(job data.BlockJob, app core.App) (data.Summ
 		return nil, err
 	}
 
-	result, err := j.transcribe(*convertedFileInfo)
+	result, err := j.transcribe(*convertedFileInfo, job.User())
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +153,24 @@ type Timestamp struct {
 
 func (j *transcriptionJobRunner) transcribe(
 	convertedFileInfo ConvertedFileInfo,
+	user string,
 ) (*TranscriptionResult, error) {
+	// Settings
+	settings, err := j.getFeatureSettings.GetExnotaSettings(
+		account.ExnotaFeatureVoiceNote, user,
+	)
+	if err != nil {
+		return nil, err
+	}
+	voiceNoteSettings, ok := settings.(account.VoiceNoteSettings)
+	if !ok {
+		return nil, fmt.Errorf("incorrect type for voiceNoteSettings")
+	}
+	if voiceNoteSettings.Service != account.VoiceNoteServiceWhisperLargeV3 {
+		return nil, fmt.Errorf("unsupported voice note service: %s", voiceNoteSettings.Service)
+	}
+
+	// Transcribe with whisper large v3
 	cmnd := j.whisper.Command(convertedFileInfo.fullPath)
 	out, err := cmnd.CombinedOutput()
 	fmt.Println("Transcribe:")

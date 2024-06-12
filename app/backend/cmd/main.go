@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	account_data "exnota.com/backend/account/data"
+	account_service "exnota.com/backend/account/service"
 	"exnota.com/backend/block"
 	block_api "exnota.com/backend/block/api"
 	block_data "exnota.com/backend/block/data"
@@ -109,7 +111,15 @@ func initJobWorker(app core.App, skipWorkers *bool) {
 	)
 	cfg := config.ReadConfig()
 	whisper := whisper.NewWhisper(&cfg.WhisperThreads)
-	jobQueue := job.NewBlockJobQueue(app, exportJobRunner, whisper)
+	transcriptionJobRunner := job.NewTranscriptionJobRunner(
+		app,
+		whisper,
+		account_service.NewGetUserFeatureSettings(
+			app,
+			account_data.NewUserFeatureSettingsFetcher(app),
+		),
+	)
+	jobQueue := job.NewBlockJobQueue(app, exportJobRunner, transcriptionJobRunner)
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		if *skipWorkers {
 			return nil
