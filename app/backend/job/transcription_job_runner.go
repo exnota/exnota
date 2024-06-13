@@ -146,7 +146,7 @@ func (j *transcriptionJobRunner) transcribe(
 ) error {
 	// Get service settings
 	settings, err := j.getFeatureSettings.GetExnotaSettings(
-		account.ExnotaFeatureVoiceNote, user,
+		account.ExnotaFeatureVoiceNoteNameID, user,
 	)
 	if err != nil {
 		return err

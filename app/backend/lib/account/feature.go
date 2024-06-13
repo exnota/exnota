@@ -2,6 +2,9 @@ package account
 
 type FeatureNameID string
 
+// When adding:
+//
+// - Bootstrap in cmd/bootstrap_features.go
 const (
-	ExnotaFeatureVoiceNote FeatureNameID = "VOICE_NOTE"
+	ExnotaFeatureVoiceNoteNameID FeatureNameID = "VOICE_NOTE"
 )
