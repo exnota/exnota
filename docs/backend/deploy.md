@@ -73,8 +73,12 @@ See <https://dokku.com/docs/configuration/environment-variables/>
 
 ### Checking logs
 
+<https://app.exnota.com/_/#/logs>
+
+or
+
 ```bash
-ssh -t dokku@195.201.33.178 logs exnota0 -t
+ssh -t dokku@195.201.33.178 logs exnota0 -n 10000 -t
 ```
 
 ### How to execute Dokku commands
@@ -162,6 +166,13 @@ There is an [official client](https://dokku.com/docs/deployment/remote-commands/
     chown dokku:dokku /var/lib/dokku/data/storage/exnota0/pb_data
 
     dokku docker-options:add exnota0 deploy "-v /var/lib/dokku/data/storage/exnota0/pb_data:/pb/pb_data"
+    ```
+
+9. Increase file upload limit
+
+    ```bash
+    ssh -t dokku@195.201.33.178 nginx:set exnota0 client-max-body-size 5M
+    ssh -t dokku@195.201.33.178 ps:restart exnota0
     ```
 
 ## Hetzner SSH
