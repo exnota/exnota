@@ -12,7 +12,8 @@ type Config struct {
 	NotionOAuthClientID     string `env:"NOTION_OAUTH_CLIENT_ID"     validate:"min=1"`
 	NotionOAuthClientSecret string `env:"NOTION_OAUTH_CLIENT_SECRET" validate:"min=1"`
 	// Whisper default is 4 threads
-	WhisperThreads int `env:"WHISPER_THREADS"                             envDefault:"4"`
+	WhisperThreads int    `env:"WHISPER_THREADS"                             envDefault:"4"`
+	OpenAIKey      string `env:"OPENAI_KEY"                 validate:"min=1"`
 }
 
 func ReadConfig() Config {

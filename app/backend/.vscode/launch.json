@@ -22,7 +22,8 @@
       "env": {
         "NOTION_OAUTH_CLIENT_ID": "${config:rest-client.environmentVariables.$shared.notionOauthClientId}",
         "NOTION_OAUTH_CLIENT_SECRET": "${config:rest-client.environmentVariables.$shared.notionOauthSecret}",
-        "WHISPER_THREADS": "${config:exnota.env.WHISPER_THREADS}"
+        "WHISPER_THREADS": "${config:exnota.env.WHISPER_THREADS}",
+        "OPENAI_KEY": "${config:exnota.env.OPENAI_KEY}"
       }
     },
     {
