@@ -56,6 +56,8 @@ Fix:
     docker builder prune
     ```
 
+Use `df -h` before/after to check how much space this is freeing up.
+
 ## Maintenance
 
 ### Environment variables
