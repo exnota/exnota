@@ -114,10 +114,12 @@ func initJobWorker(app core.App, skipWorkers *bool) {
 	whisperV2Generator := whisper.NewTranscriptionWhisperGeneratorLargeV2(
 		whisperCommand,
 	)
+	openAIGenerator := whisper.NewTranscriptionGeneratorOpenAI(cfg.OpenAIKey)
 	transcriptionJobRunner := job.NewTranscriptionJobRunner(
 		app,
 		whisperV3Generator,
 		whisperV2Generator,
+		openAIGenerator,
 		account_service.NewGetUserFeatureSettings(
 			app,
 			account_data.NewUserFeatureSettingsFetcher(app),

@@ -28,6 +28,7 @@ type transcriptionJobRunner struct {
 	app                core.App
 	whisperV3Generator lib_block.TranscriptionGenerator
 	whisperV2Generator lib_block.TranscriptionGenerator
+	openAIGenerator    lib_block.TranscriptionGenerator
 	getFeatureSettings account.GetFeatureSettings
 	blockFetcher       block.BlockFetcher
 }
@@ -36,6 +37,7 @@ func NewTranscriptionJobRunner(
 	app core.App,
 	whisperV3Generator lib_block.TranscriptionGenerator,
 	whisperV2Generator lib_block.TranscriptionGenerator,
+	openAIGenerator lib_block.TranscriptionGenerator,
 	getFeatureSettings account.GetFeatureSettings,
 	blockFetcher block.BlockFetcher,
 ) TranscriptionJobRunner {
@@ -43,6 +45,7 @@ func NewTranscriptionJobRunner(
 		app,
 		whisperV3Generator,
 		whisperV2Generator,
+		openAIGenerator,
 		getFeatureSettings,
 		blockFetcher,
 	}
@@ -167,6 +170,12 @@ func (j *transcriptionJobRunner) transcribe(
 		if err != nil {
 			slog.Error("Error generating transcription for whisper large v2", "error", err)
 			return fmt.Errorf("error generating transcription for whisper large v2: %w", err)
+		}
+	case account.VoiceNoteServiceOpenAI:
+		paragraphs, err = j.openAIGenerator.Generate(convertedFileInfo.fullPath)
+		if err != nil {
+			slog.Error("Error generating transcription for openai", "error", err)
+			return fmt.Errorf("error generating transcription for openai: %w", err)
 		}
 	default:
 		panic(fmt.Sprintf("unsupported voice note service: %s", string(voiceNoteSettings.Service)))
