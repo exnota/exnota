@@ -1,6 +1,9 @@
 package config
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/caarlos0/env"
 	"github.com/go-playground/validator/v10"
 )
@@ -22,9 +25,15 @@ func ReadConfig() Config {
 	if err != nil {
 		panic(err)
 	}
-	err = validate.Struct(cfg)
-	if err != nil {
-		panic(err)
+
+	// Validate when not using the migrate command
+	fmt.Println(os.Args)
+
+	if os.Args[1] != "migrate" {
+		err = validate.Struct(cfg)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return cfg
