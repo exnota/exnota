@@ -56,7 +56,7 @@ func (u *userFeatureSettings) Settings() (lib.ExnotaFeatureSettings, error) {
 
 	// Unmarshal
 	switch u.FeatureNameID() {
-	case lib.ExnotaFeatureVoiceNote:
+	case lib.ExnotaFeatureVoiceNoteNameID:
 		var settings lib.VoiceNoteSettings
 		err = u.record.UnmarshalJSONField(UserFeatureSettingsFieldSettings, &settings)
 		if err != nil {

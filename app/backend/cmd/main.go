@@ -60,6 +60,10 @@ func main() {
 		Automigrate: autoMigrate,
 	})
 
+	account_service.NewBootstrapFeatures(
+		app,
+		account_data.NewFeatureWriter(app),
+	).ApplyHooks()
 	initJobWorker(app, &skipWorkersCmd)
 	bindRequestAndRecordHooks(app, cfg)
 

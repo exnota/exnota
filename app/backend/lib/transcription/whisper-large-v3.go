@@ -48,7 +48,6 @@ func generate(
 	modelPath ModelPath,
 	fullPath string,
 ) ([]string, error) {
-	// Transcribe with whisper large v3
 	cmnd := whisperCommand.Command(modelPath, fullPath)
 	out, err := cmnd.CombinedOutput()
 	fmt.Println("Transcribe:")
