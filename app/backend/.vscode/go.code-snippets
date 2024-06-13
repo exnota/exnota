@@ -61,5 +61,29 @@
 			"}"
 		],
 		"description": ""
+	},
+	"Go Builder": {
+		"prefix": "gbld",
+		"body": [
+			"type ${1:BuilderName} interface {",
+			"  ${2:MethodName}(${3}) (${4})",
+			"}",
+			"",
+			"type ${1/(.*)/${1:/camelcase}/} struct {",
+			"  app core.App",
+			"}",
+			"",
+			"func New${1:/capitalize}(app core.App) ${1:/capitalize} {",
+			"  return &${1/(.*)/${1:/camelcase}/}{",
+			"    app,",
+			"  }",
+			"}",
+			"",
+			"func (${1/(.).*/${1:/camelcase}/} *${1/(.*)/${1:/camelcase}/}) ${2}(${3}) (${4}) {",
+			"  // TODO: implement",
+			"  ${5}",
+			"}"
+		],
+		"description": "Go Builder"
 	}
 }
