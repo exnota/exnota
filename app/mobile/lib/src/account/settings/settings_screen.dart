@@ -3,8 +3,8 @@ import 'package:exnota/src/block/screen/setup_workspace_screen.dart';
 import 'package:exnota/src/context/app/local_settings.dart';
 import 'package:exnota/src/context/environment/environment.dart';
 import 'package:exnota/src/context/user/user_context.dart';
-import 'package:exnota/src/integration/screen/setup_integration_screen.dart';
 import 'package:exnota/src/lib/data/drift/database.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_ui/flutter_settings_ui.dart';
@@ -70,31 +70,33 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
             ]),
-            SettingsSection(title: const Text('Developer'), tiles: [
-              SettingsTile(
-                title: const Text('Environment (changing here might be buggy)'),
-                description: Text(environment.toString()),
-                leading: const Icon(Icons.cloud_outlined),
-                descriptionInlineIos: true,
-                onPressed: (BuildContext context) {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (context) {
-                      return const EnvironmentBottomSheet();
-                    },
-                  );
-                },
-              ),
-              SettingsTile(
-                title: const Text('View database'),
-                leading: const Icon(Icons.storage),
-                onPressed: (BuildContext context) {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) =>
-                          DriftDbViewer(ref.read(databaseProvider))));
-                },
-              ),
-            ]),
+            if (kDebugMode)
+              SettingsSection(title: const Text('Developer'), tiles: [
+                SettingsTile(
+                  title:
+                      const Text('Environment (changing here might be buggy)'),
+                  description: Text(environment.toString()),
+                  leading: const Icon(Icons.cloud_outlined),
+                  descriptionInlineIos: true,
+                  onPressed: (BuildContext context) {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) {
+                        return const EnvironmentBottomSheet();
+                      },
+                    );
+                  },
+                ),
+                SettingsTile(
+                  title: const Text('View database'),
+                  leading: const Icon(Icons.storage),
+                  onPressed: (BuildContext context) {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) =>
+                            DriftDbViewer(ref.read(databaseProvider))));
+                  },
+                ),
+              ]),
           ],
         ));
   }
