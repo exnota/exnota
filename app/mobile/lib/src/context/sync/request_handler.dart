@@ -44,7 +44,8 @@ class RequestHandler extends _$RequestHandler {
       },
       onError: (error) {
         _log.error('Error', exception: error);
-        completor.complete(BasicResponse.error(error: error.toString()));
+        completor.complete(
+            BasicResponse.error(error: error.toString(), errorCode: null));
       },
     ));
 
@@ -159,7 +160,8 @@ class RequestHandler extends _$RequestHandler {
         completer.complete(response);
       },
       onError: (error) {
-        final response = BasicResponse<T>.error(error: error.toString());
+        final response =
+            BasicResponse<T>.error(error: error.toString(), errorCode: null);
         completer.complete(response);
       },
     ));

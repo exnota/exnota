@@ -34,7 +34,8 @@ class IntegrationWriter extends _$IntegrationWriter {
           _log.error(
               'Error syncing destinations for integration $integrationId',
               exception: error);
-          completor.complete(BasicResponse.error(error: error.toString()));
+          completor.complete(
+              BasicResponse.error(error: error.toString(), errorCode: null));
         });
 
     return completor.future;

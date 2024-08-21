@@ -214,10 +214,14 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	).ApplyHooks()
 
 	// API rules
-	integ_api.NewIntegrationRequestHooks(app, integ_api.NotionCredentials{
+	integ_api.NewIntegrationCreateAPI(app, integ_api.NotionCredentials{
 		ClientId: cfg.NotionOAuthClientID,
 		Secret:   cfg.NotionOAuthClientSecret,
-	}).Apply()
+	}).ApplyHooks()
+	integ_api.NewIntegrationUpdateAPI(app, integ_api.NotionCredentials{
+		ClientId: cfg.NotionOAuthClientID,
+		Secret:   cfg.NotionOAuthClientSecret,
+	}).ApplyHooks()
 	integ_api.NewIntegrationNotionObjectApiRules(app).ApplyHooks()
 	integ_api.NewIntegrationDestinationApiRules(app).ApplyHooks()
 	workspaceFetcher := block_data.NewWorkspaceFetcher(app)

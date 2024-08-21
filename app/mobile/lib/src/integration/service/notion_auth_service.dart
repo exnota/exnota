@@ -1,22 +1,16 @@
 import 'dart:async';
 
+import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/context/sync/request_handler.dart';
+import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/integration/integration.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'notion_auth_service.g.dart';
-part 'notion_auth_service.freezed.dart';
-
-@freezed
-class BasicResponse<T> with _$BasicResponse<T> {
-  const factory BasicResponse({required T result, required String? error}) =
-      _BasicResponse<T>;
-}
 
 @riverpod
 class NotionAuthService extends _$NotionAuthService {
@@ -35,13 +29,13 @@ class NotionAuthService extends _$NotionAuthService {
           onSuccess: (url) {
             _log.debug('getAuthUrl: Get auth url returned $url');
             completor.complete(
-              BasicResponse(result: url, error: null),
+              BasicResponse.success(result: url),
             );
           },
           onError: (error) {
             _log.error('getAuthUrl: Get auth url errored', exception: error);
             completor.complete(
-              BasicResponse(result: '', error: error.toString()),
+              BasicResponse.error(error: error.toString(), errorCode: null),
             );
           },
         );
@@ -59,14 +53,14 @@ class NotionAuthService extends _$NotionAuthService {
             _log.debug(
                 'createIntegration: Created integration with id ${integration.id}');
             completor.complete(
-              BasicResponse(result: integration, error: null),
+              BasicResponse.success(result: integration),
             );
           },
           onError: (error) {
             _log.error('createIntegration: Create integration errored',
                 exception: error);
             completor.complete(
-              BasicResponse(result: null, error: error.toString()),
+              BasicResponse.error(error: error.toString(), errorCode: null),
             );
           },
         );
@@ -87,22 +81,28 @@ class NotionAuthService extends _$NotionAuthService {
               _log.error(
                   'updateIntegration: Update integration failed for id $integrationId');
               completor.complete(
-                const BasicResponse(result: false, error: 'Failed to update'),
+                const BasicResponse.error(
+                    error: 'Failed to update', errorCode: null),
               );
               return;
             }
             _log.debug(
                 'updateIntegration: Updated integration succeeded for id $integrationId');
             completor.complete(
-              const BasicResponse(result: true, error: null),
+              const BasicResponse.success(result: true),
             );
           },
           onError: (error) {
+            String? errorCode;
+            if (error is PocketBaseException) {
+              errorCode = error.response['data']?['errorCode']?['code'];
+            }
             _log.error(
                 'updateIntegration: Update integration errored for id $integrationId',
                 exception: error);
             completor.complete(
-              BasicResponse(result: false, error: error.toString()),
+              BasicResponse.error(
+                  error: error.toString(), errorCode: errorCode),
             );
           },
         ));

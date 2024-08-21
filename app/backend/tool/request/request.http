@@ -33,11 +33,6 @@ Content-Type: application/json
 
 voice-note
 --boundary
-Content-Disposition: form-data; name="destination"
-Content-Type: application/json
-
-{{destination}}
---boundary
 Content-Disposition: form-data; name="user"
 Content-Type: application/json
 

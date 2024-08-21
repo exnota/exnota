@@ -1,6 +1,11 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-enum SecureStorageKey { databasePassphrase, localSettings, environmentSettings }
+enum SecureStorageKey {
+  databasePassphrase,
+  localSettings,
+  environmentSettings,
+  notionAuthCode
+}
 
 class SecureStorage {
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
@@ -35,6 +40,8 @@ class SecureStorage {
         return 'exnota.localSettings';
       case SecureStorageKey.environmentSettings:
         return 'exnota.environmentSettings';
+      case SecureStorageKey.notionAuthCode:
+        return 'exnota.notionAuthCode';
     }
   }
 }
