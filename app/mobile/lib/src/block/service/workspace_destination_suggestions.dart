@@ -27,7 +27,8 @@ class WorkspaceDestinationSuggestions
     final workspace = await ref.read(activeWorkspaceProvider.future);
     if (workspace == null) {
       _log.error('No active workspace');
-      return const BasicResponse.error(error: 'No active workspace');
+      return const BasicResponse.error(
+          error: 'No active workspace', errorCode: null);
     }
 
     final request = WorkspaceSuggestedDestinationsRequest(

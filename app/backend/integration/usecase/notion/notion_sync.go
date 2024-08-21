@@ -15,6 +15,7 @@ import (
 	"exnota.com/backend/integration/data"
 	"exnota.com/backend/integration/usecase/notion/api"
 	lib_api "exnota.com/backend/lib/api"
+	lib "exnota.com/backend/lib/integration"
 	"exnota.com/backend/lib/url"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -22,6 +23,7 @@ import (
 
 type NotionSync interface {
 	VerifyIntegration(request VerifyIntegrationRequest) (bool, error)
+	// Returns `ErrNotionInvalidCode` if the code is invalid.
 	GetAuthToken(code string) (*NotionAccessTokenResponse, error)
 }
 
@@ -174,10 +176,32 @@ func (s *notionSync) GetAuthToken(code string) (*NotionAccessTokenResponse, erro
 			"status", res.Status,
 			"body", string(jsonBlob),
 		)
+		var errorResponse struct {
+			Error            string `json:"error"`
+			ErrorDescription string `json:"error_description"`
+		}
+		err = json.Unmarshal(jsonBlob, &errorResponse)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Notion API returned non-200 status code and failed to unmarshall error response: %w",
+				err,
+			)
+		}
+		slog.Warn(
+			"Notion API error response",
+			"error",
+			errorResponse.Error,
+			"description",
+			errorResponse.ErrorDescription,
+		)
+		if errorResponse.Error == "invalid_grant" {
+			return nil, lib.ErrNotionInvalidCode
+		}
+
 		return nil, fmt.Errorf(
-			"Notion API returned non-200 status code %d with body %s",
-			res.StatusCode,
-			string(jsonBlob),
+			"Notion API returned error and description: %s: %s",
+			errorResponse.Error,
+			errorResponse.ErrorDescription,
 		)
 	}
 

@@ -8,8 +8,10 @@ part 'basic_response.freezed.dart';
 sealed class BasicResponse<T> with _$BasicResponse<T> {
   const factory BasicResponse.success({required T result}) =
       BasicResponseSuccess<T>;
-  const factory BasicResponse.error({required String? error}) =
-      BasicResponseError;
+  const factory BasicResponse.error({
+    required String? error,
+    required String? errorCode,
+  }) = BasicResponseError;
 }
 
 class ResponseWrapper<T> {
@@ -21,7 +23,7 @@ class ResponseWrapper<T> {
       );
     }).catchError((error) {
       completer.complete(
-        BasicResponse.error(error: error.toString()),
+        BasicResponse.error(error: error.toString(), errorCode: null),
       );
     }));
     return completer.future;
