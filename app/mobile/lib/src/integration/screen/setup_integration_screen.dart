@@ -233,9 +233,18 @@ class SetupErrorMessage extends ConsumerWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('Error: $error'),
+        const Text(
+          'There was an error :(',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Error: ${error.substring(0, 40)}...',
+        ),
+        const SizedBox(height: 32),
         if (errorRetryStatus != null)
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
                 onPressed: () {
