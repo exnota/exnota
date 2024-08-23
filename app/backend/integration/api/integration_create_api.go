@@ -39,34 +39,6 @@ func NewIntegrationCreateAPI(app core.App, credentials NotionCredentials) Integr
 func (h *integrationCreateAPI) ApplyHooks() {
 	h.app.OnRecordBeforeCreateRequest(integration.CollectionIntegration).
 		Add(func(e *core.RecordCreateEvent) error {
-			// Prevent field updates
-			//
-			// Authorization is implemented using API Rules in the Admin UI:
-			//   Edit Collection > API Rules > Add `user.id = @request.auth.id`
-			updated, err := castToNotionIntegration(e.Record, h.app)
-			if err != nil {
-				return err
-			}
-
-			existingRecord, err := h.app.Dao().
-				FindRecordById(integ.CollectionIntegration, updated.Id(), nil)
-			if err != nil {
-				return err
-			}
-			existing, err := castToNotionIntegration(existingRecord, h.app)
-			if err != nil {
-				return err
-			}
-			if updated.Type() != existing.Type() {
-				return apis.NewBadRequestError("Cannot update integration type", nil)
-			}
-			if updated.User() != existing.User() {
-				return apis.NewBadRequestError("Cannot update integration user", nil)
-			}
-			if updated.Status() != existing.Status() {
-				return apis.NewBadRequestError("Cannot update integration status", nil)
-			}
-
 			// Create validation and fetch access token
 			integration, err := integ.LoadIntegration(e.Record, h.app)
 			if err != nil {
