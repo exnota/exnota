@@ -70,6 +70,20 @@ func (h *integrationUpdateAPI) ApplyHooks() {
 				)
 			}
 
+			// Prevent certain field updates
+			//
+			// Authorization is implemented using API Rules in the Admin UI:
+			//   Edit Collection > API Rules > Add `user.id = @request.auth.id`
+			if updated.Type() != existing.Type() {
+				return apis.NewBadRequestError("Cannot update integration type", nil)
+			}
+			if updated.User() != existing.User() {
+				return apis.NewBadRequestError("Cannot update integration user", nil)
+			}
+			if updated.Status() != existing.Status() {
+				return apis.NewBadRequestError("Cannot update integration status", nil)
+			}
+
 			// Use case 1: Update config and re-connect.
 			//
 			// Config only expected to change when re-authorizing
