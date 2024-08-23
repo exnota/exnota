@@ -95,10 +95,21 @@ class _SetupIntegrationScreenState
       final prevCode = prevAuth?.value?.code ?? '';
       final nextCode = nextAuth.value?.code ?? '';
       if (prevCode != nextCode && nextCode.isNotEmpty) {
-        ref
-            .read(setupIntegrationScreenControllerProvider.notifier)
-            .transitionStatus(
-                newStatus: IntegrationSetupStatus.upsertingIntegration);
+        _log.debug('Notion code received: $nextCode');
+
+        // This delay is a hack.
+        //
+        // The problem is: This listener seems to be triggered before the
+        // new state is available when reading the provider. So when
+        // the status is set to upsertingIntegration and upsertIntegration is
+        // called, it does not find the code, even though it's available in this
+        // callback.
+        Future.delayed(const Duration(milliseconds: 500), () {
+          ref
+              .read(setupIntegrationScreenControllerProvider.notifier)
+              .transitionStatus(
+                  newStatus: IntegrationSetupStatus.upsertingIntegration);
+        });
 
         // Close manually, otherwise browser stays open in iOS
         await closeInAppWebView();
@@ -160,6 +171,9 @@ class _SetupIntegrationScreenState
               errorRetryStatus: setupState.errorRetryStatus,
             ),
           IntegrationSetupStatus.instructions => const Instructions(),
+          // TODO: This text is visible if the user exists without finishing the auth flow.
+          // We recognize this and go back to the instructions screen, but it should be a spinner or
+          // something instead of this text.
           IntegrationSetupStatus.runningNotionAuthCodeFlow =>
             const Text('Running Notion auth code flow'),
           IntegrationSetupStatus.runningNotionAuthCodeFlowError =>
@@ -189,7 +203,7 @@ class Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 32),
       child: Text(
         text,
         style: const TextStyle(
