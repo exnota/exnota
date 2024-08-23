@@ -136,7 +136,10 @@ class _SetupIntegrationScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Setup Notion Connection'),
+        title: const Text(
+          'Setup Notion Connection',
+          style: TextStyle(fontSize: 16),
+        ),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
@@ -147,50 +150,51 @@ class _SetupIntegrationScreenState
           ),
         ],
       ),
-      body: Center(
-        child: Container(
-          child: switch (setupState.status) {
-            IntegrationSetupStatus.loadingIntegration =>
-              const Text('Loading integration'),
-            IntegrationSetupStatus.loadingIntegrationError => SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-              ),
-            IntegrationSetupStatus.instructions => Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Create Notion integration'),
-                  ElevatedButton(
-                    onPressed: () {
-                      ref
-                          .read(
-                              setupIntegrationScreenControllerProvider.notifier)
-                          .transitionStatus(
-                            newStatus: IntegrationSetupStatus
-                                .runningNotionAuthCodeFlow,
-                          );
-                    },
-                    child: const Text('Connect'),
-                  ),
-                ],
-              ),
-            IntegrationSetupStatus.runningNotionAuthCodeFlow =>
-              const Text('Running Notion auth code flow'),
-            IntegrationSetupStatus.runningNotionAuthCodeFlowError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-              ),
-            IntegrationSetupStatus.upsertingIntegration =>
-              const Text('Upserting integration'),
-            IntegrationSetupStatus.upsertingIntegrationError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-              ),
-            IntegrationSetupStatus.complete =>
-              const Text('Integration setup complete'),
-          },
+      body: Container(
+        padding: const EdgeInsets.all(16),
+        child: switch (setupState.status) {
+          IntegrationSetupStatus.loadingIntegration =>
+            const Text('Loading integration'),
+          IntegrationSetupStatus.loadingIntegrationError => SetupErrorMessage(
+              error: setupState.error!,
+              errorRetryStatus: setupState.errorRetryStatus,
+            ),
+          IntegrationSetupStatus.instructions => const Instructions(),
+          IntegrationSetupStatus.runningNotionAuthCodeFlow =>
+            const Text('Running Notion auth code flow'),
+          IntegrationSetupStatus.runningNotionAuthCodeFlowError =>
+            SetupErrorMessage(
+              error: setupState.error!,
+              errorRetryStatus: setupState.errorRetryStatus,
+            ),
+          IntegrationSetupStatus.upsertingIntegration =>
+            const Text('Upserting integration'),
+          IntegrationSetupStatus.upsertingIntegrationError => SetupErrorMessage(
+              error: setupState.error!,
+              errorRetryStatus: setupState.errorRetryStatus,
+            ),
+          IntegrationSetupStatus.complete =>
+            const Text('Integration setup complete'),
+        },
+      ),
+    );
+  }
+}
+
+class Header extends StatelessWidget {
+  final String text;
+
+  const Header({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 24,
+          letterSpacing: -1.0, // Decrease kerning
         ),
       ),
     );
@@ -203,18 +207,59 @@ class Instructions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text('Create Notion integration'),
-        ElevatedButton(
-          onPressed: () {
-            ref
-                .read(setupIntegrationScreenControllerProvider.notifier)
-                .transitionStatus(
-                  newStatus: IntegrationSetupStatus.runningNotionAuthCodeFlow,
-                );
-          },
-          child: const Text('Connect'),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Header(
+              text: 'First, give Exnota access to a database or page in Notion',
+            ),
+            const Text(
+              'You\'ll be redirected to Notion, then:',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8), // Add padding here
+            const Text(
+              '1. Press \'Select pages\'.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8), // Add padding here
+            const Text(
+              '2. Tick where your notes should be sent.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8), // Add padding here
+            const Text(
+              '3. Scroll down and press \'Allow Access\'.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 32), // Add padding here
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 5.0,
+                ),
+              ),
+              child: const Image(
+                  image: AssetImage('assets/images/notion-auth-animation.gif')),
+            ),
+          ],
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton(
+            onPressed: () {
+              ref
+                  .read(setupIntegrationScreenControllerProvider.notifier)
+                  .transitionStatus(
+                    newStatus: IntegrationSetupStatus.runningNotionAuthCodeFlow,
+                  );
+            },
+            child: const Text('Go to Notion'),
+          ),
         ),
       ],
     );
