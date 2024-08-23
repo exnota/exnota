@@ -183,6 +183,13 @@ class _SetupIntegrationScreenState
             ),
           IntegrationSetupStatus.upsertingIntegration =>
             const Text('Upserting integration'),
+          IntegrationSetupStatus.upsertingIntegrationBadCodeError =>
+            SetupErrorMessage(
+              error: setupState.error!,
+              customMessage:
+                  'Notion has requested that you grant access again. Sorry about that.',
+              errorRetryStatus: setupState.errorRetryStatus,
+            ),
           IntegrationSetupStatus.upsertingIntegrationError => SetupErrorMessage(
               error: setupState.error!,
               errorRetryStatus: setupState.errorRetryStatus,
@@ -253,8 +260,8 @@ class Instructions extends ConsumerWidget {
             Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Colors.grey[300]!,
-                  width: 5.0,
+                  color: Colors.grey[200]!,
+                  width: 2.0,
                 ),
               ),
               child: const Image(
@@ -282,53 +289,70 @@ class Instructions extends ConsumerWidget {
 
 class SetupErrorMessage extends ConsumerWidget {
   final String error;
+  final String? customMessage;
   final IntegrationSetupStatus? errorRetryStatus;
 
   const SetupErrorMessage(
-      {super.key, required this.error, this.errorRetryStatus});
+      {super.key,
+      required this.error,
+      this.errorRetryStatus,
+      this.customMessage});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'There was an error :(',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Header(
+              text: 'There was an error :(',
+            ),
+            const SizedBox(height: 8),
+            if (customMessage != null) ...[
+              Text(customMessage!),
+            ],
+            if (customMessage == null)
+              if (error.contains('SocketException'))
+                const Text(
+                  'We couldn\'t connect to Exnota\'s servers. Please check your connection and try again.',
+                )
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Error: ${error.substring(0, 40)}...',
-        ),
-        const SizedBox(height: 32),
-        if (errorRetryStatus != null)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        Align(
+          alignment: Alignment.centerRight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  ref.read(routerProvider.notifier).pop();
-                },
-                child: const Text('Cancel'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () {
-                  // Clear token. This is a bit of a hack to ensure the flow truly
-                  // starts from the beginning. It shouldn't go in the loading
-                  // integration method because we may load this screen with a valid
-                  // code ready to go.
-                  // TODO: Uncomment if we need this at this point
-                  // ref.read(notionAuthProvider.notifier).clearCode();
+              if (errorRetryStatus != null) ...[
+                TextButton(
+                  onPressed: () {
+                    ref.read(routerProvider.notifier).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 16),
+                FilledButton(
+                  onPressed: () {
+                    // Clear token. This is a bit of a hack to ensure the flow truly
+                    // starts from the beginning. It shouldn't go in the loading
+                    // integration method because we may load this screen with a valid
+                    // code ready to go.
+                    // TODO: Uncomment if we need this at this point
+                    // ref.read(notionAuthProvider.notifier).clearCode();
 
-                  ref
-                      .read(setupIntegrationScreenControllerProvider.notifier)
-                      .transitionStatus(newStatus: errorRetryStatus!);
-                },
-                child: const Text('Retry'),
-              ),
+                    ref
+                        .read(setupIntegrationScreenControllerProvider.notifier)
+                        .transitionStatus(newStatus: errorRetryStatus!);
+                  },
+                  child: const Text('Try again'),
+                )
+              ],
             ],
           ),
+        ),
       ],
     );
   }
@@ -343,6 +367,7 @@ enum IntegrationSetupStatus {
   runningNotionAuthCodeFlowError,
 
   upsertingIntegration, // Create/update integration from auth response
+  upsertingIntegrationBadCodeError,
   upsertingIntegrationError,
   complete,
 }
@@ -445,7 +470,7 @@ class SetupIntegrationScreenController
   }
 
   Future<void> upsertIntegration() async {
-    final code = (await ref.read(notionAuthProvider.future)).code;
+    var code = (await ref.read(notionAuthProvider.future)).code;
 
     // If there's an integration, update it
     if (state.integration != null) {
@@ -470,10 +495,17 @@ class SetupIntegrationScreenController
               if (errorCode == 'invalid_notion_code') {
                 _log.warn('upsertIntegration: Invalid Notion code');
                 await ref.read(notionAuthProvider.notifier).clearCode();
-              } else {
-                _log.error(
-                    'upsertIntegration: Error creating integration: ${updateResult.error}');
+                state = IntegrationSetupState(
+                  status:
+                      IntegrationSetupStatus.upsertingIntegrationBadCodeError,
+                  integration: state.integration,
+                  error: error,
+                  errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
+                );
+                return;
               }
+              _log.error(
+                  'upsertIntegration: Error creating integration: ${updateResult.error}');
               state = IntegrationSetupState(
                 status: IntegrationSetupStatus.upsertingIntegrationError,
                 integration: state.integration,
@@ -520,10 +552,16 @@ class SetupIntegrationScreenController
         if (errorCode == 'invalid_notion_code') {
           _log.warn('upsertIntegration: Invalid Notion code');
           await ref.read(notionAuthProvider.notifier).clearCode();
-        } else {
-          _log.error(
-              'upsertIntegration: Error creating integration: ${createResult.error}');
+          state = IntegrationSetupState(
+            status: IntegrationSetupStatus.upsertingIntegrationBadCodeError,
+            integration: null,
+            error: error,
+            errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
+          );
+          return;
         }
+        _log.error(
+            'upsertIntegration: Error creating integration: ${createResult.error}');
 
         state = IntegrationSetupState(
           status: IntegrationSetupStatus.upsertingIntegrationError,

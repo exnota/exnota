@@ -57,10 +57,15 @@ class NotionAuthService extends _$NotionAuthService {
             );
           },
           onError: (error) {
+            String? errorCode;
+            if (error is PocketBaseException) {
+              errorCode = error.response['data']?['errorCode']?['code'];
+            }
             _log.error('createIntegration: Create integration errored',
                 exception: error);
             completor.complete(
-              BasicResponse.error(error: error.toString(), errorCode: null),
+              BasicResponse.error(
+                  error: error.toString(), errorCode: errorCode),
             );
           },
         );
