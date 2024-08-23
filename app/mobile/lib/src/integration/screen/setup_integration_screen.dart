@@ -164,8 +164,6 @@ class _SetupIntegrationScreenState
       body: Container(
         padding: const EdgeInsets.all(16),
         child: switch (setupState.status) {
-          IntegrationSetupStatus.loadingIntegration =>
-            const Text('Loading integration'),
           IntegrationSetupStatus.loadingIntegrationError => SetupErrorMessage(
               error: setupState.error!,
               errorRetryStatus: setupState.errorRetryStatus,
@@ -174,15 +172,11 @@ class _SetupIntegrationScreenState
           // TODO: This text is visible if the user exists without finishing the auth flow.
           // We recognize this and go back to the instructions screen, but it should be a spinner or
           // something instead of this text.
-          IntegrationSetupStatus.runningNotionAuthCodeFlow =>
-            const Text('Running Notion auth code flow'),
           IntegrationSetupStatus.runningNotionAuthCodeFlowError =>
             SetupErrorMessage(
               error: setupState.error!,
               errorRetryStatus: setupState.errorRetryStatus,
             ),
-          IntegrationSetupStatus.upsertingIntegration =>
-            const Text('Upserting integration'),
           IntegrationSetupStatus.upsertingIntegrationBadCodeError =>
             SetupErrorMessage(
               error: setupState.error!,
@@ -196,6 +190,13 @@ class _SetupIntegrationScreenState
             ),
           IntegrationSetupStatus.complete =>
             const Text('Integration setup complete'),
+          // Loading statuses
+          IntegrationSetupStatus.loadingIntegration ||
+          IntegrationSetupStatus.runningNotionAuthCodeFlow ||
+          IntegrationSetupStatus.upsertingIntegration =>
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
         },
       ),
     );
