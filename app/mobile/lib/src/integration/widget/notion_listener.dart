@@ -109,7 +109,7 @@ class NotionAuth extends _$NotionAuth {
   }
 
   void saveCode({required String code}) async {
-    _log.debug('Saving code: $code');
+    _log.debug('Saving code');
 
     final persisted = await _getPersisted();
     if (persisted != null && persisted.code == code) {
