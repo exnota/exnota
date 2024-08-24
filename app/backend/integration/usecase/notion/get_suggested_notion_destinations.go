@@ -39,7 +39,7 @@ func NewGetSuggestedNotionDestinations(
 func (s *getSuggestedNotionDestinations) Get(
 	request lib.GetSuggestedDestinationsRequest,
 ) ([]lib.NotionDestination, error) {
-	if request.WorkspaceType != lib.WorkspaceTypeDatabase {
+	if request.WorkspaceType == lib.WorkspaceTypeCustom {
 		slog.Info("Workspace type not supported", "workspaceType", request.WorkspaceType)
 		return []lib.NotionDestination{}, nil
 	}
@@ -51,7 +51,6 @@ func (s *getSuggestedNotionDestinations) Get(
 	config, err := integration.Config()
 	if err != nil {
 		return nil, err
-
 	}
 
 	fetcher := api.NewNotionFetcher(*config.Auth.AccessToken)
