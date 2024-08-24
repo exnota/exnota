@@ -5,7 +5,7 @@ type GetSuggestedIntegrationDestinations func(request GetSuggestedDestinationsRe
 type GetSuggestedDestinationsRequest struct {
 	IntegrationID string
 	UserID        string
-	WorkspaceType WorkspaceType `validate:"required,oneof=database custom"`
+	WorkspaceType WorkspaceType `validate:"omitempty,oneof=database custom"`
 }
 
 type WorkspaceType string

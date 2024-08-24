@@ -250,13 +250,12 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 		block_data.NewWorkspaceFetcher(app),
 		integrationSearchDestinations,
 	).ApplyHooks()
-	block_api.NewGetSuggestedWorkspaceDestinationsAPI(
+	integ_api.NewGetSuggestedDestinationsAPI(
 		app,
 		integration_usecase.NewGetSuggestedIntegrationDestinations(
 			app,
 			integ_data.NewIntegrationFetcher(app),
 		).Get,
-		block_data.NewWorkspaceFetcher(app),
 	).ApplyHooks()
 
 	// Old rules, need extracting/refactoring
