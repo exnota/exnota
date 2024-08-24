@@ -60,6 +60,9 @@ func (s *searchDestinations) SearchDatabaseDestinations(
 	if err != nil {
 		return nil, err
 	}
+	if !integration.Archived().IsZero() {
+		return nil, fmt.Errorf("integration is archived")
+	}
 
 	switch integration.Type() {
 	case integ.IntegrationTypeNotion:
