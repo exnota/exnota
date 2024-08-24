@@ -320,6 +320,8 @@ class SetupErrorMessage extends ConsumerWidget {
                 const Text(
                   'We couldn\'t connect to Exnota\'s servers. Please check your connection and try again.',
                 )
+              else
+                const Text('We\'re not sure what happened. Please try again.'),
           ],
         ),
         Align(
@@ -429,14 +431,18 @@ class SetupIntegrationScreenController
 
     final notionAuth = await ref.read(notionAuthProvider.future);
     if (notionAuth.code != null) {
-      _log.debug('loadIntegration: Code found');
-      state = IntegrationSetupState(
-        status: IntegrationSetupStatus.upsertingIntegration,
-        integration: result.integration,
-        error: null,
-        errorRetryStatus: null,
-      );
-      return;
+      if (!notionAuth.hasPassedExpiry()) {
+        _log.debug('loadIntegration: Code found');
+        state = IntegrationSetupState(
+          status: IntegrationSetupStatus.upsertingIntegration,
+          integration: result.integration,
+          error: null,
+          errorRetryStatus: null,
+        );
+        return;
+      }
+      _log.error('Code found but has expired. Clearing.');
+      await ref.read(notionAuthProvider.notifier).clearCode();
     }
 
     if (result.integration == null) {
@@ -471,7 +477,8 @@ class SetupIntegrationScreenController
   }
 
   Future<void> upsertIntegration() async {
-    var code = (await ref.read(notionAuthProvider.future)).code;
+    // This method should only be called if there's a code available
+    final code = (await ref.read(notionAuthProvider.future)).code!;
 
     // If there's an integration, update it
     if (state.integration != null) {
@@ -484,7 +491,7 @@ class SetupIntegrationScreenController
               .read(notionAuthServiceProvider.notifier)
               .updateIntegration(
                 integrationId: state.integration!.id,
-                code: code!,
+                code: code,
               );
           switch (updateResult) {
             case BasicResponseSuccess():
@@ -540,12 +547,9 @@ class SetupIntegrationScreenController
     }
 
     // Create integration
-    //
-    // TODO: If code is invalid, backend should return a code for that and
-    // we should clear it from the provider.
     final createResult = await ref
         .read(notionAuthServiceProvider.notifier)
-        .createIntegration(code: code!);
+        .createIntegration(code: code);
     switch (createResult) {
       case BasicResponseSuccess():
         break;
