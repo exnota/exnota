@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"exnota.com/backend/block"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/daos"
@@ -110,7 +112,9 @@ func (w *workspaceUpdaterService) SetArchivedForIntegration(
 			return err
 		}
 
+		now := time.Now()
 		for _, workspace := range workspaces {
+			workspace.SetArchived(now)
 			err = workspace.SetExternalStatus(block.WorkspaceExternalStatusArchived)
 			if err != nil {
 				return err

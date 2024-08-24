@@ -60,16 +60,6 @@ func (h *integrationUpdateAPI) ApplyHooks() {
 				return err
 			}
 
-			// Keep the use cases separate to simplify side effect logic
-			configChanged := !reflect.DeepEqual(updatedConfig, existingConfig)
-			archivedChanged := updated.Archived() != existing.Archived()
-			if configChanged && archivedChanged {
-				return apis.NewBadRequestError(
-					"Cannot update config and archived at the same time",
-					nil,
-				)
-			}
-
 			// Prevent certain field updates
 			//
 			// Authorization is implemented using API Rules in the Admin UI:
@@ -82,6 +72,16 @@ func (h *integrationUpdateAPI) ApplyHooks() {
 			}
 			if updated.Status() != existing.Status() {
 				return apis.NewBadRequestError("Cannot update integration status", nil)
+			}
+
+			// Keep the use cases separate to simplify side effect logic
+			configChanged := !reflect.DeepEqual(updatedConfig, existingConfig)
+			archivedChanged := updated.Archived() != existing.Archived()
+			if configChanged && archivedChanged {
+				return apis.NewBadRequestError(
+					"Cannot update config and archived at the same time",
+					nil,
+				)
 			}
 
 			// Use case 1: Update config and re-connect.

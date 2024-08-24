@@ -39,6 +39,7 @@ type Workspace interface {
 	User() string
 	Archived() time.Time
 
+	SetArchived(archived time.Time)
 	SetExternalStatus(status WorkspaceExternalStatus) error
 
 	Record() *models.Record
@@ -115,6 +116,10 @@ func (w *workspace) User() string {
 
 func (i *workspace) Archived() time.Time {
 	return i.record.GetDateTime(WorkspaceFieldArchived).Time()
+}
+
+func (w *workspace) SetArchived(archived time.Time) {
+	w.record.Set(WorkspaceFieldArchived, archived)
 }
 
 func (w *workspace) SetExternalStatus(status WorkspaceExternalStatus) error {
