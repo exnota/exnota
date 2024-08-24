@@ -67,7 +67,8 @@ class _SetupIntegrationScreenState
 
           ref
               .read(setupIntegrationScreenControllerProvider.notifier)
-              .transitionStatus(newStatus: IntegrationSetupStatus.instructions);
+              .transitionStatus(
+                  newStatus: IntegrationSetupStatus.instructionsCreate);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("That didn't work. Please try again."),
@@ -123,7 +124,7 @@ class _SetupIntegrationScreenState
         case IntegrationSetupStatus.loadingIntegration:
           ref
               .read(setupIntegrationScreenControllerProvider.notifier)
-              .loadIntegration(forceReauth: false);
+              .loadIntegration(forceReauth: widget.forceReauth);
           break;
         case IntegrationSetupStatus.runningNotionAuthCodeFlow:
           ref
@@ -168,7 +169,8 @@ class _SetupIntegrationScreenState
               error: setupState.error!,
               errorRetryStatus: setupState.errorRetryStatus,
             ),
-          IntegrationSetupStatus.instructions => const Instructions(),
+          IntegrationSetupStatus.instructionsCreate => const Instructions(),
+          IntegrationSetupStatus.instructionsUpdate => const Instructions(),
           // TODO: This text is visible if the user exists without finishing the auth flow.
           // We recognize this and go back to the instructions screen, but it should be a spinner or
           // something instead of this text.
@@ -224,7 +226,9 @@ class Header extends StatelessWidget {
 }
 
 class Instructions extends ConsumerWidget {
-  const Instructions({super.key});
+  final bool create;
+
+  const Instructions({super.key, this.create = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -235,9 +239,10 @@ class Instructions extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Header(
-              text: 'First, give Exnota access to a database or page in Notion',
-            ),
+            Header(
+                text: create
+                    ? 'First, give Exnota access to a database or page in Notion'
+                    : 'Update the pages Exnota can access in Notion'),
             const Text(
               'You\'ll be redirected to Notion, then:',
               style: TextStyle(fontSize: 16),
@@ -364,7 +369,8 @@ class SetupErrorMessage extends ConsumerWidget {
 enum IntegrationSetupStatus {
   loadingIntegration, // Fetch integration from backend
   loadingIntegrationError,
-  instructions,
+  instructionsCreate,
+  instructionsUpdate,
 
   runningNotionAuthCodeFlow, // Start Notion auth flow
   runningNotionAuthCodeFlowError,
@@ -448,7 +454,7 @@ class SetupIntegrationScreenController
     if (result.integration == null) {
       _log.debug('loadIntegration: No integration found');
       state = const IntegrationSetupState(
-        status: IntegrationSetupStatus.instructions,
+        status: IntegrationSetupStatus.instructionsCreate,
         integration: null,
         error: null,
         errorRetryStatus: null,
@@ -459,7 +465,7 @@ class SetupIntegrationScreenController
     if (forceReauth) {
       _log.debug('loadIntegration: Forcing reauth');
       state = IntegrationSetupState(
-        status: IntegrationSetupStatus.instructions,
+        status: IntegrationSetupStatus.instructionsUpdate,
         integration: result.integration,
         error: null,
         errorRetryStatus: null,
@@ -478,15 +484,13 @@ class SetupIntegrationScreenController
 
   Future<void> upsertIntegration() async {
     // This method should only be called if there's a code available
-    final code = (await ref.read(notionAuthProvider.future)).code!;
+    var code = (await ref.read(notionAuthProvider.future)).code!;
 
     // If there's an integration, update it
     if (state.integration != null) {
       _log.debug('upsertIntegration: Updating integration');
       switch (state.integration!.type) {
         case IntegrationType.notion:
-          // TODO: If code is invalid, backend should return a code for that and
-          // we should clear it from the provider.
           final updateResult = await ref
               .read(notionAuthServiceProvider.notifier)
               .updateIntegration(
@@ -644,7 +648,7 @@ class SetupIntegrationScreenController
     switch (authUrlResponse) {
       case BasicResponseSuccess():
         break;
-      case BasicResponseError(error: final error):
+      case BasicResponseError():
         _log.error('updateIntegration: Error getting auth url');
         state = IntegrationSetupState(
           status: IntegrationSetupStatus.runningNotionAuthCodeFlowError,
