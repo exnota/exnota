@@ -146,6 +146,12 @@ class _SetupDestinationScreenState
   }
 }
 
+const NotionDestination noneOfTheAbove = NotionDestination(
+    name: 'None of the above',
+    object:
+        NotionObject(object: NotionObjectType.page, id: 'none-of-the-above'),
+    icon: null);
+
 class SelectSuggestedDestination extends ConsumerStatefulWidget {
   final String integrationID;
 
@@ -164,6 +170,7 @@ class _SelectSuggestedDestinationState
   Widget build(BuildContext context) {
     final destination = ref.watch(activeDestinationLazyProvider);
     final selected = ref.watch(_selectedDestinationProvider);
+    final selectedNoneOfTheAbove = selected == noneOfTheAbove;
     final suggestions = ref
             .watch(setupDestinationScreenControllerProvider)
             .notionSuggestedDestinations ??
@@ -177,14 +184,6 @@ class _SelectSuggestedDestinationState
         const SizedBox(height: 16),
         const Text('Please confirm where notes should be sent:'),
         const SizedBox(height: 16),
-        if (destination != null) ...[
-          const Text('Current destination'),
-          ListTile(
-            title: Text(destination.name ?? ''),
-            subtitle: Text(destination.id),
-          ),
-          const SizedBox(height: 16),
-        ],
         for (final destination in suggestions)
           DestinationRadioTile(
             destination: destination,
@@ -195,34 +194,46 @@ class _SelectSuggestedDestinationState
                   .setSelectedDestination(value);
             },
           ),
-        const SizedBox(height: 16),
-        if (selected != null && !suggestions.contains(selected)) ...[
-          const Text('Selected'),
-          DestinationRadioTile(
-            destination: selected,
-            selected: selected,
-            onChanged: (value) {
-              ref
-                  .read(setupDestinationScreenControllerProvider.notifier)
-                  .setSelectedDestination(value);
-            },
+        RadioListTile(
+          title: Row(
+            children: [
+              Text(noneOfTheAbove.name),
+            ],
           ),
-          const SizedBox(height: 16),
-        ],
+          value: noneOfTheAbove,
+          groupValue: selected,
+          onChanged: (value) {
+            ref
+                .read(setupDestinationScreenControllerProvider.notifier)
+                .setSelectedDestination(value);
+          },
+        ),
       ],
       buttonChildren: [
-        FilledButton(
-          onPressed: selected == null
-              ? null
-              : () {
-                  ref
-                      .read(setupDestinationScreenControllerProvider.notifier)
-                      .transitionStatus(
-                          newStatus:
-                              DestinationSetupStatus.updatingDestination);
-                },
-          child: const Text('Confirm'),
-        ),
+        if (selectedNoneOfTheAbove) ...[
+          FilledButton(
+            onPressed: () {
+              ref
+                  .read(setupDestinationScreenControllerProvider.notifier)
+                  .transitionStatus(
+                      newStatus: DestinationSetupStatus.searchDestinations);
+            },
+            child: const Text('Next'),
+          ),
+        ] else ...[
+          FilledButton(
+            onPressed: selected == null
+                ? null
+                : () {
+                    ref
+                        .read(setupDestinationScreenControllerProvider.notifier)
+                        .transitionStatus(
+                            newStatus:
+                                DestinationSetupStatus.updatingDestination);
+                  },
+            child: const Text('Confirm'),
+          ),
+        ]
       ],
     );
   }
@@ -234,10 +245,10 @@ class SearchDestination extends ConsumerStatefulWidget {
   const SearchDestination({super.key, required this.integrationID});
 
   @override
-  ConsumerState<SearchDestination> createState() => _SelectDestinationState();
+  ConsumerState<SearchDestination> createState() => _SearchDestinationState();
 }
 
-class _SelectDestinationState extends ConsumerState<SearchDestination> {
+class _SearchDestinationState extends ConsumerState<SearchDestination> {
   final _log = Logger(context: '_SelectDestinationState');
 
   @override
@@ -429,6 +440,10 @@ class DestinationIcon extends StatelessWidget {
       case NotionObjectType.database:
         placeholder = const Icon(Icons.table_chart_rounded);
         break;
+    }
+
+    if (destination.name == noneOfTheAbove.name) {
+      return const SizedBox(width: 0, height: 0);
     }
 
     final icon = destination.icon;
