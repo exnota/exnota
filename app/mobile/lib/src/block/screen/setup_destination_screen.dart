@@ -470,7 +470,12 @@ class DestinationRadioTile extends StatelessWidget {
         children: [
           DestinationIcon(destination: destination),
           const SizedBox(width: 8),
-          Text(destination.name),
+          Flexible(
+            child: Text(
+              destination.name,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
       value: destination,
