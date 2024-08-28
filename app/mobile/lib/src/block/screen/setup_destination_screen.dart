@@ -10,6 +10,7 @@ import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/common/integration/notion_destination.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
+import 'package:exnota/src/integration/screen/base_setup_screen.dart';
 import 'package:exnota/src/integration/screen/setup_error_message.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
@@ -88,81 +89,155 @@ class _SetupDestinationScreenState
 
     final destinations = ref.watch(destinationListerProvider).valueOrNull;
 
-    return Scaffold(
-      body: Center(
-        child: Container(
-          child: switch (setupState.status) {
-            DestinationSetupStatus.loadingDestinationsError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-                onRetry: () {
-                  ref
-                      .read(setupDestinationScreenControllerProvider.notifier)
-                      .transitionStatus(
-                          newStatus: setupState.errorRetryStatus!);
-                },
-              ),
-            DestinationSetupStatus.loadingSuggestedDestinationsError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-                onRetry: () {
-                  ref
-                      .read(setupDestinationScreenControllerProvider.notifier)
-                      .transitionStatus(
-                          newStatus: setupState.errorRetryStatus!);
-                },
-              ),
-            DestinationSetupStatus.selectDestination =>
-              SelectDestination(integrationID: widget.integrationID),
-            DestinationSetupStatus.updatingDestinationError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-                onRetry: () {
-                  ref
-                      .read(setupDestinationScreenControllerProvider.notifier)
-                      .transitionStatus(
-                          newStatus: setupState.errorRetryStatus!);
-                },
-              ),
-            DestinationSetupStatus.loadingUpdatedDestinationsError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-                onRetry: () {
-                  ref
-                      .read(setupDestinationScreenControllerProvider.notifier)
-                      .transitionStatus(
-                          newStatus: setupState.errorRetryStatus!);
-                },
-              ),
-            // TODO: Move this to 'loading' group below instead
-            DestinationSetupStatus.destinationsUpdated => const Text('Done!'),
-            // Loading
-            DestinationSetupStatus.loadingDestinations ||
-            DestinationSetupStatus.loadingSuggestedDestinations ||
-            DestinationSetupStatus.updatingDestination ||
-            DestinationSetupStatus.destinationsUpdated =>
-              const Center(child: CircularProgressIndicator()),
-          },
-        ),
-      ),
+    return BaseWidgetScaffold(
+      child: switch (setupState.status) {
+        DestinationSetupStatus.loadingDestinationsError => SetupErrorMessage(
+            error: setupState.error!,
+            errorRetryStatus: setupState.errorRetryStatus,
+            onRetry: () {
+              ref
+                  .read(setupDestinationScreenControllerProvider.notifier)
+                  .transitionStatus(newStatus: setupState.errorRetryStatus!);
+            },
+          ),
+        DestinationSetupStatus.loadingSuggestedDestinationsError =>
+          SetupErrorMessage(
+            error: setupState.error!,
+            errorRetryStatus: setupState.errorRetryStatus,
+            onRetry: () {
+              ref
+                  .read(setupDestinationScreenControllerProvider.notifier)
+                  .transitionStatus(newStatus: setupState.errorRetryStatus!);
+            },
+          ),
+        DestinationSetupStatus.selectSuggestedDestination =>
+          SelectSuggestedDestination(integrationID: widget.integrationID),
+        DestinationSetupStatus.searchDestinations =>
+          SearchDestination(integrationID: widget.integrationID),
+        DestinationSetupStatus.updatingDestinationError => SetupErrorMessage(
+            error: setupState.error!,
+            errorRetryStatus: setupState.errorRetryStatus,
+            onRetry: () {
+              ref
+                  .read(setupDestinationScreenControllerProvider.notifier)
+                  .transitionStatus(newStatus: setupState.errorRetryStatus!);
+            },
+          ),
+        DestinationSetupStatus.loadingUpdatedDestinationsError =>
+          SetupErrorMessage(
+            error: setupState.error!,
+            errorRetryStatus: setupState.errorRetryStatus,
+            onRetry: () {
+              ref
+                  .read(setupDestinationScreenControllerProvider.notifier)
+                  .transitionStatus(newStatus: setupState.errorRetryStatus!);
+            },
+          ),
+        // TODO: Move this to 'loading' group below instead
+        DestinationSetupStatus.destinationsUpdated => const Text('Done!'),
+        // Loading
+        DestinationSetupStatus.loadingDestinations ||
+        DestinationSetupStatus.loadingSuggestedDestinations ||
+        DestinationSetupStatus.updatingDestination ||
+        DestinationSetupStatus.destinationsUpdated =>
+          const Center(child: CircularProgressIndicator()),
+      },
     );
   }
 }
 
-class SelectDestination extends ConsumerStatefulWidget {
+class SelectSuggestedDestination extends ConsumerStatefulWidget {
   final String integrationID;
 
-  const SelectDestination({super.key, required this.integrationID});
+  const SelectSuggestedDestination({super.key, required this.integrationID});
 
   @override
-  ConsumerState<SelectDestination> createState() => _SelectDestinationState();
+  ConsumerState<SelectSuggestedDestination> createState() =>
+      _SelectSuggestedDestinationState();
 }
 
-class _SelectDestinationState extends ConsumerState<SelectDestination> {
+class _SelectSuggestedDestinationState
+    extends ConsumerState<SelectSuggestedDestination> {
+  final _log = Logger(context: '_SelectedSuggestedDestinationState');
+
+  @override
+  Widget build(BuildContext context) {
+    final destination = ref.watch(activeDestinationLazyProvider);
+    final selected = ref.watch(_selectedDestinationProvider);
+    final suggestions = ref
+            .watch(setupDestinationScreenControllerProvider)
+            .notionSuggestedDestinations ??
+        [];
+
+    return BaseSetupView(
+      header: 'Last, confirm where notes should be sent.',
+      contentChildren: [
+        const Text(
+            'Looks like Exnota has access to a few pages. Some might be inside the one you gave access to.'),
+        const SizedBox(height: 16),
+        const Text('Please confirm where notes should be sent:'),
+        const SizedBox(height: 16),
+        if (destination != null) ...[
+          const Text('Current destination'),
+          ListTile(
+            title: Text(destination.name ?? ''),
+            subtitle: Text(destination.id),
+          ),
+          const SizedBox(height: 16),
+        ],
+        for (final destination in suggestions)
+          DestinationRadioTile(
+            destination: destination,
+            selected: selected,
+            onChanged: (value) {
+              ref
+                  .read(setupDestinationScreenControllerProvider.notifier)
+                  .setSelectedDestination(value);
+            },
+          ),
+        const SizedBox(height: 16),
+        if (selected != null && !suggestions.contains(selected)) ...[
+          const Text('Selected'),
+          DestinationRadioTile(
+            destination: selected,
+            selected: selected,
+            onChanged: (value) {
+              ref
+                  .read(setupDestinationScreenControllerProvider.notifier)
+                  .setSelectedDestination(value);
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+      ],
+      buttonChildren: [
+        FilledButton(
+          onPressed: selected == null
+              ? null
+              : () {
+                  ref
+                      .read(setupDestinationScreenControllerProvider.notifier)
+                      .transitionStatus(
+                          newStatus:
+                              DestinationSetupStatus.updatingDestination);
+                },
+          child: const Text('Confirm'),
+        ),
+      ],
+    );
+  }
+}
+
+class SearchDestination extends ConsumerStatefulWidget {
+  final String integrationID;
+
+  const SearchDestination({super.key, required this.integrationID});
+
+  @override
+  ConsumerState<SearchDestination> createState() => _SelectDestinationState();
+}
+
+class _SelectDestinationState extends ConsumerState<SearchDestination> {
   final _log = Logger(context: '_SelectDestinationState');
 
   @override
@@ -403,7 +478,8 @@ enum DestinationSetupStatus {
   loadingDestinationsError,
   loadingSuggestedDestinations,
   loadingSuggestedDestinationsError,
-  selectDestination, // Ask to select a database destination
+  selectSuggestedDestination,
+  searchDestinations,
   updatingDestination, // Processes database destination changes
   updatingDestinationError,
   loadingUpdatedDestinationsError,
@@ -569,10 +645,10 @@ class SetupDestinationScreenController
         _log.debug('loadSuggestedDestinations: Success');
 
         state = DestinationSetupState(
-          status: DestinationSetupStatus.selectDestination,
+          status: DestinationSetupStatus.selectSuggestedDestination,
           integrationID: state.integrationID,
           notionSuggestedDestinations: result.destinations.notion,
-          selected: null,
+          selected: result.destinations.notion?.first,
           error: null,
           errorRetryStatus: null,
         );
