@@ -9,6 +9,7 @@ import 'package:exnota/src/block/service/workspace_lister.dart';
 import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/common/integration/notion_destination.dart';
+import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/integration/screen/base_setup_screen.dart';
 import 'package:exnota/src/integration/screen/setup_error_message.dart';
@@ -265,10 +266,9 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
       _log.debug('build: num results: ${searchResults.value?.length}');
     }
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    return BaseSetupView(
+      header: 'Last, confirm where notes should be sent.',
+      contentChildren: [
         if (destination != null) ...[
           const Text('Current destination'),
           ListTile(
@@ -370,11 +370,77 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
             );
           },
         ),
-        const SizedBox(height: 16),
+      ],
+      buttonChildren: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            ElevatedButton(
+            TextButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('Let\'s try again'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                              'We\'ll repeat the Notion connection process to give Exnota access.'),
+                          const SizedBox(height: 16),
+                          const Text(
+                              'During this, ensure the database or page is checked.'),
+                          const SizedBox(height: 16),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Colors.grey[400]!,
+                                width: 2.0,
+                              ),
+                            ),
+                            child: const Image(
+                              image: AssetImage(
+                                  'assets/images/notion-auth-checked.png'),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                              'And that you scroll down and press \'Allow access\'. '),
+                          const SizedBox(height: 16),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Colors.grey[400]!,
+                                width: 2.0,
+                              ),
+                            ),
+                            child: const Image(
+                              image: AssetImage(
+                                  'assets/images/notion-auth-allow-access.png'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          child: const Text('Try again'),
+                          onPressed: () {
+                            ref.read(routerProvider.notifier).pushReplacement(
+                                Screen.settingsSetupIntegrationForceReauth);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              // onPressed: () {
+              //   ref.read(routerProvider.notifier).pushReplacement(
+              //       Screen.settingsSetupIntegrationForceReauth);
+              // },
+              child: const Text("I can't find it"),
+            ),
+            FilledButton(
               onPressed: selected == null
                   ? null
                   : () {
@@ -385,7 +451,7 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
                               newStatus:
                                   DestinationSetupStatus.updatingDestination);
                     },
-              child: const Text('Select destination'),
+              child: const Text('Confirm'),
             ),
           ],
         ),

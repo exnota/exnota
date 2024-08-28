@@ -173,13 +173,13 @@ class Router extends _$Router {
     state.pop();
   }
 
-  void pushReplacement(Screen screen, {Map<String, dynamic>? params}) {
+  void pushReplacement(Screen screen, {Map<String, String>? params}) {
     _log.debug('Pushing replacement screen: $screen');
-    final uri = Uri(
-      path: to(screen),
-      queryParameters: params,
-    );
-    state.pushReplacement(uri.toString());
+    var uri = toUri(screen);
+    if (params != null) {
+      uri = uri.replace(queryParameters: {...uri.queryParameters, ...params});
+    }
+    state.pushReplacement('/$uri');
   }
 }
 
@@ -214,7 +214,6 @@ enum Screen {
 
 const _routeHome = '/';
 const _routeSettings = 'settings';
-const _routeSettingsSetupWorkspace = 'setup-workspace';
 const _routeSettingsSetupIntegration = 'setup-integration';
 const _routeSettingsSetupDestination = 'setup-destination';
 const _routeLogin = 'login';
@@ -223,27 +222,34 @@ const _routeLogin = 'login';
 ///
 /// E.g. `context.push(to(Screen.settings));`
 String to(Screen route) {
+  final val = '${toUri(route)}';
+  if (val == '/') {
+    return val;
+  }
+  return '/$val';
+}
+
+/// Internal-only because a forward slash is needed, and I haven't figured out
+/// how to add that yet. So use to() instead.
+Uri toUri(Screen route) {
   switch (route) {
     case Screen.home:
-      return _routeHome;
+      return Uri(path: _routeHome);
     case Screen.settings:
-      Uri uri = Uri(pathSegments: [_routeSettings]);
-      return '/$uri';
+      return Uri(pathSegments: [_routeSettings]);
     case Screen.settingsSetupIntegration:
-      Uri uri =
-          Uri(pathSegments: [_routeSettings, _routeSettingsSetupIntegration]);
-      return '/$uri';
+      return Uri(
+          pathSegments: [_routeSettings, _routeSettingsSetupIntegration]);
     case Screen.settingsSetupIntegrationForceReauth:
-      Uri uri = Uri(
+      return Uri(
           pathSegments: [_routeSettings, _routeSettingsSetupIntegration],
           queryParameters: {'forceReauth': 'true'});
-      return '/$uri';
     case Screen.settingsSetupDestination:
-      Uri uri =
-          Uri(pathSegments: [_routeSettings, _routeSettingsSetupDestination]);
-      return '/$uri';
+      return Uri(
+          pathSegments: [_routeSettings, _routeSettingsSetupDestination]);
     case Screen.login:
-      Uri uri = Uri(pathSegments: [_routeLogin]);
-      return '/$uri';
+      return Uri(pathSegments: [_routeLogin]);
+    default:
+      throw Exception('Invalid route: $route');
   }
 }
