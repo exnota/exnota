@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log/slog"
 
 	"exnota.com/backend/block"
 	lib_block "exnota.com/backend/lib/block"
@@ -84,6 +85,7 @@ func (h *destinationCreateAPI) ApplyHooks() {
 			// If there's no integration, skip syncing the destination
 			integration := workspace.Integration()
 			if integration == "" {
+				slog.Warn("No integration set for workspace", "workspace", workspace.Id())
 				return nil
 			}
 

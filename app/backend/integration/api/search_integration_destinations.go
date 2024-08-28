@@ -4,20 +4,19 @@ import (
 	"log/slog"
 	"net/http"
 
-	"exnota.com/backend/block"
+	"exnota.com/backend/integration/data"
 	"exnota.com/backend/lib/api"
 	integ "exnota.com/backend/lib/integration"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/core"
 )
 
-type SearchWorkspaceDestinationsAPI interface {
+type SearchIntegrationDestinationsAPI interface {
 	ApplyHooks()
 }
 
-type searchWorkspaceDestinationsAPI struct {
+type searchIntegrationDestinationsAPI struct {
 	app                          core.App
-	workspaceFetcher             block.WorkspaceFetcher
 	integrationDestinationSearch IntegrationDestinationSearch
 }
 
@@ -34,36 +33,36 @@ type IntegrationDestinationSearch interface {
 	) (*integ.Destinations, error)
 }
 
-func NewSearchWorkspaceDestinationsAPI(
+func NewSearchIntegrationDestinationsAPI(
 	app core.App,
-	workspaceFetcher block.WorkspaceFetcher,
 	integrationDestinationSearch IntegrationDestinationSearch,
-) SearchWorkspaceDestinationsAPI {
-	return &searchWorkspaceDestinationsAPI{app, workspaceFetcher, integrationDestinationSearch}
+) SearchIntegrationDestinationsAPI {
+	return &searchIntegrationDestinationsAPI{app, integrationDestinationSearch}
 }
 
-type SearchWorkspaceDestinationsRequest struct {
-	WorkspaceID string `json:"workspace_id" validate:"min=1"`
-	Query       string `json:"query"`
+type SearchNotionDestinationsRequest struct {
+	IntegrationID string                 `json:"integration_id" validate:"min=1"`
+	Object        integ.NotionObjectType `json:"object"         validate:"omitempty,oneof=database page"`
+	Query         string                 `json:"query"`
 }
 
-type SearchWorkspaceDestinationsResponse struct {
+type SearchIntegrationDestinationsResponse struct {
 	Destinations integ.Destinations `json:"destinations"`
 }
 
-func (h *searchWorkspaceDestinationsAPI) ApplyHooks() {
+func (h *searchIntegrationDestinationsAPI) ApplyHooks() {
 	h.app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET(api.SearchWorkspaceDestinations, func(c echo.Context) error {
+		e.Router.GET(api.SearchIntegrationDestinations, func(c echo.Context) error {
 			slog.Info(
 				"Custom endpoint",
 				"method",
 				c.Request().Method,
 				"path",
-				api.SearchWorkspaceDestinations,
+				api.SearchIntegrationDestinations,
 			)
 
 			// Parse and validate request
-			req := new(SearchWorkspaceDestinationsRequest)
+			req := new(SearchNotionDestinationsRequest)
 			if err := c.Bind(req); err != nil {
 				return c.String(http.StatusBadRequest, "bad request")
 			}
@@ -73,36 +72,28 @@ func (h *searchWorkspaceDestinationsAPI) ApplyHooks() {
 			}
 
 			// Auth
-			auth := NewWorkspaceAuth(h.app, h.workspaceFetcher, c)
-			err = auth.ForWorkspace(req.WorkspaceID)
+			auth := NewIntegrationAuth(h.app, data.NewIntegrationFetcher(h.app), c)
+			err = auth.ForIntegration(req.IntegrationID)
 			if err != nil {
 				return err
 			}
 
-			workspace, err := h.workspaceFetcher.FetchById(req.WorkspaceID)
-			if err != nil {
-				return err
-			}
-			if workspace.Integration() == "" {
-				return c.String(http.StatusBadRequest, "workspace has no integration")
-			}
-
-			switch workspace.Type() {
-			case block.WorkspaceTypeDatabase:
+			switch req.Object {
+			case integ.NotionObjectTypeDatabase:
 				result, err := h.integrationDestinationSearch.SearchDatabaseDestinations(
-					workspace.Integration(),
+					req.IntegrationID,
 					auth.LoggedInUser(),
 					req.Query,
 				)
 				if err != nil {
 					return err
 				}
-				return c.JSON(200, &SearchWorkspaceDestinationsResponse{
+				return c.JSON(200, &SearchIntegrationDestinationsResponse{
 					Destinations: *result,
 				})
-			case block.WorkspaceTypeCustom:
+			case integ.NotionObjectTypePage, "":
 				result, err := h.integrationDestinationSearch.SearchAllDestinations(
-					workspace.Integration(),
+					req.IntegrationID,
 					auth.LoggedInUser(),
 					req.Query,
 				)
@@ -110,7 +101,7 @@ func (h *searchWorkspaceDestinationsAPI) ApplyHooks() {
 					return err
 
 				}
-				return c.JSON(200, &SearchWorkspaceDestinationsResponse{
+				return c.JSON(200, &SearchIntegrationDestinationsResponse{
 					Destinations: *result,
 				})
 			default:

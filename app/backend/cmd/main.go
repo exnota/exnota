@@ -245,9 +245,8 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 		app,
 		integ_data.NewIntegrationFetcher(app),
 	)
-	block_api.NewSearchWorkspaceDestinationsAPI(
+	integ_api.NewSearchIntegrationDestinationsAPI(
 		app,
-		block_data.NewWorkspaceFetcher(app),
 		integrationSearchDestinations,
 	).ApplyHooks()
 	integ_api.NewGetSuggestedDestinationsAPI(
