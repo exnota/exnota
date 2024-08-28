@@ -169,7 +169,6 @@ class _SelectSuggestedDestinationState
 
   @override
   Widget build(BuildContext context) {
-    final destination = ref.watch(activeDestinationLazyProvider);
     final selected = ref.watch(_selectedDestinationProvider);
     final selectedNoneOfTheAbove = selected == noneOfTheAbove;
     final suggestions = ref
@@ -254,12 +253,7 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
 
   @override
   Widget build(BuildContext context) {
-    final destination = ref.watch(activeDestinationLazyProvider);
     final selected = ref.watch(_selectedDestinationProvider);
-    final suggestions = ref
-            .watch(setupDestinationScreenControllerProvider)
-            .notionSuggestedDestinations ??
-        [];
     final searchResults =
         ref.watch(_searchResultsProvider(widget.integrationID));
     if (searchResults is AsyncData) {
@@ -269,40 +263,11 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
     return BaseSetupView(
       header: 'Last, confirm where notes should be sent.',
       contentChildren: [
-        if (destination != null) ...[
-          const Text('Current destination'),
-          ListTile(
-            title: Text(destination.name ?? ''),
-            subtitle: Text(destination.id),
-          ),
-          const SizedBox(height: 16),
-        ],
-        const Text('Suggested'),
-        for (final destination in suggestions)
-          DestinationRadioTile(
-            destination: destination,
-            selected: selected,
-            onChanged: (value) {
-              ref
-                  .read(setupDestinationScreenControllerProvider.notifier)
-                  .setSelectedDestination(value);
-            },
-          ),
+        const Text(
+            'Looks like Exnota has access to a few pages. Some might be inside the one you gave access to.'),
         const SizedBox(height: 16),
-        if (selected != null && !suggestions.contains(selected)) ...[
-          const Text('Selected'),
-          DestinationRadioTile(
-            destination: selected,
-            selected: selected,
-            onChanged: (value) {
-              ref
-                  .read(setupDestinationScreenControllerProvider.notifier)
-                  .setSelectedDestination(value);
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
-        const Text('Search'),
+        const Text('Please confirm where notes should be sent:'),
+        const SizedBox(height: 32),
         SearchAnchor(
           viewOnChanged: (query) {
             _log.debug('SearchAnchor: viewOnChanged search query: $query');
@@ -315,6 +280,7 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
           // when the search results change. So I'm using the provider
           // directly in the viewBuilder instead.
           suggestionsBuilder: (context, controller) => [],
+
           viewBuilder: (suggestions) {
             // Ignore the suggestions argument and use from the provider
             // instead. Because I can't figure out how to have
@@ -353,6 +319,10 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
           },
           builder: (context, controller) {
             return SearchBar(
+              hintText: 'Search',
+              elevation: const MaterialStatePropertyAll<double>(0),
+              backgroundColor: MaterialStateProperty.resolveWith(
+                  (states) => Colors.grey[200]),
               controller: controller,
               onTap: () {
                 _log.debug('SearchAnchor: onTap search bar');
@@ -370,6 +340,24 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
             );
           },
         ),
+        if (selected != null && selected.name != noneOfTheAbove.name) ...[
+          const SizedBox(height: 32),
+          const Text('Send notes to:'),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              children: [
+                DestinationIcon(destination: selected),
+                const SizedBox(width: 8),
+                Text(
+                  selected.name,
+                  style: const TextStyle(fontSize: 18),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
       ],
       buttonChildren: [
         Row(
