@@ -295,20 +295,23 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
                     'SearchAnchor: rebuilding viewBuilder with selected: $selected');
 
                 return switch (results) {
-                  AsyncData(:final value) => Column(
-                      children: [
-                        for (final destination in value)
-                          DestinationRadioTile(
-                            destination: destination,
-                            selected: selected,
-                            onChanged: (value) {
-                              ref
-                                  .read(setupDestinationScreenControllerProvider
-                                      .notifier)
-                                  .setSelectedDestination(value);
-                            },
-                          )
-                      ],
+                  AsyncData(:final value) => SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          for (final destination in value)
+                            DestinationRadioTile(
+                              destination: destination,
+                              selected: selected,
+                              onChanged: (value) {
+                                ref
+                                    .read(
+                                        setupDestinationScreenControllerProvider
+                                            .notifier)
+                                    .setSelectedDestination(value);
+                              },
+                            )
+                        ],
+                      ),
                     ),
                   AsyncLoading() => const Text('Loading...'),
                   AsyncError(:final error) => Text('Error: $error'),
