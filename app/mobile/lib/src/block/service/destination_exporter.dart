@@ -23,9 +23,50 @@ class DestinationExporter extends _$DestinationExporter {
     // no-op
   }
 
-  Future<BasicResponse<void>> createNotionDestination(
+  /// Archives all non-archived destinations and creates a new destination.
+  Future<BasicResponse<void>> replaceDestination(
       {required String workspaceId, required NotionObject notionObject}) async {
-    _log.debug('Creating Notion destination for workspace $workspaceId');
+    final destinations = await ref.read(destinationListerProvider.future);
+
+    // Archive all non-archived destinations
+    for (final destination in destinations) {
+      if (destination.archived != null) {
+        _log.debug(
+            '[replaceDestination] Destination ${destination.id} is already archived');
+        continue;
+      }
+
+      _log.debug(
+          '[replaceDestination] Archiving destination ${destination.id}');
+      final response = await ref
+          .read(requestHandlerProvider.notifier)
+          .submitWithBasicResponse(
+              request: ArchiveDestinationRequest(destination: destination));
+      switch (response) {
+        case BasicResponseSuccess(:final result):
+          _log.debug(
+              '[replaceDestination] Archived destination ${destination.id}');
+          await ref.read(destinationImporterProvider.notifier).importRecord(
+                record: result,
+              );
+          continue;
+        case BasicResponseError():
+          return response;
+      }
+    }
+
+    // Create new destination
+    _log.debug('[replaceDestination] Creating new destination');
+    return await _createNotionDestination(
+      workspaceId: workspaceId,
+      notionObject: notionObject,
+    );
+  }
+
+  Future<BasicResponse<void>> _createNotionDestination(
+      {required String workspaceId, required NotionObject notionObject}) async {
+    _log.debug(
+        '[createNotionDestination] Creating Notion destination for object ${notionObject.id} in workspace $workspaceId');
     // Save to backend
     final request = CreateDestinationRequest(
         workspaceId: workspaceId,
@@ -38,6 +79,8 @@ class DestinationExporter extends _$DestinationExporter {
     // Import to local database
     switch (response) {
       case BasicResponseSuccess(:final result):
+        _log.debug(
+            '[createNotionDestination] Created destination ${result.id} for object ${notionObject.id} in workspace $workspaceId');
         await ref
             .read(
               destinationImporterProvider.notifier,
@@ -47,41 +90,10 @@ class DestinationExporter extends _$DestinationExporter {
             );
         return response;
       case BasicResponseError():
+        _log.error(
+            '[createNotionDestination] Failed to create destination for object ${notionObject.id} in workspace $workspaceId');
         return response;
     }
-  }
-
-  /// Archives all non-archived destinations and creates a new destination.
-  Future<BasicResponse<void>> replaceDestination(
-      {required String workspaceId, required NotionObject notionObject}) async {
-    final destinations = await ref.read(destinationListerProvider.future);
-
-    // Archive all non-archived destinations
-    for (final destination in destinations) {
-      if (destination.archived != null) {
-        continue;
-      }
-
-      final response = await ref
-          .read(requestHandlerProvider.notifier)
-          .submitWithBasicResponse(
-              request: ArchiveDestinationRequest(destination: destination));
-      switch (response) {
-        case BasicResponseSuccess(:final result):
-          await ref.read(destinationImporterProvider.notifier).importRecord(
-                record: result,
-              );
-          continue;
-        case BasicResponseError():
-          return response;
-      }
-    }
-
-    // Create new destination
-    return await createNotionDestination(
-      workspaceId: workspaceId,
-      notionObject: notionObject,
-    );
   }
 }
 

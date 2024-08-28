@@ -1,7 +1,6 @@
 // ignore_for_file: invalid_annotation_target
 
 import 'package:exnota/src/common/basic_response.dart';
-import 'package:exnota/src/common/block/workspace_service.dart';
 import 'package:exnota/src/common/integration/notion_destination.dart';
 import 'package:exnota/src/context/sync/request_handler.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -23,18 +22,13 @@ class WorkspaceDestinationSuggestions
     // no-op
   }
 
-  Future<BasicResponse<GetSuggestedDestinationsResponse>> get() async {
-    final workspace = await ref.read(activeWorkspaceProvider.future);
-    if (workspace == null) {
-      _log.error('No active workspace');
-      return const BasicResponse.error(
-          error: 'No active workspace', errorCode: null);
-    }
-
+  Future<BasicResponse<GetSuggestedDestinationsResponse>> get(
+      {required String integrationID}) async {
     final request = WorkspaceSuggestedDestinationsRequest(
-      workspaceId: workspace.id,
+      integrationID: integrationID,
     );
-    _log.debug('Fetching suggested destinations for workspace ${workspace.id}');
+    _log.debug(
+        'Fetching suggested destinations for integration $integrationID');
     return await ref
         .read(requestHandlerProvider.notifier)
         .submitWithBasicResponse(request: request);
@@ -58,18 +52,19 @@ class WorkspaceSuggestedDestinationsRequest
     extends HandledRequest<GetSuggestedDestinationsResponse> {
   final Logger _log = Logger(context: 'WorkspaceSuggestedDestinationsRequest');
 
-  final String workspaceId;
+  final String integrationID;
 
-  WorkspaceSuggestedDestinationsRequest({required this.workspaceId}) : super();
+  WorkspaceSuggestedDestinationsRequest({required this.integrationID})
+      : super();
 
   @override
   Future<GetSuggestedDestinationsResponse> request(
       {required PocketBase pb, required Ref ref}) async {
-    _log.debug('Verifying status for id $workspaceId');
+    _log.debug('Verifying status for id $integrationID');
     final result = await pb.send(
-        '/api/exnota/workspace/get-suggested-destinations',
+        '/api/exnota/integration/notion/get-suggested-destinations',
         method: 'GET',
-        body: {'workspace_id': workspaceId});
+        body: {'integration_id': integrationID});
     return GetSuggestedDestinationsResponse.fromJson(result);
   }
 }

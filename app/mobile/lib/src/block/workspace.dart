@@ -60,6 +60,7 @@ class Workspace with _$Workspace {
 
   static Map<String, dynamic> createRequestBodyWithoutId({
     required WorkspaceType type,
+    required String integrationId,
     required String userId,
   }) {
     Map<String, dynamic> body = {};
@@ -74,6 +75,7 @@ class Workspace with _$Workspace {
         throw Exception('Unknown workspace type');
     }
 
+    body['integration'] = integrationId;
     body['user'] = userId;
 
     return body;
