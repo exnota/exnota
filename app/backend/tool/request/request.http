@@ -207,7 +207,7 @@ Content-Type: application/json
     "status": "connected",
     "config": {
       "auth": {
-        "code": "0338c8b3-8d4e-4d71-921d-8dd436b46687"
+        "code": "{{notionOauthLastCode}}"
       }
     }
 }
@@ -220,7 +220,7 @@ Content-Type: application/json
 {
     "config": {
       "auth": {
-        "code": "03f1f148-db6e-40de-8942-84d8b75f8a26"
+        "code": "{{notionOauthLastCode}}"
       }
     }
 }
@@ -244,21 +244,21 @@ Authorization: {{auth_token}}
 }
 
 ### Get suggested destinations
-GET {{baseUrl}}/exnota/workspace/get-suggested-destinations
+GET {{baseUrl}}/exnota/integration/notion/get-suggested-destinations
 content-type: application/json
 Authorization: {{auth_token}}
 
 {
-  "workspace_id": "{{workspace}}"
+  "integration_id": "{{integration}}"
 }
 
 ### Search destinations - database
-GET {{baseUrl}}/exnota/workspace/search-destinations
+GET {{baseUrl}}/exnota/integration/notion/search-destinations
 content-type: application/json
 Authorization: {{auth_token}}
 
 {
-  "workspace_id": "{{workspace}}",
+  "integration_id": "{{integration}}",
   "query": ""
 }
 
