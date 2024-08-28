@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/integration/integration.dart';
+import 'package:exnota/src/integration/screen/base_setup_screen.dart';
 import 'package:exnota/src/integration/service/integration_fetcher.dart';
 import 'package:exnota/src/integration/service/notion_auth_service.dart';
 import 'package:exnota/src/integration/widget/notion_listener.dart';
@@ -147,60 +148,42 @@ class _SetupIntegrationScreenState
       }
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Setup Notion Connection',
-          style: TextStyle(fontSize: 16),
-        ),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              ref.read(routerProvider.notifier).pop();
-            },
+    return BaseWidgetScaffold(
+      child: switch (setupState.status) {
+        IntegrationSetupStatus.loadingIntegrationError => SetupErrorMessage(
+            error: setupState.error!,
+            errorRetryStatus: setupState.errorRetryStatus,
           ),
-        ],
-      ),
-      body: Container(
-        padding: const EdgeInsets.all(16),
-        child: switch (setupState.status) {
-          IntegrationSetupStatus.loadingIntegrationError => SetupErrorMessage(
-              error: setupState.error!,
-              errorRetryStatus: setupState.errorRetryStatus,
-            ),
-          IntegrationSetupStatus.instructionsCreate => const Instructions(),
-          IntegrationSetupStatus.instructionsUpdate => const Instructions(),
-          // TODO: This text is visible if the user exists without finishing the auth flow.
-          // We recognize this and go back to the instructions screen, but it should be a spinner or
-          // something instead of this text.
-          IntegrationSetupStatus.runningNotionAuthCodeFlowError =>
-            SetupErrorMessage(
-              error: setupState.error!,
-              errorRetryStatus: setupState.errorRetryStatus,
-            ),
-          IntegrationSetupStatus.upsertingIntegrationBadCodeError =>
-            SetupErrorMessage(
-              error: setupState.error!,
-              customMessage:
-                  'Notion has requested that you grant access again. Sorry about that.',
-              errorRetryStatus: setupState.errorRetryStatus,
-            ),
-          IntegrationSetupStatus.upsertingIntegrationError => SetupErrorMessage(
-              error: setupState.error!,
-              errorRetryStatus: setupState.errorRetryStatus,
-            ),
-          // Loading statuses
-          IntegrationSetupStatus.loadingIntegration ||
-          IntegrationSetupStatus.runningNotionAuthCodeFlow ||
-          IntegrationSetupStatus.upsertingIntegration ||
-          IntegrationSetupStatus.complete =>
-            const Center(
-              child: CircularProgressIndicator(),
-            ),
-        },
-      ),
+        IntegrationSetupStatus.instructionsCreate => const Instructions(),
+        IntegrationSetupStatus.instructionsUpdate => const Instructions(),
+        // TODO: This text is visible if the user exists without finishing the auth flow.
+        // We recognize this and go back to the instructions screen, but it should be a spinner or
+        // something instead of this text.
+        IntegrationSetupStatus.runningNotionAuthCodeFlowError =>
+          SetupErrorMessage(
+            error: setupState.error!,
+            errorRetryStatus: setupState.errorRetryStatus,
+          ),
+        IntegrationSetupStatus.upsertingIntegrationBadCodeError =>
+          SetupErrorMessage(
+            error: setupState.error!,
+            customMessage:
+                'Notion has requested that you grant access again. Sorry about that.',
+            errorRetryStatus: setupState.errorRetryStatus,
+          ),
+        IntegrationSetupStatus.upsertingIntegrationError => SetupErrorMessage(
+            error: setupState.error!,
+            errorRetryStatus: setupState.errorRetryStatus,
+          ),
+        // Loading statuses
+        IntegrationSetupStatus.loadingIntegration ||
+        IntegrationSetupStatus.runningNotionAuthCodeFlow ||
+        IntegrationSetupStatus.upsertingIntegration ||
+        IntegrationSetupStatus.complete =>
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
+      },
     );
   }
 }
@@ -232,61 +215,52 @@ class Instructions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Header(
-                text: create
-                    ? 'First, give Exnota access to a database or page in Notion'
-                    : 'Update the pages Exnota can access in Notion'),
-            const Text(
-              'You\'ll be redirected to Notion, then:',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8), // Add padding here
-            const Text(
-              '1. Press \'Select pages\'.',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8), // Add padding here
-            const Text(
-              '2. Tick where your notes should be sent.',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8), // Add padding here
-            const Text(
-              '3. Scroll down and press \'Allow Access\'.',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 32), // Add padding here
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.grey[200]!,
-                  width: 2.0,
-                ),
-              ),
-              child: const Image(
-                  image: AssetImage('assets/images/notion-auth-animation.gif')),
-            ),
-          ],
+    return BaseSetupView(
+      header: create
+          ? 'First, give Exnota access to a database or page in Notion'
+          : 'Update the pages Exnota can access in Notion',
+      contentChildren: [
+        const Text(
+          'You\'ll be redirected to Notion, then:',
+          style: TextStyle(fontSize: 16),
         ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton(
-            onPressed: () {
-              ref
-                  .read(setupIntegrationScreenControllerProvider.notifier)
-                  .transitionStatus(
-                    newStatus: IntegrationSetupStatus.runningNotionAuthCodeFlow,
-                  );
-            },
-            child: const Text('Go to Notion'),
+        const SizedBox(height: 8),
+        const Text(
+          '1. Press \'Select pages\'.',
+          style: TextStyle(fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '2. Tick where your notes should be sent.',
+          style: TextStyle(fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '3. Scroll down and press \'Allow Access\'.',
+          style: TextStyle(fontSize: 16),
+        ),
+        const SizedBox(height: 32),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.grey[200]!,
+              width: 2.0,
+            ),
           ),
+          child: const Image(
+              image: AssetImage('assets/images/notion-auth-animation.gif')),
+        ),
+      ],
+      buttonChildren: [
+        FilledButton(
+          onPressed: () {
+            ref
+                .read(setupIntegrationScreenControllerProvider.notifier)
+                .transitionStatus(
+                  newStatus: IntegrationSetupStatus.runningNotionAuthCodeFlow,
+                );
+          },
+          child: const Text('Go to Notion'),
         ),
       ],
     );
