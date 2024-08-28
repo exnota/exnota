@@ -1,20 +1,18 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:exnota/src/block/destination.dart';
 import 'package:exnota/src/block/repo/drift/destination_importer.dart';
-import 'package:exnota/src/block/service/block_lister.dart';
+import 'package:exnota/src/block/repo/drift/workspace_exporter.dart';
+import 'package:exnota/src/block/repo/drift/workspace_importer.dart';
 import 'package:exnota/src/block/service/destination_exporter.dart';
 import 'package:exnota/src/block/service/destination_lister.dart';
 import 'package:exnota/src/block/service/workspace_destination_suggestions.dart';
+import 'package:exnota/src/block/service/workspace_lister.dart';
 import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/common/basic_response.dart';
-import 'package:exnota/src/common/block/workspace_service.dart';
-import 'package:exnota/src/common/integration/integration_service.dart';
 import 'package:exnota/src/common/integration/notion_destination.dart';
 import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
-import 'package:exnota/src/context/user/user_context.dart';
-import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
-import 'package:exnota/src/lib/data/sync/set_block_destination_sync_command.dart';
+import 'package:exnota/src/integration/screen/setup_error_message.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +24,9 @@ part 'setup_destination_screen.freezed.dart';
 part 'setup_destination_screen.g.dart';
 
 class SetupDestinationScreen extends ConsumerStatefulWidget {
-  const SetupDestinationScreen({super.key});
+  final String integrationID;
+
+  const SetupDestinationScreen({super.key, required this.integrationID});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
@@ -43,7 +43,7 @@ class _SetupDestinationScreenState
     Future(() {
       ref
           .read(setupDestinationScreenControllerProvider.notifier)
-          .syncExternalDestinations();
+          .loadDestinations(integrationID: widget.integrationID);
     });
   }
 
@@ -64,41 +64,25 @@ class _SetupDestinationScreenState
         case DestinationSetupStatus.loadingDestinations:
           ref
               .read(setupDestinationScreenControllerProvider.notifier)
-              .loadDestinations();
-          break;
-        case DestinationSetupStatus.checkingDatabaseDestinationStatus:
-          ref
-              .read(setupDestinationScreenControllerProvider.notifier)
-              .checkDatabaseDestinationStatus();
-          break;
-        case DestinationSetupStatus.checkingCustomDestinationsStatus:
-          ref
-              .read(setupDestinationScreenControllerProvider.notifier)
-              .checkCustomDestinationsStatus();
+              .loadDestinations(integrationID: widget.integrationID);
           break;
         case DestinationSetupStatus.loadingSuggestedDestinations:
           ref
               .read(setupDestinationScreenControllerProvider.notifier)
               .loadSuggestedDestinations();
           break;
-        case DestinationSetupStatus.updatingDatabaseDestination:
+        case DestinationSetupStatus.updatingDestination:
           ref
               .read(setupDestinationScreenControllerProvider.notifier)
               .updateDestination();
           break;
-        case DestinationSetupStatus.loadingUpdatedDestinations:
-          ref
-              .read(setupDestinationScreenControllerProvider.notifier)
-              .loadUpdatedDestinations();
-          break;
-        case DestinationSetupStatus.checkingBlocksWithoutDestination:
-          ref
-              .read(setupDestinationScreenControllerProvider.notifier)
-              .checkBlocksWithoutDestination();
-        case DestinationSetupStatus.addingDestinationToBlocks:
-          ref
-              .read(setupDestinationScreenControllerProvider.notifier)
-              .addDestinationToBlocks();
+        case DestinationSetupStatus.destinationsUpdated:
+        // TODO: Send to destination screen 2
+        // ref
+        //     .read(routerProvider.notifier)
+        //     .pushReplacement(Screen.settingsSetupDestination, params: {
+        //   'integrationID': nextState.integration!.id,
+        // });
         default:
         // Do nothing
       }
@@ -110,77 +94,60 @@ class _SetupDestinationScreenState
       body: Center(
         child: Container(
           child: switch (setupState.status) {
-            DestinationSetupStatus.syncingExternalDestinations =>
-              const Text('Syncing external destinations...'),
-            DestinationSetupStatus.syncingExternalDestinationsError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-              ),
-            DestinationSetupStatus.loadingDestinations =>
-              const Text('Loading destinations...'),
             DestinationSetupStatus.loadingDestinationsError =>
               SetupErrorMessage(
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
+                onRetry: () {
+                  ref
+                      .read(setupDestinationScreenControllerProvider.notifier)
+                      .transitionStatus(
+                          newStatus: setupState.errorRetryStatus!);
+                },
               ),
-            DestinationSetupStatus.checkingDatabaseDestinationStatus =>
-              const Text('Checking database destination status...'),
-            DestinationSetupStatus.promptCurrentDatabaseDestinationAction =>
-              DisplayDestinations(destinations: destinations),
-            DestinationSetupStatus.checkingCustomDestinationsStatus =>
-              const Text('Checking custom destinations status...'),
-            DestinationSetupStatus.promptCurrentCustomDestinationAction =>
-              DisplayDestinations(destinations: destinations),
-            DestinationSetupStatus.loadingSuggestedDestinations =>
-              const Text('Loading suggested destinations...'),
             DestinationSetupStatus.loadingSuggestedDestinationsError =>
               SetupErrorMessage(
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
+                onRetry: () {
+                  ref
+                      .read(setupDestinationScreenControllerProvider.notifier)
+                      .transitionStatus(
+                          newStatus: setupState.errorRetryStatus!);
+                },
               ),
-            DestinationSetupStatus.selectDatabaseDestination ||
-            DestinationSetupStatus.selectCustomDestinations =>
-              const SelectDestination(),
-            DestinationSetupStatus.updatingDatabaseDestination =>
-              const Text('Updating database destination...'),
-            DestinationSetupStatus.updatingDatabaseDestinationError =>
+            DestinationSetupStatus.selectDestination =>
+              SelectDestination(integrationID: widget.integrationID),
+            DestinationSetupStatus.updatingDestinationError =>
               SetupErrorMessage(
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
+                onRetry: () {
+                  ref
+                      .read(setupDestinationScreenControllerProvider.notifier)
+                      .transitionStatus(
+                          newStatus: setupState.errorRetryStatus!);
+                },
               ),
-            DestinationSetupStatus.updatingCustomDestinations =>
-              const Text('Updating custom destinations...'),
-            DestinationSetupStatus.updatingCustomDestinationError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-              ),
-            DestinationSetupStatus.loadingUpdatedDestinations =>
-              const Text('Loading updated destinations...'),
             DestinationSetupStatus.loadingUpdatedDestinationsError =>
               SetupErrorMessage(
                 error: setupState.error!,
                 errorRetryStatus: setupState.errorRetryStatus,
+                onRetry: () {
+                  ref
+                      .read(setupDestinationScreenControllerProvider.notifier)
+                      .transitionStatus(
+                          newStatus: setupState.errorRetryStatus!);
+                },
               ),
-            DestinationSetupStatus.checkingBlocksWithoutDestination =>
-              const Text('Checking blocks without destination...'),
-            DestinationSetupStatus.checkingBlocksWithoutDestinationError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-              ),
-            DestinationSetupStatus.promptAddDestinationToBlocks =>
-              const UpdateBlocks(),
-            DestinationSetupStatus.addingDestinationToBlocks =>
-              const Text('Adding destination to blocks...'),
-            DestinationSetupStatus.addingDestinationToBlocksError =>
-              SetupErrorMessage(
-                error: setupState.error!,
-                errorRetryStatus: setupState.errorRetryStatus,
-              ),
+            // TODO: Move this to 'loading' group below instead
+            DestinationSetupStatus.destinationsUpdated => const Text('Done!'),
+            // Loading
+            DestinationSetupStatus.loadingDestinations ||
+            DestinationSetupStatus.loadingSuggestedDestinations ||
+            DestinationSetupStatus.updatingDestination ||
             DestinationSetupStatus.destinationsUpdated =>
-              DisplayDestinations(destinations: destinations),
+              const Center(child: CircularProgressIndicator()),
           },
         ),
       ),
@@ -188,170 +155,10 @@ class _SetupDestinationScreenState
   }
 }
 
-class UpdateBlocks extends ConsumerWidget {
-  const UpdateBlocks({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final destination = ref.watch(activeDestinationLazyProvider);
-    final blocksWithoutDestination = ref
-        .watch(setupDestinationScreenControllerProvider)
-        .blocksWithoutDestination;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-            'Save $blocksWithoutDestination existing notes to destination ${destination?.name}?'),
-        Text(destination?.name ?? ''),
-        Row(
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                ref.read(routerProvider.notifier).pop();
-              },
-              child: const Text('No, thanks'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                ref
-                    .read(setupDestinationScreenControllerProvider.notifier)
-                    .transitionStatus(
-                        newStatus:
-                            DestinationSetupStatus.addingDestinationToBlocks);
-              },
-              child: const Text('Save to destination'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class DisplayDestinations extends ConsumerWidget {
-  const DisplayDestinations({
-    super.key,
-    required this.destinations,
-  });
-
-  final List<Destination>? destinations;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final d = destinations;
-    if (d == null) {
-      return const Text('No destinations found');
-    }
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text('Destinations'),
-        const SizedBox(height: 16),
-        if (destinations != null) ...[
-          for (final destination in d)
-            Row(
-              children: [
-                Text(destination.name ?? ''),
-                const SizedBox(width: 16),
-                switch (destination.external?.notionStatus) {
-                  DestinationExternalNotionStatus.connected =>
-                    const Text('Connected'),
-                  DestinationExternalNotionStatus.notFound =>
-                    const Text('Not found'),
-                  DestinationExternalNotionStatus.archived =>
-                    const Text('Archived'),
-                  DestinationExternalNotionStatus.unknownError =>
-                    const Text('Unknown error'),
-                  DestinationExternalNotionStatus.rateLimited =>
-                    const Text('API error'),
-                  DestinationExternalNotionStatus.unknown ||
-                  null =>
-                    const Text('Unknown'),
-                },
-                const SizedBox(width: 16),
-                if (destination.external?.notionStatus ==
-                    DestinationExternalNotionStatus.notFound)
-                  ElevatedButton(
-                    onPressed: () {
-                      ref.read(routerProvider.notifier).pushReplacement(
-                          Screen.settingsSetupIntegrationForceReauth);
-                    },
-                    child: const Text('Reconnect'),
-                  ),
-                if (destination.external?.notionStatus !=
-                        DestinationExternalNotionStatus.notFound &&
-                    destination.external?.notionStatus !=
-                        DestinationExternalNotionStatus.connected)
-                  ElevatedButton(
-                    onPressed: () {
-                      ref
-                          .read(routerProvider.notifier)
-                          .pushReplacement(Screen.settingsSetupIntegration);
-                    },
-                    child: const Text('Retry'),
-                  ),
-              ],
-            ),
-        ],
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                ref
-                    .read(setupDestinationScreenControllerProvider.notifier)
-                    .transitionStatus(
-                        newStatus: DestinationSetupStatus
-                            .loadingSuggestedDestinations);
-              },
-              child: const Text('Change'),
-            ),
-            const SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Done'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class SetupErrorMessage extends ConsumerWidget {
-  final String error;
-  final DestinationSetupStatus? errorRetryStatus;
-
-  const SetupErrorMessage(
-      {super.key, required this.error, this.errorRetryStatus});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('Error: $error'),
-        if (errorRetryStatus != null)
-          ElevatedButton(
-            onPressed: () {
-              ref
-                  .read(setupDestinationScreenControllerProvider.notifier)
-                  .transitionStatus(newStatus: errorRetryStatus!);
-            },
-            child: const Text('Retry'),
-          ),
-      ],
-    );
-  }
-}
-
 class SelectDestination extends ConsumerStatefulWidget {
-  const SelectDestination({super.key});
+  final String integrationID;
+
+  const SelectDestination({super.key, required this.integrationID});
 
   @override
   ConsumerState<SelectDestination> createState() => _SelectDestinationState();
@@ -368,7 +175,8 @@ class _SelectDestinationState extends ConsumerState<SelectDestination> {
             .watch(setupDestinationScreenControllerProvider)
             .notionSuggestedDestinations ??
         [];
-    final searchResults = ref.watch(_searchResultsProvider);
+    final searchResults =
+        ref.watch(_searchResultsProvider(widget.integrationID));
     if (searchResults is AsyncData) {
       _log.debug('build: num results: ${searchResults.value?.length}');
     }
@@ -431,7 +239,8 @@ class _SelectDestinationState extends ConsumerState<SelectDestination> {
             return Consumer(
               builder: (context, ref, child) {
                 final selected = ref.watch(_selectedDestinationProvider);
-                final results = ref.watch(_searchResultsProvider);
+                final results =
+                    ref.watch(_searchResultsProvider(widget.integrationID));
                 _log.debug(
                     'SearchAnchor: rebuilding viewBuilder with selected: $selected');
 
@@ -489,8 +298,8 @@ class _SelectDestinationState extends ConsumerState<SelectDestination> {
                           .read(
                               setupDestinationScreenControllerProvider.notifier)
                           .transitionStatus(
-                              newStatus: DestinationSetupStatus
-                                  .updatingDatabaseDestination);
+                              newStatus:
+                                  DestinationSetupStatus.updatingDestination);
                     },
               child: const Text('Select destination'),
             ),
@@ -583,30 +392,23 @@ class DestinationIcon extends StatelessWidget {
   }
 }
 
+// 1h load destinations from backend and import
+// if exists, go to screen 2
+// 1h fetch suggested destinations
+// 2h user searches destinations
+// 1h create destination + workspace (in transaction in backend?!)
+// import both locally
+// go to screen 2
+
 enum DestinationSetupStatus {
-  syncingExternalDestinations, // Sends request to update destination info from external service
-  syncingExternalDestinationsError,
   loadingDestinations, // Updates destinations in local database, after sync
   loadingDestinationsError,
-  checkingDatabaseDestinationStatus, // Determines what prompt to show the user
-  promptCurrentDatabaseDestinationAction, // Ask to keep, fix or change
-  checkingCustomDestinationsStatus, // Determines what prompt to show the user
-  promptCurrentCustomDestinationAction, // Ask whether to fix connection issues
   loadingSuggestedDestinations,
   loadingSuggestedDestinationsError,
-  selectDatabaseDestination, // Ask to select a database destination
-  selectCustomDestinations, // Ask to add/remove custom destinations
-  updatingDatabaseDestination, // Processes database destination changes
-  updatingDatabaseDestinationError,
-  updatingCustomDestinations, // Processes custom destination changes
-  updatingCustomDestinationError,
-  loadingUpdatedDestinations, // Updates destinations in local database, after changes
+  selectDestination, // Ask to select a database destination
+  updatingDestination, // Processes database destination changes
+  updatingDestinationError,
   loadingUpdatedDestinationsError,
-  checkingBlocksWithoutDestination, // Checks if there are blocks without destination
-  checkingBlocksWithoutDestinationError,
-  promptAddDestinationToBlocks, // Prompts user to add destination to blocks
-  addingDestinationToBlocks, // Adds destination to blocks
-  addingDestinationToBlocksError,
   destinationsUpdated, // Destinations updated
 }
 
@@ -614,10 +416,10 @@ enum DestinationSetupStatus {
 class DestinationSetupState with _$DestinationSetupState {
   const factory DestinationSetupState({
     required DestinationSetupStatus status,
+    // Integration ID is initially null until the widget can populate it.
+    required String? integrationID,
     required List<NotionDestination>? notionSuggestedDestinations,
     required NotionDestination? selected,
-    required int? blocksWithoutDestination,
-    required String? destinationForBlocks,
     required String? error,
     required DestinationSetupStatus? errorRetryStatus,
   }) = _DestinationSetupState;
@@ -635,13 +437,12 @@ class SetupDestinationScreenController
 
   @override
   DestinationSetupState build() {
-    _log.debug('build: Initializing state with status verifyingDestinations');
+    _log.debug('build: Initializing state with status loadingDestinations');
     return const DestinationSetupState(
-      status: DestinationSetupStatus.syncingExternalDestinations,
+      status: DestinationSetupStatus.loadingDestinations,
+      integrationID: null,
       notionSuggestedDestinations: null,
       selected: null,
-      blocksWithoutDestination: null,
-      destinationForBlocks: null,
       error: null,
       errorRetryStatus: null,
     );
@@ -651,10 +452,9 @@ class SetupDestinationScreenController
   void transitionStatus({required DestinationSetupStatus newStatus}) {
     state = DestinationSetupState(
       status: newStatus,
+      integrationID: state.integrationID,
       notionSuggestedDestinations: state.notionSuggestedDestinations,
       selected: state.selected,
-      blocksWithoutDestination: state.blocksWithoutDestination,
-      destinationForBlocks: state.destinationForBlocks,
       error: null,
       errorRetryStatus: null,
     );
@@ -663,103 +463,98 @@ class SetupDestinationScreenController
   void setSelectedDestination(NotionDestination? destination) {
     state = DestinationSetupState(
       status: state.status,
+      integrationID: state.integrationID,
       notionSuggestedDestinations: state.notionSuggestedDestinations,
       selected: destination,
-      blocksWithoutDestination: null,
-      destinationForBlocks: null,
       error: null,
       errorRetryStatus: null,
     );
   }
 
-  Future<void> syncExternalDestinations() async {
-    final workspace = (await ref.read(activeWorkspaceProvider.future))!;
-    final integrationId = workspace.integrationId;
-    if (integrationId == null) {
-      _log.error('syncExistingDestinations: No integration found');
-      state = const DestinationSetupState(
-        status: DestinationSetupStatus.syncingExternalDestinationsError,
+  Future<void> loadDestinations({required String integrationID}) async {
+    // Import latest workspaces
+    // TODO: We care about workspaces for the current integration. No others, other than maybe to update the local database
+    // TODO: What can cause an integration to be archived (aside from manually doing it)
+    // TODO: Question: If an integration is archived, what SHOULD happen (i.e. what makes sense) to the workspaces and destinations?
+    final workspaceImportResult =
+        await ref.read(workspaceImporterProvider.notifier).import();
+    switch (workspaceImportResult) {
+      case BasicResponseSuccess():
+        _log.debug('loadDestinations: Workspace import success');
+        break;
+      case BasicResponseError(:final error):
+        _log.error('loadDestinations: Workspace import error');
+        state = DestinationSetupState(
+          status: DestinationSetupStatus.loadingDestinationsError,
+          integrationID: integrationID,
+          notionSuggestedDestinations: null,
+          selected: null,
+          error: error,
+          errorRetryStatus: DestinationSetupStatus.loadingDestinations,
+        );
+        return;
+    }
+
+    final workspace = (await ref.read(activeWorkspaceProvider.future));
+
+    // If no workspace, load suggested destinations. The selected destination
+    // type will be used to create the workspace type, even though the workspace
+    // must be created before the destination.
+    if (workspace == null) {
+      _log.debug('loadDestinations: No workspace found');
+      state = DestinationSetupState(
+        status: DestinationSetupStatus.loadingSuggestedDestinations,
+        integrationID: integrationID,
         notionSuggestedDestinations: null,
         selected: null,
-        blocksWithoutDestination: null,
-        destinationForBlocks: null,
-        error: 'Workspace not integrated',
-        errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
+        error: null,
+        errorRetryStatus: null,
       );
       return;
     }
+    _log.debug('loadDestinations: Workspace found');
 
-    final response = await ref
-        .read(integrationServiceProvider.notifier)
-        .syncIntegrationDestinations(integrationId: integrationId);
-    switch (response) {
-      case BasicResponseSuccess():
-        _log.debug('syncExistingDestinations: Success');
-        state = const DestinationSetupState(
-          status: DestinationSetupStatus.loadingDestinations,
-          notionSuggestedDestinations: null,
-          selected: null,
-          blocksWithoutDestination: null,
-          destinationForBlocks: null,
-          error: null,
-          errorRetryStatus: null,
-        );
-        break;
-      case BasicResponseError(:final error):
-        _log.error('syncExistingDestinations: Error');
-        state = DestinationSetupState(
-          status: DestinationSetupStatus.syncingExternalDestinationsError,
-          notionSuggestedDestinations: null,
-          selected: null,
-          blocksWithoutDestination: null,
-          destinationForBlocks: null,
-          error: error,
-          errorRetryStatus: DestinationSetupStatus.syncingExternalDestinations,
-        );
-        break;
-    }
-  }
-
-  Future<void> loadDestinations() async {
-    final workspace = (await ref.read(activeWorkspaceProvider.future))!;
-
-    final result =
+    // Import latest destinations
+    final destinationImportResult =
         await ref.read(destinationImporterProvider.notifier).importForWorkspace(
               workspaceId: workspace.id,
             );
-    switch (result) {
+    switch (destinationImportResult) {
       case BasicResponseSuccess():
-        _log.debug('loadDestinations: Success');
-        if (workspace.type == WorkspaceType.database) {
-          state = const DestinationSetupState(
-            status: DestinationSetupStatus.checkingDatabaseDestinationStatus,
+        _log.debug('loadDestinations: Destination import success');
+        final activeDestination =
+            await ref.read(activeDestinationProvider.future);
+
+        if (activeDestination == null) {
+          _log.debug('loadDestinations: No destination found');
+          state = DestinationSetupState(
+            status: DestinationSetupStatus.loadingSuggestedDestinations,
+            integrationID: integrationID,
             notionSuggestedDestinations: null,
             selected: null,
-            blocksWithoutDestination: null,
-            destinationForBlocks: null,
             error: null,
             errorRetryStatus: null,
           );
-        } else {
-          state = const DestinationSetupState(
-            status: DestinationSetupStatus.checkingCustomDestinationsStatus,
-            notionSuggestedDestinations: null,
-            selected: null,
-            blocksWithoutDestination: null,
-            destinationForBlocks: null,
-            error: null,
-            errorRetryStatus: null,
-          );
+          return;
         }
-        return;
-      case BasicResponseError(:final error):
-        _log.error('loadDestinations: Error');
+
+        _log.debug('loadDestinations: Destination found');
         state = DestinationSetupState(
-          status: DestinationSetupStatus.loadingDestinationsError,
+          status: DestinationSetupStatus.destinationsUpdated,
+          integrationID: integrationID,
           notionSuggestedDestinations: null,
           selected: null,
-          blocksWithoutDestination: null,
-          destinationForBlocks: null,
+          error: null,
+          errorRetryStatus: null,
+        );
+        return;
+      case BasicResponseError(:final error):
+        _log.error('loadDestinations: Destination import error');
+        state = DestinationSetupState(
+          status: DestinationSetupStatus.loadingDestinationsError,
+          integrationID: integrationID,
+          notionSuggestedDestinations: null,
+          selected: null,
           error: error,
           errorRetryStatus: DestinationSetupStatus.loadingDestinations,
         );
@@ -767,73 +562,19 @@ class SetupDestinationScreenController
     }
   }
 
-  Future<void> checkDatabaseDestinationStatus() async {
-    final destinations = await ref.read(destinationListerProvider.future);
-    if (destinations.isEmpty) {
-      _log.debug('checkDatabaseDestinationStatus: No destinations found');
-      state = const DestinationSetupState(
-        status: DestinationSetupStatus.loadingSuggestedDestinations,
-        notionSuggestedDestinations: null,
-        selected: null,
-        blocksWithoutDestination: null,
-        destinationForBlocks: null,
-        error: null,
-        errorRetryStatus: null,
-      );
-      return;
-    }
-
-    state = const DestinationSetupState(
-      status: DestinationSetupStatus.promptCurrentDatabaseDestinationAction,
-      notionSuggestedDestinations: null,
-      selected: null,
-      blocksWithoutDestination: null,
-      destinationForBlocks: null,
-      error: null,
-      errorRetryStatus: null,
-    );
-  }
-
-  Future<void> checkCustomDestinationsStatus() async {
-    final destinations = await ref.read(destinationListerProvider.future);
-    if (destinations.isEmpty) {
-      _log.debug('checkCustomDestinationsStatus: No destinations found');
-      state = const DestinationSetupState(
-        status: DestinationSetupStatus.loadingSuggestedDestinations,
-        notionSuggestedDestinations: null,
-        selected: null,
-        blocksWithoutDestination: null,
-        destinationForBlocks: null,
-        error: null,
-        errorRetryStatus: null,
-      );
-      return;
-    }
-
-    state = const DestinationSetupState(
-      status: DestinationSetupStatus.promptCurrentCustomDestinationAction,
-      notionSuggestedDestinations: null,
-      selected: null,
-      blocksWithoutDestination: null,
-      destinationForBlocks: null,
-      error: null,
-      errorRetryStatus: null,
-    );
-  }
-
   Future<void> loadSuggestedDestinations() async {
-    final suggestionResponse =
-        await ref.read(workspaceDestinationSuggestionsProvider.notifier).get();
+    final suggestionResponse = await ref
+        .read(workspaceDestinationSuggestionsProvider.notifier)
+        .get(integrationID: state.integrationID!);
     switch (suggestionResponse) {
       case BasicResponseSuccess(:final result):
         _log.debug('loadSuggestedDestinations: Success');
 
         state = DestinationSetupState(
-          status: DestinationSetupStatus.selectDatabaseDestination,
+          status: DestinationSetupStatus.selectDestination,
+          integrationID: state.integrationID,
           notionSuggestedDestinations: result.destinations.notion,
           selected: null,
-          blocksWithoutDestination: null,
-          destinationForBlocks: null,
           error: null,
           errorRetryStatus: null,
         );
@@ -842,10 +583,9 @@ class SetupDestinationScreenController
         _log.error('loadSuggestedDestinations: Error');
         state = DestinationSetupState(
           status: DestinationSetupStatus.loadingSuggestedDestinationsError,
+          integrationID: state.integrationID,
           notionSuggestedDestinations: null,
           selected: null,
-          blocksWithoutDestination: null,
-          destinationForBlocks: null,
           error: error,
           errorRetryStatus: DestinationSetupStatus.loadingSuggestedDestinations,
         );
@@ -860,8 +600,64 @@ class SetupDestinationScreenController
       return;
     }
 
-    final workspace = (await ref.read(activeWorkspaceProvider.future))!;
+    // Import latest workspace
+    final importResult =
+        await ref.read(workspaceImporterProvider.notifier).import();
+    switch (importResult) {
+      case BasicResponseSuccess():
+        _log.debug('updateDestination: Workspace import success');
+        break;
+      case BasicResponseError(:final error):
+        _log.error('updateDestination: Workspace import error');
+        state = DestinationSetupState(
+          status: DestinationSetupStatus.updatingDestinationError,
+          integrationID: state.integrationID,
+          notionSuggestedDestinations: null,
+          selected: state.selected,
+          error: error,
+          errorRetryStatus: DestinationSetupStatus.updatingDestination,
+        );
+        return;
+    }
 
+    // If no workspace, create.
+    var workspace = await ref.read(activeWorkspaceProvider.future);
+    if (workspace == null) {
+      final WorkspaceType type;
+      switch (selected.object.object) {
+        case NotionObjectType.page:
+          type = WorkspaceType.custom;
+          break;
+        case NotionObjectType.database:
+          type = WorkspaceType.database;
+          break;
+        default:
+          _log.error('updateDestination: Unknown object type');
+          return;
+      }
+      final result = await ref
+          .read(workspaceExporterProvider.notifier)
+          .create(type: type, integrationId: state.integrationID!);
+      switch (result) {
+        case BasicResponseSuccess(:final result):
+          _log.debug('updateDestination: Workspace created');
+          workspace = result;
+          break;
+        case BasicResponseError(:final error):
+          _log.error('updateDestination: Workspace creation error');
+          state = DestinationSetupState(
+            status: DestinationSetupStatus.updatingDestinationError,
+            integrationID: state.integrationID,
+            notionSuggestedDestinations: null,
+            selected: state.selected,
+            error: error,
+            errorRetryStatus: DestinationSetupStatus.updatingDestination,
+          );
+          return;
+      }
+    }
+
+    // Archive any existing destinations and create a new one
     final result =
         await ref.read(destinationExporterProvider.notifier).replaceDestination(
               workspaceId: workspace.id,
@@ -872,11 +668,10 @@ class SetupDestinationScreenController
       case BasicResponseSuccess():
         _log.debug('updateDestination: Success');
         state = DestinationSetupState(
-          status: DestinationSetupStatus.loadingUpdatedDestinations,
+          status: DestinationSetupStatus.destinationsUpdated,
+          integrationID: state.integrationID,
           notionSuggestedDestinations: null,
           selected: state.selected,
-          blocksWithoutDestination: null,
-          destinationForBlocks: null,
           error: null,
           errorRetryStatus: null,
         );
@@ -884,135 +679,15 @@ class SetupDestinationScreenController
       case BasicResponseError(:final error):
         _log.error('updateDestination: Error');
         state = DestinationSetupState(
-          status: DestinationSetupStatus.updatingDatabaseDestinationError,
+          status: DestinationSetupStatus.updatingDestinationError,
+          integrationID: state.integrationID,
           notionSuggestedDestinations: null,
-          blocksWithoutDestination: null,
-          destinationForBlocks: null,
           selected: state.selected,
           error: error,
-          errorRetryStatus: DestinationSetupStatus.updatingDatabaseDestination,
+          errorRetryStatus: DestinationSetupStatus.updatingDestination,
         );
         return;
     }
-  }
-
-  Future<void> loadUpdatedDestinations() async {
-    final workspace = (await ref.read(activeWorkspaceProvider.future))!;
-
-    final result =
-        await ref.read(destinationImporterProvider.notifier).importForWorkspace(
-              workspaceId: workspace.id,
-            );
-    switch (result) {
-      case BasicResponseSuccess():
-        _log.debug('loadUpdatedDestinations: Success');
-        state = const DestinationSetupState(
-          status: DestinationSetupStatus.checkingBlocksWithoutDestination,
-          notionSuggestedDestinations: null,
-          selected: null,
-          blocksWithoutDestination: null,
-          destinationForBlocks: null,
-          error: null,
-          errorRetryStatus: null,
-        );
-        return;
-      case BasicResponseError(:final error):
-        _log.error('loadUpdatedDestinations: Error');
-        state = DestinationSetupState(
-          status: DestinationSetupStatus.loadingUpdatedDestinationsError,
-          notionSuggestedDestinations: null,
-          selected: null,
-          blocksWithoutDestination: null,
-          destinationForBlocks: null,
-          error: error,
-          errorRetryStatus: DestinationSetupStatus.loadingUpdatedDestinations,
-        );
-        return;
-    }
-  }
-
-  Future<void> checkBlocksWithoutDestination() async {
-    final blocks = await ref.read(blocksWithoutDestinationProvider.future);
-
-    _log.debug('checkBlocksWithoutDestination: Success');
-    if (blocks.isEmpty) {
-      _log.debug(
-          'checkBlocksWithoutDestination: No blocks without destination');
-      state = const DestinationSetupState(
-        status: DestinationSetupStatus.destinationsUpdated,
-        notionSuggestedDestinations: null,
-        selected: null,
-        blocksWithoutDestination: null,
-        destinationForBlocks: null,
-        error: null,
-        errorRetryStatus: null,
-      );
-      return;
-    }
-
-    _log.debug(
-        'checkBlocksWithoutDestination: Blocks without destination found');
-    final destination = await ref.read(activeDestinationProvider.future);
-    if (destination == null) {
-      _log.error('checkBlocksWithoutDestination: No destination found');
-      state = const DestinationSetupState(
-        status: DestinationSetupStatus.checkingBlocksWithoutDestinationError,
-        notionSuggestedDestinations: null,
-        selected: null,
-        blocksWithoutDestination: null,
-        destinationForBlocks: null,
-        error: 'No destination found',
-        errorRetryStatus:
-            DestinationSetupStatus.checkingBlocksWithoutDestination,
-      );
-      return;
-    }
-
-    state = DestinationSetupState(
-      status: DestinationSetupStatus.promptAddDestinationToBlocks,
-      notionSuggestedDestinations: null,
-      selected: null,
-      blocksWithoutDestination: blocks.length,
-      destinationForBlocks: destination.id,
-      error: null,
-      errorRetryStatus: null,
-    );
-    return;
-  }
-
-  Future<void> addDestinationToBlocks() async {
-    final destination = state.destinationForBlocks;
-    if (destination == null) {
-      _log.error('addDestinationToBlocks: No destination selected');
-      return;
-    }
-
-    final blocks = await ref.read(blocksWithoutDestinationProvider.future);
-
-    // Add commands for each block
-    final commandMutator = SyncCommandMutator(container: ref.container);
-    for (final block in blocks) {
-      final command = SetBlockDestinationSyncCommand.createWaiting(
-        userId: ref.read(activeUserIdOrThrowSyncProvider),
-        data: SetBlockDestinationData(
-          blockId: block.id,
-          destinationId: destination,
-        ),
-      );
-      await commandMutator.createCommand(command: command);
-    }
-
-    _log.debug('addDestinationToBlocks: Success');
-    state = const DestinationSetupState(
-      status: DestinationSetupStatus.destinationsUpdated,
-      notionSuggestedDestinations: null,
-      selected: null,
-      blocksWithoutDestination: null,
-      destinationForBlocks: null,
-      error: null,
-      errorRetryStatus: null,
-    );
-    return;
   }
 }
 
@@ -1029,21 +704,17 @@ class _SearchQuery extends _$SearchQuery {
 }
 
 @riverpod
-Future<List<NotionDestination>> _searchResults(_SearchResultsRef ref) async {
+Future<List<NotionDestination>> _searchResults(
+    _SearchResultsRef ref, String integrationId) async {
   final query = ref.watch(_searchQueryProvider);
   final pb = ref.watch(pocketBaseSyncProvider);
-  final workspace = await ref.watch(activeWorkspaceProvider.future);
-  final workspaceId = workspace?.id;
-  if (workspaceId == null) {
-    return [];
-  }
 
   final rawResult = await pb.send(
-    '/api/exnota/workspace/search-destinations',
+    '/api/exnota/integration/notion/search-destinations',
     method: 'GET',
     body: {
       'query': query,
-      'workspace_id': workspaceId,
+      'integration_id': integrationId,
     },
   );
 
@@ -1052,14 +723,14 @@ Future<List<NotionDestination>> _searchResults(_SearchResultsRef ref) async {
 }
 
 @freezed
-class SearchWorkspaceDestinations with _$SearchWorkspaceDestinations {
-  const factory SearchWorkspaceDestinations({
+class SearchIntegrationDestinations with _$SearchIntegrationDestinations {
+  const factory SearchIntegrationDestinations({
     // ignore: invalid_annotation_target
     @JsonKey(name: 'destinations') required Destinations destinations,
-  }) = _SearchWorkspaceDestinations;
+  }) = _SearchIntegrationDestinations;
 
-  const SearchWorkspaceDestinations._();
+  const SearchIntegrationDestinations._();
 
-  factory SearchWorkspaceDestinations.fromJson(Map<String, dynamic> json) =>
-      _$SearchWorkspaceDestinationsFromJson(json);
+  factory SearchIntegrationDestinations.fromJson(Map<String, dynamic> json) =>
+      _$SearchIntegrationDestinationsFromJson(json);
 }

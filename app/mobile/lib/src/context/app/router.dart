@@ -1,7 +1,6 @@
 import 'package:exnota/src/account/settings/settings_screen.dart';
 import 'package:exnota/src/account/user/screen/login_screen.dart';
 import 'package:exnota/src/block/screen/setup_destination_screen.dart';
-import 'package:exnota/src/block/screen/setup_workspace_screen.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/integration/screen/setup_integration_screen.dart';
 import 'package:exnota/src/lib/log/logger.dart';
@@ -100,10 +99,6 @@ class Router extends _$Router {
                   builder: (context, state) => const SettingsScreen(),
                   routes: [
                     GoRoute(
-                      path: _routeSettingsSetupWorkspace,
-                      builder: (context, state) => const SetupWorkspaceScreen(),
-                    ),
-                    GoRoute(
                         path: _routeSettingsSetupIntegration,
                         builder: (context, state) {
                           final forceReauthParam =
@@ -115,8 +110,12 @@ class Router extends _$Router {
                         }),
                     GoRoute(
                       path: _routeSettingsSetupDestination,
-                      builder: (context, state) =>
-                          const SetupDestinationScreen(),
+                      builder: (context, state) {
+                        final integrationID =
+                            state.uri.queryParameters['integrationID']!;
+                        return SetupDestinationScreen(
+                            integrationID: integrationID);
+                      },
                     ),
                   ]),
             ],
@@ -174,9 +173,13 @@ class Router extends _$Router {
     state.pop();
   }
 
-  void pushReplacement(Screen screen) {
+  void pushReplacement(Screen screen, {Map<String, dynamic>? params}) {
     _log.debug('Pushing replacement screen: $screen');
-    state.pushReplacement(to(screen));
+    final uri = Uri(
+      path: to(screen),
+      queryParameters: params,
+    );
+    state.pushReplacement(uri.toString());
   }
 }
 

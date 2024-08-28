@@ -1,6 +1,6 @@
 import 'package:exnota/src/block/repo/drift/destination_repo.dart';
 import 'package:exnota/src/block/destination.dart';
-import 'package:exnota/src/common/block/workspace_service.dart';
+import 'package:exnota/src/block/service/workspace_lister.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

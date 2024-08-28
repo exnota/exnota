@@ -136,10 +136,11 @@ class _SetupIntegrationScreenState
               .read(setupIntegrationScreenControllerProvider.notifier)
               .upsertIntegration();
         case IntegrationSetupStatus.complete:
-          // TODO: revert
-          // ref
-          //     .read(routerProvider.notifier)
-          //     .pushReplacement(Screen.settingsSetupDestination);
+          ref
+              .read(routerProvider.notifier)
+              .pushReplacement(Screen.settingsSetupDestination, params: {
+            'integrationID': nextState.integration!.id,
+          });
           break;
         default:
         // Do nothing. User action expected.
