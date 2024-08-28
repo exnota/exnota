@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:exnota/src/block/destination.dart';
 import 'package:exnota/src/block/repo/drift/destination_importer.dart';
 import 'package:exnota/src/block/repo/drift/workspace_exporter.dart';
 import 'package:exnota/src/block/repo/drift/workspace_importer.dart';
@@ -10,7 +9,6 @@ import 'package:exnota/src/block/service/workspace_lister.dart';
 import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/common/basic_response.dart';
 import 'package:exnota/src/common/integration/notion_destination.dart';
-import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/integration/screen/setup_error_message.dart';
 import 'package:exnota/src/lib/log/logger.dart';

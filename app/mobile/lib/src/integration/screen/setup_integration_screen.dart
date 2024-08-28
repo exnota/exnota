@@ -191,12 +191,11 @@ class _SetupIntegrationScreenState
               error: setupState.error!,
               errorRetryStatus: setupState.errorRetryStatus,
             ),
-          IntegrationSetupStatus.complete =>
-            const Text('Integration setup complete'),
           // Loading statuses
           IntegrationSetupStatus.loadingIntegration ||
           IntegrationSetupStatus.runningNotionAuthCodeFlow ||
-          IntegrationSetupStatus.upsertingIntegration =>
+          IntegrationSetupStatus.upsertingIntegration ||
+          IntegrationSetupStatus.complete =>
             const Center(
               child: CircularProgressIndicator(),
             ),
