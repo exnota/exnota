@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:exnota/src/block/repo/drift/destination_importer.dart';
 import 'package:exnota/src/block/repo/drift/workspace_exporter.dart';
 import 'package:exnota/src/block/repo/drift/workspace_importer.dart';
+import 'package:exnota/src/block/service/block_lister.dart';
 import 'package:exnota/src/block/service/destination_exporter.dart';
 import 'package:exnota/src/block/service/destination_lister.dart';
 import 'package:exnota/src/block/service/workspace_destination_suggestions.dart';
@@ -14,8 +15,11 @@ import 'package:exnota/src/common/integration/error_codes.dart';
 import 'package:exnota/src/common/integration/notion_destination.dart';
 import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
+import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/integration/screen/base_setup_screen.dart';
 import 'package:exnota/src/integration/screen/setup_error_message.dart';
+import 'package:exnota/src/lib/data/sync/service/sync_command_mutator.dart';
+import 'package:exnota/src/lib/data/sync/set_block_destination_sync_command.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,7 +83,12 @@ class _SetupDestinationScreenState
               .read(setupDestinationScreenControllerProvider.notifier)
               .updateDestination();
           break;
-        case DestinationSetupStatus.destinationsUpdated:
+        case DestinationSetupStatus.updatingBlocks:
+          ref
+              .read(setupDestinationScreenControllerProvider.notifier)
+              .checkBlocksWithoutDestination();
+          break;
+        case DestinationSetupStatus.completed:
         // TODO: Send to destination screen 2
         // ref
         //     .read(routerProvider.notifier)
@@ -90,8 +99,6 @@ class _SetupDestinationScreenState
         // Do nothing
       }
     });
-
-    final destinations = ref.watch(destinationListerProvider).valueOrNull;
 
     return BaseWidgetScaffold(
       child: switch (setupState.status) {
@@ -138,13 +145,13 @@ class _SetupDestinationScreenState
             },
           ),
         // TODO: Move this to 'loading' group below instead
-        DestinationSetupStatus.destinationsUpdated => const Text('Done!'),
+        DestinationSetupStatus.completed => const Text('Done!'),
         DestinationSetupStatus.reauthRequired => const ReauthRequired(),
         // Loading
         DestinationSetupStatus.loadingDestinations ||
         DestinationSetupStatus.loadingSuggestedDestinations ||
         DestinationSetupStatus.updatingDestination ||
-        DestinationSetupStatus.destinationsUpdated =>
+        DestinationSetupStatus.updatingBlocks =>
           const Center(child: CircularProgressIndicator()),
       },
     );
@@ -193,7 +200,7 @@ class SelectSuggestedDestination extends ConsumerStatefulWidget {
 
 class _SelectSuggestedDestinationState
     extends ConsumerState<SelectSuggestedDestination> {
-  final _log = Logger(context: '_SelectedSuggestedDestinationState');
+  final _log = Logger(context: '_SelectSuggestedDestinationState');
 
   @override
   Widget build(BuildContext context) {
@@ -618,7 +625,8 @@ enum DestinationSetupStatus {
   updatingDestinationError,
   loadingUpdatedDestinationsError,
   reauthRequired,
-  destinationsUpdated, // Destinations updated
+  updatingBlocks,
+  completed,
 }
 
 @Freezed(copyWith: false)
@@ -749,7 +757,7 @@ class SetupDestinationScreenController
 
         _log.debug('loadDestinations: Destination found');
         state = DestinationSetupState(
-          status: DestinationSetupStatus.destinationsUpdated,
+          status: DestinationSetupStatus.updatingBlocks,
           integrationID: integrationID,
           notionSuggestedDestinations: null,
           selected: null,
@@ -889,7 +897,7 @@ class SetupDestinationScreenController
       case BasicResponseSuccess():
         _log.debug('updateDestination: Success');
         state = DestinationSetupState(
-          status: DestinationSetupStatus.destinationsUpdated,
+          status: DestinationSetupStatus.updatingBlocks,
           integrationID: state.integrationID,
           notionSuggestedDestinations: null,
           selected: state.selected,
@@ -909,6 +917,64 @@ class SetupDestinationScreenController
         );
         return;
     }
+  }
+
+  Future<void> checkBlocksWithoutDestination() async {
+    final blocks = await ref.read(blocksWithoutDestinationProvider.future);
+
+    _log.debug('checkBlocksWithoutDestination: Success');
+    if (blocks.isEmpty) {
+      _log.debug(
+          'checkBlocksWithoutDestination: No blocks without destination');
+      state = DestinationSetupState(
+        status: DestinationSetupStatus.completed,
+        integrationID: state.integrationID,
+        notionSuggestedDestinations: null,
+        selected: null,
+        error: null,
+        errorRetryStatus: null,
+      );
+      return;
+    }
+
+    final activeDestination = await ref.read(activeDestinationProvider.future);
+    if (activeDestination == null) {
+      _log.error('checkBlocksWithoutDestination: No active destination');
+      state = DestinationSetupState(
+        status: DestinationSetupStatus.completed,
+        integrationID: state.integrationID,
+        notionSuggestedDestinations: null,
+        selected: null,
+        error: null,
+        errorRetryStatus: null,
+      );
+      return;
+    }
+
+    // Add commands for each block
+    final commandMutator = SyncCommandMutator(container: ref.container);
+    _log.debug('checkBlocksWithoutDestination: Add commands for each block');
+    for (final block in blocks) {
+      final command = SetBlockDestinationSyncCommand.createWaiting(
+        userId: ref.read(activeUserIdOrThrowSyncProvider),
+        data: SetBlockDestinationData(
+          blockId: block.id,
+          destinationId: activeDestination.id,
+        ),
+      );
+      await commandMutator.createCommand(command: command);
+    }
+
+    _log.debug('checkBlocksWithoutDestination: Success');
+    state = DestinationSetupState(
+      status: DestinationSetupStatus.completed,
+      integrationID: state.integrationID,
+      notionSuggestedDestinations: null,
+      selected: null,
+      error: null,
+      errorRetryStatus: null,
+    );
+    return;
   }
 }
 
