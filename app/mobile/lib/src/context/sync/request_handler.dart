@@ -160,8 +160,12 @@ class RequestHandler extends _$RequestHandler {
         completer.complete(response);
       },
       onError: (error) {
-        final response =
-            BasicResponse<T>.error(error: error.toString(), errorCode: null);
+        String? errorCode;
+        if (error is PocketBaseException) {
+          errorCode = error.response['data']?['errorCode']?['code'];
+        }
+        final response = BasicResponse<T>.error(
+            error: error.toString(), errorCode: errorCode);
         completer.complete(response);
       },
     ));

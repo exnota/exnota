@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:exnota/src/block/repo/drift/destination_importer.dart';
 import 'package:exnota/src/block/repo/drift/workspace_exporter.dart';
@@ -8,6 +10,7 @@ import 'package:exnota/src/block/service/workspace_destination_suggestions.dart'
 import 'package:exnota/src/block/service/workspace_lister.dart';
 import 'package:exnota/src/block/workspace.dart';
 import 'package:exnota/src/common/basic_response.dart';
+import 'package:exnota/src/common/integration/error_codes.dart';
 import 'package:exnota/src/common/integration/notion_destination.dart';
 import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/user/pocketbase.dart';
@@ -136,6 +139,7 @@ class _SetupDestinationScreenState
           ),
         // TODO: Move this to 'loading' group below instead
         DestinationSetupStatus.destinationsUpdated => const Text('Done!'),
+        DestinationSetupStatus.reauthRequired => const ReauthRequired(),
         // Loading
         DestinationSetupStatus.loadingDestinations ||
         DestinationSetupStatus.loadingSuggestedDestinations ||
@@ -143,6 +147,30 @@ class _SetupDestinationScreenState
         DestinationSetupStatus.destinationsUpdated =>
           const Center(child: CircularProgressIndicator()),
       },
+    );
+  }
+}
+
+class ReauthRequired extends ConsumerWidget {
+  const ReauthRequired({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return BaseSetupView(
+      header: 'Reconnection required',
+      contentChildren: const [
+        Text('Notion is asking you to reconnect Exnota.')
+      ],
+      buttonChildren: [
+        FilledButton(
+          onPressed: () {
+            ref
+                .read(routerProvider.notifier)
+                .pushReplacement(Screen.settingsSetupIntegrationForceReauth);
+          },
+          child: const Text('Reconnect'),
+        ),
+      ],
     );
   }
 }
@@ -239,6 +267,23 @@ class _SelectSuggestedDestinationState
   }
 }
 
+class Debouncer {
+  final int milliseconds;
+  VoidCallback? action;
+  Timer? _timer;
+
+  Debouncer({required this.milliseconds});
+
+  void run(VoidCallback action) {
+    if (_timer != null) {
+      _timer!.cancel();
+    }
+    _timer = Timer(Duration(milliseconds: milliseconds), action);
+  }
+}
+
+final searchDebouncer = Debouncer(milliseconds: 3000);
+
 class SearchDestination extends ConsumerStatefulWidget {
   final String integrationID;
 
@@ -271,6 +316,10 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
         SearchAnchor(
           viewOnChanged: (query) {
             _log.debug('SearchAnchor: viewOnChanged search query: $query');
+            searchDebouncer.run(() {
+              _log.debug('SearchAnchor: debounced search query: $query');
+              ref.read(_searchQueryProvider.notifier).setQuery(query);
+            });
           },
           viewOnSubmitted: (query) {
             _log.debug('SearchAnchor: viewOnSubmitted search query: $query');
@@ -299,7 +348,7 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
                       child: Column(
                         children: [
                           for (final destination in value)
-                            DestinationRadioTile(
+                            DestinationListTile(
                               destination: destination,
                               selected: selected,
                               onChanged: (value) {
@@ -373,44 +422,46 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
                   builder: (BuildContext context) {
                     return AlertDialog(
                       title: const Text('Let\'s try again'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                              'We\'ll repeat the Notion connection process to give Exnota access.'),
-                          const SizedBox(height: 16),
-                          const Text(
-                              'During this, ensure the database or page is checked.'),
-                          const SizedBox(height: 16),
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Colors.grey[400]!,
-                                width: 2.0,
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                                'We\'ll repeat the steps that give Exnota access to your Notion.'),
+                            const SizedBox(height: 16),
+                            const Text(
+                                'Ensure your notes database or page is checked:'),
+                            const SizedBox(height: 16),
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.grey[400]!,
+                                  width: 2.0,
+                                ),
+                              ),
+                              child: const Image(
+                                image: AssetImage(
+                                    'assets/images/notion-auth-checked.png'),
                               ),
                             ),
-                            child: const Image(
-                              image: AssetImage(
-                                  'assets/images/notion-auth-checked.png'),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                              'And that you scroll down and press \'Allow access\'. '),
-                          const SizedBox(height: 16),
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Colors.grey[400]!,
-                                width: 2.0,
+                            const SizedBox(height: 16),
+                            const Text(
+                                'And ensure you scroll down and press \'Allow access\':'),
+                            const SizedBox(height: 16),
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.grey[400]!,
+                                  width: 2.0,
+                                ),
+                              ),
+                              child: const Image(
+                                image: AssetImage(
+                                    'assets/images/notion-auth-allow-access.png'),
                               ),
                             ),
-                            child: const Image(
-                              image: AssetImage(
-                                  'assets/images/notion-auth-allow-access.png'),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       actions: [
                         TextButton(
@@ -482,6 +533,41 @@ class DestinationRadioTile extends StatelessWidget {
       groupValue: selected,
       onChanged: (value) {
         onChanged(value);
+      },
+    );
+  }
+}
+
+class DestinationListTile extends StatelessWidget {
+  final NotionDestination destination;
+  final NotionDestination? selected;
+  final void Function(NotionDestination?) onChanged;
+
+  const DestinationListTile({
+    super.key,
+    required this.destination,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Row(
+        children: [
+          DestinationIcon(destination: destination),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              destination.name,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+      selected: destination == selected,
+      onTap: () {
+        onChanged(destination);
       },
     );
   }
@@ -560,6 +646,7 @@ enum DestinationSetupStatus {
   updatingDestination, // Processes database destination changes
   updatingDestinationError,
   loadingUpdatedDestinationsError,
+  reauthRequired,
   destinationsUpdated, // Destinations updated
 }
 
@@ -730,8 +817,20 @@ class SetupDestinationScreenController
           errorRetryStatus: null,
         );
         return;
-      case BasicResponseError(:final error):
-        _log.error('loadSuggestedDestinations: Error');
+      case BasicResponseError(:final error, :final errorCode):
+        _log.error('loadSuggestedDestinations: Error. Code: $errorCode');
+        if (errorCode == invalidToken) {
+          _log.error('loadSuggestedDestinations: Reauth required');
+          state = DestinationSetupState(
+            status: DestinationSetupStatus.reauthRequired,
+            integrationID: state.integrationID,
+            notionSuggestedDestinations: null,
+            selected: null,
+            error: error,
+            errorRetryStatus: null,
+          );
+          return;
+        }
         state = DestinationSetupState(
           status: DestinationSetupStatus.loadingSuggestedDestinationsError,
           integrationID: state.integrationID,
