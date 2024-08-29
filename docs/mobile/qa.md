@@ -4,29 +4,46 @@
 
 ### Scenario: Initial Setup
 
-This can be simulated by archiving existing destinations, workspaces, integrations. In that order.
+Preparing:
 
-a. Success:
+- If the account isn't new, archive existing destinations, workspaces, integrations. In that order.
+- Create 1 or more recordings before beginning. Confirm they are not exported to Notion.
+
+a. Success steps:
 
 - User authorizes Notion access
 - User selects a listed destination
 - OR User searches for and selects an unlisted destination
+- When finished
+  - Existing recordings are exported to the selected destination.
+  - New recordings are exported to the selected destination.
 
-b. Errors:
+b. Error cases to test:
 
 - User goes offline (before starting, before pressing Go Notion, or before searching)
 - User closes Notion prematurely
+- User leaves Notion open more than 5 minutes
 - User doesn't grant access to any pages
 - User doesn't grant access to desired page/database
 
 ### Scenario 2: Partial Setup: Already has an integration
 
-This can be simulated by archiving existing destinations and workspaces. In that order.
+Preparing:
+
+- If the account isn't new, archive existing destinations and workspaces. In that order.
+
+Make sure the success steps work.
 
 ### Scenario 3: Partial Setup: Already has an integration and workspace
 
-This can be simulated by archiving existing destinations.
+Preparing:
+
+- If the account isn't new, archive existing destinations.
+
+Make sure the success steps work.
 
 ### Scenario 4: Setup already completed
 
 User has all components (integration, workspace, and destination).
+
+Should show the destination name and allow user to close the screen.
