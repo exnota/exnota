@@ -155,32 +155,45 @@ class Completed extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final destination = ref.watch(activeDestinationLazyProvider)!;
+    final destinationAsync = ref.watch(activeDestinationProvider);
 
-    return BaseSetupView(
-      header: 'You\'re connected!',
-      contentChildren: [
-        Text.rich(
-          TextSpan(
-            children: [
-              const TextSpan(text: 'Notes will be saved to: '),
+    switch (destinationAsync) {
+      case AsyncLoading():
+        return const Center(child: CircularProgressIndicator());
+      case AsyncError(:final error):
+        return SetupErrorMessage(
+          error: error.toString(),
+          errorRetryStatus: null,
+          onRetry: () {},
+        );
+      case AsyncData(:final value):
+        return BaseSetupView(
+          header: 'You\'re connected!',
+          contentChildren: [
+            Text.rich(
               TextSpan(
-                text: destination.name!,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                children: [
+                  const TextSpan(text: 'Notes will be saved to: '),
+                  TextSpan(
+                    text: value!.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ],
-      buttonChildren: [
-        FilledButton(
-          onPressed: () {
-            ref.read(routerProvider.notifier).pop();
-          },
-          child: const Text('Close'),
-        ),
-      ],
-    );
+            ),
+          ],
+          buttonChildren: [
+            FilledButton(
+              onPressed: () {
+                ref.read(routerProvider.notifier).pop();
+              },
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      default:
+        return Container();
+    }
   }
 }
 
