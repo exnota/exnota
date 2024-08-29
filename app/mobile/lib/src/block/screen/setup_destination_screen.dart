@@ -282,7 +282,7 @@ class Debouncer {
   }
 }
 
-final searchDebouncer = Debouncer(milliseconds: 3000);
+final searchDebouncer = Debouncer(milliseconds: 1000);
 
 class SearchDestination extends ConsumerStatefulWidget {
   final String integrationID;
@@ -337,11 +337,9 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
             // although I'm sure it mustn't be difficult.
             return Consumer(
               builder: (context, ref, child) {
-                final selected = ref.watch(_selectedDestinationProvider);
                 final results =
                     ref.watch(_searchResultsProvider(widget.integrationID));
-                _log.debug(
-                    'SearchAnchor: rebuilding viewBuilder with selected: $selected');
+                _log.debug('SearchAnchor: rebuilding viewBuilder');
 
                 return switch (results) {
                   AsyncData(:final value) => SingleChildScrollView(
@@ -350,7 +348,6 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
                           for (final destination in value)
                             DestinationListTile(
                               destination: destination,
-                              selected: selected,
                               onChanged: (value) {
                                 ref
                                     .read(
@@ -540,13 +537,11 @@ class DestinationRadioTile extends StatelessWidget {
 
 class DestinationListTile extends StatelessWidget {
   final NotionDestination destination;
-  final NotionDestination? selected;
   final void Function(NotionDestination?) onChanged;
 
   const DestinationListTile({
     super.key,
     required this.destination,
-    required this.selected,
     required this.onChanged,
   });
 
@@ -565,7 +560,6 @@ class DestinationListTile extends StatelessWidget {
           ),
         ],
       ),
-      selected: destination == selected,
       onTap: () {
         onChanged(destination);
       },
@@ -956,9 +950,16 @@ class _SearchQuery extends _$SearchQuery {
 @riverpod
 Future<List<NotionDestination>> _searchResults(
     _SearchResultsRef ref, String integrationId) async {
+  final log = Logger(context: '_searchResultsProvider');
   final query = ref.watch(_searchQueryProvider);
+  if (query.isEmpty) {
+    log.info('searchResults: No query');
+    return [];
+  }
+
   final pb = ref.watch(pocketBaseSyncProvider);
 
+  log.info('Sending query: $query');
   final rawResult = await pb.send(
     '/api/exnota/integration/notion/search-destinations',
     method: 'GET',
@@ -967,6 +968,7 @@ Future<List<NotionDestination>> _searchResults(
       'integration_id': integrationId,
     },
   );
+  log.info('Got results');
 
   final result = GetSuggestedDestinationsResponse.fromJson(rawResult);
   return result.destinations.notion ?? [];
