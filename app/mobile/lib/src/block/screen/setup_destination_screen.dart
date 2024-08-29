@@ -88,13 +88,6 @@ class _SetupDestinationScreenState
               .read(setupDestinationScreenControllerProvider.notifier)
               .checkBlocksWithoutDestination();
           break;
-        case DestinationSetupStatus.completed:
-        // TODO: Send to destination screen 2
-        // ref
-        //     .read(routerProvider.notifier)
-        //     .pushReplacement(Screen.settingsSetupDestination, params: {
-        //   'integrationID': nextState.integration!.id,
-        // });
         default:
         // Do nothing
       }
@@ -144,9 +137,8 @@ class _SetupDestinationScreenState
                   .transitionStatus(newStatus: setupState.errorRetryStatus!);
             },
           ),
-        // TODO: Move this to 'loading' group below instead
-        DestinationSetupStatus.completed => const Text('Done!'),
         DestinationSetupStatus.reauthRequired => const ReauthRequired(),
+        DestinationSetupStatus.completed => const Completed(),
         // Loading
         DestinationSetupStatus.loadingDestinations ||
         DestinationSetupStatus.loadingSuggestedDestinations ||
@@ -154,6 +146,40 @@ class _SetupDestinationScreenState
         DestinationSetupStatus.updatingBlocks =>
           const Center(child: CircularProgressIndicator()),
       },
+    );
+  }
+}
+
+class Completed extends ConsumerWidget {
+  const Completed({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final destination = ref.watch(activeDestinationLazyProvider)!;
+
+    return BaseSetupView(
+      header: 'You\'re connected!',
+      contentChildren: [
+        Text.rich(
+          TextSpan(
+            children: [
+              const TextSpan(text: 'Notes will be saved to: '),
+              TextSpan(
+                text: destination.name!,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+      ],
+      buttonChildren: [
+        FilledButton(
+          onPressed: () {
+            ref.read(routerProvider.notifier).pop();
+          },
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }
@@ -200,8 +226,6 @@ class SelectSuggestedDestination extends ConsumerStatefulWidget {
 
 class _SelectSuggestedDestinationState
     extends ConsumerState<SelectSuggestedDestination> {
-  final _log = Logger(context: '_SelectSuggestedDestinationState');
-
   @override
   Widget build(BuildContext context) {
     final selected = ref.watch(_selectedDestinationProvider);
@@ -690,9 +714,6 @@ class SetupDestinationScreenController
 
   Future<void> loadDestinations({required String integrationID}) async {
     // Import latest workspaces
-    // TODO: We care about workspaces for the current integration. No others, other than maybe to update the local database
-    // TODO: What can cause an integration to be archived (aside from manually doing it)
-    // TODO: Question: If an integration is archived, what SHOULD happen (i.e. what makes sense) to the workspaces and destinations?
     final workspaceImportResult =
         await ref.read(workspaceImporterProvider.notifier).import();
     switch (workspaceImportResult) {
