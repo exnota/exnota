@@ -85,7 +85,7 @@ func (h *integrationCreateAPI) ApplyHooks() {
 			accessResponse, err := notionSync.GetAuthToken(*config.Auth.Code)
 			if errors.Is(err, lib.ErrNotionInvalidCode) {
 				return api.NewBadRequestWithErrorCode(
-					ErrCodeInvalidNotionCode,
+					api.ErrCodeInvalidNotionCode,
 					"Invalid Notion code",
 				)
 			} else if err != nil {

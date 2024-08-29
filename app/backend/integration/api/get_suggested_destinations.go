@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -73,7 +74,12 @@ func (h *getSuggestedDestinationsAPI) ApplyHooks() {
 					UserID:        auth.LoggedInUser(),
 				},
 			)
-			if err != nil {
+			if errors.Is(err, lib_integ.ErrInvalidToken) {
+				return api.NewBadRequestWithErrorCode(
+					api.ErrCodeInvalidToken,
+					"Invalid Notion token",
+				)
+			} else if err != nil {
 				return err
 			}
 

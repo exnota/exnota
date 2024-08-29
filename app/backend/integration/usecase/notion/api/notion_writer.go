@@ -2,11 +2,14 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/dstotijn/go-notion"
 	gonotion "github.com/dstotijn/go-notion"
 	"github.com/pocketbase/pocketbase/core"
+
+	lib_integ "exnota.com/backend/lib/integration"
 )
 
 type NotionWriter interface {
@@ -64,6 +67,9 @@ func (n *notionWriter) CreateDatabasePage(
 		Children:               request.Children,
 	})
 	if err != nil {
+		if errors.Is(err, gonotion.ErrUnauthorized) {
+			return nil, lib_integ.ErrNotionInvalidToken
+		}
 		return nil, err
 	}
 
@@ -129,6 +135,9 @@ func (n *notionWriter) CreateChildPage(
 		Children: request.Children,
 	})
 	if err != nil {
+		if errors.Is(err, gonotion.ErrUnauthorized) {
+			return nil, lib_integ.ErrNotionInvalidToken
+		}
 		return nil, err
 	}
 
@@ -178,6 +187,9 @@ func (n *notionWriter) UpdatePageProperties(
 			DatabasePageProperties: request.DatabaseProperties,
 		})
 		if err != nil {
+			if errors.Is(err, gonotion.ErrUnauthorized) {
+				return lib_integ.ErrNotionInvalidToken
+			}
 			return err
 		}
 	}
@@ -216,6 +228,9 @@ func (n *notionWriter) AppendPageChildren(
 		)
 		if err != nil {
 			slog.Error("Failed to append block children", "error", err)
+			if errors.Is(err, gonotion.ErrUnauthorized) {
+				return nil, lib_integ.ErrNotionInvalidToken
+			}
 			return nil, err
 		}
 
