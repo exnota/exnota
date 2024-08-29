@@ -29,8 +29,6 @@ func NewIntegrationUpdateAPI(app core.App, credentials NotionCredentials) Integr
 	}
 }
 
-const ErrCodeInvalidNotionCode = "invalid_notion_code"
-
 func (h *integrationUpdateAPI) ApplyHooks() {
 	// Two main update update use cases:
 	// 1. Update config
@@ -103,7 +101,7 @@ func (h *integrationUpdateAPI) ApplyHooks() {
 				accessResponse, err := notionSync.GetAuthToken(*updatedConfig.Auth.Code)
 				if errors.Is(err, lib.ErrNotionInvalidCode) {
 					return api.NewBadRequestWithErrorCode(
-						ErrCodeInvalidNotionCode,
+						api.ErrCodeInvalidNotionCode,
 						"Invalid Notion code",
 					)
 				} else if err != nil {

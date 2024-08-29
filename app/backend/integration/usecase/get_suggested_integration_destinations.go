@@ -49,7 +49,7 @@ func (s *getSuggestedIntegrationDestinations) Get(
 		results, err := notion.NewGetSuggestedNotionDestinations(s.app, s.integrationFetcher).
 			Get(request)
 		if err != nil {
-			return nil, err
+			return nil, lib_integ.ToIntegrationError(err)
 		}
 		return &lib_integ.Destinations{
 			Notion: results,

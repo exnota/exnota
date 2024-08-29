@@ -15,6 +15,9 @@ func NewMethodNotAllowedError(message string, data any) *apis.ApiError {
 	return apis.NewApiError(http.StatusMethodNotAllowed, message, data)
 }
 
+const ErrCodeInvalidNotionCode = "invalid_notion_code"
+const ErrCodeInvalidToken = "invalid_token"
+
 func NewBadRequestWithErrorCode(errorCode string, message string) *apis.ApiError {
 	// "ApiError.RawData() will be returned in the response only if it is a map
 	// of validation.Error items."

@@ -7,6 +7,8 @@ import (
 	"log/slog"
 
 	gonotion "github.com/dstotijn/go-notion"
+
+	lib_integ "exnota.com/backend/lib/integration"
 )
 
 type NotionFetcher interface {
@@ -36,6 +38,9 @@ func (f *notionFetcher) FetchPage(pageID string) (*gonotion.Page, error) {
 	client := gonotion.NewClient(f.accessToken)
 	result, err := client.FindPageByID(context.Background(), pageID)
 	if err != nil {
+		if errors.Is(err, gonotion.ErrUnauthorized) {
+			return nil, lib_integ.ErrNotionInvalidToken
+		}
 		return nil, err
 	}
 
@@ -48,6 +53,9 @@ func (f *notionFetcher) FetchPageChildren(
 	client := gonotion.NewClient(f.accessToken)
 	result, err := client.FindBlockChildrenByID(context.Background(), pageID, nil)
 	if err != nil {
+		if errors.Is(err, gonotion.ErrUnauthorized) {
+			return nil, lib_integ.ErrNotionInvalidToken
+		}
 		return nil, err
 	}
 
@@ -60,6 +68,9 @@ func (f *notionFetcher) FetchPageChildrenWithAccessToken(
 	client := gonotion.NewClient(f.accessToken)
 	result, err := client.FindBlockChildrenByID(context.Background(), pageID, nil)
 	if err != nil {
+		if errors.Is(err, gonotion.ErrUnauthorized) {
+			return nil, lib_integ.ErrNotionInvalidToken
+		}
 		return nil, err
 	}
 
@@ -72,6 +83,9 @@ func (f *notionFetcher) FetchDatabase(
 	client := gonotion.NewClient(f.accessToken)
 	result, err := client.FindDatabaseByID(context.Background(), databaseID)
 	if err != nil {
+		if errors.Is(err, gonotion.ErrUnauthorized) {
+			return nil, lib_integ.ErrNotionInvalidToken
+		}
 		return nil, err
 	}
 
@@ -113,6 +127,9 @@ func (f *notionFetcher) Search(query string) (gonotion.SearchResults, error) {
 
 	response, err := client.Search(context.Background(), opts)
 	if err != nil {
+		if errors.Is(err, gonotion.ErrUnauthorized) {
+			return nil, lib_integ.ErrNotionInvalidToken
+		}
 		return nil, fmt.Errorf("error searching: %w", err)
 	}
 
@@ -151,6 +168,9 @@ func (f *notionFetcher) SearchDatabases(query string) ([]gonotion.Database, erro
 
 	response, err := client.Search(context.Background(), opts)
 	if err != nil {
+		if errors.Is(err, gonotion.ErrUnauthorized) {
+			return nil, lib_integ.ErrNotionInvalidToken
+		}
 		return nil, fmt.Errorf("error searching databases: %w", err)
 	}
 
@@ -182,6 +202,9 @@ func (f *notionFetcher) SearchPages(query string) ([]gonotion.Page, error) {
 
 	response, err := client.Search(context.Background(), opts)
 	if err != nil {
+		if errors.Is(err, gonotion.ErrUnauthorized) {
+			return nil, lib_integ.ErrNotionInvalidToken
+		}
 		return nil, fmt.Errorf("error searching pages: %w", err)
 	}
 
