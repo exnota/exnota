@@ -342,23 +342,25 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
                 _log.debug('SearchAnchor: rebuilding viewBuilder');
 
                 return switch (results) {
-                  AsyncData(:final value) => SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          for (final destination in value)
-                            DestinationListTile(
-                              destination: destination,
-                              onChanged: (value) {
-                                ref
-                                    .read(
-                                        setupDestinationScreenControllerProvider
-                                            .notifier)
-                                    .setSelectedDestination(value);
-                              },
-                            )
-                        ],
-                      ),
-                    ),
+                  AsyncData(:final value) => value.isEmpty
+                      ? const Center(child: Text('No results'))
+                      : SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              for (final destination in value)
+                                DestinationListTile(
+                                  destination: destination,
+                                  onChanged: (value) {
+                                    ref
+                                        .read(
+                                            setupDestinationScreenControllerProvider
+                                                .notifier)
+                                        .setSelectedDestination(value);
+                                  },
+                                )
+                            ],
+                          ),
+                        ),
                   AsyncLoading() =>
                     const Center(child: CircularProgressIndicator()),
                   AsyncError(:final error) => Text('Error: $error'),
