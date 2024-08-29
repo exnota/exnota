@@ -295,10 +295,10 @@ class SearchDestination extends ConsumerStatefulWidget {
 
 class _SearchDestinationState extends ConsumerState<SearchDestination> {
   final _log = Logger(context: '_SelectDestinationState');
+  final SearchController controller = SearchController();
 
   @override
   Widget build(BuildContext context) {
-    final selected = ref.watch(_selectedDestinationProvider);
     final searchResults =
         ref.watch(_searchResultsProvider(widget.integrationID));
     if (searchResults is AsyncData) {
@@ -306,14 +306,13 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
     }
 
     return BaseSetupView(
-      header: 'Last, confirm where notes should be sent.',
+      header: 'Where should notes be sent?',
       contentChildren: [
         const Text(
-            'Looks like Exnota has access to a few pages. Some might be inside the one you gave access to.'),
-        const SizedBox(height: 16),
-        const Text('Please confirm where notes should be sent:'),
+            'Search for the database or page in Notion you want Exnota to send notes to:'),
         const SizedBox(height: 32),
         SearchAnchor(
+          searchController: controller,
           viewOnChanged: (query) {
             _log.debug('SearchAnchor: viewOnChanged search query: $query');
             searchDebouncer.run(() {
@@ -356,6 +355,16 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
                                             setupDestinationScreenControllerProvider
                                                 .notifier)
                                         .setSelectedDestination(value);
+                                    ref
+                                        .read(
+                                            setupDestinationScreenControllerProvider
+                                                .notifier)
+                                        .transitionStatus(
+                                            newStatus: DestinationSetupStatus
+                                                .updatingDestination);
+                                    if (controller.isAttached) {
+                                      controller.closeView('');
+                                    }
                                   },
                                 )
                             ],
@@ -392,28 +401,10 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
             );
           },
         ),
-        if (selected != null && selected.name != noneOfTheAbove.name) ...[
-          const SizedBox(height: 32),
-          const Text('Send notes to:'),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              children: [
-                DestinationIcon(destination: selected),
-                const SizedBox(width: 8),
-                Text(
-                  selected.name,
-                  style: const TextStyle(fontSize: 18),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
       ],
       buttonChildren: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             TextButton(
               onPressed: () {
@@ -476,24 +467,7 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
                   },
                 );
               },
-              // onPressed: () {
-              //   ref.read(routerProvider.notifier).pushReplacement(
-              //       Screen.settingsSetupIntegrationForceReauth);
-              // },
               child: const Text("I can't find it"),
-            ),
-            FilledButton(
-              onPressed: selected == null
-                  ? null
-                  : () {
-                      ref
-                          .read(
-                              setupDestinationScreenControllerProvider.notifier)
-                          .transitionStatus(
-                              newStatus:
-                                  DestinationSetupStatus.updatingDestination);
-                    },
-              child: const Text('Confirm'),
             ),
           ],
         ),
