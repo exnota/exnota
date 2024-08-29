@@ -282,7 +282,7 @@ class Debouncer {
   }
 }
 
-final searchDebouncer = Debouncer(milliseconds: 1000);
+final searchDebouncer = Debouncer(milliseconds: 800);
 
 class SearchDestination extends ConsumerStatefulWidget {
   final String integrationID;
@@ -359,7 +359,8 @@ class _SearchDestinationState extends ConsumerState<SearchDestination> {
                         ],
                       ),
                     ),
-                  AsyncLoading() => const Text('Loading...'),
+                  AsyncLoading() =>
+                    const Center(child: CircularProgressIndicator()),
                   AsyncError(:final error) => Text('Error: $error'),
                   AsyncValue() => const Text('No results'),
                 };
