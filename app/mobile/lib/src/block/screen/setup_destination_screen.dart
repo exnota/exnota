@@ -32,8 +32,10 @@ part 'setup_destination_screen.g.dart';
 
 class SetupDestinationScreen extends ConsumerStatefulWidget {
   final String integrationID;
+  final bool updateDestination;
 
-  const SetupDestinationScreen({super.key, required this.integrationID});
+  const SetupDestinationScreen(
+      {super.key, required this.integrationID, this.updateDestination = false});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
@@ -50,7 +52,9 @@ class _SetupDestinationScreenState
     Future(() {
       ref
           .read(setupDestinationScreenControllerProvider.notifier)
-          .loadDestinations(integrationID: widget.integrationID);
+          .loadDestinations(
+              integrationID: widget.integrationID,
+              updateDestination: widget.updateDestination);
     });
   }
 
@@ -71,7 +75,9 @@ class _SetupDestinationScreenState
         case DestinationSetupStatus.loadingDestinations:
           ref
               .read(setupDestinationScreenControllerProvider.notifier)
-              .loadDestinations(integrationID: widget.integrationID);
+              .loadDestinations(
+                  integrationID: widget.integrationID,
+                  updateDestination: widget.updateDestination);
           break;
         case DestinationSetupStatus.loadingSuggestedDestinations:
           ref
@@ -167,6 +173,9 @@ class Completed extends ConsumerWidget {
           onRetry: () {},
         );
       case AsyncData(:final value):
+        if (value == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
         return BaseSetupView(
           header: 'You\'re connected!',
           contentChildren: [
@@ -175,7 +184,7 @@ class Completed extends ConsumerWidget {
                 children: [
                   const TextSpan(text: 'Notes will be saved to: '),
                   TextSpan(
-                    text: value!.name,
+                    text: value.name,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -725,7 +734,8 @@ class SetupDestinationScreenController
     );
   }
 
-  Future<void> loadDestinations({required String integrationID}) async {
+  Future<void> loadDestinations(
+      {required String integrationID, required bool updateDestination}) async {
     // Import latest workspaces
     final workspaceImportResult =
         await ref.read(workspaceImporterProvider.notifier).import();
@@ -778,6 +788,19 @@ class SetupDestinationScreenController
 
         if (activeDestination == null) {
           _log.debug('loadDestinations: No destination found');
+          state = DestinationSetupState(
+            status: DestinationSetupStatus.loadingSuggestedDestinations,
+            integrationID: integrationID,
+            notionSuggestedDestinations: null,
+            selected: null,
+            error: null,
+            errorRetryStatus: null,
+          );
+          return;
+        }
+
+        if (updateDestination) {
+          _log.debug('loadDestinations: Update destination');
           state = DestinationSetupState(
             status: DestinationSetupStatus.loadingSuggestedDestinations,
             integrationID: integrationID,

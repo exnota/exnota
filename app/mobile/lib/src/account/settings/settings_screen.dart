@@ -1,4 +1,7 @@
 import 'package:drift_db_viewer/drift_db_viewer.dart';
+import 'package:exnota/src/block/repo/drift/destination_importer.dart';
+import 'package:exnota/src/block/repo/drift/workspace_importer.dart';
+import 'package:exnota/src/block/service/destination_lister.dart';
 import 'package:exnota/src/context/app/local_settings.dart';
 import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/environment/environment.dart';
@@ -13,13 +16,30 @@ import 'package:flutter_settings_ui/flutter_settings_ui.dart';
 ///
 /// When a user changes a setting, the SettingsController is updated and
 /// Widgets that listen to the SettingsController are rebuilt.
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Need to wrap in Future to avoid provider throwing an error that its
+    // state was modified during the widget's lifecycle.
+    Future.wait([
+      ref.read(workspaceImporterProvider.notifier).import(),
+      ref.read(destinationImporterProvider.notifier).importAll(),
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeSettingProvider);
     final environment = ref.watch(environmentServiceSyncProvider);
+    final destination = ref.watch(activeDestinationLazyProvider);
 
     return Scaffold(
         appBar: AppBar(
@@ -28,19 +48,31 @@ class SettingsScreen extends ConsumerWidget {
         body: SettingsList(
           sections: [
             SettingsSection(title: const Text('Account'), tiles: [
-              SettingsTile(
-                title: const Text('Connect to Notion'),
-                description: const Text('Choose where notes are saved'),
-                descriptionInlineIos: true,
-                leading: const Icon(Icons.source),
-                onPressed: (BuildContext context) {
-                  ref
-                      .read(routerProvider.notifier)
-                      .go(Screen.settingsSetupIntegration);
-                  // TODO: Remove this after testing
-                  // .go(Screen.settingsSetupIntegrationForceReauth);
-                },
-              ),
+              if (destination == null)
+                SettingsTile(
+                  title: const Text('Connect to Notion'),
+                  description: const Text('Choose where notes are saved'),
+                  descriptionInlineIos: true,
+                  leading: const Icon(Icons.source),
+                  onPressed: (BuildContext context) {
+                    ref
+                        .read(routerProvider.notifier)
+                        .go(Screen.settingsSetupIntegration);
+                  },
+                )
+              else
+                SettingsTile(
+                  title: const Text('Change notes destination'),
+                  description:
+                      Text('Saving to \'${destination.name}\' in Notion'),
+                  descriptionInlineIos: true,
+                  leading: const Icon(Icons.source),
+                  onPressed: (BuildContext context) {
+                    ref
+                        .read(routerProvider.notifier)
+                        .go(Screen.settingsSetupIntegrationForceReauth);
+                  },
+                ),
               SettingsTile(
                 title: const Text('Sign out'),
                 leading: const Icon(Icons.exit_to_app),

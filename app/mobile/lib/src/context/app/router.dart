@@ -113,8 +113,13 @@ class Router extends _$Router {
                       builder: (context, state) {
                         final integrationID =
                             state.uri.queryParameters['integrationID']!;
+                        final updateDestination =
+                            state.uri.queryParameters['updateDestination'] ==
+                                'true';
                         return SetupDestinationScreen(
-                            integrationID: integrationID);
+                          integrationID: integrationID,
+                          updateDestination: updateDestination,
+                        );
                       },
                     ),
                   ]),
