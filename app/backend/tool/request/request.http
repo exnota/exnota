@@ -457,8 +457,14 @@ Content-Type: application/json
 
 whisper-1
 --boundary
-Content-Disposition: form-data; name="file"; filename="short-test.m4a"
+Content-Disposition: form-data; name="prompt"
+Content-Type: application/json
+
+The transcript may contain a request to be tagged, or begin with "tag: <tags>". The possible tags are: Goals, Family, Finance, Health, Nifty Experiment, Relationships, Quite Nifty, Safety & Security, Entertainment, Fun, Reading Material.
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="tag-test-1.m4a"
 Content-Type: audio/x-m4a
 
-< short-test.m4a
+< tag-test-1.m4a
 --boundary--
