@@ -13,7 +13,7 @@ import { base } from "$app/paths";
 import { invalidateAll } from "$app/navigation";
 
 export const client = new PocketBase(
-  browser ? window.location.origin : undefined
+  browser ? window.location.origin === 'http://localhost:5173' ? 'http://0.0.0.0:8080': window.location.origin : undefined
 );
 
 export const authModel = readable<AuthModel | AdminModel | null>(

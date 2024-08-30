@@ -1,38 +1,37 @@
-# create-svelte
+# Internal tool
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+For bulk actions, cleanup, etc.
 
-## Creating a project
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Local development
 
 ```bash
-npm run dev
+npm install
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+npm typegen # repeat after collection schema changes
+
+npm dev
 ```
 
-## Building
+Make sure the `backend` app is running.
 
-To create a production version of your app:
+Then go to http://localhost:5173/internal/
 
-```bash
-npm run build
-```
+## Production
 
-You can preview the production build with `npm run preview`.
+### Status
+Not currently supported! Needs more security added first, e.g.:
+- Admin-only.
+- Hide everything before login.
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+### Tips for setting up in the fuutre
+My first attempt was to serve the `build` directory in `main.go`. This worked but
+required a build on every change to this app. Instead, to take advantage of
+Sveltekit's hot-reload, I changed to the Vite using the Vite dev server at
+http://localhost:5173/internal/.
+
+To set this up in the future, we'll probably need to:
+1. Improve security and precautions!
+2. Uncomment the code in `main.go` that serves `pub_internal/build`
+3. Add the `npm run build` step to `Dockerfile`
+
