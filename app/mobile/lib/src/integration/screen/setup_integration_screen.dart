@@ -141,6 +141,7 @@ class _SetupIntegrationScreenState
               .read(routerProvider.notifier)
               .pushReplacement(Screen.settingsSetupDestination, params: {
             'integrationID': nextState.integration!.id,
+            'updateDestination': widget.forceReauth.toString(),
           });
           break;
         default:
@@ -674,68 +675,4 @@ class SetupIntegrationScreenController
       );
     }
   }
-
-  // Future<void> connectToWorkspace() async {
-  //   if (state.integration == null) {
-  //     _log.error('connectToWorkspace: No integration found');
-  //     state = const IntegrationSetupState(
-  //       status: IntegrationSetupStatus.connectingToWorkspaceError,
-  //       integration: null,
-  //       error: 'No integration found',
-  //       errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
-  //     );
-  //     return;
-  //   }
-
-  //   final integrationId = state.integration!.id;
-  //   final workspace = await ref.read(activeWorkspaceProvider.future);
-  //   if (workspace == null) {
-  //     _log.error('connectToWorkspace: No workspace found');
-  //     state = IntegrationSetupState(
-  //       status: IntegrationSetupStatus.connectingToWorkspaceError,
-  //       integration: state.integration,
-  //       error: 'No workspace found',
-  //       errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
-  //     );
-  //     return;
-  //   }
-
-  //   if (workspace.integrationId == integrationId) {
-  //     _log.debug('connectToWorkspace: Already connected to workspace');
-  //     state = IntegrationSetupState(
-  //       status: IntegrationSetupStatus.confirmedNotionIntegration,
-  //       integration: state.integration,
-  //       error: null,
-  //       errorRetryStatus: null,
-  //     );
-  //     return;
-  //   }
-
-  //   final response =
-  //       await ref.read(workspaceServiceProvider.notifier).setIntegration(
-  //             workspaceId: workspace.id,
-  //             integrationId: integrationId,
-  //           );
-
-  //   switch (response) {
-  //     case BasicResponseSuccess():
-  //       _log.debug('connectToWorkspace: Integration connected');
-  //       state = IntegrationSetupState(
-  //         status: IntegrationSetupStatus.confirmedNotionIntegration,
-  //         integration: state.integration,
-  //         error: null,
-  //         errorRetryStatus: null,
-  //       );
-  //       break;
-  //     case BasicResponseError(:final error):
-  //       _log.error('connectToWorkspace: Error connecting integration');
-  //       state = IntegrationSetupState(
-  //         status: IntegrationSetupStatus.connectingToWorkspaceError,
-  //         integration: state.integration,
-  //         error: error,
-  //         errorRetryStatus: IntegrationSetupStatus.loadingIntegration,
-  //       );
-  //       break;
-  //   }
-  // }
 }
