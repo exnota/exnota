@@ -9,6 +9,8 @@
   });
 </script>
 
+<p>Total blocks = {data.blocks.length}</p>
+
 <p>
   Visit
   <a

@@ -9,6 +9,7 @@ const pocketbase_url = fs.existsSync("/.dockerenv")
 
 const config: UserConfig = {
   plugins: [sveltekit()],
+  base: "/internal/",
   server: {
     proxy: {
       // proxy "/api" and "/_" to pocketbase_url
