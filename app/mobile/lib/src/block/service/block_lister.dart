@@ -95,6 +95,23 @@ Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
 }
 
 @riverpod
+Future<List<Block>> blocks(BlocksRef ref) async {
+  final log = ref.watch(loggerProvider('Blocks'));
+  log.debug('Getting blocks');
+
+  final userId = ref.watch(activeUserIdOrThrowSyncProvider);
+  final blockRepo = ref.watch(blockRepoProvider);
+  final blocks = await blockRepo.list(userId: userId);
+  return blocks;
+}
+
+@riverpod
+List<Block> blocksLazy(BlocksLazyRef ref) {
+  final blocks = ref.watch(blocksProvider).valueOrNull;
+  return blocks ?? [];
+}
+
+@riverpod
 Future<List<Block>> blocksWithoutDestination(
     BlocksWithoutDestinationRef ref) async {
   final log = ref.watch(loggerProvider('BlocksWithoutDestination'));

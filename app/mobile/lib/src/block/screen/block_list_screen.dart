@@ -1,5 +1,6 @@
 import 'package:exnota/src/block/repo/drift/destination_importer.dart';
 import 'package:exnota/src/block/repo/drift/workspace_importer.dart';
+import 'package:exnota/src/block/service/destination_lister.dart';
 import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/import_request_queue.dart';
@@ -57,6 +58,9 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
     final hasUnexpectedError =
         ref.watch(importRequestQueueUnexpectedErrorProvider);
 
+    final blocks = ref.watch(blocksLazyProvider);
+    final destination = ref.watch(activeDestinationLazyProvider);
+
     return ListenableBuilder(
       listenable: _recorder!,
       builder: (context, widget) {
@@ -75,6 +79,9 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
               ),
             ],
           ),
+          bottomNavigationBar: blocks.isNotEmpty && destination == null
+              ? const NotionConnectCard()
+              : null,
           floatingActionButton: ButtonBar(
             children: [
               // FloatingActionButton(
@@ -347,5 +354,63 @@ class ListNotesRequestTwo extends ImportRequest<List<RecordModel>> {
     _log.debug('Listed ${result.length} notes');
 
     _log.debug('Request complete');
+  }
+}
+
+class NotionConnectCard extends ConsumerWidget {
+  const NotionConnectCard({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      margin: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4.0,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 32.0,
+              ),
+              SizedBox(width: 16.0),
+              Expanded(
+                child: Text(
+                  'Choose where your voice notes should be saved by connecting your Notion account.',
+                  style: TextStyle(fontSize: 14.0),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16.0),
+          Center(
+            child: FilledButton(
+              onPressed: () {
+                ref
+                    .read(routerProvider.notifier)
+                    .go(Screen.settingsSetupIntegration);
+              },
+              child: const Text(
+                'Connect to Notion',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
