@@ -27,7 +27,7 @@ b. Error cases to test:
 - User closes Notion prematurely
 - User leaves Notion open more than 5 minutes
 - User doesn't grant access to any pages
-- User doesn't grant access to desired page/database
+- User doesn't grant access to desired page/database: They can go back and grant access.
 
 ### Scenario 2: Partial Setup: Already has an integration
 
@@ -50,3 +50,13 @@ Make sure the success steps above work.
 User has all components (integration, workspace, and destination).
 
 Should show the destination name and allow user to close the screen.
+
+### Scenario: Update destination
+
+1. Go to Settings
+2. Under account it should say `Change notes destination` and `Saving to '[current destination]' in Notion`
+3. Press that button.
+4. All major flows should work:
+   - Choose a suggested destination.
+   - Search for a destination.
+   - "I can't find it"
