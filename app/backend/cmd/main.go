@@ -137,10 +137,10 @@ func initJobWorker(app core.App, skipWorkers *bool) {
 
 func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// serves static files from the provided public dir (if exists)
-	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
-		return nil
-	})
+	// app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+	// 	e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
+	// 	return nil
+	// })
 
 	// internal UI
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
@@ -164,6 +164,7 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 			fmt.Printf("Directory %s exists\n", dir)
 		}
 
+		e.Router.GET("/internal/*", apis.StaticDirectoryHandler(fs, false))
 		e.Router.GET("/internal", apis.StaticDirectoryHandler(fs, false))
 		return nil
 	})

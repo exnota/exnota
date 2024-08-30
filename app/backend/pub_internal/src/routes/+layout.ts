@@ -1,6 +1,9 @@
 import type { LayoutLoad } from "./$types";
 import { client } from "$lib/pocketbase";
 import { alerts } from "$lib/components/Alerts.svelte";
+import type {
+  BlockResponse,
+} from "$lib/pocketbase/generated-types";
 
 // turn off SSR - we're JAMstack here
 export const ssr = false;
@@ -27,6 +30,7 @@ export const load: LayoutLoad = async ({ fetch }) => {
     title,
   };
 
+  
   try {
     const response = await fetch(client.baseUrl + "/_/");
     if (response.redirected) {
@@ -42,7 +46,14 @@ export const load: LayoutLoad = async ({ fetch }) => {
   } catch (e: any) {
     alerts.error(e.toString());
   }
+  let blocks: BlockResponse[] = [];
+  try {
+     blocks = await client.collection("block").getFullList<BlockResponse>();
+  } catch (e: any) {
+    alerts.error(e.toString());
+  }
   return {
+    blocks,
     config,
     metadata,
   };
