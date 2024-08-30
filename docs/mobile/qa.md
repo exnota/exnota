@@ -6,7 +6,9 @@
 
 Preparing:
 
-- If the account isn't new, archive existing destinations, workspaces, integrations. In that order.
+- If the account isn't new, then:
+  - Archive existing destinations, workspaces, integrations. In that order.
+  - In the all, pull to refresh on the Voice Notes list screen. This will update its copies of the workspaces and destinations so it knows they are archived.
 - Create 1 or more recordings before beginning. Confirm they are not exported to Notion.
 
 a. Success steps:
