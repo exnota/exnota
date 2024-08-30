@@ -142,32 +142,36 @@ func bindRequestAndRecordHooks(app core.App, cfg config.Config) {
 	// 	return nil
 	// })
 
-	// internal UI
-	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		// Only serve when running locally for now, to avoid needing to add a
-		// build step to the Dockerfile.
-		if !isAutoMigrate() {
-			return nil
-		}
-
-		dir := "../pub_internal/build"
-		fs := os.DirFS(dir)
-
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			// To create the build folder:
-			//
-			// cd pub_internal
-			// npm install
-			// npm run build
-			panic(fmt.Sprintf("Directory %s does not exist", dir))
-		} else {
-			fmt.Printf("Directory %s exists\n", dir)
-		}
-
-		e.Router.GET("/internal/*", apis.StaticDirectoryHandler(fs, false))
-		e.Router.GET("/internal", apis.StaticDirectoryHandler(fs, false))
-		return nil
-	})
+	// Serve Internal app.
+	//
+	// Leave this commented code block so it's quick to re-implement later :)
+	// See pub_internal/README.md for context.
+	//
+	// app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+	// 	// Only serve when running locally for now, to avoid needing to add a
+	// 	// build step to the Dockerfile.
+	// 	if !isAutoMigrate() {
+	// 		return nil
+	// 	}
+	//
+	// 	dir := "../pub_internal/build"
+	// 	fs := os.DirFS(dir)
+	//
+	// 	if _, err := os.Stat(dir); os.IsNotExist(err) {
+	// 		// To create the build folder:
+	// 		//
+	// 		// cd pub_internal
+	// 		// npm install
+	// 		// npm run build
+	// 		panic(fmt.Sprintf("Directory %s does not exist", dir))
+	// 	} else {
+	// 		fmt.Printf("Directory %s exists\n", dir)
+	// 	}
+	//
+	// 	e.Router.GET("/internal/*", apis.StaticDirectoryHandler(fs, false))
+	// 	e.Router.GET("/internal", apis.StaticDirectoryHandler(fs, false))
+	// 	return nil
+	// })
 
 	// initJobWorker(app)
 	// bindJobCreatorHooks(app)
