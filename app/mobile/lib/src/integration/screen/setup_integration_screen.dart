@@ -208,15 +208,37 @@ class Header extends StatelessWidget {
   }
 }
 
-class Instructions extends ConsumerWidget {
+class Instructions extends ConsumerStatefulWidget {
   final bool create;
 
   const Instructions({super.key, this.create = false});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<Instructions> createState() => _InstructionsState();
+}
+
+class _InstructionsState extends ConsumerState<Instructions> {
+  late AssetImage notionAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    notionAnimation =
+        const AssetImage('assets/images/notion-auth-animation.gif');
+  }
+
+  @override
+  void dispose() {
+    // This clears the cache for the animation so it restarts if the user goes
+    // back then returns. See https://github.com/flutter/flutter/issues/51775
+    notionAnimation.evict();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return BaseSetupView(
-      header: create
+      header: widget.create
           ? 'First, give Exnota access to a database or page in Notion'
           : 'Update the pages Exnota can access in Notion',
       contentChildren: [
@@ -247,8 +269,7 @@ class Instructions extends ConsumerWidget {
               width: 2.0,
             ),
           ),
-          child: const Image(
-              image: AssetImage('assets/images/notion-auth-animation.gif')),
+          child: Image(image: notionAnimation),
         ),
       ],
       buttonChildren: [
