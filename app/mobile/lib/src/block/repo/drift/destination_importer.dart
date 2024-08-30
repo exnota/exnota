@@ -49,6 +49,26 @@ class DestinationImporter extends _$DestinationImporter {
     }
   }
 
+  Future<BasicResponse<void>> importAll() async {
+    // Request all destinations
+    final request = ListAllDestinationsRequest();
+    final requestResult =
+        await ref.read(requestHandlerProvider.notifier).submitWrapped(
+              request: request,
+            );
+
+    // Import to database
+    switch (requestResult) {
+      case BasicResponseSuccess(:final result):
+        await _importAll(result);
+        ref.read(destinationListerProvider.notifier).refresh();
+        return const BasicResponse.success(result: null);
+      case BasicResponseError():
+        ref.read(destinationListerProvider.notifier).refresh();
+        return requestResult;
+    }
+  }
+
   // Does not catch errors
   Future<void> _import(RecordModel? record) async {
     if (record == null) {
@@ -95,5 +115,19 @@ class ListDestinationsForWorkspaceRequest
     return await pb
         .collection(collectionDestination)
         .getFullList(filter: '$destinationFieldWorkspace = "$workspaceId"');
+  }
+}
+
+class ListAllDestinationsRequest extends HandledRequest<List<RecordModel>> {
+  final Logger _log = Logger(context: 'ListAllDestinationsRequest');
+
+  ListAllDestinationsRequest();
+
+  @override
+  Future<List<RecordModel>> request(
+      {required PocketBase pb, required Ref ref}) async {
+    _log.debug('request: listing all destinations for the user');
+
+    return await pb.collection(collectionDestination).getFullList();
   }
 }

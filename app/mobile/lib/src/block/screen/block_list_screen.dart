@@ -1,3 +1,5 @@
+import 'package:exnota/src/block/repo/drift/destination_importer.dart';
+import 'package:exnota/src/block/repo/drift/workspace_importer.dart';
 import 'package:exnota/src/context/app/router.dart';
 import 'package:exnota/src/context/sync/connection_status.dart';
 import 'package:exnota/src/context/sync/import_request_queue.dart';
@@ -256,7 +258,12 @@ class BlockList extends ConsumerWidget {
       },
       data: (data) {
         return RefreshIndicator(
-          onRefresh: () async => print('refresh'),
+          onRefresh: () async {
+            await Future.wait([
+              ref.read(workspaceImporterProvider.notifier).import(),
+              ref.read(destinationImporterProvider.notifier).importAll(),
+            ]);
+          },
           child: ListView.builder(
             itemCount: data.length,
             itemBuilder: (context, index) {
