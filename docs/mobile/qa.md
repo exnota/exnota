@@ -10,7 +10,9 @@ Preparing:
    - Archive existing destinations, workspaces, integrations. In that order.
    - In the all, pull to refresh on the Voice Notes list screen. This will update its copies of the workspaces and destinations so it knows they are archived.
 
-2. Create 1 or more recordings before beginning. Confirm they are not exported to Notion.
+2. Create 1 or more recordings before beginning. Confirm:
+   - They are not exported to Notion.
+   - A 'Connect to Notion' card is shown on the notes list screen.
 
 a. Success steps:
 
