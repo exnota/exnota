@@ -27,6 +27,14 @@ class BlockRepo {
     return query.map(BlockRepoMapper.fromRepo).watch();
   }
 
+  Future<List<Block>> list({required String userId}) {
+    _log.debug('list starting for user $userId');
+    final query = db.select(db.blockTable)
+      ..where((tbl) => tbl.user.equals(userId));
+    query.orderBy([(row) => OrderingTerm.desc(row.userCreated)]);
+    return query.map(BlockRepoMapper.fromRepo).get();
+  }
+
   Future<void> upsert(Block block) async {
     await db.transaction(() async {
       final query = db.select(db.blockTable)
