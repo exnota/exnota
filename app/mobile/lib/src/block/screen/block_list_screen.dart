@@ -82,61 +82,27 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
           bottomNavigationBar: blocks.isNotEmpty && destination == null
               ? const NotionConnectCard()
               : null,
-          floatingActionButton: ButtonBar(
-            children: [
-              // FloatingActionButton(
-              //   onPressed: () async {
-              //     final cmd = CreateAudioBlockSyncCommand.createRunning(
-              //       data: CreateAudioBlockData(
-              //           userId: ref.read(activeUserIdSyncProvider)!,
-              //           userCreated: Clock().now(),
-              //           localFileId: 'local-file-id'),
-              //       userId: ref.read(activeUserIdSyncProvider)!,
-              //     );
-              //     final mutator = SyncCommandMutator(
-              //         container: ProviderScope.containerOf(context));
-              //     await mutator.createCommand(command: cmd);
-              //   },
-              //   child: const Icon(Icons.run_circle_outlined),
-              // ),
-              // FloatingActionButton(
-              //   onPressed: () {
-              //     ref.read(connectionStatusProvider.notifier).setUnauthenticated();
-              //   },
-              //   child: const Icon(Icons.logout),
-              // ),
-              if (!_recorder!.recording)
-                FloatingActionButton(
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
+          floatingActionButton: !_recorder!.recording
+              ? FloatingActionButton(
+                  shape: const CircleBorder(),
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: const Color(0xFF1A0000).withOpacity(0.8),
+                  child: const Icon(Icons.mic),
                   onPressed: () async {
                     await _recorder!.record();
                   },
-                  child: const Icon(Icons.mic),
-                ),
-              if (_recorder!.recording)
-                FloatingActionButton(
+                )
+              : FloatingActionButton(
+                  shape: const CircleBorder(),
                   backgroundColor: Colors.red,
+                  foregroundColor: const Color(0xFF1A0000).withOpacity(0.8),
+                  child: const Icon(Icons.stop),
                   onPressed: () async {
                     await _recorder!.stop();
                   },
-                  child: const Icon(Icons.stop),
                 ),
-              // FloatingActionButton(
-              //   onPressed: () {
-              //     // ref.read(connectionStatusProvider.notifier).setOffline();
-              //     // Add test requests
-              //     // ref.read(pocketBaseProvider).authStore.clear();
-              //     ref
-              //         .read(importRequestQueueProvider.notifier)
-              //         .addMultipleRequests([
-              //       ListNotesRequestOne(),
-              //       ListNotesRequestTwo(),
-              //     ]);
-              //   },
-              //   child: const Icon(Icons.add),
-              //   // child: const Icon(Icons.cloud_off),
-              // ),
-            ],
-          ),
           body: Column(
             children: [
               if (connStatus == ConnStatus.unauthenticated)
