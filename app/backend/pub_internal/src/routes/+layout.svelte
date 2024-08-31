@@ -29,7 +29,7 @@
 </header>
 <main class="container">
   <Alerts />
-  <h1>{metadata.headline ?? metadata.title}</h1>
+  <!-- <h1>{metadata.headline ?? metadata.title}</h1> -->
   {@render children()}
 </main>
 <footer class="container">
