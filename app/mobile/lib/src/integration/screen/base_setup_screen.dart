@@ -13,7 +13,7 @@ class BaseWidgetScaffold extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Setup Notion Connection',
+          'Connect to Notion',
           style: TextStyle(fontSize: 16),
         ),
         automaticallyImplyLeading: false,
