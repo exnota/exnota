@@ -86,7 +86,7 @@
       const blocks = await client
         .collection("block")
         .getFullList<BlockResponse>({
-          filter: `user = "${userId}"`,
+          filter: `user = "${userId}" && archived = null`,
         });
       alerts.success(`Archiving ${blocks.length} blocks...`);
       blocks.forEach(async (block) => {
@@ -107,7 +107,7 @@
       const destinations = await client
         .collection("destination")
         .getFullList<DestinationResponse>({
-          filter: `user = "${userId}"`,
+          filter: `user = "${userId}" && archived = null`,
         });
 
       alerts.success(`Archiving ${destinations.length} destinations...`);
@@ -127,7 +127,7 @@
   async function archiveUserWorkspaces(): Promise<boolean> {
     try {
       const workspaces = await client.collection("workspace").getFullList({
-        filter: `user = "${userId}"`,
+        filter: `user = "${userId}" && archived = null`,
       });
 
       alerts.success(`Archiving ${workspaces.length} workspaces...`);
@@ -148,7 +148,7 @@
   async function archiveUserIntegrations(): Promise<boolean> {
     try {
       const integrations = await client.collection("integration").getFullList({
-        filter: `user = "${userId}"`,
+        filter: `user = "${userId}" && archived = null`,
       });
 
       alerts.success(`Archiving ${integrations.length} integrations...`);
