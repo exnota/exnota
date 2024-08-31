@@ -22,7 +22,7 @@
 
 <header class="container">
   <a href={`${base}/`} class="logo">
-    <img src={`${base}/favicon.svg`} alt="application logo" />
+    <img src={`${base}/favicon.png`} alt="application logo" />
   </a>
   <Nav />
   <LoginBadge signupAllowed={config.signupAllowed} />

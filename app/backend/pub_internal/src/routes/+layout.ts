@@ -18,7 +18,7 @@ export const load: LayoutLoad = async ({ fetch }) => {
     title: string;
     headline?: string;
   };
-  const title = "Untitled";
+  const title = "Internal - Exnota";
   const metadata: Metadata = {
     title,
   };
