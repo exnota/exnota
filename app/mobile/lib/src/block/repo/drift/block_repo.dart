@@ -22,7 +22,8 @@ class BlockRepo {
   Stream<List<Block>> listWatch({required String userId}) {
     _log.debug('listWatch starting for user $userId');
     final query = db.select(db.blockTable)
-      ..where((tbl) => tbl.user.equals(userId));
+      ..where((tbl) => tbl.user.equals(userId))
+      ..where((tbl) => tbl.archived.isNull());
     query.orderBy([(row) => OrderingTerm.desc(row.userCreated)]);
     return query.map(BlockRepoMapper.fromRepo).watch();
   }
@@ -30,7 +31,8 @@ class BlockRepo {
   Future<List<Block>> list({required String userId}) {
     _log.debug('list starting for user $userId');
     final query = db.select(db.blockTable)
-      ..where((tbl) => tbl.user.equals(userId));
+      ..where((tbl) => tbl.user.equals(userId))
+      ..where((tbl) => tbl.archived.isNull());
     query.orderBy([(row) => OrderingTerm.desc(row.userCreated)]);
     return query.map(BlockRepoMapper.fromRepo).get();
   }
@@ -61,7 +63,8 @@ class BlockRepo {
   Future<List<Block>> listWithoutDestination({required String userId}) async {
     final query = db.select(db.blockTable)
       ..where((tbl) => tbl.user.equals(userId))
-      ..where((tbl) => tbl.destination.isNull() | tbl.destination.equals(''));
+      ..where((tbl) => tbl.destination.isNull() | tbl.destination.equals(''))
+      ..where((tbl) => tbl.archived.isNull());
     return await query.map(BlockRepoMapper.fromRepo).get();
   }
 }

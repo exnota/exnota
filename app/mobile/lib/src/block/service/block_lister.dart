@@ -28,6 +28,11 @@ class BlockAndStatus with _$BlockAndStatus {
   }) = _BlockAndStatus;
 }
 
+// Base listers
+//
+// These fetch directly from the database and, if they are not streaming from
+// the database, may need to be refreshed if the database changes.
+
 @riverpod
 Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
   final log = ref.watch(loggerProvider('BlockLister'));
@@ -95,15 +100,48 @@ Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
 }
 
 @riverpod
-Future<List<Block>> blocks(BlocksRef ref) async {
-  final log = ref.watch(loggerProvider('Blocks'));
-  log.debug('Getting blocks');
+class Blocks extends _$Blocks {
+  @override
+  Future<List<Block>> build() async {
+    final log = ref.watch(loggerProvider('Blocks'));
+    log.debug('Getting blocks');
 
-  final userId = ref.watch(activeUserIdOrThrowSyncProvider);
-  final blockRepo = ref.watch(blockRepoProvider);
-  final blocks = await blockRepo.list(userId: userId);
-  return blocks;
+    final userId = ref.watch(activeUserIdOrThrowSyncProvider);
+    final blockRepo = ref.watch(blockRepoProvider);
+    final blocks = await blockRepo.list(userId: userId);
+    return blocks;
+  }
+
+  @Deprecated(
+      'Migrate refresh logic to repos. See comment on BlockListerRefresh.')
+  void refresh() {
+    ref.invalidateSelf();
+  }
 }
+
+@riverpod
+class BlocksWithoutDestination extends _$BlocksWithoutDestination {
+  @override
+  Future<List<Block>> build() async {
+    final log = ref.watch(loggerProvider('BlocksWithoutDestination'));
+    log.debug('Getting blocks without destination');
+
+    final userId = ref.watch(activeUserIdOrThrowSyncProvider);
+    final blockRepo = ref.watch(blockRepoProvider);
+    final blocks = await blockRepo.listWithoutDestination(userId: userId);
+    return blocks;
+  }
+
+  @Deprecated(
+      'Migrate refresh logic to repos. See comment on BlockListerRefresh.')
+  void refresh() {
+    ref.invalidateSelf();
+  }
+}
+
+// Derived listers
+//
+// Don't refresh these directly. Refresh the base listers.
 
 @riverpod
 List<Block> blocksLazy(BlocksLazyRef ref) {
@@ -111,14 +149,35 @@ List<Block> blocksLazy(BlocksLazyRef ref) {
   return blocks ?? [];
 }
 
-@riverpod
-Future<List<Block>> blocksWithoutDestination(
-    BlocksWithoutDestinationRef ref) async {
-  final log = ref.watch(loggerProvider('BlocksWithoutDestination'));
-  log.debug('Getting blocks without destination');
+// Helpers
 
-  final userId = ref.watch(activeUserIdOrThrowSyncProvider);
-  final blockRepo = ref.watch(blockRepoProvider);
-  final blocks = await blockRepo.listWithoutDestination(userId: userId);
-  return blocks;
+@riverpod
+class BlockListerRefresh extends _$BlockListerRefresh {
+  @override
+  void build() {
+    ref.invalidate(blockListerProvider);
+  }
+
+  // Refreshes all block lister providers.
+  //
+  // It feels messy having block importers, etc. refresh the listers directly.
+  //
+  // A better way to do this might be:
+  // - Refactor repos to class-based providers, and create methods on them.
+  // - The methods create a class instance of the repos and call them. This
+  //   reduces the coupling with providers, but enables notifying in the next
+  //   steps. E.g. blockRepoProvider.upsert() creates BlockRepo() and calls
+  //   repo.upsert(), where the logic actually is.
+  // - Each repo provider method also calls ref.notifyListeners().
+  // - This should update every lister provider.
+  // - And means that block_importer making repo changes results in block
+  //   listers automatically refreshing.
+  @Deprecated(
+      'Migrate refresh logic to repos. See comment on BlockListerRefresh.')
+  void refreshAll() {
+    // blockListerProvider streams from the database so shouldn't need to be
+    // refreshed.
+    ref.read(blocksProvider.notifier).refresh();
+    ref.read(blocksWithoutDestinationProvider.notifier).refresh();
+  }
 }

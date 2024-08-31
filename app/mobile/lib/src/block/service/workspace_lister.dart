@@ -20,6 +20,8 @@ class WorkspaceLister extends _$WorkspaceLister {
     return await repo.listUnarchived(userId: activeUserId);
   }
 
+  @Deprecated(
+      'Migrate refresh logic to repos. See comment on BlockListerRefresh.')
   void refresh() {
     ref.invalidateSelf();
   }

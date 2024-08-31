@@ -60,6 +60,8 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
 
     final blocks = ref.watch(blocksLazyProvider);
     final destination = ref.watch(activeDestinationLazyProvider);
+    final empty = blocks.isEmpty;
+    final showNotionCard = !empty && destination == null;
 
     return ListenableBuilder(
       listenable: _recorder!,
@@ -79,140 +81,210 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
               ),
             ],
           ),
-          bottomNavigationBar: blocks.isNotEmpty && destination == null
-              ? const NotionConnectCard()
-              : null,
+          bottomNavigationBar:
+              showNotionCard ? const NotionConnectCard() : null,
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerFloat,
-          floatingActionButton: !_recorder!.recording
-              ? FloatingActionButton(
-                  shape: const CircleBorder(),
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: const Color(0xFF1A0000).withOpacity(0.8),
-                  child: const Icon(Icons.mic),
-                  onPressed: () async {
-                    await _recorder!.record();
-                  },
-                )
-              : FloatingActionButton(
-                  shape: const CircleBorder(),
-                  backgroundColor: Colors.red,
-                  foregroundColor: const Color(0xFF1A0000).withOpacity(0.8),
-                  child: const Icon(Icons.stop),
-                  onPressed: () async {
-                    await _recorder!.stop();
-                  },
-                ),
+          floatingActionButton:
+              empty ? null : RecordingButton(recorder: _recorder),
           body: Column(
             children: [
-              if (connStatus == ConnStatus.unauthenticated)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).secondaryHeaderColor,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.cloud_off_outlined),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        'You need to sign in again.',
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      FilledButton.tonal(
-                          onPressed: () {
-                            ref
-                                .read(userContextServiceSyncProvider.notifier)
-                                .logout();
-                          },
-                          child: const Text('Sign in')),
-                    ],
-                  ),
-                )
-              else if (hasUnexpectedError)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).secondaryHeaderColor,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.cloud_off_outlined),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        'Unable to sync.',
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      FilledButton.tonal(
-                          onPressed: () {
-                            ref
-                                .read(importRequestQueueProvider.notifier)
-                                .retry();
-                          },
-                          child: const Text('Retry')),
-                    ],
-                  ),
-                )
-              else if (connStatus == ConnStatus.offline)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).secondaryHeaderColor,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.cloud_off_outlined),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        'Offline',
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      FilledButton.tonal(
-                        onPressed: () {
-                          ref
-                              .read(connectionStatusProvider.notifier)
-                              .setUserRetry();
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              else if (connStatus == ConnStatus.userRetry)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).secondaryHeaderColor,
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        'Retrying',
-                      )
-                    ],
-                  ),
-                ),
-              const Expanded(child: BlockList()),
+              Notice(
+                  connStatus: connStatus,
+                  ref: ref,
+                  hasUnexpectedError: hasUnexpectedError),
+              Expanded(
+                  child: empty
+                      ? FirstRecording(
+                          recorder: _recorder,
+                        )
+                      : const BlockList()),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class Notice extends StatelessWidget {
+  const Notice({
+    super.key,
+    required this.connStatus,
+    required this.ref,
+    required this.hasUnexpectedError,
+  });
+
+  final ConnStatus connStatus;
+  final WidgetRef ref;
+  final bool hasUnexpectedError;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (connStatus == ConnStatus.unauthenticated)
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).secondaryHeaderColor,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_outlined),
+                const SizedBox(
+                  width: 10,
+                ),
+                const Text(
+                  'You need to sign in again.',
+                ),
+                const SizedBox(
+                  width: 10,
+                ),
+                FilledButton.tonal(
+                    onPressed: () {
+                      ref
+                          .read(userContextServiceSyncProvider.notifier)
+                          .logout();
+                    },
+                    child: const Text('Sign in')),
+              ],
+            ),
+          )
+        else if (hasUnexpectedError)
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).secondaryHeaderColor,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_outlined),
+                const SizedBox(
+                  width: 10,
+                ),
+                const Text(
+                  'Unable to sync.',
+                ),
+                const SizedBox(
+                  width: 10,
+                ),
+                FilledButton.tonal(
+                    onPressed: () {
+                      ref.read(importRequestQueueProvider.notifier).retry();
+                    },
+                    child: const Text('Retry')),
+              ],
+            ),
+          )
+        else if (connStatus == ConnStatus.offline)
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).secondaryHeaderColor,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_outlined),
+                const SizedBox(
+                  width: 10,
+                ),
+                const Text(
+                  'Offline',
+                ),
+                const SizedBox(
+                  width: 10,
+                ),
+                FilledButton.tonal(
+                  onPressed: () {
+                    ref.read(connectionStatusProvider.notifier).setUserRetry();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          )
+        else if (connStatus == ConnStatus.userRetry)
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).secondaryHeaderColor,
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(
+                  width: 10,
+                ),
+                Text(
+                  'Retrying',
+                )
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class RecordingButton extends StatelessWidget {
+  const RecordingButton({
+    super.key,
+    required AudioBlockRecorder? recorder,
+  }) : _recorder = recorder;
+
+  final AudioBlockRecorder? _recorder;
+
+  @override
+  Widget build(BuildContext context) {
+    return !_recorder!.recording
+        ? FloatingActionButton(
+            shape: const CircleBorder(),
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
+            child: const Icon(Icons.mic),
+            onPressed: () async {
+              await _recorder!.record();
+            },
+          )
+        : FloatingActionButton(
+            shape: const CircleBorder(),
+            backgroundColor: Colors.red,
+            foregroundColor: const Color(0xFF1A0000).withOpacity(0.8),
+            child: const Icon(Icons.stop),
+            onPressed: () async {
+              await _recorder!.stop();
+            },
+          );
+  }
+}
+
+class FirstRecording extends StatelessWidget {
+  final AudioBlockRecorder? _recorder;
+
+  const FirstRecording({
+    super.key,
+    required AudioBlockRecorder? recorder,
+  }) : _recorder = recorder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Record your first \nvoice note!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 20),
+          RecordingButton(recorder: _recorder),
+        ],
+      ),
     );
   }
 }

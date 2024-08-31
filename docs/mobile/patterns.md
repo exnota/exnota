@@ -16,9 +16,13 @@ Use ref.listen in a wrapper widget:
 * [Provider example, pre-Riverpod](https://github.com/rrousselGit/riverpod/issues/238#issuecomment-743776522).
 * [Riverpod example with ref.listen](https://github.com/rrousselGit/riverpod/discussions/562#discussion-3442349)
 
-### Create `refresh` methods
+### ~~Create `refresh` methods~~
 
-This makes it more explicit where consumers may be refreshing a providers state.
+If this is about needing database changes to propagate to providers reading from
+them, see comment on BlockListerRefresh. This is a better pattern we should move
+to.
+
+~~This makes it more explicit where consumers may be refreshing a providers state.~~
 
 E.g.
 
