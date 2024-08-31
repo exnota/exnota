@@ -1,3 +1,4 @@
+import 'package:exnota/src/block/service/block_lister.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:exnota/src/block/block.dart';
 import 'package:exnota/src/block/repo/drift/block_repo.dart';
@@ -20,6 +21,7 @@ class BlockImporter extends _$BlockImporter {
     try {
       _log.debug('Upserting block ${block.id}');
       await repo.upsert(block);
+      ref.read(blockListerRefreshProvider.notifier).refreshAll();
     } catch (e) {
       _log.error('Error importing block ${block.id}', exception: e);
     }
@@ -34,7 +36,8 @@ class BlockImporter extends _$BlockImporter {
     try {
       final block = Block.fromRecord(record);
 
-      return import(block: block);
+      await import(block: block);
+      ref.read(blockListerRefreshProvider.notifier).refreshAll();
     } catch (e) {
       _log.error('Error mapping block record ${record.id}', exception: e);
     }

@@ -23,6 +23,8 @@ class DestinationLister extends _$DestinationLister {
     return await repo.listForWorkspace(workspaceId: workspace.id);
   }
 
+  @Deprecated(
+      'Migrate refresh logic to repos. See comment on BlockListerRefresh.')
   void refresh() {
     ref.invalidateSelf();
   }
