@@ -27,6 +27,7 @@ class BlockListScreen extends ConsumerStatefulWidget {
 class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   final Logger _log = Logger(context: 'BlockListScreen');
   AudioBlockRecorder? _recorder;
+  bool showNotionCard = false; // Declare and initialize the variable
 
   // init
   @override
@@ -57,11 +58,33 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
     final connStatus = ref.watch(connectionStatusProvider);
     final hasUnexpectedError =
         ref.watch(importRequestQueueUnexpectedErrorProvider);
-
     final blocks = ref.watch(blocksLazyProvider);
     final destination = ref.watch(activeDestinationLazyProvider);
     final empty = blocks.isEmpty;
-    final showNotionCard = !empty && destination == null;
+    ref.listen(blocksLazyProvider, (previous, next) {
+      // Show Notion card after the user has done their first recording and it has
+      // received a title. We want their eye drawn to the block card first, and
+      // later to the Notion card.
+      if (destination == null &&
+          (previous == null ||
+              previous.isEmpty ||
+              previous.first.title == null ||
+              previous.first.title!.isEmpty) &&
+          next.isNotEmpty &&
+          next.first.title != null &&
+          next.first.title!.isNotEmpty) {
+        // Set 2 second timer, then set state value: showNotionCard = true
+        Future.delayed(const Duration(seconds: 2), () {
+          setState(() {
+            showNotionCard = true;
+          });
+        });
+      } else if (destination != null) {
+        setState(() {
+          showNotionCard = false;
+        });
+      }
+    });
 
     return ListenableBuilder(
       listenable: _recorder!,
@@ -259,7 +282,7 @@ class RecordingButton extends StatelessWidget {
   }
 }
 
-class FirstRecording extends StatelessWidget {
+class FirstRecording extends ConsumerWidget {
   final AudioBlockRecorder? _recorder;
 
   const FirstRecording({
@@ -268,22 +291,36 @@ class FirstRecording extends StatelessWidget {
   }) : _recorder = recorder;
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Record your first \nvoice note!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[800],
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([
+          ref.read(workspaceImporterProvider.notifier).import(),
+          ref.read(destinationImporterProvider.notifier).importAll(),
+        ]);
+      },
+      child: Center(
+        child: SingleChildScrollView(
+          // This is needed to allow pulling to refresh
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Record your first \nvoice note!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                RecordingButton(recorder: _recorder),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-          RecordingButton(recorder: _recorder),
-        ],
+        ),
       ),
     );
   }

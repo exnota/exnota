@@ -977,9 +977,9 @@ class SetupDestinationScreenController
   }
 
   Future<void> checkBlocksWithoutDestination() async {
+    _log.debug('checkBlocksWithoutDestination: Start');
     final blocks = await ref.read(blocksWithoutDestinationProvider.future);
 
-    _log.debug('checkBlocksWithoutDestination: Success');
     if (blocks.isEmpty) {
       _log.debug(
           'checkBlocksWithoutDestination: No blocks without destination');

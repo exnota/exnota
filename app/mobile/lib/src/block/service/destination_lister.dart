@@ -34,7 +34,7 @@ class DestinationLister extends _$DestinationLister {
 Future<Destination?> activeDestination(ActiveDestinationRef ref) async {
   final destinations = await ref.watch(destinationListerProvider.future);
   if (destinations.isEmpty) {
-    return Future.value(null);
+    return null;
   }
 
   return destinations.first;
