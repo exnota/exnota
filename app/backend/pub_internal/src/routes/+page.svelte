@@ -38,7 +38,7 @@
 
     switch (shouldArchiveUserIntegration) {
       case "full":
-        let success = await archiveUserDestinations();
+        success = await archiveUserDestinations();
         if (!success) {
           archiveUserDataInProgress = false;
           return;
@@ -78,7 +78,7 @@
         break;
     }
 
-    shouldArchiveUserBlocks = false;
+    archiveUserDataInProgress = false;
   }
 
   async function archiveUserBlocks(): Promise<boolean> {
@@ -209,7 +209,9 @@
 
   <br /><br />
 
-  <button type="submit" disabled={userId === ""}>Archive!</button>
+  <button type="submit" disabled={userId === "" && !archiveUserDataInProgress}
+    >Archive!</button
+  >
 </form>
 <br />
 <hr />
