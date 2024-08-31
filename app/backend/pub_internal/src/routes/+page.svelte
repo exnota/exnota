@@ -13,7 +13,7 @@
   $effect(() => {
     // you could set the metadata either here or in +page.ts
     data.metadata.title = "Home";
-    data.metadata.headline = `Welcome to ${data.config.site?.name}`;
+    data.metadata.headline = `Exnota Internal`;
   });
 
   let userId = $state("");
@@ -27,8 +27,9 @@
     event.preventDefault();
     archiveUserDataInProgress = true;
 
+    let success = true;
     if (shouldArchiveUserBlocks) {
-      let success = await archiveUserBlocks();
+      success = await archiveUserBlocks();
       if (!success) {
         archiveUserDataInProgress = false;
         return;
@@ -76,6 +77,8 @@
         }
         break;
     }
+
+    shouldArchiveUserBlocks = false;
   }
 
   async function archiveUserBlocks(): Promise<boolean> {

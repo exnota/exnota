@@ -18,42 +18,10 @@ export const load: LayoutLoad = async ({ fetch }) => {
     title: string;
     headline?: string;
   };
-  let config: {
-    site: {
-      name: string;
-      copyright: string;
-      year: number;
-    };
-    signupAllowed: boolean;
-  } = {} as any;
   const title = "Untitled";
   const metadata: Metadata = {
     title,
   };
-
-  
-  try {
-    const response = await fetch(client.baseUrl + "/_/");
-    if (response.redirected) {
-      alerts.add({
-        message:
-          'Please visit <a href="/_/">/_</a> to finalize installation of PocketBase',
-        type: "error",
-        html: true,
-      });
-    }
-
-    config = await client.send("/api/config", { fetch, requestKey: "config" });
-  } catch (e: any) {
-    alerts.error(e.toString());
-  }
-
-  let blocks: BlockResponse[] = [];
-  try {
-     blocks = await client.collection("block").getFullList<BlockResponse>();
-  } catch (e: any) {
-    alerts.error(e.toString());
-  }
 
   // users
   let users: UserResponse[] = [];
@@ -66,8 +34,6 @@ export const load: LayoutLoad = async ({ fetch }) => {
   }
 
   return {
-    blocks,
-    config,
     metadata,
     users,
   };
