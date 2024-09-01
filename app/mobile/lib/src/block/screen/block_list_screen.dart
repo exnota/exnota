@@ -8,14 +8,15 @@ import 'package:exnota/src/context/user/pocketbase.dart';
 import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/audio/audio_block_recorder.dart';
 import 'package:exnota/src/lib/log/logger.dart';
-import 'package:exnota/src/block/block.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exnota/src/block/service/block_lister.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:pocketbase/pocketbase.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:timeago_flutter/timeago_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 
 class BlockListScreen extends ConsumerStatefulWidget {
   const BlockListScreen({super.key});
@@ -350,27 +351,28 @@ class BlockList extends ConsumerWidget {
             itemCount: data.length,
             itemBuilder: (context, index) {
               final block = data[index].block;
-              return ListTile(
-                key: ValueKey(block.id),
-                leading: switch (data[index].status) {
-                  BlockStatus.waiting => const Icon(Icons.hourglass_empty),
-                  BlockStatus.syncing || BlockStatus.transcribing => SizedBox(
-                      height: 20.0, // This is the default size of an Icon
-                      width: 20.0, // This is the default size of an Icon
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: IconTheme.of(context).color,
-                      ),
-                    ),
-                  // TODO: This should also be a progress indicator once export
-                  // to notion is implemented.
-                  BlockStatus.synced ||
-                  BlockStatus.exported =>
-                    const Icon(Icons.check),
-                  BlockStatus.error => const Icon(Icons.error),
-                  BlockStatus.unknown => const Icon(Icons.question_mark),
-                },
-                title: Text(_title(block)),
+              final status = data[index].status;
+
+              final ListBlockStatus exportStatus;
+              switch (status) {
+                case BlockStatus.waiting:
+                  exportStatus = ListBlockStatus.device;
+                case BlockStatus.syncing:
+                case BlockStatus.synced:
+                case BlockStatus.transcribing:
+                case BlockStatus.error:
+                case BlockStatus.unknown:
+                  exportStatus = ListBlockStatus.synced;
+                case BlockStatus.exported:
+                  exportStatus = ListBlockStatus.exported;
+              }
+
+              return VoiceNoteListItem(
+                status: exportStatus,
+                userCreated: block.userCreated,
+                title: block.title ?? '',
+                transcription: block.audio?.transcription?.join(' ') ?? '',
+                exportUrl: block.external?.url,
               );
             },
           ),
@@ -378,17 +380,191 @@ class BlockList extends ConsumerWidget {
       },
     );
   }
+}
 
-  String _title(Block block) {
-    if (block.title?.isNotEmpty ?? false) {
-      return block.title!;
+enum ListBlockStatus { device, synced, exported }
+
+class VoiceNoteListItem extends ConsumerWidget {
+  final String title;
+  final String transcription;
+  final DateTime userCreated;
+  final ListBlockStatus status;
+  final String? exportUrl;
+
+  const VoiceNoteListItem({
+    Key? key,
+    required this.title,
+    required this.transcription,
+    required this.userCreated,
+    required this.status,
+    required this.exportUrl,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final connStatus = ref.watch(connectionStatusProvider);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: title.isNotEmpty
+                      ? Text(
+                          title,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87),
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Shimmer.fromColors(
+                            baseColor: Colors.grey.shade300,
+                            highlightColor: Colors.grey.shade100,
+                            enabled: true,
+                            child: const TitlePlaceholder(height: 16),
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 8),
+                ListBlockStatusIcon(
+                    status: status,
+                    exportUrl: exportUrl,
+                    connStatus: connStatus),
+              ],
+            ),
+            const SizedBox(height: 8),
+            transcription.isNotEmpty
+                ? Text(
+                    transcription,
+                    style: const TextStyle(color: Colors.black54),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : Shimmer.fromColors(
+                    baseColor: Colors.grey.shade300,
+                    highlightColor: Colors.grey.shade100,
+                    enabled: true,
+                    child: const TitlePlaceholder(height: 13, rows: 2),
+                  ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Timeago(
+                builder: (_, value) => Text(value,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                date: userCreated,
+                allowFromNow: true,
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TitlePlaceholder extends StatelessWidget {
+  // final double width;
+  final double height;
+  final int rows;
+
+  const TitlePlaceholder({
+    Key? key,
+    // required this.width,
+    required this.height,
+    this.rows = 1,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List.generate(rows, (index) {
+        return Column(
+          children: [
+            Container(
+              width: double.infinity,
+              height: height,
+              color: Colors.white,
+            ),
+            if (index < rows - 1) const SizedBox(height: 8.0),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+class ListBlockStatusIcon extends StatelessWidget {
+  const ListBlockStatusIcon({
+    super.key,
+    required this.status,
+    required this.exportUrl,
+    required this.connStatus,
+  });
+
+  final ListBlockStatus status;
+  final String? exportUrl;
+  final ConnStatus connStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    // This handles the case where a block gets stuck in BlockStatus.syncing
+    // status, which I believe happens when attempting to record when offline
+    // but before the app knows its offline. It starts the sync attempt and then
+    // just stays in that state.
+    //
+    // Whereas a recording that is created after the app knows it's offline will
+    // stay in BlockStatus.waiting status.
+
+    switch (status) {
+      case ListBlockStatus.device:
+        // Same as offline status above
+        return Icon(Icons.cloud_off, color: Theme.of(context).primaryColor);
+      case ListBlockStatus.synced:
+        if (connStatus == ConnStatus.offline) {
+          return Icon(Icons.cloud_off, color: Theme.of(context).primaryColor);
+        }
+        return SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor:
+                AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+          ),
+        );
+      case ListBlockStatus.exported:
+        return GestureDetector(
+          onTap: () {
+            launchUrl(Uri.parse(exportUrl!));
+          },
+          child: Icon(Icons.open_in_new, color: Theme.of(context).primaryColor),
+        );
+      default:
+        return const SizedBox();
     }
-
-    if (block.audio?.transcription?.isNotEmpty ?? false) {
-      return block.audio!.transcription!.join(' ');
-    }
-
-    return 'Syncing... (created ${DateFormat('yyyy-MM-dd H:m:s').format(block.userCreated)})';
   }
 }
 
