@@ -61,7 +61,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
         ref.watch(importRequestQueueUnexpectedErrorProvider);
     final blocks = ref.watch(blocksLazyProvider);
     final destinationAsync = ref.watch(activeDestinationProvider);
-    final destination = destinationAsync.value;
+    final destination = destinationAsync.valueOrNull;
     destinationAsync.when(
         data: (d) {
           setState(() {
@@ -437,6 +437,7 @@ class BlockList extends ConsumerWidget {
                 case BlockStatus.unknown:
                   exportStatus = ListBlockStatus.synced;
                 case BlockStatus.exported:
+                case BlockStatus.imported:
                   exportStatus = ListBlockStatus.exported;
               }
 

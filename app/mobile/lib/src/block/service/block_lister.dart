@@ -18,6 +18,7 @@ enum BlockStatus {
   exported,
   error,
   unknown,
+  imported, // Has no local sync command
 }
 
 @freezed
@@ -82,7 +83,7 @@ Stream<List<BlockAndStatus>> blockLister(BlockListerRef ref) {
   final blockRepo = ref.watch(blockRepoProvider);
   final blocks = blockRepo.listWatch(userId: userId).map((blocks) {
     return blocks.map((block) {
-      BlockStatus status = syncStatuses[block.id] ?? BlockStatus.unknown;
+      BlockStatus status = syncStatuses[block.id] ?? BlockStatus.imported;
 
       if (status == BlockStatus.synced) {
         if (block.type == BlockType.voiceNote &&
