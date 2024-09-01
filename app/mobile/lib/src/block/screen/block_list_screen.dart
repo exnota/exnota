@@ -29,6 +29,7 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
   final Logger _log = Logger(context: 'BlockListScreen');
   AudioBlockRecorder? _recorder;
   bool showNotionCard = false; // Declare and initialize the variable
+  bool hasInitiallyLoadedDestination = false;
 
   // init
   @override
@@ -60,13 +61,24 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
     final hasUnexpectedError =
         ref.watch(importRequestQueueUnexpectedErrorProvider);
     final blocks = ref.watch(blocksLazyProvider);
-    final destination = ref.watch(activeDestinationLazyProvider);
+    final destinationAsync = ref.watch(activeDestinationProvider);
+    final destination = destinationAsync.value;
+    destinationAsync.when(
+        data: (d) {
+          setState(() {
+            hasInitiallyLoadedDestination = true;
+          });
+        },
+        error: (Object error, StackTrace stackTrace) {},
+        loading: () {});
+
     final empty = blocks.isEmpty;
     ref.listen(blocksLazyProvider, (previous, next) {
       // Show Notion card after the user has done their first recording and it has
       // received a title. We want their eye drawn to the block card first, and
       // later to the Notion card.
-      if (destination == null &&
+      if (hasInitiallyLoadedDestination &&
+          destination == null &&
           (previous == null ||
               previous.isEmpty ||
               previous.first.title == null ||
@@ -92,7 +104,36 @@ class _BlockListScreenState extends ConsumerState<BlockListScreen> {
       builder: (context, widget) {
         return Scaffold(
           appBar: AppBar(
-            title: Text(AppLocalizations.of(context)!.note_list_title),
+            titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontSize: 16,
+                ),
+            title: Row(
+              // crossAxisAlignment: CrossAxisAlignment.center,
+              // mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Invert the color
+                ColorFiltered(
+                  colorFilter: const ColorFilter.matrix(
+                    <double>[
+                      -1, 0, 0, 0, 255, // Red
+                      0, -1, 0, 0, 255, // Green
+                      0, 0, -1, 0, 255, // Blue
+                      0, 0, 0, 1, 0, // Alpha
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Image.asset(
+                      'assets/images/exnota.png',
+                      width: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Text('Voice Notes'),
+              ],
+            ),
             actions: [
               IconButton(
                 onPressed: () {
@@ -441,7 +482,7 @@ class VoiceNoteListItem extends ConsumerWidget {
                             baseColor: Colors.grey.shade300,
                             highlightColor: Colors.grey.shade100,
                             enabled: true,
-                            child: const TitlePlaceholder(height: 16),
+                            child: const TitlePlaceholder(height: 18),
                           ),
                         ),
                 ),
@@ -460,11 +501,14 @@ class VoiceNoteListItem extends ConsumerWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   )
-                : Shimmer.fromColors(
-                    baseColor: Colors.grey.shade300,
-                    highlightColor: Colors.grey.shade100,
-                    enabled: true,
-                    child: const TitlePlaceholder(height: 13, rows: 2),
+                : Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 4),
+                    child: Shimmer.fromColors(
+                      baseColor: Colors.grey.shade300,
+                      highlightColor: Colors.grey.shade100,
+                      enabled: true,
+                      child: const TitlePlaceholder(height: 13, rows: 2),
+                    ),
                   ),
             const SizedBox(height: 8),
             Align(
