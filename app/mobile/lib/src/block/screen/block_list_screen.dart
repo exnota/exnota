@@ -9,7 +9,6 @@ import 'package:exnota/src/context/user/user_context.dart';
 import 'package:exnota/src/lib/audio/audio_block_recorder.dart';
 import 'package:exnota/src/lib/log/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exnota/src/block/service/block_lister.dart';
 import 'package:go_router/go_router.dart';
@@ -190,101 +189,134 @@ class Notice extends StatelessWidget {
       children: [
         if (connStatus == ConnStatus.unauthenticated)
           Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).secondaryHeaderColor,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: Color(0xFFf9f029),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.cloud_off_outlined),
-                const SizedBox(
-                  width: 10,
-                ),
-                const Text(
-                  'You need to sign in again.',
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                FilledButton.tonal(
-                    onPressed: () {
-                      ref
-                          .read(userContextServiceSyncProvider.notifier)
-                          .logout();
-                    },
-                    child: const Text('Sign in')),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.only(left: 32, right: 32),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.cloud_off_outlined),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        'You\'ve been logged out.',
+                      ),
+                      SizedBox(
+                        width: 10,
+                      ),
+                    ],
+                  ),
+                  OutlinedButton(
+                      onPressed: () {
+                        ref
+                            .read(userContextServiceSyncProvider.notifier)
+                            .logout();
+                      },
+                      child: const Text('Sign in')),
+                ],
+              ),
             ),
           )
         else if (hasUnexpectedError)
           Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).secondaryHeaderColor,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: Color(0xFFf9f029),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.cloud_off_outlined),
-                const SizedBox(
-                  width: 10,
-                ),
-                const Text(
-                  'Unable to sync.',
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                FilledButton.tonal(
-                    onPressed: () {
-                      ref.read(importRequestQueueProvider.notifier).retry();
-                    },
-                    child: const Text('Retry')),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.only(left: 32, right: 32),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.cloud_off_outlined),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        'Unable to sync.',
+                      ),
+                      SizedBox(
+                        width: 10,
+                      ),
+                    ],
+                  ),
+                  OutlinedButton(
+                      onPressed: () {
+                        ref.read(importRequestQueueProvider.notifier).retry();
+                      },
+                      child: const Text('Retry')),
+                ],
+              ),
             ),
           )
         else if (connStatus == ConnStatus.offline)
           Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).secondaryHeaderColor,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: Color(0xFFf9f029),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.cloud_off_outlined),
-                const SizedBox(
-                  width: 10,
-                ),
-                const Text(
-                  'Offline',
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                FilledButton.tonal(
-                  onPressed: () {
-                    ref.read(connectionStatusProvider.notifier).setUserRetry();
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.only(left: 32, right: 32),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.cloud_off_outlined),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        'Offline',
+                      ),
+                      SizedBox(
+                        width: 10,
+                      ),
+                    ],
+                  ),
+                  OutlinedButton(
+                    onPressed: () {
+                      ref
+                          .read(connectionStatusProvider.notifier)
+                          .setUserRetry();
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
             ),
           )
         else if (connStatus == ConnStatus.userRetry)
           Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).secondaryHeaderColor,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: Color(0xFFf9f029),
             ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(
-                  width: 10,
-                ),
-                Text(
-                  'Retrying',
-                )
-              ],
+            child: const Padding(
+              padding: EdgeInsets.only(left: 32, right: 32),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Retrying',
+                  ),
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
       ],
