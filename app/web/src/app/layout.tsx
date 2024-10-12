@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import "@mantine/core/styles.css";
 
 import { MantineProvider, ColorSchemeScript } from "@mantine/core";
-import { useEffect } from "react";
 import { MailchimpConnect } from "@exnota-web/app/components/MailchimpConnect";
 
 export const metadata: Metadata = {
