@@ -230,6 +230,10 @@ class CreateAudioRequest extends HandledRequest<Block> {
   Future<Block> request({required PocketBase pb, required Ref ref}) async {
     _log.debug('Request: Start');
     _log.debug('Request: Creating multipart file');
+
+    // TODO: If the file no longer exists, this will throw and is currently
+    // unrecoverable. If the file doesn't exist there's essentially nothing to
+    // do so it's probably best to have a way to delete this.
     final multipartFile = await http.MultipartFile.fromPath(
       'file', // the name of the file field
       recording.path,

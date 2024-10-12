@@ -460,13 +460,20 @@ whisper-1
 Content-Disposition: form-data; name="prompt"
 Content-Type: application/json
 
-The transcript may contain a request to be tagged, or begin with "tag: <tags>". The possible tags are: Goals, Family, Finance, Health, Nifty Experiment, Relationships, Quite Nifty, Safety & Security, Entertainment, Fun, Reading Material.
+The transcript may contain a request to be tagged (e.g. "tag this with...") or begin with "tag: <tags>". The tags are capitalized and may include, but are not limited to: Nifty Experiment, Quite Nifty, Safety & Security, Reading Material.
 --boundary
-Content-Disposition: form-data; name="file"; filename="tag-test-1.m4a"
+Content-Disposition: form-data; name="file"; filename="tag-test-4.m4a"
 Content-Type: audio/x-m4a
 
-< tag-test-1.m4a
+< tag-test-4.m4a
 --boundary--
+
+# Not all tags:
+# The transcript may contain a request to be tagged, or begin with "tag: <tags>". The tags may include, but are not limited to: Nifty Experiment, Quite Nifty, Safety & Security, Reading Material.
+# Result:
+# - First 3 worked. Last one didn't seem to recognize the tags in "Please tag this with goals and fun."
+
+# The transcript may contain a request to be tagged, or begin with "tag: <tags>". The possible tags are: Goals, Family, Finance, Health, Nifty Experiment, Relationships, Quite Nifty, Safety & Security, Entertainment, Fun, Reading Material.
 
 ### Chat completion - Extract tags
 curl https://api.openai.com/v1/chat/completions \
@@ -496,11 +503,13 @@ curl https://api.openai.com/v1/chat/completions \
     "messages": [
       {
         "role": "system",
-        "content": "You are a helpful assistant. Your task is to check the transcribed text for a request to be tagged, or a list of tags. Only include tags adjacent to the list or request. Exclude any that appear in the middle of the transcription. Extract the tags as a JSON array. Return the tags and the transcription with the tags and request remove. The possible tags are: Goals, Family, Finance, Health, Nifty Experiment, Relationships, Quite Nifty, Safety & Security, Entertainment, Fun, Reading Material. Only add necessary punctuation such as periods, commas, and capitalization, and use only the context provided."
+        "content": "You are a helpful assistant. Your task is to check the transcribed text for a request to be tagged, or a list of tags. Only include tags adjacent to the list or request. Exclude any that appear in the middle of the transcription. Extract the tags as a JSON array. Return the tags and the transcription with the tags and request removed. The possible tags are: Goals, Family, Finance, Health, Nifty Experiment, Relationships, Quite Nifty, Safety & Security, Entertainment, Fun, Reading Material. Only add necessary punctuation such as periods, commas, and capitalization, and use only the context provided."
       },
       {
         "role": "user",
-        "content": "I should look into air purifiers. It could be good if there''s a fire or just higher levels of pollution than normal, and they have some pretty cool tech in them that can auto-turn on when needed. That would be quite nifty. Tags, Safety & Security, Health, Fun."
+        "content": "Remember to get tagging working for my app. Please tag this with Goals and Fun."
       }
     ]
   }'
+
+  # I should look into air purifiers. It could be good if there's a fire or just higher levels of pollution than normal, and they have some pretty cool tech in them that can auto-turn on when needed. That would be quite nifty. Group in quite nifty.
