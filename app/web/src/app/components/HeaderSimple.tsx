@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Container, Group, Burger, Image } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Container, Group, Image } from "@mantine/core";
 import classes from "./HeaderSimple.module.css";
 
 const links = [

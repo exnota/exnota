@@ -1,24 +1,6 @@
 import { HeaderSimple } from "@exnota-web/app/components/HeaderSimple";
 import { HeroTitle } from "@exnota-web/app/components/HeroTitle";
-import { LeadGrid } from "@exnota-web/app/components/LeadGrid";
-import {
-  Center,
-  Container,
-  Stack,
-  Title,
-  Text,
-  Box,
-  Anchor,
-  Space,
-  rem,
-  SimpleGrid,
-  Skeleton,
-  Grid,
-  GridCol,
-  Image,
-} from "@mantine/core";
-
-import Link from "next/link";
+import { Container, SimpleGrid } from "@mantine/core";
 
 export default function Home(props: any) {
   return (

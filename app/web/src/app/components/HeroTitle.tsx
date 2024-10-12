@@ -1,15 +1,4 @@
-import {
-  Container,
-  Text,
-  Button,
-  Group,
-  Flex,
-  Stack,
-  Image,
-  Grid,
-  GridCol,
-} from "@mantine/core";
-import { GithubIcon } from "@mantinex/dev-icons";
+import { Text, Group, Stack, Image, Grid, GridCol } from "@mantine/core";
 import classes from "./HeroTitle.module.css";
 import { Demo } from "@exnota-web/app/components/WaitlistModal";
 
