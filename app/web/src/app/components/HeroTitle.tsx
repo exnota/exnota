@@ -32,7 +32,7 @@ export function HeroTitle() {
       </GridCol>
       <GridCol span={{ base: 12, md: 6 }}>
         <Image
-          src="/images/hero.png"
+          src="/images/exnota.gif"
           alt="Recording a voice note in Exnota will send a transcription to Notion."
           fit="contain"
           // width="64"
