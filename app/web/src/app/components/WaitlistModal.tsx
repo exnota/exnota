@@ -2,6 +2,10 @@
 
 import { useDisclosure } from "@mantine/hooks";
 import { Modal, Button, Text } from "@mantine/core";
+import MailchimpSubscribe from "react-mailchimp-subscribe";
+
+const url =
+  "https://exnota.us11.list-manage.com/subscribe/post?u=8426b2156993707c321cbaa83&amp;id=6a23a3643b&amp;f_id=001111e1f0";
 
 export function Demo() {
   const [opened, { open, close }] = useDisclosure(false);
@@ -9,11 +13,11 @@ export function Demo() {
   return (
     <>
       <Modal opened={opened} onClose={close} title="Authentication" centered>
-        <Text>Hi</Text>
+        <MailchimpSubscribe url={url} />
       </Modal>
 
       <Button
-        // onClick={open}
+        onClick={open}
         size="xl"
         // className={classes.control}
         variant="gradient"
