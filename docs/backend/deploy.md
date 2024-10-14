@@ -1,20 +1,22 @@
 # Deploy (prod)
 
-- [How-to](#how-to)
-  - [Steps](#steps)
-  - [Troubleshooting](#troubleshooting)
-- [Maintenance](#maintenance)
-  - [Environment variables](#environment-variables)
-  - [Checking logs](#checking-logs)
-  - [How to execute Dokku commands](#how-to-execute-dokku-commands)
-- [Initial setup](#initial-setup)
-  - [SSH](#ssh)
-  - [Dokku](#dokku)
-- [Hetzner SSH](#hetzner-ssh)
-  - [Terminal](#terminal)
-  - [CLI](#cli)
-- [Archive](#archive)
-  - [Manual Hetzner deploy](#manual-hetzner-deploy)
+- [Deploy (prod)](#deploy-prod)
+  - [How-to](#how-to)
+    - [Steps](#steps)
+    - [Troubleshooting](#troubleshooting)
+      - [Error: At least one invalid signature was encountered, or "no space left on device"](#error-at-least-one-invalid-signature-was-encountered-or-no-space-left-on-device)
+  - [Maintenance](#maintenance)
+    - [Environment variables](#environment-variables)
+    - [Checking logs](#checking-logs)
+    - [How to execute Dokku commands](#how-to-execute-dokku-commands)
+  - [Initial setup](#initial-setup)
+    - [SSH](#ssh)
+    - [Dokku](#dokku)
+  - [Hetzner SSH](#hetzner-ssh)
+    - [Terminal](#terminal)
+    - [CLI](#cli)
+  - [Archive](#archive)
+    - [Manual Hetzner deploy](#manual-hetzner-deploy)
 
 ## How-to
 
@@ -151,10 +153,20 @@ There is an [official client](https://dokku.com/docs/deployment/remote-commands/
 
     It will give a warning like
 
-    > Your account credentials have been saved in your Let's Encrypt configuration directory at "/certs/accounts".
+    However the folder is actually empty. I found one folder by doing this:
 
-    However the folder is actually empty. For now I have assumed this isn't
-    actually necessary. Maybe Dokku handles it.
+    ```bash
+    find / -type f -name "docker.env"
+    ```
+
+    Technically you're supposed to regularly backup, I suppose because it will be regenerated. But I'll leave that to another day.
+
+    You can get a local copy by running this from your host:
+
+    ```bash
+    scp -r root@195.201.33.178:/home/dokku/exnota-tools/letsencrypt/certs exnota-tools-letsencrypt-backup
+    ```
+
 8. Setup volume for persistence
 
     ```bash

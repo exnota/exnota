@@ -1,31 +1,27 @@
-import {
-  Center,
-  Container,
-  Stack,
-  Title,
-  Text,
-  Box,
-  Anchor,
-  Space,
-} from "@mantine/core";
-import Link from "next/link";
+import { ExnotaTools } from "@exnota-web/app/components/ExnotaTools";
+import { HeaderSimple } from "@exnota-web/app/components/HeaderSimple";
+import { HeroTitle } from "@exnota-web/app/components/HeroTitle";
+import { Container, SimpleGrid, Space, Text } from "@mantine/core";
 
-export default function Home() {
+export default function Home(props: any) {
   return (
-    <Container h="100%">
-      <Stack justify="center" align="center" h="100%">
-        <Stack gap="xs" align="center">
-          <Title>Exnota</Title>
-          <Title order={2} size="h4">
-            Quick capture to Notion
-          </Title>
-        </Stack>
-        <Space h="xl" />
-        <Text c="gray">
-          By <Anchor href="https://matt.fyi">matt.fyi</Anchor>&nbsp;•&nbsp;
-          <Anchor href="https://twitter.com/mattjustfyi">@mattjustfyi</Anchor>
-        </Text>
-      </Stack>
+    <Container my="md">
+      <HeaderSimple />
+      {/* <SimpleGrid cols={{ base: 1, sm: 1 }} spacing="xl"> */}
+      {/* <Skeleton radius="md" animate={false} height="500" /> */}
+      <HeroTitle />
+      <Space h="150" />
+      <ExnotaTools />
+      <Space h="50" />
+      <Text size="sm">
+        By Matt Schultz (<a href="https://matt.fyi">matt.fyi</a> /{" "}
+        <a href="https://x.com/mattjustfyi">@mattjustfyi</a>)
+      </Text>
+      {/* <Grid gutter="md">
+          <GridCol>
+          </GridCol>
+        </Grid> */}
+      {/* </SimpleGrid> */}
     </Container>
   );
 }
