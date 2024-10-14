@@ -1,73 +1,67 @@
 "use client";
 
 import { useDisclosure } from "@mantine/hooks";
-import { Modal, Button, Text } from "@mantine/core";
+import { Modal, Button, Text, TextInput, Alert } from "@mantine/core";
 import MailchimpSubscribe, { EmailFormFields } from "react-mailchimp-subscribe";
+import {
+  IconCheck,
+  IconLoader,
+  IconMail,
+  IconPhoto,
+} from "@tabler/icons-react";
 
 const url =
   "https://exnota.us11.list-manage.com/subscribe/post?u=8426b2156993707c321cbaa83&amp;id=6a23a3643b&amp;f_id=001111e1f0";
 
 const CustomForm = ({ status, message, onValidated }: any) => {
   let email: any;
+  let sending = status === "sending";
   const submit = () =>
     email &&
     email.value.indexOf("@") > -1 &&
     onValidated({
       EMAIL: email.value,
     });
+  const icon = <IconCheck />;
 
   return (
-    <div
-      style={{
-        background: "#efefef",
-        borderRadius: 2,
-        padding: 10,
-        display: "inline-block",
-      }}
-    >
-      {status === "sending" && <div style={{ color: "blue" }}>sending...</div>}
-      {status === "error" && (
-        <div
-          style={{ color: "red" }}
-          dangerouslySetInnerHTML={{ __html: message }}
-        />
-      )}
+    <div>
       {status === "success" && (
-        <div
-          style={{ color: "green" }}
-          dangerouslySetInnerHTML={{ __html: message }}
-        />
+        <Alert variant="light" color="lime" title="You're in!" icon={icon}>
+          Please confirm in the email we've sent.
+        </Alert>
       )}
-      <br />
       {status !== "success" && (
         <>
-          <input
-            style={{ fontSize: "2em", padding: 5 }}
+          <Text>
+            Join the waitlist to be updated on the beta availability and launch
+            of Exnota.
+          </Text>
+          <TextInput
+            mt="md"
+            rightSectionPointerEvents="none"
+            label="Your email"
+            placeholder="name@email.com"
             ref={(node) => (email = node)}
             type="email"
-            placeholder="Your email"
+            error={status === "error" ? message : null}
           />
           <br />
-          <button style={{ fontSize: "2em", padding: 5 }} onClick={submit}>
-            Submit
-          </button>
+          <Button variant="filled" onClick={submit} loading={sending}>
+            Join Waitlist
+          </Button>
         </>
       )}
     </div>
   );
 };
 
-export function Demo() {
+export function WaitlistModal() {
   const [opened, { open, close }] = useDisclosure(false);
 
   return (
     <>
-      <Modal
-        opened={opened}
-        onClose={close}
-        title="Join Beta Waitlist"
-        centered
-      >
+      <Modal opened={opened} onClose={close} title="Join Waitlist" centered>
         <MailchimpSubscribe
           url={url}
           render={({ subscribe, status, message }) => (
@@ -87,7 +81,7 @@ export function Demo() {
         variant="gradient"
         gradient={{ from: "blue", to: "cyan" }}
       >
-        Join Beta Waitlist
+        Join Waitlist
       </Button>
     </>
   );

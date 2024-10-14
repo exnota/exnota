@@ -1,6 +1,6 @@
 import { Text, Group, Stack, Image, Grid, GridCol } from "@mantine/core";
 import classes from "./HeroTitle.module.css";
-import { Demo } from "@exnota-web/app/components/WaitlistModal";
+import { WaitlistModal } from "@exnota-web/app/components/WaitlistModal";
 
 export function HeroTitle() {
   return (
@@ -18,15 +18,7 @@ export function HeroTitle() {
           </Text>
 
           <Group className={classes.controls}>
-            <Demo />
-            {/* <Button
-              size="xl"
-              className={classes.control}
-              variant="gradient"
-              gradient={{ from: "blue", to: "cyan" }}
-            >
-              Join Beta Waitlist
-            </Button> */}
+            <WaitlistModal />
           </Group>
         </Stack>
       </GridCol>
