@@ -388,7 +388,7 @@ class BlockList extends ConsumerWidget {
       return block.audio!.transcription!.join(' ');
     }
 
-    return 'Syncing... (created ${DateFormat('yyyy-MM-dd H:m:s').format(block.userCreated)})';
+    return 'Syncing...';
   }
 }
 
